@@ -1,0 +1,67 @@
+{
+  "campaign": {
+    "campaign-manager-title": "战役·模组",
+    "list-refresh": "刷新",
+    "list-manage": "管理",
+    "WOL": {
+      "name": "自由之翼"
+    },
+    "HOTS": {
+      "name": "虫群之心"
+    },
+    "LOTV": {
+      "name": "虚空之遗"
+    },
+    "NCO": {
+      "name": "诺娃隐秘行动"
+    },
+    "message": {
+      "campaign-actived": "已激活战役·模组",
+      "campaign-recovered": "已成功恢复 {campaign} 战役",
+      "campaign-uninstalled": "已成功卸载 {campaign} 战役"
+    },
+    "display-mode": {
+      "details": "详情",
+      "brief": "简略"
+    },
+    "current-campaign": "当前战役·模组",
+    "no-campaign": "暂无战役",
+    "no-actived-campaign": "（尚未激活任何战役）",
+    "offcial-campaign": "《{campaign}》官方战役",
+    "brief-mode": {
+      "author": "作者：",
+      "play": "游玩",
+      "active-campaign": "激活新战役",
+      "switch-campaign": "切换",
+      "restore-campaign": "恢复",
+      "uninstall-campaign": "卸载",
+      "campaign": "《{campaign}》战役"
+    },
+    "metadata": {
+      "author": "作者"
+    },
+    "detail-mode": {
+      "play": "开始游玩",
+      "active-campaign": "激活新战役",
+      "launch-editor": "编辑器启动",
+      "restore-campaign": "恢复战役",
+      "switch-campaign": "切换战役",
+      "uninstall-campaign": "卸载战役",
+      "author": "作者",
+      "version": "版本",
+      "description": "模组简介",
+      "social": "社交关注",
+      "donate": "捐助支持",
+      "website": "网站",
+      "snid": "星际枢纽 ID",
+      "snid-none": "尚未注册",
+      "no-actived-campaign": "尚未激活战役·模组",
+      "no-actived-campaign-offial-tip": "尚未激活任何战役·模组，您将正常游玩官方战役。",
+      "no-actived-campaign-content-tip": "想尝试些新鲜内容？安装并激活一款战役·模组吧！",
+      "now-playing": "正在游玩",
+      "campaign": "{campaign}战役",
+      "campaign-title": "《{campaign}》战役",
+      "manager-format": "{manager} 格式"
+    }
+  }
+}

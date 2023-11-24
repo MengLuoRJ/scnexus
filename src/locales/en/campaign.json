@@ -1,0 +1,64 @@
+{
+  "campaign": {
+    "campaign-manager-title": "Campaign Manager",
+    "list-refresh": "Refresh",
+    "list-manage": "Manage",
+    "WOL": {
+      "name": "Wings of Liberty"
+    },
+    "HOTS": {
+      "name": "Heart of the Swarm"
+    },
+    "LOTV": {
+      "name": "Legacy of the Void"
+    },
+    "NCO": {
+      "name": "Nova Covert Ops"
+    },
+    "message": {
+      "campaign-actived": "已激活战役·模组",
+      "campaign-recovered": "已成功恢复 {campaign} 战役",
+      "campaign-uninstalled": "已成功卸载 {campaign} 战役"
+    },
+    "display-mode": {
+      "details": "DETAIL",
+      "brief": "BRIEF"
+    },
+    "current-campaign": "Current Campaign Package",
+    "offcial-campaign": "{campaign} Offcial Campaign",
+    "no-campaign": "No Campaign",
+    "no-actived-campaign": "(No Campaign Actived Now)",
+    "brief-mode": {
+      "author": "Author: ",
+      "play": "Play",
+      "active-campaign": "Active",
+      "switch-campaign": "Switch",
+      "restore-campaign": "Restore",
+      "uninstall-campaign": "Uninstall",
+      "campaign": "{campaign} Campaign"
+    },
+    "detail-mode": {
+      "play": "Play Now",
+      "active-campaign": "Active New Campaign",
+      "launch-editor": "Launch Editor",
+      "restore-campaign": "Restore Campaign",
+      "switch-campaign": "Switch Campaign",
+      "uninstall-campaign": "Uninstall Campaign",
+      "author": "Author",
+      "version": "Version",
+      "description": "Description",
+      "social": "Social",
+      "donate": "Donate",
+      "website": "Website",
+      "snid": "SCNexus ID",
+      "snid-none": "None",
+      "no-actived-campaign": "No Campaign Package Actived Now",
+      "no-actived-campaign-offial-tip": "Haven't actived any campaign package, You can play the Offcial Campaigns normally.",
+      "no-actived-campaign-content-tip": "Wanna try something fresh and new? Install and Active some Campaign Package!",
+      "now-playing": "Now Playing",
+      "campaign": "{campaign} Campaign",
+      "campaign-title": "{campaign} Campaign",
+      "manager-format": "{manager} Format"
+    }
+  }
+}

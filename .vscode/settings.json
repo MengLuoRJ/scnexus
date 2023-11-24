@@ -9,5 +9,15 @@
       ],
       "url": "https://json.schemastore.org/electron-builder"
     }
-  ]
+  ],
+  "i18n-ally.localesPaths": [
+    "src/locales",
+    "release/0.0.1/win-unpacked/locales"
+  ],
+  "i18n-ally.extract.ignoredByFiles": {
+    "src\\main.ts": [
+      "*"
+    ]
+  },
+  "i18n-ally.keystyle": "nested"
 }

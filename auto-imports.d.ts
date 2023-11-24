@@ -12,10 +12,12 @@ declare global {
   const defineAsyncComponent: typeof import('vue')['defineAsyncComponent']
   const defineComponent: typeof import('vue')['defineComponent']
   const effectScope: typeof import('vue')['effectScope']
+  const getActiveHead: typeof import('@unhead/vue')['getActiveHead']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const h: typeof import('vue')['h']
   const inject: typeof import('vue')['inject']
+  const injectHead: typeof import('@unhead/vue')['injectHead']
   const isProxy: typeof import('vue')['isProxy']
   const isReactive: typeof import('vue')['isReactive']
   const isReadonly: typeof import('vue')['isReadonly']
@@ -53,9 +55,15 @@ declare global {
   const useCssModule: typeof import('vue')['useCssModule']
   const useCssVars: typeof import('vue')['useCssVars']
   const useDialog: typeof import('naive-ui')['useDialog']
+  const useHead: typeof import('@unhead/vue')['useHead']
+  const useHeadSafe: typeof import('@unhead/vue')['useHeadSafe']
   const useLoadingBar: typeof import('naive-ui')['useLoadingBar']
   const useMessage: typeof import('naive-ui')['useMessage']
   const useNotification: typeof import('naive-ui')['useNotification']
+  const useSeoMeta: typeof import('@unhead/vue')['useSeoMeta']
+  const useServerHead: typeof import('@unhead/vue')['useServerHead']
+  const useServerHeadSafe: typeof import('@unhead/vue')['useServerHeadSafe']
+  const useServerSeoMeta: typeof import('@unhead/vue')['useServerSeoMeta']
   const useSlots: typeof import('vue')['useSlots']
   const watch: typeof import('vue')['watch']
   const watchEffect: typeof import('vue')['watchEffect']
@@ -65,5 +73,5 @@ declare global {
 // for type re-export
 declare global {
   // @ts-ignore
-  export type { Component, ComponentPublicInstance, ComputedRef, InjectionKey, PropType, Ref, VNode } from 'vue'
+  export type { Component, ComponentPublicInstance, ComputedRef, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, VNode, WritableComputedRef } from 'vue'
 }

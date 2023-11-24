@@ -1,0 +1,25 @@
+{
+  "customize": {
+    "drop-zone": {
+      "tip": "文件拖动至此（或点选文件）进行安装",
+      "tip-extension": "请直接使用 \".zip\" 压缩包文件",
+      "tip-release": "松开鼠标释放文件来开始安装",
+      "process-dialog": {
+        "title-campaign": "安装战役：",
+        "title-customize": "安装自制作品：",
+        "description-author": "作者：",
+        "description-version": "版本：",
+        "description-description": "描述：",
+        "description-install": "是否安装？",
+        "negative-text": "取消",
+        "positive-text": "确认安装",
+        "message-success-title": "已成功安装",
+        "message-success-content": "已解压安装 {count} 个文件"
+      },
+      "no-game-message": {
+        "title": "未检测到已安装的《星际争霸II》游戏本体",
+        "content": "请先安装游戏本体。"
+      }
+    }
+  }
+}

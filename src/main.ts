@@ -1,8 +1,9 @@
 import App from "./App.vue";
 import router, { setupRouter } from "@/router";
+import { i18n } from "@/locales";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
-import { createHead } from "@vueuse/head";
+import { createHead } from "@unhead/vue";
 import { createPersistedState } from "pinia-plugin-persistedstate";
 import * as Sentry from "@sentry/vue";
 import "virtual:uno.css";
@@ -10,6 +11,9 @@ import "uno.css";
 
 async function bootstrap() {
   const app = createApp(App);
+
+  // setup vue-i18n
+  app.use(i18n);
 
   // setup pinia
   const pinia = createPinia();

@@ -1,0 +1,25 @@
+{
+  "customize": {
+    "drop-zone": {
+      "tip": "Drag & Drop (or Click to Select) the file to install.",
+      "tip-extension": "Please use the \".zip\" compress file directly.",
+      "tip-release": "Release mouse to drop the file to start the installation",
+      "process-dialog": {
+        "title-campaign": "Install Camapign Package: ",
+        "title-customize": "Install Customize Work: ",
+        "description-author": "Author: ",
+        "description-version": "Version: ",
+        "description-description": "Description: ",
+        "description-install": "Confirm to install?",
+        "negative-text": "Cancel",
+        "positive-text": "Install",
+        "message-success-title": "Successfully Installed.",
+        "message-success-content": "Decompressed {count} files."
+      },
+      "no-game-message": {
+        "title": "No installed StarCraft II game client detected.",
+        "content": "Please install StarCraft II game client first."
+      }
+    }
+  }
+}

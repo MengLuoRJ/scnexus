@@ -1,10 +1,15 @@
-import { app, BrowserWindow, shell, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import { release } from "node:os";
 import { join } from "node:path";
-import { initService } from "./service/init";
+import { initService } from "./modules/init";
+import { initTray } from "./common/tray";
+import { initShellIpc } from "./common/shell";
+import { initDialogIpc } from "./common/dialog";
+import { initAppIpc } from "./common/app";
+import { initUpdater } from "./common/Updater";
+import { initDeepLink } from "./common/DeepLink";
 
 // The built directory structure
-//
 // ├─┬ dist-electron
 // │ ├─┬ main
 // │ │ └── index.js    > Electron-Main
@@ -12,7 +17,7 @@ import { initService } from "./service/init";
 // │   └── index.js    > Preload-Scripts
 // ├─┬ dist
 // │ └── index.html    > Electron-Renderer
-//
+
 process.env.DIST_ELECTRON = join(__dirname, "..");
 process.env.DIST = join(process.env.DIST_ELECTRON, "../dist");
 process.env.PUBLIC = process.env.VITE_DEV_SERVER_URL
@@ -36,51 +41,22 @@ if (!app.requestSingleInstanceLock()) {
 // process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
 let win: BrowserWindow | null = null;
-let winLoading: BrowserWindow | null = null;
+
 // Here, you can also use other preload
 const preload = join(__dirname, "../preload/index.js");
 const url = process.env.VITE_DEV_SERVER_URL;
 const indexHtml = join(process.env.DIST, "index.html");
 
-async function createLoadingWindow(callback: Function) {
-  winLoading = new BrowserWindow({
-    title: "Loading window",
-    show: false,
-    icon: join(process.env.PUBLIC, "favicon.ico"),
-    width: 160,
-    height: 180,
-    resizable: false,
-    frame: false,
-    transparent: false,
-  });
-
-  winLoading.once("show", callback);
-
-  winLoading.loadFile(join(process.env.PUBLIC, "loading.html"));
-
-  winLoading.show();
-
-  // // Make all links open with the browser, not with the application
-  // winLoading.webContents.setWindowOpenHandler(({ url }) => {
-  //   if (url.startsWith('https:')) shell.openExternal(url)
-  //   return { action: 'deny' }
-  // })
-
-  // winLoading.on('closed', () => {
-  //   winLoading = null
-  // })
-
-  // winLoading.webContents.on('did-finish-load', () => {
-  //   callback()
-  // })
-}
-
 async function createWindow() {
   win = new BrowserWindow({
-    title: "Main window",
+    title: "SCNexus Client",
     icon: join(process.env.PUBLIC, "favicon.ico"),
     show: false,
     // resizable: false,
+    width: 800,
+    height: 600,
+    minWidth: 800,
+    minHeight: 600,
     autoHideMenuBar: true,
     webPreferences: {
       preload,
@@ -96,19 +72,14 @@ async function createWindow() {
     // electron-vite-vue#298
     win.loadURL(url);
     // Open devTool if the app is not packaged
-    win.webContents.openDevTools();
+    win.webContents.openDevTools({ mode: "detach" });
   } else {
     win.loadFile(indexHtml);
     // win.webContents.openDevTools();
   }
 
   win.on("ready-to-show", () => {
-    if (winLoading) {
-      winLoading.hide();
-      winLoading.close();
-      winLoading = null;
-    }
-    win.show();
+    win?.show();
   });
 
   // Test actively push message to the Electron-Renderer
@@ -125,11 +96,30 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await createLoadingWindow(createWindow);
-  await initService();
+
+  Menu.setApplicationMenu(null)
+
+  
+  // Initialize the shell
+  initAppIpc();
+  initShellIpc();
+  initDialogIpc();
+  // initTray();
+
+  // Create the main window when the application is ready
+  await createWindow();
+
+  if (win) {
+    await initService(win);
+
+    initDeepLink(win);
+
+    initUpdater(win);
+  }
 });
 
 app.on("window-all-closed", () => {
+  win?.destroy();
   win = null;
   if (process.platform !== "darwin") app.quit();
 });
@@ -166,4 +156,9 @@ ipcMain.handle("open-win", (_, arg) => {
   } else {
     childWindow.loadFile(indexHtml, { hash: arg });
   }
+});
+
+app.on("open-url", (event, url) => {
+  console.log("open-url", url);
+  win?.webContents.send("open-url", url);
 });

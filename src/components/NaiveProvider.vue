@@ -44,8 +44,8 @@ const naiveTheme = computed(() => {
     :theme="naiveTheme"
   >
     <n-dialog-provider>
-      <n-notification-provider>
-        <n-message-provider>
+      <n-notification-provider :placement="'bottom-right'">
+        <n-message-provider :placement="'bottom-right'">
           <slot name="default"></slot>
         </n-message-provider>
       </n-notification-provider>

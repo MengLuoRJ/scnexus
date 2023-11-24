@@ -9,15 +9,25 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "lib": ["ESNext", "DOM"],
     "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"],
+      "@electron/*": ["./electron/*"],
+      "@main/*": ["./electron/main/*"],
+      "@preload/*": ["./electron/preload/*"]
     },
-    "types": ["naive-ui/volar", "vexip-ui/types"]
+    "types": [
+      "vite/client",
+      "naive-ui/volar",
+      "@intlify/unplugin-vue-i18n/messages"
+    ]
   },
-  "include": ["src"],
+  "include": ["shared", "electron", "src", "electron/electron-env.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

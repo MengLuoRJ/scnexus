@@ -1,13 +1,14 @@
 import { rmSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
+import { resolve, dirname } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+// import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import UnoCSS from "unocss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
+import { unheadVueComposablesImports } from '@unhead/vue'
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
-import { createStyleImportPlugin } from "vite-plugin-style-import";
-import { VexipUIResolver } from "@vexip-ui/plugins";
 // import viteSentry, { type ViteSentryPluginOptions } from "vite-plugin-sentry";
 import electron from "vite-plugin-electron";
 import renderer from "vite-plugin-electron-renderer";
@@ -35,12 +36,20 @@ export default defineConfig(({ command }) => {
   const sourcemap = isServe || !!process.env.VSCODE_DEBUG;
 
   return {
+    define: {
+      __INTLIFY_JIT_COMPILATION__: true,
+    },
     plugins: [
       vue(),
+      // VueI18nPlugin({
+      //   include: resolve(dirname(fileURLToPath(import.meta.url)), './src/locales/**/*.js'),
+      //   jitCompilation: true,
+      // }),
       UnoCSS(),
       AutoImport({
         imports: [
           "vue",
+          unheadVueComposablesImports,
           {
             "naive-ui": [
               "useDialog",
@@ -50,22 +59,9 @@ export default defineConfig(({ command }) => {
             ],
           },
         ],
-        resolvers: [VexipUIResolver()],
       }),
       Components({
-        resolvers: [NaiveUiResolver(), VexipUIResolver()],
-      }),
-      createStyleImportPlugin({
-        include: ["**/*.ts", "**/*.vue"],
-        libs: [
-          {
-            libraryName: "vexip-ui",
-            esModule: true,
-            // 引入暗黑模式基础样式
-            // base: 'vexip-ui/es/css/dark',
-            resolveStyle: (name) => `vexip-ui/es/css/${name}`,
-          },
-        ],
+        resolvers: [NaiveUiResolver()],
       }),
       // viteSentry(sentryConfig),
       electron([
@@ -82,6 +78,20 @@ export default defineConfig(({ command }) => {
             }
           },
           vite: {
+            resolve: {
+              alias: {
+                "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+                "@electron": fileURLToPath(
+                  new URL("./electron", import.meta.url)
+                ),
+                "@main": fileURLToPath(
+                  new URL("./electron/main", import.meta.url)
+                ),
+                "@preload": fileURLToPath(
+                  new URL("./electron/preload", import.meta.url)
+                ),
+              },
+            },
             build: {
               sourcemap,
               minify: isBuild,
@@ -102,6 +112,20 @@ export default defineConfig(({ command }) => {
             options.reload();
           },
           vite: {
+            resolve: {
+              alias: {
+                "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+                "@electron": fileURLToPath(
+                  new URL("./electron", import.meta.url)
+                ),
+                "@main": fileURLToPath(
+                  new URL("./electron/main", import.meta.url)
+                ),
+                "@preload": fileURLToPath(
+                  new URL("./electron/preload", import.meta.url)
+                ),
+              },
+            },
             build: {
               sourcemap: sourcemap ? "inline" : undefined, // #332
               minify: isBuild,
@@ -121,6 +145,12 @@ export default defineConfig(({ command }) => {
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
+        "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+        "@electron": fileURLToPath(new URL("./electron", import.meta.url)),
+        "@main": fileURLToPath(new URL("./electron/main", import.meta.url)),
+        "@preload": fileURLToPath(
+          new URL("./electron/preload", import.meta.url)
+        ),
       },
     },
     server:

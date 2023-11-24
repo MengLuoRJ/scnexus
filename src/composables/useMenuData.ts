@@ -1,7 +1,12 @@
 import { NImage } from "naive-ui";
 import { h } from "vue";
-import Logo from "@/assets/logo.png";
 import { renderNaiveIcon, renderUnoIcon } from "./useIconRender";
+
+import Logo from "@/assets/logo.png";
+import MenuGame from "@/assets/menu/Menu_GamePlay.png";
+import MenuMissions from "@/assets/menu/Menu_CampaignMissions.png";
+import MenuCoop from "@/assets/menu/Menu_Coop.png";
+import MenuProjectArcade from "@/assets/menu/Menu_ProjectArcade.png";
 
 export type Menu = {
   key: string;
@@ -31,7 +36,10 @@ export const MenuList = <Menu[]>[
   {
     key: "campaign",
     label: "战役管理",
-    icon: renderUnoIcon("i-tabler:device-gamepad"),
+    // icon: renderUnoIcon("i-tabler:device-gamepad"),
+    icon: renderNaiveIcon(
+      h(NImage, { src: MenuGame, width: 32, height: 32, previewDisabled: true })
+    ),
   },
   {
     key: "divider-2",
@@ -46,10 +54,54 @@ export const MenuList = <Menu[]>[
   {
     key: "customize",
     label: "自制作品",
-    icon: renderUnoIcon("i-tabler:device-gamepad"),
+    // icon: renderUnoIcon("i-tabler:device-gamepad"),
+    icon: renderNaiveIcon(
+      h(NImage, { src: MenuMissions, width: 32, height: 32, previewDisabled: true })
+    ),
+  },
+  // {
+  //   key: "divider-3",
+  //   type: "divider",
+  //   props: {
+  //     style: {
+  //       marginLeft: "12px",
+  //       marginRight: "12px",
+  //     },
+  //   },
+  // },
+  // {
+  //   key: "coop",
+  //   label: "合作任务",
+  //   // icon: renderUnoIcon("i-tabler:device-gamepad"),
+  //   icon: renderNaiveIcon(
+  //     h(NImage, { src: MenuCoop, width: 32, height: 32, previewDisabled: true })
+  //   ),
+  // },
+  {
+    key: "divider-4",
+    type: "divider",
+    props: {
+      style: {
+        marginLeft: "12px",
+        marginRight: "12px",
+      },
+    },
   },
   {
-    key: "divider-3",
+    key: "pa",
+    label: "大厅计划",
+    // icon: renderUnoIcon("i-tabler:device-gamepad"),
+    icon: renderNaiveIcon(
+      h(NImage, {
+        src: MenuProjectArcade,
+        width: 32,
+        height: 32,
+        previewDisabled: true,
+      })
+    ),
+  },
+  {
+    key: "divider-5",
     type: "divider",
     props: {
       style: {

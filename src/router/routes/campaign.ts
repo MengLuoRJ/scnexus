@@ -15,6 +15,15 @@ const routes: Array<RouteRecordRaw> = [
         },
         component: () => import("@/views/Campaign/CampaignView.vue"),
       },
+      {
+        path: "manage",
+        name: "campaign-manage",
+        meta: {
+          title: "战役包管理",
+          public: true,
+        },
+        component: () => import("@/views/Campaign/CampaignManageView.vue"),
+      },
     ],
   },
 ];

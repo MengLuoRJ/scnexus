@@ -1,20 +1,24 @@
 import { join } from "node:path";
 import { app } from "electron";
 import Store from "electron-store";
-import { CampaignInformationList } from "../types";
+import {
+  CampaignInformation,
+  CampaignInformationListSet,
+  CampaignType,
+} from "@shared/types";
 
 const appDataRoot = app.getPath("userData");
 
 export type CampaignStore = {
   ININTIALIZED: boolean;
   LAST_REFRESH_TIME: number;
-  CAMPAIGN_LIST: CampaignInformationList;
+  CAMPAIGN_LIST_SET: CampaignInformationListSet;
 };
 
 const defaultProfile: CampaignStore = {
   ININTIALIZED: false,
   LAST_REFRESH_TIME: new Date().getTime(),
-  CAMPAIGN_LIST: {
+  CAMPAIGN_LIST_SET: {
     WOL: [],
     HOTS: [],
     LOTV: [],
@@ -23,16 +27,16 @@ const defaultProfile: CampaignStore = {
 };
 
 const campaignStore = new Store<CampaignStore>({
-  name: "campaigns",
-  cwd: join(appDataRoot, "profile"),
+  name: "campaign",
+  cwd: join(appDataRoot, "SCNexusStorage"),
   fileExtension: "json",
   defaults: defaultProfile,
 });
 
 export function updateCampaignStore(
-  newStoreData: CampaignInformationList
+  newStoreData: CampaignInformationListSet
 ): CampaignStore {
-  campaignStore.set("CAMPAIGN_LIST", newStoreData);
+  campaignStore.set("CAMPAIGN_LIST_SET", newStoreData);
   campaignStore.set("LAST_REFRESH_TIME", new Date().getTime());
   const ININTIALIZED = campaignStore.get("ININTIALIZED");
   if (!ININTIALIZED) {
@@ -49,4 +53,38 @@ export function getCampaignStoreKey<T extends keyof CampaignStore>(
   key: T
 ): CampaignStore[T] {
   return campaignStore.get(key);
+}
+
+export function insertCampaign(campaign: CampaignInformation) {
+  const storeData: CampaignInformation[] = [];
+  const store = getCampaignStore();
+  if (store.ININTIALIZED) {
+    const oldList = store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType];
+    if (oldList) storeData.push(...oldList);
+  }
+  storeData.push(campaign);
+  store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType] = storeData;
+  updateCampaignStore(store.CAMPAIGN_LIST_SET);
+}
+
+export function removeCampaign(campaign: CampaignInformation) {
+  const storeData: CampaignInformation[] = [];
+  const store = getCampaignStore();
+  if (store.ININTIALIZED) {
+    const oldList = store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType];
+    if (oldList) storeData.push(...oldList);
+  }
+
+  const rIndex = storeData.findIndex((cpn: CampaignInformation) => {
+    if (campaign.snid)
+      return campaign.snid === cpn.snid && campaign.name === cpn.name;
+    else return campaign.name === cpn.name;
+  });
+  if (rIndex === -1) return;
+  storeData.splice(rIndex, 1);
+
+  storeData.push(campaign);
+  store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType] = storeData;
+
+  updateCampaignStore(store.CAMPAIGN_LIST_SET);
 }

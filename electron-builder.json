@@ -1,0 +1,62 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "productName": "SCNexus",
+  "appId": "net.aiurcovenant.scnexus",
+  "copyright": "Copyright © 2023 MengLuoRJ",
+  "asar": true,
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": ["dist-electron", "dist"],
+  "extraResources": [
+    {
+      "from": "node_modules/regedit/vbs",
+      "to": "regedit/vbs",
+      "filter": ["**/*"]
+    }
+  ],
+  "protocols": [
+    {
+      "name": "SCNexus Protocol",
+      "schemes": ["scnexus"]
+    }
+  ],
+  "mac": {
+    "icon": "public/application_icon.png",
+    "artifactName": "${productName}_${version}.${ext}",
+    "target": ["dmg"]
+  },
+  "win": {
+    "icon": "public/application_icon.ico",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "artifactName": "${productName}_${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false,
+    "installerLanguages": ["zh_CN", "en_US"]
+  },
+  "appx": {
+    "applicationId": "SCNexus",
+    "backgroundColor": "#464646",
+    "displayName": "SCNexus",
+    "identityName": "3496AiurCovenant.SCNexus",
+    "publisher": "CN=MengLuoRJ, O=AiurCovenant, C=CN",
+    "publisherDisplayName": "AiurCovenant",
+    "languages": ["zh-CN", "en-US"]
+  },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://scnexus-updates.mengl.me/update/",
+      "useMultipleRangeRequest": false
+    }
+  ]
+}

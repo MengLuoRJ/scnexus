@@ -31,6 +31,7 @@ import { insertCampaign } from "@electron/main/stores/campaign";
 import { BrowserWindow } from "electron";
 import { getCustomizeActiveStoreKey } from "@electron/main/stores/customize-active";
 import { gte } from "semver";
+import { detect, analyse } from "chardet";
 
 let window: BrowserWindow | null;
 
@@ -193,7 +194,22 @@ export function readCompressFileInfo(
   zip.getEntries().map((entry) => {
     size += entry.header.size;
     compressedSize += entry.header.compressedSize;
-    if (entry.entryName.search(/\p{sc=Han}/gu) > -1) fn_encoding = "gb18030";
+    // if (entry.entryName.search(/\p{sc=Han}/gu) > -1) fn_encoding = "gb18030";
+
+    // console.log(entry.name);
+    // console.log(entry.rawEntryName);
+    // console.log(analyse(entry.rawEntryName));
+
+    const encoding = analyse(entry.rawEntryName);
+    if (
+      encoding.some((result) => {
+        return (
+          (result.name === "GB18030" || result.lang === "zh") &&
+          result.confidence >= 10
+        );
+      })
+    )
+      fn_encoding = "gb18030";
   });
 
   return {

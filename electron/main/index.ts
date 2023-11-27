@@ -8,6 +8,10 @@ import { initDialogIpc } from "./common/dialog";
 import { initAppIpc } from "./common/app";
 import { initUpdater } from "./common/Updater";
 import { initDeepLink } from "./common/DeepLink";
+import { initLogger } from "./common/Logger";
+
+// init electron-log
+initLogger();
 
 // The built directory structure
 // ├─┬ dist-electron
@@ -65,6 +69,7 @@ async function createWindow() {
       // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
       nodeIntegration: true,
       contextIsolation: true,
+      devTools: true,
     },
   });
 
@@ -75,7 +80,6 @@ async function createWindow() {
     win.webContents.openDevTools({ mode: "detach" });
   } else {
     win.loadFile(indexHtml);
-    // win.webContents.openDevTools();
   }
 
   win.on("ready-to-show", () => {
@@ -97,10 +101,9 @@ async function createWindow() {
 
 app.whenReady().then(async () => {
 
-  Menu.setApplicationMenu(null)
+  Menu.setApplicationMenu(null);
 
-  
-  // Initialize the shell
+  // Initialize key common modules
   initAppIpc();
   initShellIpc();
   initDialogIpc();

@@ -35,6 +35,7 @@
     "echarts": "^5.4.3",
     "electron": "^27.1.2",
     "electron-builder": "^24.9.1",
+    "filesize": "^10.1.0",
     "mitt": "^3.0.1",
     "naive-ui": "^2.35.0",
     "pinia": "^2.1.7",

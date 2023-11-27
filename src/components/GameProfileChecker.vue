@@ -75,4 +75,3 @@ onMounted(async () => {
     </div>
   </n-alert>
 </template>
-@/composables/useIpcHost/useDialogService@/composables/useIpcHost/useSettingService

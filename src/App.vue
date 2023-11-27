@@ -20,10 +20,6 @@ set(locale, get(localeStore.current));
 useHead({
   title: () => t("base.APP_NAME"),
 });
-
-onMounted(() => {
-  console.log("App mounted!!");
-});
 </script>
 
 <template>

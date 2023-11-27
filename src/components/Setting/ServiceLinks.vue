@@ -1,13 +1,11 @@
 <script setup lang="ts">
+import { openExternalWebsite } from "@/composables/useIpcHost/useShellIpc";
+
 async function openExternalLink(link: string) {
   if (!link?.startsWith("https://") && !link?.startsWith("http://")) {
     return;
   }
-  const result = await window.ipcRenderer.invoke(
-    "shell::open-external-website",
-    link
-  );
-  if (!result.success) console.log(result.message);
+  openExternalWebsite(link);
 }
 </script>
 <template>

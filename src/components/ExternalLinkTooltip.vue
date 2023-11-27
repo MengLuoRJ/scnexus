@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { openExternalWebsite } from '@/composables/useIpcHost/useShellIpc';
+
 const props = defineProps<{
   link: string;
   clamp?: boolean;
@@ -11,11 +13,7 @@ async function openExternalLink() {
   ) {
     return;
   }
-  const result = await window.ipcRenderer.invoke(
-    "shell::open-external-website",
-    props.link
-  );
-  if (!result.success) console.log(result.message);
+  openExternalWebsite(props.link);
 }
 </script>
 

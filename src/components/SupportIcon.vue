@@ -10,6 +10,7 @@ import DonateAfdianIcon from "@/assets/support-icons/DonateAfdianIcon.vue";
 import DonateBMCIcon from "@/assets/support-icons/DonateBMCIcon.vue";
 import SupportBilibiliIcon from "@/assets/support-icons/SupportBilibiliIcon.vue";
 import SupportQQIcon from "@/assets/support-icons/SupportQQIcon.vue";
+import { openExternalWebsite } from "@/composables/useIpcHost/useShellIpc";
 
 const PresetSupport = {
   social: {
@@ -69,11 +70,7 @@ async function openExternalLink() {
   ) {
     return;
   }
-  const result = await window.ipcRenderer.invoke(
-    "shell::open-external-website",
-    props.link
-  );
-  if (!result.success) console.log(result.message);
+  openExternalWebsite(props.link);
 }
 </script>
 

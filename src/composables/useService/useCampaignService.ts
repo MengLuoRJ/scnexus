@@ -194,3 +194,17 @@ async function uninstallCampaignType(campaign: CampaignType) {
     },
   });
 }
+
+
+export function checkCamapignSwitchable(info: CampaignInformation): boolean {
+  if (!info.campaign) return false;
+  const current = getCampaignActived()[info.campaign];
+  if (!current) return true;
+  if (
+    info.name === current.name &&
+    info.manager === current.manager &&
+    info.version === current.version
+  )
+    return false;
+  return true;
+}

@@ -23,6 +23,7 @@ import {
   recoverCampaign,
   activeNewCampaign,
   uninstallCampaign,
+  checkCamapignSwitchable,
 } from "@/composables/useService/useCampaignService";
 
 import CustomizeDropZone from "@/components/CustomizeDropZone.vue";
@@ -51,19 +52,6 @@ function hookupSwitchDrawer(campaign: CampaignType, info: CampaignInfo) {
   set(switchDrawerCampaignList, getCampaignListType(campaign));
   set(switchDrawerCampaignInfo, info);
   set(switchDrawerActive, true);
-}
-
-function checkCamapignSwitchable(info: CampaignInformation): boolean {
-  if (!info.campaign) return false;
-  const current = get(CAMPAIGN_SET)[info.campaign];
-  if (!current) return true;
-  if (
-    info.name === current.name &&
-    info.manager === current.manager &&
-    info.version === current.version
-  )
-    return false;
-  return true;
 }
 
 async function runGame() {
@@ -799,4 +787,3 @@ onUnmounted(() => {
   opacity: 0;
 }
 </style>
-@/composables/useIpcService/useCampaignIpc@/composables/useIpcService/useCustomizeIpc@/composables/useIpcHost/useSettingService

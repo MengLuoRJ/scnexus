@@ -13,6 +13,7 @@ import GameProfileChecker from "./GameProfileChecker.vue";
 import { useI18n } from "vue-i18n";
 import { unzipCompressFileCCM } from "@/composables/useIpcHost/useCampaignIpc";
 import { ResultUncompress } from "@shared/types/customize";
+import { filesize } from "filesize";
 
 const { t } = useI18n();
 const dialog = useDialog();
@@ -89,6 +90,15 @@ async function processFile(path: string) {
         h(
           "div",
           undefined,
+          "共计：" +
+            compress_info.file_count +
+            "个文件" +
+            " @ " +
+            filesize(compress_info.size, { standard: "jedec" })
+        ),
+        h(
+          "div",
+          undefined,
           t("customize.drop-zone.process-dialog.description-install")
         ),
       ]),
@@ -110,10 +120,25 @@ async function processFile(path: string) {
           title:
             t("customize.drop-zone.process-dialog.message-success-title") +
             metadata.name,
-          content: t(
-            "customize.drop-zone.process-dialog.message-success-content",
-            { count: compress_info.file_count }
-          ),
+          content: () =>
+            h("div", { class: "flex flex-col gap-1" }, [
+              h(
+                "div",
+                undefined,
+                t(
+                  "customize.drop-zone.process-dialog.message-success-content",
+                  {
+                    count: compress_info.file_count,
+                  }
+                )
+              ),
+              h(
+                "div",
+                undefined,
+                "共计占用磁盘空间 " +
+                  filesize(compress_info.size, { standard: "jedec" })
+              ),
+            ]),
           duration: 3000,
         });
       }

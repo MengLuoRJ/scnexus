@@ -1,14 +1,17 @@
-import { app } from 'electron'
-import logger from 'electron-log/main';
+import { app } from "electron";
+import logger from "electron-log/main";
 
-const log_level = app.isPackaged ? 'info' : 'silly';
+export const Logger = logger;
 
-logger.transports.console.level = log_level;
-logger.transports.console.format = '{h}:{i}:{s}.{ms} [SCNexus/main] > {text}';
+export function initLogger() {
+  const log_level = app.isPackaged ? "info" : "silly";
 
-logger.transports.file.level = log_level;
-logger.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] [SCNexus/Main] {text}';
+  Logger.transports.console.level = log_level;
+  Logger.transports.console.format = "{h}:{i}:{s}.{ms} [SCNexus/main] > {text}";
 
-logger.info('Logger Initialized');
+  Logger.transports.file.level = log_level;
+  Logger.transports.file.format =
+    "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] [SCNexus/Main] {text}";
 
-export default logger;
+  Logger.info("Logger Initialized");
+}

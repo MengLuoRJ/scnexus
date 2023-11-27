@@ -1,12 +1,12 @@
 import { app, ipcMain } from "electron";
 import { NsisUpdater } from "electron-updater";
-import logger from "./Logger";
+import { Logger } from "./Logger";
 
 let updater: NsisUpdater;
 
 export function initUpdater(win: Electron.BrowserWindow) {
   if (!app.isPackaged || process.env.NODE_ENV === "development") {
-    logger.info("Updater Unititialized (Not packaged or in development mode)");
+    Logger.info("Updater Unititialized (Not packaged or in development mode)");
     return;
   }
 
@@ -15,12 +15,12 @@ export function initUpdater(win: Electron.BrowserWindow) {
     // requestHeaders: {
     //   "ACS-Referer": "scnexus-client-update",
     // },
-    url: "https://scnexus-updates.mengl.me/update/",
+    url: "https://scnexus-release.mengl.me/release/",
   });
 
-  updater.logger = logger;
+  updater.logger = Logger;
 
-  logger.info("Updater Initialized");
+  Logger.info("Updater Initialized");
 
   // autoUpdater.addAuthHeader(`Bearer ${token}`);
   updater.autoDownload = false;

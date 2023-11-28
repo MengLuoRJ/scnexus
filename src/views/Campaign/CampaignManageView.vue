@@ -8,7 +8,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive, ref, h } from "vue";
 import { filesize } from "filesize";
 import { NImage, NumberAnimationInst } from "naive-ui";
-import CampaignStatChart from "@/components/Campaign/CampaignStatChart.vue"
+import CampaignStatChart from "@/components/Campaign/CampaignStatChart.vue";
 
 import {
   CAMPAIGN_LIST,
@@ -102,9 +102,9 @@ function computeInfoTotal() {
         campaign_stat_total.scnexus[campaign].total_file +=
           item.local.file_count ?? 0;
       } else if (item.manager === "CCM") {
-        campaign_stat_total.ccm[campaign].total_size =
+        campaign_stat_total.ccm[campaign].total_size +=
           item.local.total_size ?? 0;
-        campaign_stat_total.ccm[campaign].total_file =
+        campaign_stat_total.ccm[campaign].total_file +=
           item.local.file_count ?? 0;
       }
     });
@@ -277,20 +277,18 @@ function goCampaignManagrRoot() {
                 <div class="flex flex-row justify-start items-center gap-1">
                   <div class="text-lg">{{ campaign.name }}</div>
                   <n-badge
-                    v-if="!!CAMPAIGN_SET[index]?.version"
+                    v-if="!!campaign.version"
                     :value="
-                      'v' +
-                        CAMPAIGN_SET[index]?.version.match(
-                          /\d+(.\d+)(.\d+)?/g
-                        )?.[0] ?? 'N/A'
+                      'v' + campaign.version.match(/\d+(.\d+)(.\d+)?/g)?.[0] ??
+                      'N/A'
                     "
                   ></n-badge>
                   <n-badge
-                    v-if="CAMPAIGN_SET[index]?.manager !== 'SCNexus'"
+                    v-if="campaign.manager !== 'SCNexus'"
                     type="info"
                     :value="
                       $t('campaign.detail-mode.manager-format', {
-                        manager: CAMPAIGN_SET[index]?.manager,
+                        manager: campaign.manager,
                       })
                     "
                   ></n-badge>
@@ -336,7 +334,9 @@ function goCampaignManagrRoot() {
                       {{ "激活" }}
                     </n-button>
                   </template>
-                  <span v-if="checkCamapignSwitchable(campaign)">{{ "将该战役包激活以便游玩。" }}</span>
+                  <span v-if="checkCamapignSwitchable(campaign)">{{
+                    "将该战役包激活以便游玩。"
+                  }}</span>
                   <span v-else>{{ "该战役包已激活。" }}</span>
                 </n-popover>
                 <n-popover placement="left" trigger="hover" :show-arrow="false">

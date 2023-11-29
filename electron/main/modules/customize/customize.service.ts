@@ -196,20 +196,20 @@ export function readCompressFileInfo(
     compressedSize += entry.header.compressedSize;
     // if (entry.entryName.search(/\p{sc=Han}/gu) > -1) fn_encoding = "gb18030";
 
-    // console.log(entry.name);
-    // console.log(entry.rawEntryName);
-    // console.log(analyse(entry.rawEntryName));
-
-    const encoding = analyse(entry.rawEntryName);
-    if (
-      encoding.some((result) => {
-        return (
-          (result.name === "GB18030" || result.lang === "zh") &&
-          result.confidence >= 10
-        );
-      })
-    )
-      fn_encoding = "gb18030";
+    if (fn_encoding === "utf8") {
+      const encoding = analyse(entry.rawEntryName);
+      if (
+        encoding.some((result) => {
+          return (
+            (result.name === "GB18030" || result.lang === "zh") &&
+            result.confidence >= 10
+          );
+        })
+      ) {
+        fn_encoding = "gb18030";
+        fileRoot = new TextDecoder("gb18030").decode(metadataFile.rawEntryName);
+      }
+    }
   });
 
   return {

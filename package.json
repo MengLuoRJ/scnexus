@@ -1,6 +1,6 @@
 {
   "name": "scnexus-client",
-  "version": "0.0.8",
+  "version": "0.0.11",
   "main": "dist-electron/main/index.js",
   "description": "SCNexus Client",
   "author": "MengLuoRJ <mengluorj@aiurcovenant.net>",

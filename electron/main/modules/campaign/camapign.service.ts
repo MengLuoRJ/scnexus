@@ -45,60 +45,65 @@ import {
 } from "@electron/main/stores/campaign-active";
 import { METADATA_NOT_FOUND, ResultUncompress } from "@shared/types/customize";
 import { zip } from "compressing";
+import { Logger } from "@electron/main/common/Logger";
 
 let window: BrowserWindow | null;
 
 function initCampaignDirectory(): void {
   const customizePaths = getProfileKey("PROFILE_CAMPAIGN");
-  // check if the Mods and Maps path exists, if not, create it
-  if (customizePaths.MODS_ROOT) {
-    const modsRoot = customizePaths.MODS_ROOT;
-    if (!existsSync(modsRoot)) {
-      mkdirSync(modsRoot, { recursive: true });
+  try {
+    // check if the Mods and Maps path exists, if not, create it
+    if (customizePaths.MODS_ROOT) {
+      const modsRoot = customizePaths.MODS_ROOT;
+      if (!existsSync(modsRoot)) {
+        mkdirSync(modsRoot, { recursive: true });
+      }
     }
-  }
-  if (customizePaths.MAPS_ROOT) {
-    const mapsRoot = customizePaths.MAPS_ROOT;
-    if (!existsSync(mapsRoot)) {
-      mkdirSync(mapsRoot, { recursive: true });
+    if (customizePaths.MAPS_ROOT) {
+      const mapsRoot = customizePaths.MAPS_ROOT;
+      if (!existsSync(mapsRoot)) {
+        mkdirSync(mapsRoot, { recursive: true });
+      }
     }
-  }
-  // check if the campaigns path exists, if not, create it
-  if (customizePaths.WOL_ROOT) {
-    const wolRoot = customizePaths.WOL_ROOT;
-    if (!existsSync(wolRoot)) {
-      mkdirSync(wolRoot, { recursive: true });
+    // check if the campaigns path exists, if not, create it
+    if (customizePaths.WOL_ROOT) {
+      const wolRoot = customizePaths.WOL_ROOT;
+      if (!existsSync(wolRoot)) {
+        mkdirSync(wolRoot, { recursive: true });
+      }
     }
-  }
-  if (customizePaths.HOTS_ROOT) {
-    const hotsRoot = customizePaths.HOTS_ROOT;
-    if (!existsSync(hotsRoot)) {
-      mkdirSync(hotsRoot, { recursive: true });
+    if (customizePaths.HOTS_ROOT) {
+      const hotsRoot = customizePaths.HOTS_ROOT;
+      if (!existsSync(hotsRoot)) {
+        mkdirSync(hotsRoot, { recursive: true });
+      }
     }
-  }
-  if (customizePaths.HOTS_EVO_ROOT) {
-    const hotsEvoRoot = customizePaths.HOTS_EVO_ROOT;
-    if (!existsSync(hotsEvoRoot)) {
-      mkdirSync(hotsEvoRoot, { recursive: true });
+    if (customizePaths.HOTS_EVO_ROOT) {
+      const hotsEvoRoot = customizePaths.HOTS_EVO_ROOT;
+      if (!existsSync(hotsEvoRoot)) {
+        mkdirSync(hotsEvoRoot, { recursive: true });
+      }
     }
-  }
-  if (customizePaths.LOTV_ROOT) {
-    const lotvRoot = customizePaths.LOTV_ROOT;
-    if (!existsSync(lotvRoot)) {
-      mkdirSync(lotvRoot, { recursive: true });
+    if (customizePaths.LOTV_ROOT) {
+      const lotvRoot = customizePaths.LOTV_ROOT;
+      if (!existsSync(lotvRoot)) {
+        mkdirSync(lotvRoot, { recursive: true });
+      }
     }
-  }
-  if (customizePaths.LOTV_PRO_ROOT) {
-    const lotvProRoot = customizePaths.LOTV_PRO_ROOT;
-    if (!existsSync(lotvProRoot)) {
-      mkdirSync(lotvProRoot, { recursive: true });
+    if (customizePaths.LOTV_PRO_ROOT) {
+      const lotvProRoot = customizePaths.LOTV_PRO_ROOT;
+      if (!existsSync(lotvProRoot)) {
+        mkdirSync(lotvProRoot, { recursive: true });
+      }
     }
-  }
-  if (customizePaths.NCO_ROOT) {
-    const novaRoot = customizePaths.NCO_ROOT;
-    if (!existsSync(novaRoot)) {
-      mkdirSync(novaRoot, { recursive: true });
+    if (customizePaths.NCO_ROOT) {
+      const novaRoot = customizePaths.NCO_ROOT;
+      if (!existsSync(novaRoot)) {
+        mkdirSync(novaRoot, { recursive: true });
+      }
     }
+  } catch (error) {
+    Logger.error(error);
   }
 }
 
@@ -141,16 +146,22 @@ export async function unzipCompressFileCCM(
 
   let storePath: string = getProfileKey("PROFILE_CAMPAIGN").CCM_ROOT;
   const tempPath = join(storePath, "~scnexus_ccm_uncompress_temp_dir");
-
   const dirName = metadata.name.replace(
     /[\~\!\@\#\$\%\^\&\*\"\|\:\<\>\/\\\\]/g,
     ""
   );
-
   storePath = join(storePath, dirName);
+  
 
-  if (existsSync(storePath)) {
-    rmSync(storePath, { recursive: true });
+  try {
+    if (existsSync(storePath)) {
+      rmSync(storePath, { recursive: true });
+    }
+  } catch (error) {
+    Logger.error(
+      "CAMPAIGN_UNCOMPRESS_CCM: Failed to prepare store path",
+      error
+    );
   }
 
   if (!metadata_root) {
@@ -159,29 +170,41 @@ export async function unzipCompressFileCCM(
         zipFileNameEncoding: compress_info.fn_encoding ?? "utf8",
       })
       .catch((err) => {
-        console.warn(err);
+        Logger.error("CAMPAIGN_UNCOMPRESS_CCM: Uncompress failed", err);
         return {
           success: false,
           error: err,
         };
       });
   } else {
-    mkdirSync(tempPath);
+    if (!existsSync(tempPath)) mkdirSync(tempPath, { recursive: true });
+
+    console.log(metadata_root);
+    console.log(join(tempPath, metadata_root));
+    console.log(storePath);
 
     await zip
       .uncompress(path, tempPath, {
         zipFileNameEncoding: compress_info.fn_encoding ?? "utf8",
       })
       .catch((err) => {
-        console.warn(err);
+        Logger.error("CAMPAIGN_UNCOMPRESS_CCM: Uncompress failed", err);
         return {
           success: false,
           error: err,
         };
       });
 
-    renameSync(join(tempPath, metadata_root), storePath);
-    rmSync(tempPath, { recursive: true });
+    try {
+      renameSync(join(tempPath, metadata_root, '..'), storePath);
+    } catch (error) {
+      Logger.error(
+        "CAMPAIGN_UNCOMPRESS_CCM: Failed to post process dirctory",
+        error
+      );
+    }
+
+    // if (existsSync(tempPath)) rmSync(tempPath, { recursive: true });
   }
 
   return {

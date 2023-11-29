@@ -11,7 +11,7 @@ import { useHead } from "@unhead/vue";
 const localeStore = useLocaleStore();
 const locale = useLocale();
 
-localeStore.initLocale();
+await localeStore.initLocale();
 
 const { t } = useI18n();
 

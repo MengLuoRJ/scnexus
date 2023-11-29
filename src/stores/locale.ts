@@ -1,3 +1,4 @@
+import { getPreferredSystemLanguages } from "@/composables/useIpcHost/useAppIpc";
 import { useLocale } from "@/composables/useTrans";
 import { get, set, usePreferredLanguages } from "@vueuse/core";
 import { defineStore } from "pinia";
@@ -10,14 +11,14 @@ export const AVAILABLE = [
     value: "简体中文",
     cmpt: "zh-CN",
     status: "原生",
-    progress: '100%'
+    progress: "100%",
   },
   {
     key: "en",
     value: "English",
     cmpt: "en-US",
     status: "WIP",
-    progress: '1%'
+    progress: "1%",
   },
 ] as const;
 
@@ -39,8 +40,8 @@ export const useLocaleStore = defineStore(
       }
     };
 
-    const initLocale = () => {
-      const preferred = get(usePreferredLanguages());
+    const initLocale = async () => {
+      const preferred = await getPreferredSystemLanguages();
       const suiable = preferred.find((i) =>
         AVAILABLE.some(
           (j) => j.key === i || j.cmpt === i || j.key === i.split("-")[0]

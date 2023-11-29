@@ -13,4 +13,7 @@ export function initAppIpc() {
   ipcMain.handle("app::get-locale-country-code", () => {
     return app.getLocaleCountryCode();
   });
+  ipcMain.handle("app::get-preferred-system-languages", () => {
+    return app.getPreferredSystemLanguages();
+  });
 }

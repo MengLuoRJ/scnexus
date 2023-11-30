@@ -2,16 +2,14 @@ import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import { release } from "node:os";
 import { join } from "node:path";
 import { initService } from "./modules/init";
-import { initTray } from "./common/tray";
-import { initShellIpc } from "./common/shell";
-import { initDialogIpc } from "./common/dialog";
-import { initAppIpc } from "./common/app";
-import { initUpdater } from "./common/Updater";
-import { initDeepLink } from "./common/DeepLink";
-import { initLogger } from "./common/Logger";
+import { initLogger } from "./utils/logger";
+import { initCommom, initCommomWithWindow } from "./common";
+import { initSentry } from "./utils/sentry";
 
 // init electron-log
 initLogger();
+// init Sentry main
+initSentry();
 
 // The built directory structure
 // ├─┬ dist-electron
@@ -100,24 +98,17 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
-
   Menu.setApplicationMenu(null);
 
   // Initialize key common modules
-  initAppIpc();
-  initShellIpc();
-  initDialogIpc();
-  // initTray();
+  initCommom();
 
   // Create the main window when the application is ready
   await createWindow();
 
   if (win) {
     await initService(win);
-
-    initDeepLink(win);
-
-    initUpdater(win);
+    initCommomWithWindow(win);
   }
 });
 

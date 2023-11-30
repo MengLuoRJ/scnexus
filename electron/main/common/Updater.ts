@@ -1,6 +1,6 @@
 import { app, ipcMain } from "electron";
 import { NsisUpdater } from "electron-updater";
-import { Logger } from "./Logger";
+import { Logger } from "../utils/logger";
 
 let updater: NsisUpdater;
 

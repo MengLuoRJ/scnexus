@@ -1,4 +1,4 @@
-import { OpenDialogSyncOptions, dialog, ipcMain, shell } from "electron";
+import { OpenDialogSyncOptions, dialog, ipcMain } from "electron";
 
 export function initDialogIpc() {
   ipcMain.handle(

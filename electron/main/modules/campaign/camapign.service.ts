@@ -45,7 +45,7 @@ import {
 } from "@electron/main/stores/campaign-active";
 import { METADATA_NOT_FOUND, ResultUncompress } from "@shared/types/customize";
 import { zip } from "compressing";
-import { Logger } from "@electron/main/common/Logger";
+import { Logger } from "@electron/main/utils/logger";
 
 let window: BrowserWindow | null;
 
@@ -151,7 +151,6 @@ export async function unzipCompressFileCCM(
     ""
   );
   storePath = join(storePath, dirName);
-  
 
   try {
     if (existsSync(storePath)) {
@@ -162,6 +161,10 @@ export async function unzipCompressFileCCM(
       "CAMPAIGN_UNCOMPRESS_CCM: Failed to prepare store path",
       error
     );
+    return {
+      success: false,
+      error: error as string,
+    };
   }
 
   if (!metadata_root) {
@@ -179,9 +182,9 @@ export async function unzipCompressFileCCM(
   } else {
     if (!existsSync(tempPath)) mkdirSync(tempPath, { recursive: true });
 
-    console.log(metadata_root);
-    console.log(join(tempPath, metadata_root));
-    console.log(storePath);
+    // console.log(metadata_root);
+    // console.log(join(tempPath, metadata_root));
+    // console.log(storePath);
 
     await zip
       .uncompress(path, tempPath, {
@@ -196,12 +199,16 @@ export async function unzipCompressFileCCM(
       });
 
     try {
-      renameSync(join(tempPath, metadata_root, '..'), storePath);
+      renameSync(join(tempPath, metadata_root, ".."), storePath);
     } catch (error) {
       Logger.error(
         "CAMPAIGN_UNCOMPRESS_CCM: Failed to post process dirctory",
         error
       );
+      return {
+        success: false,
+        error: error as string,
+      };
     }
 
     // if (existsSync(tempPath)) rmSync(tempPath, { recursive: true });

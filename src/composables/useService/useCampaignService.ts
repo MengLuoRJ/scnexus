@@ -9,7 +9,7 @@ import {
 import { useCamapignStore } from "@/stores/campaign";
 import { createDiscreteApi, useDialog, useNotification } from "naive-ui";
 import { CampaignInformation, CampaignType } from "@shared/types";
-import { toRaw } from "vue";
+import { computed, toRaw } from "vue";
 import { useCampaignActiveStore } from "@/stores/campaign-active";
 import { i18n } from "@/locales";
 const { t } = i18n.global;
@@ -36,32 +36,36 @@ export type CampaignInfo = {
   background?: string;
 };
 
-export const CAMPAIGN_LIST = {
-  WOL: {
-    name: t("campaign.WOL.name"),
-    logo: WOL_LOGO,
-    thumbnail: WOL_Thumbnail,
-    // banner: WOL_Banner,
-  },
-  HOTS: {
-    name: t("campaign.HOTS.name"),
-    logo: HOTS_LOGO,
-    thumbnail: HOTS_Thumbnail,
-    // banner: HOTS_Banner,
-  },
-  LOTV: {
-    name: t("campaign.LOTV.name"),
-    logo: LOTV_LOGO,
-    thumbnail: LOTV_Thumbnail,
-    // banner: LOTV_Banner,
-  },
-  NCO: {
-    name: t("campaign.NCO.name"),
-    logo: NCO_LOGO,
-    thumbnail: Campaign_thumbnail,
-    // banner: NCO_Banner,
-  },
-} as Record<CampaignType, CampaignInfo>;
+export const CAMPAIGN_LIST = computed(
+  (): Record<CampaignType, CampaignInfo> => {
+    return {
+      WOL: {
+        name: t("campaign.WOL.name"),
+        logo: WOL_LOGO,
+        thumbnail: WOL_Thumbnail,
+        // banner: WOL_Banner,
+      },
+      HOTS: {
+        name: t("campaign.HOTS.name"),
+        logo: HOTS_LOGO,
+        thumbnail: HOTS_Thumbnail,
+        // banner: HOTS_Banner,
+      },
+      LOTV: {
+        name: t("campaign.LOTV.name"),
+        logo: LOTV_LOGO,
+        thumbnail: LOTV_Thumbnail,
+        // banner: LOTV_Banner,
+      },
+      NCO: {
+        name: t("campaign.NCO.name"),
+        logo: NCO_LOGO,
+        thumbnail: Campaign_thumbnail,
+        // banner: NCO_Banner,
+      },
+    };
+  }
+);
 
 const { dialog, notification } = useDiscreteApi(["dialog", "notification"]);
 
@@ -152,7 +156,7 @@ export async function uninstallCampaign(
       updateCampaignActived();
       notification.info({
         title: t("campaign.message.campaign-recovered", {
-          campaign: CAMPAIGN_LIST[campaignInformation.campaign!].name,
+          campaign: get(CAMPAIGN_LIST)[campaignInformation.campaign!].name,
         }),
         duration: 3000,
       });
@@ -182,7 +186,8 @@ async function uninstallCampaignType(campaign: CampaignType) {
       await clearCampaignFiles(current.campaign!);
       updateCampaignActived();
       notification.info({
-        title: "已成功恢复 " + CAMPAIGN_LIST[current.campaign!].name + " 战役",
+        title:
+          "已成功恢复 " + get(CAMPAIGN_LIST)[current.campaign!].name + " 战役",
         duration: 3000,
       });
       await uninstallCampaignFiles(toRaw(current));
@@ -194,7 +199,6 @@ async function uninstallCampaignType(campaign: CampaignType) {
     },
   });
 }
-
 
 export function checkCamapignSwitchable(info: CampaignInformation): boolean {
   if (!info.campaign) return false;

@@ -25,7 +25,6 @@
     "types": [
       "vite/client",
       "naive-ui/volar",
-      "@intlify/unplugin-vue-i18n/messages"
     ]
   },
   "include": ["shared", "electron", "src", "electron/electron-env.d.ts"],

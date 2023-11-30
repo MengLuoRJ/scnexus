@@ -11,14 +11,15 @@ import { useHead } from "@unhead/vue";
 const localeStore = useLocaleStore();
 const locale = useLocale();
 
-await localeStore.initLocale();
-
 const { t } = useI18n();
-
-set(locale, get(localeStore.current));
 
 useHead({
   title: () => t("base.APP_NAME"),
+});
+
+onMounted(async () => {
+  await localeStore.initLocale();
+  set(locale, get(localeStore.current));
 });
 </script>
 

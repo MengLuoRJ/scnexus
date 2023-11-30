@@ -7,16 +7,16 @@ import { ref } from "vue";
 export type LOCALE = "en" | "zh";
 export const AVAILABLE = [
   {
-    key: "zh",
+    key: "zh" as LOCALE,
     value: "简体中文",
-    cmpt: "zh-CN",
+    cmpt: ["zh-CN", "zh-TW", "zh-Hans-CN", "zh-Hant-CN"],
     status: "原生",
     progress: "100%",
   },
   {
-    key: "en",
+    key: "en" as LOCALE,
     value: "English",
-    cmpt: "en-US",
+    cmpt: ["en-US", "en-GB"],
     status: "WIP",
     progress: "1%",
   },
@@ -42,13 +42,21 @@ export const useLocaleStore = defineStore(
 
     const initLocale = async () => {
       const preferred = await getPreferredSystemLanguages();
-      const suiable = preferred.find((i) =>
-        AVAILABLE.some(
-          (j) => j.key === i || j.cmpt === i || j.key === i.split("-")[0]
-        )
-      );
-      if (suiable && suiable !== get(current)) {
-        setLocale(suiable as LOCALE);
+      let suitable: LOCALE = get(current);
+      preferred.find((i) => {
+        const j = AVAILABLE.find(
+          (k) =>
+            k.key === i ||
+            k.cmpt.some((l) => l === i) ||
+            k.key === i.split("-")[0]
+        );
+        if (j) {
+          suitable = j.key;
+          return true;
+        } return false;
+      });
+      if (suitable && suitable !== get(current)) {
+        setLocale(suitable);
       }
     };
 

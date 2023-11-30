@@ -7,5 +7,8 @@ declare namespace NodeJS {
     DIST: string
     /** /dist/ or /public/ */
     PUBLIC: string
+    VITE_SENTRY_DSN: string
+    VITE_SENTRY_TRACING_TARGETS: string
+    VITE_SENTRY_SUBMIT_URL: string
   }
 }

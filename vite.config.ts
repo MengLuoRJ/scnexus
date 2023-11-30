@@ -1,6 +1,5 @@
 import { rmSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { resolve, dirname } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 // import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
@@ -9,23 +8,25 @@ import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { unheadVueComposablesImports } from '@unhead/vue'
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
-// import viteSentry, { type ViteSentryPluginOptions } from "vite-plugin-sentry";
+import viteSentry, { type ViteSentryPluginOptions } from "vite-plugin-sentry";
 import electron from "vite-plugin-electron";
-import renderer from "vite-plugin-electron-renderer";
+// import renderer from "vite-plugin-electron-renderer";
 import pkg from "./package.json";
 
-// const sentryConfig: ViteSentryPluginOptions = {
-//   configFile: "./.sentryclirc",
-//   // legacyErrorHandlingMode: true, <- warn about sentry errors instead of fail
-//   deploy: {
-//     env: "production",
-//   },
-//   sourceMaps: {
-//     include: ["./dist/assets"],
-//     ignore: ["node_modules"],
-//     urlPrefix: "~/assets",
-//   },
-// };
+const sentryConfig: ViteSentryPluginOptions = {
+  org: "aiurcovenant",
+  project: "scnexus",
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  // legacyErrorHandlingMode: true, <- warn about sentry errors instead of fail
+  deploy: {
+    env: "production",
+  },
+  sourceMaps: {
+    include: ["./dist/assets"],
+    ignore: ["node_modules"],
+    urlPrefix: "~/assets",
+  },
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -33,7 +34,7 @@ export default defineConfig(({ command }) => {
 
   const isServe = command === "serve";
   const isBuild = command === "build";
-  const sourcemap = isServe || !!process.env.VSCODE_DEBUG;
+  const sourcemap = isServe || isBuild || !!process.env.VSCODE_DEBUG;
 
   return {
     define: {
@@ -63,7 +64,7 @@ export default defineConfig(({ command }) => {
       Components({
         resolvers: [NaiveUiResolver()],
       }),
-      // viteSentry(sentryConfig),
+      viteSentry(sentryConfig),
       electron([
         {
           // Main-Process entry file of the Electron App.

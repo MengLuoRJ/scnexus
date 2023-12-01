@@ -1,4 +1,4 @@
-import { OpenDialogSyncOptions, dialog, ipcMain } from "electron";
+import { OpenDialogOptions, OpenDialogSyncOptions, dialog, ipcMain } from "electron";
 
 export function initDialogIpc() {
   ipcMain.handle(
@@ -9,7 +9,7 @@ export function initDialogIpc() {
   );
   ipcMain.handle(
     "dialog::show-open-dialog",
-    (e, options: OpenDialogSyncOptions) => {
+    (e, options: OpenDialogOptions) => {
       return dialog.showOpenDialog(options);
     }
   );

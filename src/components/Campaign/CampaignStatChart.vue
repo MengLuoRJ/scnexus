@@ -42,7 +42,7 @@ onMounted(() => {
     //   orient: "vertical",
     //   right: "right",
     //   data: ["WOL", "HOTS", "LOTV", "NCO"],
-    //   formatter: (name) => CAMPAIGN_LIST[name as CampaignType].name,
+    //   formatter: (name) => get(CAMPAIGN_LIST)[name as CampaignType].name,
     // },
     series: [
       {
@@ -73,7 +73,7 @@ onMounted(() => {
           formatter: ({ name, value, percent }) => {
             return (
               `{${name}|}` +
-              `${CAMPAIGN_LIST[name as CampaignType].name}` +
+              `${get(CAMPAIGN_LIST)[name as CampaignType].name}` +
               ` (${percent}%)` +
               "\n" +
               `@ ${filesize(Number(value), { standard: "jedec" })}`
@@ -83,25 +83,25 @@ onMounted(() => {
             WOL: {
               height: 18,
               backgroundColor: {
-                image: CAMPAIGN_LIST["WOL"].thumbnail,
+                image: get(CAMPAIGN_LIST)["WOL"].thumbnail,
               },
             },
             HOTS: {
               height: 18,
               backgroundColor: {
-                image: CAMPAIGN_LIST["HOTS"].thumbnail,
+                image: get(CAMPAIGN_LIST)["HOTS"].thumbnail,
               },
             },
             LOTV: {
               height: 18,
               backgroundColor: {
-                image: CAMPAIGN_LIST["LOTV"].thumbnail,
+                image: get(CAMPAIGN_LIST)["LOTV"].thumbnail,
               },
             },
             NCO: {
               height: 18,
               backgroundColor: {
-                image: CAMPAIGN_LIST["NCO"].thumbnail,
+                image: get(CAMPAIGN_LIST)["NCO"].thumbnail,
               },
             },
           },

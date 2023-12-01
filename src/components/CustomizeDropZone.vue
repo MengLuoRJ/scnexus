@@ -1,43 +1,55 @@
 <script setup lang="ts">
 import { get, set, useDropZone } from "@vueuse/core";
-import { ref, h, onMounted, onUnmounted } from "vue";
-import { useDialog, useMessage, useNotification } from "naive-ui";
+import { ref, h } from "vue";
+import { useDialog, useNotification } from "naive-ui";
 import {
   readCompressFileInfo,
   installCompressFile,
 } from "@/composables/useIpcHost/useCustomizeIpc";
-import { getProfile } from "@/composables/useIpcHost/useSettingIpc";
-import { LocalProfile } from "@shared/types/profile";
 import { emiiterEmit, emiiterOff, emiiterOn } from "@/composables/useMitt";
 import GameProfileChecker from "./GameProfileChecker.vue";
 import { useI18n } from "vue-i18n";
 import { unzipCompressFileCCM } from "@/composables/useIpcHost/useCampaignIpc";
 import { ResultUncompress } from "@shared/types/customize";
 import { filesize } from "filesize";
+import { showOpenDialog } from "@/composables/useIpcHost/useDialogIpc";
+import { useLocalProfileStore } from "@/stores/local-profile";
+import { storeToRefs } from "pinia";
 
 const { t } = useI18n();
 const dialog = useDialog();
 const notification = useNotification();
 
-const settingProfile = ref<LocalProfile>();
-
-async function getLocalProfile() {
-  const profile = await getProfile();
-  set(settingProfile, profile);
-}
+const localProfileStore = useLocalProfileStore();
+const { SUCCESS } = storeToRefs(localProfileStore);
 
 const dropZoneRef = ref<HTMLDivElement>();
 
 async function onDrop(files: File[] | null) {
-  if (!get(settingProfile)?.SUCCESS) {
-    notification.error({
-      title: t("customize.drop-zone.no-game-message.title"),
-      content: t("customize.drop-zone.no-game-message.content"),
-      duration: 2000,
-    });
+  if (!get(SUCCESS)) {
     return;
   }
   await processFile(files?.[0].path!);
+}
+
+async function onClick() {
+  if (!get(SUCCESS)) {
+    return;
+  }
+
+  const { filePaths } = await showOpenDialog({
+    title: t("customize.drop-zone.select-file-title"),
+    properties: ["openFile"],
+    filters: [
+      { name: "SCNexus Compressed File", extensions: ["zip"] },
+      { name: "CCM Compressed File", extensions: ["zip"] },
+      { name: "ZIP Compressed File", extensions: ["zip"] },
+    ],
+  });
+
+  if (!filePaths) return;
+
+  processFile(filePaths[0]);
 }
 
 async function processFile(path: string) {
@@ -147,26 +159,16 @@ async function processFile(path: string) {
 }
 
 const { isOverDropZone } = useDropZone(dropZoneRef, onDrop);
-
-onMounted(async () => {
-  await getLocalProfile();
-
-  emiiterOn("customize-profile-changed", async () => {
-    await getLocalProfile();
-  });
-});
-
-onUnmounted(() => {
-  emiiterOff("customize-profile-changed", async () => {
-    await getLocalProfile();
-  });
-});
 </script>
 
 <template>
-  <div class="cell-hoverable py-3 bg-gray-100 cursor-pointer" ref="dropZoneRef">
+  <div
+    class="cell-hoverable py-3 bg-gray-100 cursor-pointer"
+    ref="dropZoneRef"
+    @click="onClick"
+  >
     <div
-      v-if="settingProfile?.SUCCESS"
+      v-if="SUCCESS"
       class="w-full h-8 flex flex-col justify-center items-center gap-y-2"
     >
       <div
@@ -196,4 +198,3 @@ onUnmounted(() => {
     <GameProfileChecker v-else />
   </div>
 </template>
-@/composables/useIpcService/useCampaignIpc@/composables/useIpcService/useCustomizeIpc@/composables/useIpcHost/useSettingService

@@ -40,7 +40,7 @@
     "oneClick": false,
     "perMachine": true,
     "allowToChangeInstallationDirectory": true,
-    "deleteAppDataOnUninstall": false,
+    "deleteAppDataOnUninstall": true,
     "installerLanguages": ["zh_CN", "en_US"]
   },
   "appx": {

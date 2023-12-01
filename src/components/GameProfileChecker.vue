@@ -1,54 +1,33 @@
 <script setup lang="ts">
 import { showOpenDialogSync } from "@/composables/useIpcHost/useDialogIpc";
-import {
-  getProfile,
-  initProfile,
-} from "@/composables/useIpcHost/useSettingIpc";
-import { emiiterEmit, emiiterOff, emiiterOn } from "@/composables/useMitt";
-import { LocalProfile } from "@shared/types/profile";
-import { get, set } from "@vueuse/core";
-import { onMounted, ref, h } from "vue";
+import { useLocalProfileStore } from "@/stores/local-profile";
+import { storeToRefs } from "pinia";
 
-const settingProfile = ref<LocalProfile>();
+const localProfileStore = useLocalProfileStore();
+const { SUCCESS, ERROR_MESSAGE } = storeToRefs(localProfileStore);
 
 async function hookupPathSelector(autodetect?: boolean) {
   if (!!autodetect) {
-    const profile = await initProfile();
-    set(settingProfile, profile);
+    await localProfileStore.initProfile();
   } else {
     const path = await showOpenDialogSync({
       title: "选择游戏根目录",
       properties: ["openDirectory", "dontAddToRecent"],
     });
-    if (!path) {
+    if (path) {
+      await localProfileStore.initProfile(path[0]);
     }
-    const profile = await initProfile(path[0]);
-    set(settingProfile, profile);
-  }
-  if (get(settingProfile)?.SUCCESS) {
-    emiiterEmit("customize-profile-changed");
   }
 }
-
-async function getLocalProfile() {
-  const profile = await getProfile();
-  set(settingProfile, profile);
-}
-
-onMounted(async () => {
-  await getLocalProfile();
-});
 </script>
 <template>
   <n-alert
-    :type="settingProfile?.SUCCESS ? 'success' : 'warning'"
-    :title="settingProfile?.SUCCESS ? '已成功设置' : '游戏尚未成功设置'"
+    :type="SUCCESS ? 'success' : 'warning'"
+    :title="SUCCESS ? '已成功设置' : '游戏尚未成功设置'"
   >
     <div class="flex flex-col justify-center gap-1">
       <div>
-        {{
-          settingProfile?.SUCCESS ? "已成功设置" : settingProfile?.ERROR_MESSAGE
-        }}
+        {{ SUCCESS ? "已成功设置" : ERROR_MESSAGE }}
       </div>
       <div class="ml--1 flex flex-row justify-start items-center gap-1">
         <n-popover trigger="hover" style="max-width: 200px" :show-arrow="false">
@@ -57,7 +36,7 @@ onMounted(async () => {
               {{ "手动设置" }}
             </n-button>
           </template>
-          <div class="text-xs">{{ "111" }}</div>
+          <div class="text-xs">{{ "手动选择游戏根目录" }}</div>
         </n-popover>
         <n-popover trigger="hover" style="max-width: 200px" :show-arrow="false">
           <template #trigger>
@@ -69,7 +48,7 @@ onMounted(async () => {
               {{ "自动检测" }}
             </n-button>
           </template>
-          <div class="text-xs">{{ "111" }}</div>
+          <div class="text-xs">{{ "根据系统注册表自动获取游戏根目录" }}</div>
         </n-popover>
       </div>
     </div>

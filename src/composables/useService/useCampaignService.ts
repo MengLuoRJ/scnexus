@@ -152,14 +152,14 @@ export async function uninstallCampaign(
     positiveText: "确认删除",
     onPositiveClick: async () => {
       d.loading = true;
-      await clearCampaignFiles(campaignInformation.campaign!);
-      updateCampaignActived();
-      notification.info({
-        title: t("campaign.message.campaign-recovered", {
-          campaign: get(CAMPAIGN_LIST)[campaignInformation.campaign!].name,
-        }),
-        duration: 3000,
-      });
+      // await clearCampaignFiles(campaignInformation.campaign!);
+      // updateCampaignActived();
+      // notification.info({
+      //   title: t("campaign.message.campaign-recovered", {
+      //     campaign: get(CAMPAIGN_LIST)[campaignInformation.campaign!].name,
+      //   }),
+      //   duration: 3000,
+      // });
       await uninstallCampaignFiles(toRaw(campaignInformation));
       await updateCampaignList();
       notification.info({

@@ -9,57 +9,80 @@ async function openExternalLink(link: string) {
 }
 </script>
 <template>
-  <div class="flex flex-row justify-start items-center gap-2">
-    <n-button
-      @click="openExternalLink('https://scnexus.aiurcovenant.net/')"
-      text
-    >
-      <div>
-        {{ "官网指南" }}
-      </div>
-      <div class="text-sm i-tabler:external-link" />
-    </n-button>
-    <n-button
-      @click="
-        openExternalLink(
-          'https://scnexus.aiurcovenant.net/guide/#%E4%BA%A4%E6%B5%81%E7%A4%BE%E5%8C%BA'
-        )
-      "
-      text
-    >
-      <div>
-        {{ "交流社群" }}
-      </div>
-      <div class="text-sm i-tabler:external-link" />
-    </n-button>
-    <n-button
-      @click="openExternalLink('https://scnexus.aiurcovenant.net/sponsor.html')"
-      text
-    >
-      <div>
-        {{ "赞助支持" }}
-      </div>
-      <div class="text-sm i-tabler:external-link" />
-    </n-button>
-    <n-button
-      @click="openExternalLink('https://scnexus.aiurcovenant.net/terms.html')"
-      text
-    >
-      <div>
-        {{ "用户协议" }}
-      </div>
-      <div class="text-sm i-tabler:external-link" />
-    </n-button>
-    <n-button
-      @click="
-        openExternalLink('https://scnexus.aiurcovenant.net/privacy-policy.html')
-      "
-      text
-    >
-      <div>
-        {{ "隐私政策" }}
-      </div>
-      <div class="text-sm i-tabler:external-link" />
-    </n-button>
+  <div class="service flex flex-col justify-start gap-1">
+    <div class="flex flex-row justify-start items-center gap-2">
+      <n-button
+        @click="openExternalLink('https://scnexus.aiurcovenant.net/')"
+        text
+      >
+        <div>
+          {{ "官网指南" }}
+        </div>
+        <div class="text-sm i-tabler:external-link" />
+      </n-button>
+      <n-button
+        @click="
+          openExternalLink(
+            'https://scnexus.aiurcovenant.net/guide/#%E4%BA%A4%E6%B5%81%E7%A4%BE%E5%8C%BA'
+          )
+        "
+        text
+      >
+        <div>
+          {{ "交流社群" }}
+        </div>
+        <div class="text-sm i-tabler:external-link" />
+      </n-button>
+      <n-button
+        @click="
+          openExternalLink('https://scnexus.aiurcovenant.net/sponsor.html')
+        "
+        text
+      >
+        <div>
+          {{ "赞助支持" }}
+        </div>
+        <div class="text-sm i-tabler:external-link" />
+      </n-button>
+      <n-button
+        @click="openExternalLink('https://scnexus.aiurcovenant.net/terms.html')"
+        text
+      >
+        <div>
+          {{ "用户协议" }}
+        </div>
+        <div class="text-sm i-tabler:external-link" />
+      </n-button>
+      <n-button
+        @click="
+          openExternalLink(
+            'https://scnexus.aiurcovenant.net/privacy-policy.html'
+          )
+        "
+        text
+      >
+        <div>
+          {{ "隐私政策" }}
+        </div>
+        <div class="text-sm i-tabler:external-link" />
+      </n-button>
+    </div>
+    <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" dashed />
+    <div class="flex flex-row justify-start items-center">
+      <div>{{ "遇到任何问题需要帮助？请访问" }}</div>
+      <n-button
+        @click="
+          openExternalLink(
+            'https://scnexus.aiurcovenant.net/guide/#%E4%BA%A4%E6%B5%81%E7%A4%BE%E5%8C%BA'
+          )
+        "
+        text
+      >
+        <div>
+          {{ "交流社群" }}
+        </div>
+        <div class="text-sm i-tabler:external-link" />
+      </n-button>
+    </div>
   </div>
 </template>

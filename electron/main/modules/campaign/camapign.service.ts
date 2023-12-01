@@ -200,6 +200,7 @@ export async function unzipCompressFileCCM(
 
     try {
       renameSync(join(tempPath, metadata_root, ".."), storePath);
+      if (existsSync(tempPath)) rmSync(tempPath, { recursive: true });
     } catch (error) {
       Logger.error(
         "CAMPAIGN_UNCOMPRESS_CCM: Failed to post process dirctory",
@@ -210,8 +211,6 @@ export async function unzipCompressFileCCM(
         error: error as string,
       };
     }
-
-    // if (existsSync(tempPath)) rmSync(tempPath, { recursive: true });
   }
 
   return {

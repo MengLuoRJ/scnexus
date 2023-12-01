@@ -4,12 +4,13 @@ import { type NotificationOptions } from "naive-ui";
 import { useLocaleStore } from "@/stores/locale";
 
 export function useNotification(
-  options: NotificationOptions & { readonly title: string }
+  options: NotificationOptions & { readonly title: string, readonly body: string }
 ) {
   const { notification } = useDiscreteApi(["notification"]);
   const localeStore = useLocaleStore();
   const { isSupported, show, close, onClick, onClose } = useWebNotification({
     title: options.title,
+    body: options.body,
     dir: "auto",
     lang: localeStore.getCurrent()?.key,
     renotify: true,

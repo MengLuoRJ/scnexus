@@ -29,6 +29,7 @@ export function getAvailable(local: LOCALE) {
 export const useLocaleStore = defineStore(
   "locale",
   () => {
+    const INITIALIZED = ref(false);
     const current = ref<LOCALE>("en");
     const availables = ref(AVAILABLE);
 
@@ -41,6 +42,8 @@ export const useLocaleStore = defineStore(
     };
 
     const initLocale = async () => {
+      if (INITIALIZED.value) return;
+
       const preferred = await getPreferredSystemLanguages();
       let suitable: LOCALE = get(current);
       preferred.find((i) => {
@@ -53,10 +56,12 @@ export const useLocaleStore = defineStore(
         if (j) {
           suitable = j.key;
           return true;
-        } return false;
+        }
+        return false;
       });
       if (suitable && suitable !== get(current)) {
         setLocale(suitable);
+        INITIALIZED.value = true;
       }
     };
 

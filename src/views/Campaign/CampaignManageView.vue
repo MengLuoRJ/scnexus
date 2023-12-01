@@ -142,7 +142,7 @@ function goCampaignManagrRoot() {
           {{ $t("campaign.campaign-manager-title") }}
         </div>
         <div>{{ " / " }}</div>
-        <div>{{ "详细管理" }}</div>
+        <div>{{ $t("campaign.campaign-detail-management") }}</div>
       </div>
       <div class="operation flex flex-row justify-end items-center gap-1">
         <n-button
@@ -159,7 +159,7 @@ function goCampaignManagrRoot() {
         class="stat-title flex justify-between items-center cursor-pointer"
         @click="handleCampaignStatCollapse"
       >
-        <div>{{ "统计信息" }}</div>
+        <div>{{ $t("campaign.campaign-stat.total-stat-title") }}</div>
         <div
           v-if="!showCampaignStat"
           class="text-xl i-tabler:square-chevron-left"
@@ -179,10 +179,10 @@ function goCampaignManagrRoot() {
               :to="campaign_stat_total.total_campaign"
             />
             <template #prefix>
-              <span class="text-sm">{{ "已安装" }}</span>
+              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-campaigns-prefix") }}</span>
             </template>
             <template #suffix>
-              <span class="text-sm">{{ "个「战役·模组/战役包」" }}</span>
+              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-campaigns-suffix") }}</span>
             </template>
           </n-statistic>
           <n-divider vertical />
@@ -193,10 +193,10 @@ function goCampaignManagrRoot() {
               :to="campaign_stat_total.total_file"
             />
             <template #prefix>
-              <span class="text-sm">{{ "共计" }}</span>
+              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-filecount-prefix") }}</span>
             </template>
             <template #suffix>
-              <span class="text-sm">{{ "个文件" }}</span>
+              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-filecount-prefix") }}</span>
             </template>
           </n-statistic>
           <n-divider vertical />
@@ -212,7 +212,7 @@ function goCampaignManagrRoot() {
               "
             />
             <template #prefix>
-              <span class="text-sm">{{ "共占用" }}</span>
+              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-filesize-prefix") }}</span>
             </template>
             <template #suffix>
               <span>
@@ -223,7 +223,7 @@ function goCampaignManagrRoot() {
                   }).symbol
                 }}
               </span>
-              <span class="ml-1 text-sm">{{ "磁盘空间" }}</span>
+              <span class="ml-1 text-sm">{{ $t("campaign.campaign-stat.stat-filesize-suffix") }}</span>
             </template>
           </n-statistic>
         </div>
@@ -234,7 +234,7 @@ function goCampaignManagrRoot() {
       </n-collapse-transition>
     </div>
     <div class="campaign-list-management mt-2 cell-normal">
-      <div>{{ "已安装战役·模组" }}</div>
+      <div>{{ $t("campaign.detail-management.detail-management-title") }}</div>
       <n-tabs type="line" animated>
         <n-tab-pane
           v-for="(item, index) in CAMPAIGN_LIST"
@@ -287,24 +287,33 @@ function goCampaignManagrRoot() {
                     v-if="campaign.manager !== 'SCNexus'"
                     type="info"
                     :value="
-                      $t('campaign.detail-mode.manager-format', {
+                      $t('campaign.detail-management.ccm-format', {
                         manager: campaign.manager,
                       })
                     "
                   ></n-badge>
                 </div>
                 <div class="text-sm">
-                  <span class="text-xs text-gray">{{ "作者：" }}</span>
+                  <span class="text-xs text-gray">
+                    {{ $t("campaign.detail-management.author") }}
+                  </span>
                   <span>{{ campaign.author }}</span>
                 </div>
                 <div class="text-sm">
-                  <span class="text-xs text-gray">{{ "描述：" }}</span>
+                  <span class="text-xs text-gray">
+                    {{ $t("campaign.detail-management.description") }}
+                  </span>
                   <span>{{ campaign.description }}</span>
                 </div>
                 <div v-if="campaign.local" class="text-xs mt-1">
-                  <span class="text-gray">{{ "文件信息：" }}</span>
+                  <span class="text-gray">
+                    {{ $t("campaign.detail-management.file-info") }}
+                  </span>
                   <span v-if="campaign.local.file_count">
-                    {{ campaign.local.file_count + "个文件" }}
+                    {{
+                      campaign.local.file_count +
+                      $t("campaign.detail-management.file-info-text")
+                    }}
                   </span>
                   <span v-if="campaign.local.total_size">
                     {{
@@ -331,13 +340,19 @@ function goCampaignManagrRoot() {
                       "
                       :disabled="!checkCamapignSwitchable(campaign)"
                     >
-                      {{ "激活" }}
+                      {{ $t("campaign.detail-management.active-campaign") }}
                     </n-button>
                   </template>
-                  <span v-if="checkCamapignSwitchable(campaign)">{{
-                    "将该战役包激活以便游玩。"
-                  }}</span>
-                  <span v-else>{{ "该战役包已激活。" }}</span>
+                  <span v-if="checkCamapignSwitchable(campaign)">
+                    {{ $t("campaign.detail-management.active-campaign-tip") }}
+                  </span>
+                  <span v-else>
+                    {{
+                      $t(
+                        "campaign.detail-management.active-campaign-tip-actived"
+                      )
+                    }}
+                  </span>
                 </n-popover>
                 <n-popover placement="left" trigger="hover" :show-arrow="false">
                   <template #trigger>
@@ -351,10 +366,12 @@ function goCampaignManagrRoot() {
                       "
                       :disabled="!campaign.local.metadata_path"
                     >
-                      {{ "查看" }}
+                      {{ $t("campaign.detail-management.check-in-explorer") }}
                     </n-button>
                   </template>
-                  <span>{{ "在资源浏览器中查看" }}</span>
+                  <span>
+                    {{ $t("campaign.detail-management.check-in-explorer-tip") }}
+                  </span>
                 </n-popover>
                 <n-popover placement="left" trigger="hover" :show-arrow="false">
                   <template #trigger>
@@ -369,10 +386,14 @@ function goCampaignManagrRoot() {
                         renderUnoIcon('i-tabler:trash', { size: '16px' })
                       "
                     >
-                      {{ "卸载" }}
+                      {{ $t("campaign.detail-management.uninstall-campaign") }}
                     </n-button>
                   </template>
-                  <span>{{ "从资源目录中移除该战役包相关文件" }}</span>
+                  <span>
+                    {{
+                      $t("campaign.detail-management.uninstall-campaign-tip")
+                    }}
+                  </span>
                 </n-popover>
               </div>
             </div>

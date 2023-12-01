@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, h, toRaw, onUnmounted } from "vue";
+import { onMounted, ref, h, onUnmounted } from "vue";
 import { get, set, useThrottleFn } from "@vueuse/core";
 import router from "@/router";
 import { NImage } from "naive-ui";
@@ -12,7 +12,6 @@ import { storeToRefs } from "pinia";
 import { useCamapignStore } from "@/stores/campaign";
 import { useCampaignActiveStore } from "@/stores/campaign-active";
 import { usePresetStore } from "@/stores/preset";
-import { LocalProfile } from "@shared/types/profile";
 import {
   CAMPAIGN_LIST,
   CampaignInfo,
@@ -34,16 +33,18 @@ import SupportIcon from "@/components/SupportIcon.vue";
 import EditorIcon from "@/assets/campaign/EditorIcon.vue";
 
 import Campaign_thumbnail from "@/assets/campaign/Campaign_thumbnail.png";
+import { useLocalProfileStore } from "@/stores/local-profile";
 
 const campaignStore = useCamapignStore();
 const campaignActiveStore = useCampaignActiveStore();
 const { CAMPAIGN_LIST_SET } = storeToRefs(campaignStore);
 const { CAMPAIGN_SET } = storeToRefs(campaignActiveStore);
 
+const localProfileStore = useLocalProfileStore();
+const { SUCCESS } = storeToRefs(localProfileStore);
+
 const preset = usePresetStore();
 const switchDrawerActive = ref(false);
-
-const settingProfile = ref<LocalProfile>();
 
 const switchDrawerCampaignList = ref<CampaignInformation[]>();
 const switchDrawerCampaignInfo = ref<CampaignInfo>();
@@ -58,35 +59,22 @@ async function runGame() {
   await runGameClient();
 }
 
-async function getLocalProfile() {
-  const profile = await getProfile();
-  set(settingProfile, profile);
-}
-
 function goCampaignManagement() {
   router.push("/campaign/manage");
 }
 
 onMounted(async () => {
-  getLocalProfile();
-
   refreshCampaignActived();
   refreshCampaignList();
 
   emiiterOn("customize-file-unzipped", async () => {
     await updateCampaignList();
   });
-  emiiterOn("customize-profile-changed", async () => {
-    await getLocalProfile();
-  });
 });
 
 onUnmounted(() => {
   emiiterOff("customize-file-unzipped", async () => {
     await updateCampaignList();
-  });
-  emiiterOff("customize-profile-changed", async () => {
-    await getLocalProfile();
   });
 });
 </script>
@@ -692,7 +680,13 @@ onUnmounted(() => {
               width="24"
               previewDisabled
             />
-            <div>{{ `《${switchDrawerCampaignInfo?.name}》战役·模组` }}</div>
+            <div>
+              {{
+                $t("campaign.switch-drawer.campaign", {
+                  campaign: switchDrawerCampaignInfo?.name,
+                })
+              }}
+            </div>
           </div>
         </template>
         <div class="mt-2 mx-1 flex flex-col gap-1">
@@ -707,7 +701,10 @@ onUnmounted(() => {
                 <div class="text-base">{{ item.name }}</div>
                 <div class="flex flex-row justify-start gap-1">
                   <div class="text-sm text-gray">
-                    {{ "作者：" + item.author ?? "NULL" }}
+                    {{
+                      $t("campaign.switch-drawer.author") + item.author ??
+                      "NULL"
+                    }}
                   </div>
                 </div>
                 <div class="mt-1 flex flex-row justify-start gap-1">
@@ -718,7 +715,11 @@ onUnmounted(() => {
                   ></n-badge>
                   <n-badge
                     type="info"
-                    :value="item.manager + ' 格式管理'"
+                    :value="
+                      $t('campaign.switch-drawer.manager-format', {
+                        manager: item.manager,
+                      })
+                    "
                   ></n-badge>
                 </div>
               </div>
@@ -731,14 +732,20 @@ onUnmounted(() => {
                   <template #trigger>
                     <n-button
                       size="small"
-                      @click="uninstallCampaign(item)"
+                      @click="
+                        uninstallCampaign(item).then(
+                          () => (switchDrawerActive = false)
+                        )
+                      "
                       :render-icon="
                         renderUnoIcon('i-tabler:trash', { size: '16px' })
                       "
                     >
                     </n-button>
                   </template>
-                  <span>{{ "卸载" }}</span>
+                  <span>{{
+                    $t("campaign.switch-drawer.uninstall-campaign")
+                  }}</span>
                 </n-popover>
                 <n-popover
                   placement="bottom"
@@ -762,7 +769,9 @@ onUnmounted(() => {
                     >
                     </n-button>
                   </template>
-                  <span>{{ "激活" }}</span>
+                  <span>{{
+                    $t("campaign.switch-drawer.active-campaign")
+                  }}</span>
                 </n-popover>
               </div>
             </div>

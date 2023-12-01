@@ -4,6 +4,7 @@
       "tip": "文件拖动至此（或点选文件）进行安装",
       "tip-extension": "请直接使用 \".zip\" 压缩包文件",
       "tip-release": "松开鼠标释放文件来开始安装",
+      "select-file-title": "选择压缩包文件进行安装",
       "process-dialog": {
         "title-campaign": "安装战役：",
         "title-customize": "安装自制作品：",

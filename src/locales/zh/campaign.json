@@ -1,6 +1,6 @@
 {
   "campaign": {
-    "campaign-manager-title": "战役·模组",
+    "campaign-manager-title": "战役包",
     "list-refresh": "刷新",
     "list-manage": "管理",
     "WOL": {
@@ -16,7 +16,7 @@
       "name": "诺娃隐秘行动"
     },
     "message": {
-      "campaign-actived": "已激活战役·模组",
+      "campaign-actived": "已激活战役包",
       "campaign-recovered": "已成功恢复 {campaign} 战役",
       "campaign-uninstalled": "已成功卸载 {campaign} 战役"
     },
@@ -24,7 +24,7 @@
       "details": "详情",
       "brief": "简略"
     },
-    "current-campaign": "当前战役·模组",
+    "current-campaign": "当前战役包",
     "no-campaign": "暂无战役",
     "no-actived-campaign": "（尚未激活任何战役）",
     "offcial-campaign": "《{campaign}》官方战役",
@@ -37,9 +37,6 @@
       "uninstall-campaign": "卸载",
       "campaign": "《{campaign}》战役"
     },
-    "metadata": {
-      "author": "作者"
-    },
     "detail-mode": {
       "play": "开始游玩",
       "active-campaign": "激活新战役",
@@ -49,19 +46,53 @@
       "uninstall-campaign": "卸载战役",
       "author": "作者",
       "version": "版本",
-      "description": "模组简介",
+      "description": "战役包简介",
       "social": "社交关注",
       "donate": "捐助支持",
       "website": "网站",
       "snid": "星际枢纽 ID",
       "snid-none": "尚未注册",
-      "no-actived-campaign": "尚未激活战役·模组",
-      "no-actived-campaign-offial-tip": "尚未激活任何战役·模组，您将正常游玩官方战役。",
-      "no-actived-campaign-content-tip": "想尝试些新鲜内容？安装并激活一款战役·模组吧！",
+      "no-actived-campaign": "尚未激活战役包",
+      "no-actived-campaign-offial-tip": "尚未激活任何战役包，您将正常游玩官方战役。",
+      "no-actived-campaign-content-tip": "想尝试些新鲜内容？安装并激活一款战役包吧！",
       "now-playing": "正在游玩",
       "campaign": "{campaign}战役",
       "campaign-title": "《{campaign}》战役",
-      "manager-format": "{manager} 格式"
+      "manager-format": "{manager} 格式",
+      "ccm-format": "CCM 格式"
+    },
+    "switch-drawer": {
+      "campaign": "《{campaign}》战役包",
+      "ccm-format": "CCM 格式",
+      "manager-format": "{manager} 格式",
+      "author": "作者：",
+      "uninstall-campaign": "卸载",
+      "active-campaign": "激活"
+    },
+    "campaign-detail-management": "详细管理",
+    "campaign-stat": {
+      "total-stat-title": "统计信息",
+      "stat-campaigns-prefix": "已安装",
+      "stat-campaigns-suffix": "个「战役包」",
+      "stat-filecount-prefix": "共计",
+      "stat-filecount-suffix": "个文件",
+      "stat-filesize-prefix": "共占用",
+      "stat-filesize-suffix": "磁盘空间"
+    },
+    "detail-management": {
+      "detail-management-title": "已安装战役包",
+      "ccm-format": "CCM 格式",
+      "author": "作者：",
+      "description": "简介：",
+      "file-info": "文件信息：",
+      "file-info-text": "个文件",
+      "active-campaign": "激活",
+      "active-campaign-tip": "将该战役包激活以便游玩。",
+      "active-campaign-tip-actived": "该战役包已激活。",
+      "check-in-explorer": "查看",
+      "check-in-explorer-tip": "在资源管理器中查看",
+      "uninstall-campaign": "卸载",
+      "uninstall-campaign-tip": "从资源目录中移除该战役包相关文件"
     }
   }
 }

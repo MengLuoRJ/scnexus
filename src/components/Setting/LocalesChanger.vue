@@ -32,9 +32,8 @@ const renderOption = (option: SelectOption) =>
           : "warning",
       value: `${getOptions(option.value! as string).status} (${
         getOptions(option.value! as string).progress
-      }) - ${getOptions(option.value! as string).key} / ${
-        getOptions(option.value! as string).cmpt
-      }`,
+      }) - ${getOptions(option.value! as string).key}`,
+      // + `/ ${getOptions(option.value! as string).cmpt}`,
     }),
   ]);
 

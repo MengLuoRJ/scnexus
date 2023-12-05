@@ -16,6 +16,7 @@ export function initUpdater(win: Electron.BrowserWindow) {
     //   "ACS-Referer": "scnexus-client-update",
     // },
     url: "https://scnexus-release.mengl.me/release/",
+    useMultipleRangeRequest: false,
   });
 
   updater.logger = Logger;

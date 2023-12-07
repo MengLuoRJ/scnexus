@@ -7,12 +7,10 @@ import {
   updateCampaignLists,
 } from "../useIpcHost/useCampaignIpc";
 import { useCamapignStore } from "@/stores/campaign";
-import { createDiscreteApi, useDialog, useNotification } from "naive-ui";
 import { CampaignInformation, CampaignType } from "@shared/types";
 import { computed, toRaw } from "vue";
 import { useCampaignActiveStore } from "@/stores/campaign-active";
-import { i18n } from "@/locales";
-const { t } = i18n.global;
+import { useDiscreteApi } from "../useDiscreteApi";
 
 import WOL_LOGO from "@/assets/campaign/Campaign_WOL_LOGO.png";
 import HOTS_LOGO from "@/assets/campaign/Campaign_HOTS_LOGO.png";
@@ -26,7 +24,15 @@ import WOL_Banner from "@/assets/campaign/Campaign_WOL_banner.png";
 import HOTS_Banner from "@/assets/campaign/Campaign_HOTS_banner.png";
 import LOTV_Banner from "@/assets/campaign/Campaign_LOTV_banner.png";
 import NCO_Banner from "@/assets/campaign/Campaign_NCO_banner.png";
-import { useDiscreteApi } from "../useDiscreteApi";
+
+import { i18n } from "@/locales";
+import { useLocalProfileStore } from "@/stores/local-profile";
+import { storeToRefs } from "pinia";
+
+const { t } = i18n.global;
+
+const localProfileStore = useLocalProfileStore();
+const { SUCCESS } = storeToRefs(localProfileStore);
 
 export type CampaignInfo = {
   name: string;
@@ -73,6 +79,7 @@ const campaignStore = useCamapignStore();
 const campaignActiveStore = useCampaignActiveStore();
 
 export async function updateCampaignActived() {
+  if (!get(SUCCESS)) return;
   const data = await updateActiveCampaign();
   campaignActiveStore.CAMPAIGN_SET = data.CAMPAIGN_SET;
   campaignActiveStore.LAST_REFRESH_TIME = data.LAST_REFRESH_TIME;
@@ -99,6 +106,7 @@ export async function activeNewCampaign(
 }
 
 export async function updateCampaignList() {
+  if (!get(SUCCESS)) return;
   const data = await updateCampaignLists();
   campaignStore.LAST_REFRESH_TIME = data.LAST_REFRESH_TIME;
   campaignStore.CAMPAIGN_LIST_SET = data.CAMPAIGN_LIST_SET;

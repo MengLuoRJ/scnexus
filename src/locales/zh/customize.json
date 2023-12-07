@@ -15,7 +15,9 @@
         "negative-text": "取消",
         "positive-text": "确认安装",
         "message-success-title": "已成功安装",
-        "message-success-content": "已解压安装 {count} 个文件"
+        "message-success-content": "已解压安装 {count} 个文件",
+        "cfi-error-title": "读取压缩包失败",
+        "cfi-error-message": "文件格式错误或压缩包内未包含有效元数据"
       },
       "no-game-message": {
         "title": "未检测到已安装的《星际争霸II》游戏本体",

@@ -9,7 +9,7 @@ import {
 import { emiiterEmit, emiiterOff, emiiterOn } from "@/composables/useMitt";
 import GameProfileChecker from "./GameProfileChecker.vue";
 import { useI18n } from "vue-i18n";
-import { unzipCompressFileCCM } from "@/composables/useIpcHost/useCampaignIpc";
+import { unzipCompressFileCCM, unzipCompressFileSimulateCCM } from "@/composables/useIpcHost/useCampaignIpc";
 import { ResultUncompress } from "@shared/types/customize";
 import { filesize } from "filesize";
 import { showOpenDialog } from "@/composables/useIpcHost/useDialogIpc";
@@ -55,6 +55,10 @@ async function onClick() {
 async function processFile(path: string) {
   const cfi = await readCompressFileInfo(path, { tolerance: true });
   if (!cfi) {
+    dialog.error({
+      title: t("customize.drop-zone.process-dialog.cfi-error-title"),
+      content: t("customize.drop-zone.process-dialog.cfi-error-message"),
+    })
     return;
   }
   const { metadata, compress_info } = cfi;
@@ -122,7 +126,8 @@ async function processFile(path: string) {
       if (metadata.manager === "SCNexus") {
         result = await installCompressFile(path);
       } else if (metadata.manager === "CCM") {
-        result = await unzipCompressFileCCM(path);
+        // result = await unzipCompressFileCCM(path);
+        result = await unzipCompressFileSimulateCCM(path);
       } else {
         return;
       }

@@ -21,6 +21,10 @@ export function unzipCompressFileCCM(path: string): Promise<ResultUncompress> {
   return ipcRenderer.invoke("campaign::unzip-compress-file-ccm", path);
 }
 
+export function unzipCompressFileSimulateCCM(path: string): Promise<ResultUncompress> {
+  return ipcRenderer.invoke("campaign::unzip-compress-file-simulate-ccm", path);
+}
+
 export function getActiveCampaign(): Promise<CampaignInformationSet> {
   return ipcRenderer.invoke("campaign::get-active-campaign");
 }

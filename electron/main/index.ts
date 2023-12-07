@@ -67,7 +67,6 @@ async function createWindow() {
       // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
       nodeIntegration: true,
       contextIsolation: true,
-      devTools: true,
     },
   });
 
@@ -103,11 +102,14 @@ app.whenReady().then(async () => {
   // Initialize key common modules
   initCommom();
 
+  // Initialize service and services' ipcs.
+  await initService();
+
   // Create the main window when the application is ready
   await createWindow();
 
+  // Initialize common service that require window access.
   if (win) {
-    await initService(win);
     initCommomWithWindow(win);
   }
 });

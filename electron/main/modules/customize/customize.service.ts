@@ -28,12 +28,11 @@ import { getProfileKey } from "@electron/main/stores/profile";
 import { zip } from "compressing";
 import { insertCustomize } from "@electron/main/stores/customize";
 import { insertCampaign } from "@electron/main/stores/campaign";
-import { BrowserWindow } from "electron";
 import { getCustomizeActiveStoreKey } from "@electron/main/stores/customize-active";
 import { gte } from "semver";
 import { detect, analyse } from "chardet";
-
-let window: BrowserWindow | null;
+import AdmZip from "adm-zip";
+import { Logger } from "@electron/main/utils/logger";
 
 function initSCNexusCustomizeDirectory(): void {
   const customizePaths = getProfileKey("PROFILE_CUSTOMIZE");
@@ -55,14 +54,9 @@ export function initSCNexusCampaignDirectory(): void {
   }
 }
 
-export function initCustomizeService(win: BrowserWindow): void {
-  window = win;
+export function initCustomizeService(): void {
   initSCNexusCustomizeDirectory();
   initSCNexusCampaignDirectory();
-}
-
-export function destroyCustomizeService(): void {
-  window = null;
 }
 
 /**
@@ -164,7 +158,14 @@ export function readCompressFileInfo(
     tolerance?: boolean;
   }
 ): CompressFileInfo | null {
-  const zip = getZip(path);
+  let zip: AdmZip;
+  try {
+    zip = getZip(path);
+  } catch (e) {
+    Logger.error(e);
+    return null;
+  }
+
   let fileRoot: string;
   const metadataFile = zip.getEntries().find((entry) => {
     if (options?.tolerance)

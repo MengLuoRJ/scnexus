@@ -14,6 +14,12 @@ export function initCampaignIpc() {
       return campaignService.unzipCompressFileCCM(path);
     }
   );
+  ipcMain.handle(
+    "campaign::unzip-compress-file-simulate-ccm",
+    (e, path: string): Promise<ResultUncompress> => {
+      return campaignService.unzipCompressFileSimulateCCM(path);
+    }
+  );
 
   ipcMain.handle(
     "campaign::get-active-campaign",

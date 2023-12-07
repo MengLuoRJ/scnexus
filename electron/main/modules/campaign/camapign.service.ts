@@ -1,4 +1,4 @@
-import { join, basename } from "node:path";
+import { join, basename, extname } from "node:path";
 import {
   existsSync,
   mkdirSync,
@@ -34,7 +34,6 @@ import {
   rmFilesFromDirSync,
   scnexusMetaFileParser,
 } from "@electron/main/modules/customize/customize.service";
-import { BrowserWindow } from "electron";
 import {
   CampaignActiveStore,
   getCampaignActiveStore,
@@ -46,8 +45,6 @@ import {
 import { METADATA_NOT_FOUND, ResultUncompress } from "@shared/types/customize";
 import { zip } from "compressing";
 import { Logger } from "@electron/main/utils/logger";
-
-let window: BrowserWindow | null;
 
 function initCampaignDirectory(): void {
   const customizePaths = getProfileKey("PROFILE_CAMPAIGN");
@@ -219,6 +216,92 @@ export async function unzipCompressFileCCM(
   };
 }
 
+export async function unzipCompressFileSimulateCCM(
+  path: string
+): Promise<ResultUncompress> {
+  const cfi = readCompressFileInfo(path, { tolerance: true });
+
+  if (!cfi) {
+    return {
+      success: false,
+      error: METADATA_NOT_FOUND,
+    };
+  }
+
+  const { metadata, compress_info, metadata_root } = cfi;
+
+  if (metadata.manager !== "CCM" || metadata.type !== "Campaign") {
+    return {
+      success: false,
+      error: "This method only support CCM Campaign Pacakage",
+    };
+  }
+
+  let storePath: string = getProfileKey("PROFILE_CAMPAIGN").CCM_ROOT;
+  const dirName = basename(path, ".zip");
+  storePath = join(storePath, dirName);
+
+  try {
+    if (existsSync(storePath)) {
+      rmSync(storePath, { recursive: true });
+    }
+  } catch (error) {
+    Logger.error(
+      "CAMPAIGN_UNCOMPRESS_CCM: Failed to prepare store path",
+      error
+    );
+    return {
+      success: false,
+      error: error as string,
+    };
+  }
+
+  await zip
+    .uncompress(path, storePath, {
+      zipFileNameEncoding: compress_info.fn_encoding ?? "utf8",
+    })
+    .catch((err) => {
+      Logger.error("CAMPAIGN_UNCOMPRESS_CCM: Uncompress failed", err);
+      return {
+        success: false,
+        error: err,
+      };
+    });
+
+  const modsPath: string = getProfileKey("PROFILE_CAMPAIGN").MODS_ROOT;
+
+  const files = readdirSync(storePath, {
+    encoding: "utf-8",
+    recursive: true,
+  });
+  for (const file of files) {
+    if (file.endsWith(".SC2Mod")) {
+      const dest = join(modsPath, basename(file));
+      if (existsSync(dest)) {
+        rmSync(dest, { recursive: true });
+      }
+      renameSync(join(storePath, file), dest);
+    }
+
+    // const stat = statSync(join(storePath, file));
+    // if (
+    //   (stat.isFile() && extname(file) === ".SC2Mod") ||
+    //   (stat.isDirectory() && file.endsWith(".SC2Mod"))
+    // ) {
+    //   const dest = join(modsPath, basename(file));
+    //   if (existsSync(dest)) {
+    //     rmSync(dest, { recursive: true });
+    //   }
+    //   renameSync(join(storePath, file), dest);
+    // }
+  }
+
+  return {
+    metadata,
+    success: true,
+  };
+}
+
 function ActiveCampaignInformationSearcher(
   campaign: CampaignType
 ): CampaignInformation | undefined {
@@ -329,7 +412,7 @@ export function getActiveCampaignMetadataType(
 ): CampaignInformation | undefined {
   const campaignTypeRoot = getCampaignTypeRoot(type);
   if (campaignTypeRoot) {
-    const files = readdirSync(campaignTypeRoot);
+    const files = readdirSync(campaignTypeRoot, { encoding: "utf-8" });
     const scnexusMetafile = files.find((file) => file === "metadata.json");
     if (scnexusMetafile) {
       return {

@@ -1,94 +1,25 @@
 <script setup lang="ts">
-import { set } from "@vueuse/core";
+import {
+  checkUpdates,
+  downloadUpdates,
+  installUpdates,
+} from "@/composables/useUpdater";
+import { useUpdaterStore } from "@/stores/updater";
 import { useMessage } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
-const message = useMessage();
+const updaterStore = useUpdaterStore();
 
-const version = ref<string>("");
-
-const checking = ref<boolean>(false);
-const updateAvailable = ref<boolean>(false);
-
-const updateInfo = ref({
-  version: "",
-  releaseName: "",
-  releaseNotes: "",
-  releaseDate: "",
-});
-
-const downloadProgress = ref({
-  percent: 0,
-  delta: 0,
-  transferred: 0,
-  total: 0,
-  bytesPerSecond: 0,
-});
-
-const downloading = ref<boolean>(false);
-const downloaded = ref<boolean>(false);
-
-async function checkUpdates() {
-  await window.ipcRenderer.invoke("updater::check-for-updates");
-}
-
-async function downloadUpdates() {
-  set(downloading, true);
-  await window.ipcRenderer.invoke("updater::download-update");
-}
-
-async function installUpdates() {
-  await window.ipcRenderer.invoke("updater::quit-and-install");
-}
-
-function loadingStatusCheck() {
-  window.ipcRenderer.updater.onCheckingForUpdate(() => {
-    set(checking, true);
-    set(updateAvailable, false);
-  });
-  window.ipcRenderer.updater.onUpdateNotAvailable(() => {
-    set(checking, false);
-    set(updateAvailable, false);
-  });
-  window.ipcRenderer.updater.onUpdateAvailable((_, info) => {
-    set(updateInfo, info);
-    set(checking, false);
-    set(updateAvailable, true);
-  });
-}
-
-function downloadingStatusCheck() {
-  window.ipcRenderer.updater.onDownloadProgress((_, progress) => {
-    set(downloadProgress, progress);
-  });
-  window.ipcRenderer.updater.onUpdateDownloaded(() => {
-    set(downloaded, true);
-    set(downloading, false);
-  });
-}
-
-function catchUpdaterError() {
-  window.ipcRenderer.updater.onError((_, error) => {
-    message.error(error.message);
-    console.error(error);
-  });
-}
-
-async function getAppVersion() {
-  const ver = await window.ipcRenderer.invoke("app::get-version");
-  set(version, ("v" + ver) as string);
-}
-
-onMounted(async () => {
-  await getAppVersion();
-  loadingStatusCheck();
-  downloadingStatusCheck();
-  catchUpdaterError();
-});
-
-onUnmounted(() => {
-  window.ipcRenderer.updater.clear();
-});
+const {
+  CURRENT_VERSION,
+  UPDATE_CHECKING,
+  UPDATE_AVAILABLE,
+  UPDATE_DOWNLOADING,
+  UPDATE_DOWNLOADED,
+  updateInfo,
+  downloadProgress,
+} = storeToRefs(updaterStore);
 </script>
 
 <template>
@@ -103,29 +34,29 @@ onUnmounted(() => {
       <n-input
         :style="{ width: '150px' }"
         class="mx-0.5"
-        v-model:value="version"
+        v-model:value="CURRENT_VERSION"
         readonly
       />
     </n-form-item>
     <n-button
-      v-if="!updateAvailable"
+      v-if="!UPDATE_AVAILABLE"
       size="small"
       @click="checkUpdates()"
-      :loading="checking"
+      :loading="UPDATE_CHECKING"
     >
       {{ "检查更新" }}
     </n-button>
     <n-button
-      v-if="updateAvailable && !downloaded"
+      v-if="UPDATE_AVAILABLE && !UPDATE_DOWNLOADED"
       size="small"
       type="primary"
       @click="downloadUpdates()"
-      :loading="downloading"
+      :loading="UPDATE_DOWNLOADING"
     >
       {{ "更新" }}
     </n-button>
     <n-button
-      v-if="downloaded"
+      v-if="UPDATE_DOWNLOADED"
       size="small"
       type="primary"
       @click="installUpdates()"
@@ -134,13 +65,13 @@ onUnmounted(() => {
     </n-button>
     <div class="flex flex-col gap-1">
       <div
-        v-if="updateAvailable && !downloaded"
+        v-if="UPDATE_AVAILABLE && !UPDATE_DOWNLOADED"
         class="ml-2 text-sm text-blue-500"
       >
-        {{ "新版本可用：v" + updateInfo.version }}
+        {{ "新版本可用：" + updateInfo.version }}
       </div>
       <div
-        v-if="updateAvailable && downloading"
+        v-if="UPDATE_AVAILABLE && UPDATE_DOWNLOADING"
         class="ml-2 text-sm text-blue-500"
       >
         {{

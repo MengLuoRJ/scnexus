@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import SCNexusLogo from "@/assets/logo.png";
+import { initUpdater } from "@/composables/useUpdater";
+import { onMounted } from "vue";
+
+onMounted(async () => {
+  await initUpdater();
+});
 </script>
 <template>
   <div class="home-page">

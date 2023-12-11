@@ -1,8 +1,11 @@
 const ipcRenderer = window.ipcRenderer;
 
-
 export async function getVersion() {
   return ipcRenderer.invoke("app::get-version");
+}
+
+export async function isPackaged(): Promise<boolean> {
+  return ipcRenderer.invoke("app::is-packaged");
 }
 
 export async function getLocale() {

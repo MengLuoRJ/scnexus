@@ -16,7 +16,19 @@ const updaterChannels = {
     ipcRenderer.on("updater::update-downloaded", callback),
   onError: (callback: (event: Electron.IpcRendererEvent, err: any) => void) =>
     ipcRenderer.on("updater::error", callback),
-  clear: () => {
+  clearCheck: () => {
+    ipcRenderer.removeAllListeners("updater::checking-for-update");
+    ipcRenderer.removeAllListeners("updater::update-available");
+    ipcRenderer.removeAllListeners("updater::update-not-available");
+  },
+  clearDownload: () => {
+    ipcRenderer.removeAllListeners("updater::download-progress");
+    ipcRenderer.removeAllListeners("updater::update-downloaded");
+  },
+  clearError: () => {
+    ipcRenderer.removeAllListeners("updater::error");
+  },
+  clearAll: () => {
     ipcRenderer.removeAllListeners("updater::checking-for-update");
     ipcRenderer.removeAllListeners("updater::update-available");
     ipcRenderer.removeAllListeners("updater::update-not-available");

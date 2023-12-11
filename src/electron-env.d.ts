@@ -22,7 +22,10 @@ declare global {
         onError: (
           callback: (event: Electron.IpcRendererEvent, err) => void
         ) => void;
-        clear: () => void;
+        clearCheck: () => void;
+        clearDownload: () => void;
+        clearError: () => void;
+        clearAll: () => void;
       };
       deeplink: {
         onAuthentication: (

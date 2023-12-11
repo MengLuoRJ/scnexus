@@ -4,6 +4,9 @@ export function initAppIpc() {
   ipcMain.handle("app::get-version", () => {
     return app.getVersion();
   });
+  ipcMain.handle("app::is-packaged", () => {
+    return app.isPackaged;
+  })
   ipcMain.handle("app::get-locale", () => {
     return app.getLocale();
   });

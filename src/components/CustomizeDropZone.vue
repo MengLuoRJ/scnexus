@@ -9,7 +9,10 @@ import {
 import { emiiterEmit, emiiterOff, emiiterOn } from "@/composables/useMitt";
 import GameProfileChecker from "./GameProfileChecker.vue";
 import { useI18n } from "vue-i18n";
-import { unzipCompressFileCCM, unzipCompressFileSimulateCCM } from "@/composables/useIpcHost/useCampaignIpc";
+import {
+  unzipCompressFileCCM,
+  unzipCompressFileSimulateCCM,
+} from "@/composables/useIpcHost/useCampaignIpc";
 import { ResultUncompress } from "@shared/types/customize";
 import { filesize } from "filesize";
 import { showOpenDialog } from "@/composables/useIpcHost/useDialogIpc";
@@ -37,7 +40,7 @@ async function onClick() {
     return;
   }
 
-  const { filePaths } = await showOpenDialog({
+  const { filePaths, canceled } = await showOpenDialog({
     title: t("customize.drop-zone.select-file-title"),
     properties: ["openFile"],
     filters: [
@@ -47,7 +50,7 @@ async function onClick() {
     ],
   });
 
-  if (!filePaths) return;
+  if (canceled || !filePaths) return;
 
   processFile(filePaths[0]);
 }
@@ -58,7 +61,7 @@ async function processFile(path: string) {
     dialog.error({
       title: t("customize.drop-zone.process-dialog.cfi-error-title"),
       content: t("customize.drop-zone.process-dialog.cfi-error-message"),
-    })
+    });
     return;
   }
   const { metadata, compress_info } = cfi;

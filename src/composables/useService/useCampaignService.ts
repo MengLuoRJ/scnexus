@@ -11,6 +11,10 @@ import { CampaignInformation, CampaignType } from "@shared/types";
 import { computed, toRaw } from "vue";
 import { useCampaignActiveStore } from "@/stores/campaign-active";
 import { useDiscreteApi } from "../useDiscreteApi";
+import { useLocalProfileStore } from "@/stores/local-profile";
+import { storeToRefs } from "pinia";
+import { useTrans } from "@/composables/useTrans";
+
 
 import WOL_LOGO from "@/assets/campaign/Campaign_WOL_LOGO.png";
 import HOTS_LOGO from "@/assets/campaign/Campaign_HOTS_LOGO.png";
@@ -25,11 +29,8 @@ import HOTS_Banner from "@/assets/campaign/Campaign_HOTS_banner.png";
 import LOTV_Banner from "@/assets/campaign/Campaign_LOTV_banner.png";
 import NCO_Banner from "@/assets/campaign/Campaign_NCO_banner.png";
 
-import { i18n } from "@/locales";
-import { useLocalProfileStore } from "@/stores/local-profile";
-import { storeToRefs } from "pinia";
 
-const { t } = i18n.global;
+const { t } = useTrans();
 
 const localProfileStore = useLocalProfileStore();
 const { SUCCESS } = storeToRefs(localProfileStore);

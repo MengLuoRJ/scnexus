@@ -61,18 +61,22 @@ const profileStore = new Store<LocalProfile>({
 
 export function checkGameRoot(gameRoot: string) {
   // check if the game root is valid
-  if (!gameRoot || !existsSync(gameRoot)) {
-    return false;
-  }
-  const rootFiles = readdirSync(gameRoot, { withFileTypes: true });
-  if (
-    rootFiles.some(
-      (dirent) =>
-        dirent.isFile() && dirent.name === "StarCraft II.exe" && dirent
-    )
-  ) {
-    return true;
-  } else {
+  try {
+    if (!gameRoot || !existsSync(gameRoot)) {
+      return false;
+    }
+    const rootFiles = readdirSync(gameRoot, { withFileTypes: true });
+    if (
+      rootFiles.some(
+        (dirent) =>
+          dirent.isFile() && dirent.name === "StarCraft II.exe" && dirent
+      )
+    ) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (e) {
     return false;
   }
 }
@@ -97,19 +101,18 @@ export async function initProfile(gamePath?: string): Promise<LocalProfile> {
           .then((data) => data[GAME_REG_PATH_WIN])
       ).values[GAME_REG_ITEM_WIN].value as string;
     } catch (e) {
-      profileStore.set("ININTIALIZED", false);
-      console.log(e);
+      profileStore.set("SUCCESS", false);
       profileStore.set("ERROR_MESSAGE", "GAME_ROOT_NOT_FOUND");
       return profileStore.store;
     }
   } else if (process.platform === "darwin") {
     // standard process to get the game root for darwin platform
     // TODO: add darwin platform support
-    profileStore.set("ININTIALIZED", false);
+    profileStore.set("SUCCESS", false);
     profileStore.set("ERROR_MESSAGE", "UNSUPPORTED_PLATFORM");
     return profileStore.store;
   } else {
-    profileStore.set("ININTIALIZED", false);
+    profileStore.set("SUCCESS", false);
     profileStore.set("ERROR_MESSAGE", "FAILED_GET_GAME_ROOT");
     return profileStore.store;
   }
@@ -164,7 +167,7 @@ export async function initProfile(gamePath?: string): Promise<LocalProfile> {
     MODS_ROOT: join(gameRoot, "Mods"),
   });
   // process profile data
-  
+
   profileStore.set("PATH_WHITE_LIST", [
     // save all paths above as white list,
     // used to check if the path is in the white list
@@ -183,7 +186,7 @@ export async function initProfile(gamePath?: string): Promise<LocalProfile> {
     // join(documentRoot, "StarCraft II", "Banks"),
     // join(documentRoot, "StarCraft II", "ArcadeBanks"),
   ]);
-  profileStore.set("LOCAL_ININTIALIZED", true);
+  profileStore.set("SUCCESS", true);
   const newProfile = profileStore.store;
   return newProfile;
 }

@@ -1,51 +1,33 @@
 import { rmSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
-// import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import UnoCSS from "unocss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
-import { unheadVueComposablesImports } from '@unhead/vue'
+import { unheadVueComposablesImports } from "@unhead/vue";
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
-import viteSentry, { type ViteSentryPluginOptions } from "vite-plugin-sentry";
 import electron from "vite-plugin-electron";
-// import renderer from "vite-plugin-electron-renderer";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import pkg from "./package.json";
 
-const sentryConfig: ViteSentryPluginOptions = {
-  org: "aiurcovenant",
-  project: "scnexus",
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  // legacyErrorHandlingMode: true, <- warn about sentry errors instead of fail
-  deploy: {
-    env: "production",
-  },
-  sourceMaps: {
-    include: ["./dist/assets"],
-    ignore: ["node_modules"],
-    urlPrefix: "~/assets",
-  },
-};
-
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   rmSync("dist-electron", { recursive: true, force: true });
 
   const isServe = command === "serve";
   const isBuild = command === "build";
   const sourcemap = isServe || isBuild || !!process.env.VSCODE_DEBUG;
 
+  const env = loadEnv(mode, process.cwd(), "");
+
   return {
     define: {
       __INTLIFY_JIT_COMPILATION__: true,
+      // __INTLIFY_DROP_MESSAGE_COMPILER__: true,
     },
     plugins: [
       vue(),
-      // VueI18nPlugin({
-      //   include: resolve(dirname(fileURLToPath(import.meta.url)), './src/locales/**/*.js'),
-      //   jitCompilation: true,
-      // }),
       UnoCSS(),
       AutoImport({
         imports: [
@@ -64,18 +46,18 @@ export default defineConfig(({ command }) => {
       Components({
         resolvers: [NaiveUiResolver()],
       }),
-      viteSentry(sentryConfig),
+
       electron([
         {
           // Main-Process entry file of the Electron App.
           entry: "electron/main/index.ts",
-          onstart(options) {
+          onstart({ startup }) {
             if (process.env.VSCODE_DEBUG) {
               console.log(
                 /* For `.vscode/.debug.script.mjs` */ "[startup] Electron App"
               );
             } else {
-              options.startup();
+              startup();
             }
           },
           vite: {
@@ -140,8 +122,13 @@ export default defineConfig(({ command }) => {
           },
         },
       ]),
-      // Use Node.js API in the Renderer-process
-      // renderer({}),
+
+      sentryVitePlugin({
+        org: "aiurcovenant",
+        project: "scnexus",
+        authToken: env.SENTRY_AUTH_TOKEN,
+        telemetry: false,
+      }),
     ],
     resolve: {
       alias: {

@@ -1,6 +1,7 @@
 export type ProfileGame = {
   GAME_ROOT: string;
   GAME_VERSION: string;
+  GAME_CLIENT: string;
   GAME_EXECUTABLE_X64: string;
   GAME_EDITOR_EXECUTABLE_X64: string;
   GAME_MODS_PATH: string;
@@ -32,7 +33,7 @@ export type ProfileCustomize = {
   MAPS_ROOT: string;
 };
 
-export type LocalProfile = {
+export type ProfileStore = {
   SUCCESS: boolean;
   ERROR_MESSAGE?: string;
   PATH_WHITE_LIST?: string[];

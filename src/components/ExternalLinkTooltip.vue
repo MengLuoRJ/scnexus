@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { openExternalWebsite } from '@/composables/useIpcHost/useShellIpc';
+import { ipcShell } from "@/apis/ipcs/shell";
 
 const props = defineProps<{
   link: string;
@@ -13,7 +13,7 @@ async function openExternalLink() {
   ) {
     return;
   }
-  openExternalWebsite(props.link);
+  await ipcShell.openExternalWebsite(props.link);
 }
 </script>
 

@@ -1,34 +1,26 @@
 <script setup lang="ts">
-import { renderNaiveIcon, renderUnoIcon } from "@/composables/useIconRender";
-import { useCamapignStore } from "@/stores/campaign";
-import { useCampaignActiveStore } from "@/stores/campaign-active";
-import { CampaignType } from "@shared/types";
+import { renderUnoIcon } from "@/composables/useIconRender";
+import { useCampaignStore } from "@/stores/campaign";
+import { CampaignType } from "scnexus-standard/metadata";
 import { get, set } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref, h } from "vue";
+import { reactive, ref, h } from "vue";
 import { filesize } from "filesize";
 import { NImage, NumberAnimationInst } from "naive-ui";
-import CampaignStatChart from "@/components/Campaign/CampaignStatChart.vue";
+import { ipcShell } from "@/apis/ipcs/shell";
+
+import CampaignStatChart from "./components/CampaignStatChart.vue";
 
 import {
-  CAMPAIGN_LIST,
-  CampaignInfo,
-  getCampaignListType,
-  refreshCampaignActived,
-  refreshCampaignList,
-  updateCampaignList,
-  recoverCampaign,
-  activeNewCampaign,
+  activeCampaign,
   uninstallCampaign,
-  checkCamapignSwitchable,
-} from "@/composables/useService/useCampaignService";
+  checkCampaignSwitchable,
+  CAMPAIGN_CONSTANTS,
+} from "./composables/useCampaign";
 import router from "@/router";
-import { showItemInFolder } from "@/composables/useIpcHost/useShellIpc";
 
-const campaignStore = useCamapignStore();
-const campaignActiveStore = useCampaignActiveStore();
+const campaignStore = useCampaignStore();
 const { CAMPAIGN_LIST_SET } = storeToRefs(campaignStore);
-const { CAMPAIGN_SET } = storeToRefs(campaignActiveStore);
 
 const showCampaignStat = ref(false);
 
@@ -93,19 +85,19 @@ function computeInfoTotal() {
   // compute data
   for (const campaign of campaigns) {
     get(CAMPAIGN_LIST_SET)?.[campaign]?.forEach((item) => {
-      campaign_stat_total.total_size += item.local.total_size ?? 0;
-      campaign_stat_total.total_file += item.local.file_count ?? 0;
+      campaign_stat_total.total_size += item.localinfo.files_size ?? 0;
+      campaign_stat_total.total_file += item.localinfo.files_count ?? 0;
       campaign_stat_total.total_campaign++;
       if (item.manager === "SCNexus") {
         campaign_stat_total.scnexus[campaign].total_size +=
-          item.local.total_size ?? 0;
+          item.localinfo.files_size ?? 0;
         campaign_stat_total.scnexus[campaign].total_file +=
-          item.local.file_count ?? 0;
+          item.localinfo.files_count ?? 0;
       } else if (item.manager === "CCM") {
         campaign_stat_total.ccm[campaign].total_size +=
-          item.local.total_size ?? 0;
+          item.localinfo.files_size ?? 0;
         campaign_stat_total.ccm[campaign].total_file +=
-          item.local.file_count ?? 0;
+          item.localinfo.files_count ?? 0;
       }
     });
   }
@@ -179,10 +171,14 @@ function goCampaignManagrRoot() {
               :to="campaign_stat_total.total_campaign"
             />
             <template #prefix>
-              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-campaigns-prefix") }}</span>
+              <span class="text-sm">{{
+                $t("campaign.campaign-stat.stat-campaigns-prefix")
+              }}</span>
             </template>
             <template #suffix>
-              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-campaigns-suffix") }}</span>
+              <span class="text-sm">{{
+                $t("campaign.campaign-stat.stat-campaigns-suffix")
+              }}</span>
             </template>
           </n-statistic>
           <n-divider vertical />
@@ -193,10 +189,14 @@ function goCampaignManagrRoot() {
               :to="campaign_stat_total.total_file"
             />
             <template #prefix>
-              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-filecount-prefix") }}</span>
+              <span class="text-sm">{{
+                $t("campaign.campaign-stat.stat-filecount-prefix")
+              }}</span>
             </template>
             <template #suffix>
-              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-filecount-prefix") }}</span>
+              <span class="text-sm">{{
+                $t("campaign.campaign-stat.stat-filecount-prefix")
+              }}</span>
             </template>
           </n-statistic>
           <n-divider vertical />
@@ -212,7 +212,9 @@ function goCampaignManagrRoot() {
               "
             />
             <template #prefix>
-              <span class="text-sm">{{ $t("campaign.campaign-stat.stat-filesize-prefix") }}</span>
+              <span class="text-sm">{{
+                $t("campaign.campaign-stat.stat-filesize-prefix")
+              }}</span>
             </template>
             <template #suffix>
               <span>
@@ -223,7 +225,9 @@ function goCampaignManagrRoot() {
                   }).symbol
                 }}
               </span>
-              <span class="ml-1 text-sm">{{ $t("campaign.campaign-stat.stat-filesize-suffix") }}</span>
+              <span class="ml-1 text-sm">{{
+                $t("campaign.campaign-stat.stat-filesize-suffix")
+              }}</span>
             </template>
           </n-statistic>
         </div>
@@ -237,7 +241,7 @@ function goCampaignManagrRoot() {
       <div>{{ $t("campaign.detail-management.detail-management-title") }}</div>
       <n-tabs type="line" animated>
         <n-tab-pane
-          v-for="(item, index) in CAMPAIGN_LIST"
+          v-for="(item, index) in CAMPAIGN_CONSTANTS"
           :key="index"
           :name="index"
           :tab="
@@ -278,10 +282,7 @@ function goCampaignManagrRoot() {
                   <div class="text-lg">{{ campaign.name }}</div>
                   <n-badge
                     v-if="!!campaign.version"
-                    :value="
-                      'v' + campaign.version.match(/\d+(.\d+)(.\d+)?/g)?.[0] ??
-                      'N/A'
-                    "
+                    :value="'v' + campaign.version"
                   ></n-badge>
                   <n-badge
                     v-if="campaign.manager !== 'SCNexus'"
@@ -305,20 +306,20 @@ function goCampaignManagrRoot() {
                   </span>
                   <span>{{ campaign.description }}</span>
                 </div>
-                <div v-if="campaign.local" class="text-xs mt-1">
+                <div v-if="campaign.localinfo" class="text-xs mt-1">
                   <span class="text-gray">
                     {{ $t("campaign.detail-management.file-info") }}
                   </span>
-                  <span v-if="campaign.local.file_count">
+                  <span v-if="campaign.localinfo.files_count">
                     {{
-                      campaign.local.file_count +
+                      campaign.localinfo.files_count +
                       $t("campaign.detail-management.file-info-text")
                     }}
                   </span>
-                  <span v-if="campaign.local.total_size">
+                  <span v-if="campaign.localinfo.files_size">
                     {{
                       " @ " +
-                      filesize(campaign.local.total_size, {
+                      filesize(campaign.localinfo.files_size, {
                         standard: "jedec",
                       })
                     }}
@@ -332,18 +333,18 @@ function goCampaignManagrRoot() {
                   <template #trigger>
                     <n-button
                       size="small"
-                      @click="activeNewCampaign(campaign)"
+                      @click="activeCampaign(campaign)"
                       :render-icon="
                         renderUnoIcon('i-tabler:table-options', {
                           size: '16px',
                         })
                       "
-                      :disabled="!checkCamapignSwitchable(campaign)"
+                      :disabled="!checkCampaignSwitchable(campaign)"
                     >
                       {{ $t("campaign.detail-management.active-campaign") }}
                     </n-button>
                   </template>
-                  <span v-if="checkCamapignSwitchable(campaign)">
+                  <span v-if="checkCampaignSwitchable(campaign)">
                     {{ $t("campaign.detail-management.active-campaign-tip") }}
                   </span>
                   <span v-else>
@@ -358,13 +359,17 @@ function goCampaignManagrRoot() {
                   <template #trigger>
                     <n-button
                       size="small"
-                      @click="showItemInFolder(campaign.local.metadata_path!)"
+                      @click="
+                        ipcShell.showItemInFolder(
+                          campaign.localinfo.metadata_path!
+                        )
+                      "
                       :render-icon="
                         renderUnoIcon('i-tabler:folder-open', {
                           size: '16px',
                         })
                       "
-                      :disabled="!campaign.local.metadata_path"
+                      :disabled="!campaign.localinfo.metadata_path"
                     >
                       {{ $t("campaign.detail-management.check-in-explorer") }}
                     </n-button>

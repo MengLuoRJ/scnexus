@@ -1,17 +1,21 @@
-import { initCampaignIpc } from "./campaign/campaign.ipc";
-import { initCustomizeIpc } from "./customize/customize.ipc";
-import { initSettingIpc } from "./setting/setting.ipc";
-import { initSettingProfile } from "./setting/setting.service";
+import { getMainWindow } from "..";
+import { initCampaignModule } from "./campaign";
+import { initCommonModule } from "./common";
+import { initCustomizeModule } from "./customize";
+import { initProfileModule } from "./profile";
+import { initSettingModule } from "./setting";
+import { initWorkshopModule } from "./workshop";
 
-async function initIpcService() {
-  initSettingIpc();
-  initCampaignIpc();
-  initCustomizeIpc();
-}
+export async function initModules() {
+  initCommonModule();
 
-export async function initService() {
-  // init setting profile
-  await initSettingProfile();
-  // init ipc
-  await initIpcService();
+  await initSettingModule();
+  await initProfileModule();
+
+  // CampaignModule and CustomizeModule need to
+  // be init after ProfileModule inited succesfully
+  await initCampaignModule();
+  await initCustomizeModule();
+
+  await initWorkshopModule();
 }

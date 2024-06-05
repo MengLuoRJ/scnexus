@@ -1,9 +1,8 @@
 import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import { release } from "node:os";
 import { join } from "node:path";
-import { initService } from "./modules/init";
+import { initModules } from "./modules/init";
 import { initLogger } from "./utils/logger";
-import { initCommom, initCommomWithWindow } from "./common";
 import { initSentry } from "./utils/sentry";
 
 // init electron-log
@@ -43,6 +42,10 @@ if (!app.requestSingleInstanceLock()) {
 // process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
 let win: BrowserWindow | null = null;
+
+export function getMainWindow() {
+  return win;
+}
 
 // Here, you can also use other preload
 const preload = join(__dirname, "../preload/index.js");
@@ -99,19 +102,11 @@ async function createWindow() {
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
 
-  // Initialize key common modules
-  initCommom();
-
-  // Initialize service and services' ipcs.
-  await initService();
+  // Initialize all modules.
+  await initModules();
 
   // Create the main window when the application is ready
   await createWindow();
-
-  // Initialize common service that require window access.
-  if (win) {
-    initCommomWithWindow(win);
-  }
 });
 
 app.on("window-all-closed", () => {

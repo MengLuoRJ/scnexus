@@ -1,8 +1,20 @@
 <script setup lang="ts">
-import { h } from "vue";
-import BasicSetting from "@/components/Setting/BasicSetting.vue";
-import ProfileSetting from "@/components/Setting/ProfileSetting.vue";
-import ServiceLinks from "@/components/Setting/ServiceLinks.vue";
+import { h, onMounted, ref } from "vue";
+import { set } from "@vueuse/core";
+
+import BasicSetting from "./components/BasicSetting.vue";
+import ProfileSetting from "./components/ProfileSetting.vue";
+import ServiceLinks from "./components/ServiceLinks.vue";
+import { ipcSetting } from "@/apis/ipcs/setting";
+
+const client_id = ref("");
+
+onMounted(async () => {
+  const { data: setting_client_id } = await ipcSetting.getSettingKey(
+    "CLIENT_ID"
+  );
+  set(client_id, setting_client_id);
+});
 </script>
 
 <template>
@@ -41,5 +53,9 @@ import ServiceLinks from "@/components/Setting/ServiceLinks.vue";
         <ProfileSetting />
       </n-tab-pane>
     </n-tabs>
+    <!-- <div class="mt-30vh text-gray-300 mt-10vh">
+      <span>{{ "CLIENT ID: " }}</span>
+      <span>{{ client_id }}</span>
+    </div> -->
   </div>
 </template>

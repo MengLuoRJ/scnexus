@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { showOpenDialogSync } from "@/composables/useIpcHost/useDialogIpc";
-import { useLocalProfileStore } from "@/stores/local-profile";
+import { ipcDialog } from "@/apis/ipcs/dialog";
+import { useProfileStore } from "@/stores/profile";
 import { storeToRefs } from "pinia";
 
-const localProfileStore = useLocalProfileStore();
+const localProfileStore = useProfileStore();
 const { SUCCESS, ERROR_MESSAGE } = storeToRefs(localProfileStore);
 
 async function hookupPathSelector(autodetect?: boolean) {
   if (!!autodetect) {
     await localProfileStore.initProfile();
   } else {
-    const path = await showOpenDialogSync({
+    const { data: path } = await ipcDialog.showOpenDialogSync({
       title: "选择游戏根目录",
       properties: ["openDirectory", "dontAddToRecent"],
     });

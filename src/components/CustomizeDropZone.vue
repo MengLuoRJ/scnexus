@@ -1,46 +1,40 @@
 <script setup lang="ts">
-import { get, set, useDropZone } from "@vueuse/core";
 import { ref, h } from "vue";
-import { useDialog, useNotification } from "naive-ui";
-import {
-  readCompressFileInfo,
-  installCompressFile,
-} from "@/composables/useIpcHost/useCustomizeIpc";
-import { emiiterEmit, emiiterOff, emiiterOn } from "@/composables/useMitt";
-import GameProfileChecker from "./GameProfileChecker.vue";
-import { useI18n } from "vue-i18n";
-import {
-  unzipCompressFileCCM,
-  unzipCompressFileSimulateCCM,
-} from "@/composables/useIpcHost/useCampaignIpc";
-import { ResultUncompress } from "@shared/types/customize";
+import { useDropZone } from "@vueuse/core";
 import { filesize } from "filesize";
-import { showOpenDialog } from "@/composables/useIpcHost/useDialogIpc";
-import { useLocalProfileStore } from "@/stores/local-profile";
-import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
+import { useDialog, useNotification } from "naive-ui";
+
+import { emitterEmit } from "@/composables/useMitt";
+import { useProfileStore } from "@/stores/profile";
+
+import GameProfileChecker from "./GameProfileChecker.vue";
+import { ipcCampaign } from "@/apis/ipcs/campaign";
+import { ipcCustomize } from "@/apis/ipcs/customize";
+import { ipcDialog } from "@/apis/ipcs/dialog";
 
 const { t } = useI18n();
 const dialog = useDialog();
 const notification = useNotification();
-
-const localProfileStore = useLocalProfileStore();
-const { SUCCESS } = storeToRefs(localProfileStore);
+const profileStore = useProfileStore();
 
 const dropZoneRef = ref<HTMLDivElement>();
 
+const { isOverDropZone } = useDropZone(dropZoneRef, onDrop);
+
 async function onDrop(files: File[] | null) {
-  if (!get(SUCCESS)) {
+  if (!profileStore.SUCCESS) {
     return;
   }
   await processFile(files?.[0].path!);
 }
 
 async function onClick() {
-  if (!get(SUCCESS)) {
+  if (!profileStore.SUCCESS) {
     return;
   }
 
-  const { filePaths, canceled } = await showOpenDialog({
+  const { data } = await ipcDialog.showOpenDialog({
     title: t("customize.drop-zone.select-file-title"),
     properties: ["openFile"],
     filters: [
@@ -49,14 +43,20 @@ async function onClick() {
       { name: "ZIP Compressed File", extensions: ["zip"] },
     ],
   });
+  if (!data) return;
 
+  const { filePaths, canceled } = data;
   if (canceled || !filePaths) return;
 
   processFile(filePaths[0]);
 }
 
 async function processFile(path: string) {
-  const cfi = await readCompressFileInfo(path, { tolerance: true });
+  const { data: cfi, error } = await ipcCustomize.readCompressFileInfo(path);
+  if (error) {
+    console.error(error);
+    return;
+  }
   if (!cfi) {
     dialog.error({
       title: t("customize.drop-zone.process-dialog.cfi-error-title"),
@@ -64,19 +64,21 @@ async function processFile(path: string) {
     });
     return;
   }
-  const { metadata, compress_info } = cfi;
-  console.log(metadata);
+
+  const { compress_info } = cfi;
+  const metadata =
+    cfi.metadata?.manager === "SCNexus" ? cfi.metadata : cfi.ccm?.metadata;
   const d = dialog.info({
     closable: false,
     title: () => {
-      if (metadata.type === "Customize") {
+      if (metadata?.type === "Customize") {
         return h(
           "div",
           undefined,
           t("customize.drop-zone.process-dialog.title-customize") +
             metadata.name
         );
-      } else if (metadata.type === "Campaign") {
+      } else if (metadata?.type === "Campaign") {
         return h(
           "div",
           undefined,
@@ -91,26 +93,26 @@ async function processFile(path: string) {
             "div",
             undefined,
             t("customize.drop-zone.process-dialog.description-author") +
-              metadata.author
+              metadata?.author
           ),
           h(
             "div",
             undefined,
             t("customize.drop-zone.process-dialog.description-version") +
-              metadata.version
+              metadata?.version
           ),
           h(
             "div",
             undefined,
             t("customize.drop-zone.process-dialog.description-description") +
-              metadata.description
+              metadata?.description
           ),
         ]),
         h(
           "div",
           undefined,
           "共计：" +
-            compress_info.file_count +
+            compress_info.files_count +
             "个文件" +
             " @ " +
             filesize(compress_info.size, { standard: "jedec" })
@@ -125,21 +127,32 @@ async function processFile(path: string) {
     positiveText: t("customize.drop-zone.process-dialog.positive-text"),
     onPositiveClick: async () => {
       d.loading = true;
-      let result: ResultUncompress;
-      if (metadata.manager === "SCNexus") {
-        result = await installCompressFile(path);
-      } else if (metadata.manager === "CCM") {
-        // result = await unzipCompressFileCCM(path);
-        result = await unzipCompressFileSimulateCCM(path);
-      } else {
-        return;
+      let result = false;
+      if (metadata?.manager === "SCNexus") {
+        const { data, error } = await ipcCustomize.installCompressFile(path);
+        if (error) {
+          console.error(error);
+        }
+        if (data) {
+          result = true;
+        }
+      } else if (metadata?.manager === "CCM") {
+        const { data, error } = await ipcCampaign.unzipCompressFileSimulateCCM(
+          path
+        );
+        if (error) {
+          console.error(error);
+        }
+        if (data) {
+          result = true;
+        }
       }
-      if (result.success) {
-        emiiterEmit("customize-file-unzipped");
+      if (result) {
+        emitterEmit("customize-file-unzipped");
         notification.info({
           title:
             t("customize.drop-zone.process-dialog.message-success-title") +
-            metadata.name,
+            metadata?.name,
           content: () =>
             h("div", { class: "flex flex-col gap-1" }, [
               h(
@@ -148,7 +161,7 @@ async function processFile(path: string) {
                 t(
                   "customize.drop-zone.process-dialog.message-success-content",
                   {
-                    count: compress_info.file_count,
+                    count: compress_info.files_count,
                   }
                 )
               ),
@@ -165,8 +178,6 @@ async function processFile(path: string) {
     },
   });
 }
-
-const { isOverDropZone } = useDropZone(dropZoneRef, onDrop);
 </script>
 
 <template>
@@ -176,7 +187,7 @@ const { isOverDropZone } = useDropZone(dropZoneRef, onDrop);
     @click="onClick"
   >
     <div
-      v-if="SUCCESS"
+      v-if="profileStore.SUCCESS"
       class="w-full h-8 flex flex-col justify-center items-center gap-y-2"
     >
       <div

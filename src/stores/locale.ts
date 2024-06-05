@@ -1,6 +1,5 @@
-import { getPreferredSystemLanguages } from "@/composables/useIpcHost/useAppIpc";
-import { useLocale } from "@/composables/useTrans";
-import { get, set, usePreferredLanguages } from "@vueuse/core";
+import { ipcApp } from "./../apis/ipcs/app";
+import { get, set } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
@@ -44,9 +43,9 @@ export const useLocaleStore = defineStore(
     const initLocale = async () => {
       if (INITIALIZED.value) return;
 
-      const preferred = await getPreferredSystemLanguages();
+      const { data: preferred } = await ipcApp.getPreferredSystemLanguages();
       let suitable: LOCALE = get(current);
-      preferred.find((i) => {
+      preferred?.find((i) => {
         const j = AVAILABLE.find(
           (k) =>
             k.key === i ||

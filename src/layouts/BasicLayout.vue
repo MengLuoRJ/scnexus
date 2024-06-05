@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 import { ref } from "vue";
-import BaseSideMenu from "@/components/BaseLayout/BaseSideMenu.vue";
-import BasePageContent from "@/components/BaseLayout/BasePageContent.vue";
+import BaseSideMenu from "./components/BaseSideMenu.vue";
+import BasePageContent from "./components/BasePageContent.vue";
+
+import MenuSetting from "@/assets/menu/Menu_Setting.png";
 
 import DefaultAvatar from "@/assets/images/avatar-00.jpg";
 
@@ -37,22 +39,30 @@ const collapsed = ref(true);
       <div
         class="self-center mt-auto mb-2 flex flex-col justify-center items-center gap-2"
       >
-        <div
-          class="w-[28px] h-[28px] cursor-pointer i-tabler:settings hover:text-blue hover:shadow"
-          @click="$router.push('/setting')"
-        ></div>
+        <div class="menu-icon" @click="$router.push('/setting')">
+          <n-image :src="MenuSetting" width="32" height="32" previewDisabled />
+        </div>
+        <n-divider
+          :style="{
+            marginTop: '2px',
+            marginBottom: '2px',
+            marginLeft: '0px',
+            marginRight: '0px',
+          }"
+        />
         <n-avatar
           class="cursor-pointer hover:shadow-lg"
           round
           size="medium"
           :src="DefaultAvatar"
+          @click="$router.push('/user')"
         />
       </div>
     </n-layout-sider>
     <n-layout
       class="layout-main bg-gray-200"
       :native-scrollbar="false"
-      :scrollbar-props="{ size: 0 }"
+      :scrollbar-props="{}"
     >
       <n-layout-header class="layout-header z-[10]" :position="'absolute'">
       </n-layout-header>
@@ -69,4 +79,8 @@ const collapsed = ref(true);
   </n-layout>
 </template>
 
-<style scoped></style>
+<style>
+.menu-icon {
+  @apply w-[32px] h-[32px] cursor-pointer hover:drop-shadow-lg;
+}
+</style>

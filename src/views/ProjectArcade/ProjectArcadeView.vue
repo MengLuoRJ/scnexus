@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import router from "@/router";
 import Banner from "@/assets/images/project-arcade-banner.png";
-import LobbiesCounter from "@/components/ProjectArcade/LobbiesCounter.vue";
-import LastDayShortDataDisplay from "@/components/ProjectArcade/LastDayShortDataDisplay.vue";
+import LobbiesCounter from "./components/LobbiesCounter.vue";
+import LastDayShortDataDisplay from "./components/LastDayShortDataDisplay.vue";
 </script>
 
 <template>

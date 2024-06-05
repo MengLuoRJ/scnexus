@@ -1,24 +1,12 @@
-<script setup lang="ts">
-import { ref } from "vue";
-
-const profile = ref(null);
-const nova = ref(null);
-
-async function getProfile() {
-  profile.value = await window.ipcRenderer.invoke("getProfile");
-  console.log(profile.value);
-}
-
-async function getNova() {
-  nova.value = await window.ipcRenderer.invoke(
-    "getActiveCampaignMetadataType",
-    "NCO"
-  );
-  console.log(nova.value);
-}
-</script>
+<script setup lang="ts"></script>
 <template>
   <div class="cm">
+    <div class="flex flex-row justify-between items-center">
+      <div class="header text-lg">
+        {{ "自制作品" }}
+      </div>
+    </div>
+    <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
     <n-alert title="WIP" type="info"> 尚在开发中，敬请期待！ </n-alert>
   </div>
 </template>

@@ -1,31 +1,11 @@
-import { ipcMain } from "electron";
-import { LocalProfile } from "@shared/types/profile";
-import {
-  getSettingProfile,
-  initSettingProfile,
-  setSettingProfileKey,
-  setSettingProfileKeyChild,
-} from "./setting.service";
+import { settingStore, settingStoreFunction } from "@electron/main/stores/setting";
+import { ipcHandle } from "@electron/main/utils/ipc-util";
+import { setSentryUser } from "@electron/main/utils/sentry";
 
 export function initSettingIpc() {
-  ipcMain.handle("setting::get-profile", async () => {
-    return getSettingProfile();
-  });
-  ipcMain.handle("setting::init-profile", async (_e, path?: string) => {
-    return initSettingProfile(path);
-  });
-  ipcMain.handle("setting::set-profile-key", (_e, key, value) => {
-    setSettingProfileKey(key, value);
-  });
-  ipcMain.handle(
-    "setting::set-profile-key-child",
-    <T extends keyof LocalProfile, K extends keyof LocalProfile[T]>(
-      e: any,
-      key: T,
-      childKey: K,
-      value: LocalProfile[T][K]
-    ) => {
-      return setSettingProfileKeyChild(key, childKey, value);
-    }
-  );
+  ipcHandle("setting:get-setting", () => settingStore.store);
+  ipcHandle("setting:get-setting-key", settingStoreFunction.get);
+  ipcHandle("setting:set-setting-key", settingStoreFunction.set);
+
+  ipcHandle("setting:set-tracker-user", setSentryUser);
 }

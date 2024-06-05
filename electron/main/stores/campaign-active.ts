@@ -2,17 +2,17 @@ import { join } from "node:path";
 import { app } from "electron";
 import Store from "electron-store";
 import {
-  CampaignInformation,
-  CampaignInformationSet,
+  MetadataInformated,
+  MetadataInformatedCampaignSet,
   CampaignType,
-} from "@shared/types";
+} from "scnexus-standard/metadata";
 
 const appDataRoot = app.getPath("userData");
 
 export type CampaignActiveStore = {
   ININTIALIZED: boolean;
   LAST_REFRESH_TIME: number;
-  CAMPAIGN_SET: CampaignInformationSet;
+  CAMPAIGN_SET: MetadataInformatedCampaignSet;
 };
 
 const defaultProfile: CampaignActiveStore = {
@@ -27,16 +27,16 @@ const defaultProfile: CampaignActiveStore = {
 };
 
 const campaignActiveStore = new Store<CampaignActiveStore>({
-  name: "campaign-active",
+  name: "store-campaign-active",
   cwd: join(appDataRoot, "SCNexusStorage"),
   fileExtension: "json",
   defaults: defaultProfile,
 });
 
 export function updateCampaignActiveStore(
-  newStoreData: CampaignInformationSet
+  newCampaignActiveSet: MetadataInformatedCampaignSet
 ): CampaignActiveStore {
-  campaignActiveStore.set("CAMPAIGN_SET", newStoreData);
+  campaignActiveStore.set("CAMPAIGN_SET", newCampaignActiveSet);
   campaignActiveStore.set("LAST_REFRESH_TIME", new Date().getTime());
   const ININTIALIZED = campaignActiveStore.get("ININTIALIZED");
   if (!ININTIALIZED) {
@@ -55,8 +55,8 @@ export function getCampaignActiveStoreKey<T extends keyof CampaignActiveStore>(
   return campaignActiveStore.get(key);
 }
 
-export function insertActiveCampaign(campaign: CampaignInformation) {
-  let storeData: CampaignInformationSet = {
+export function insertStoreActiveCampaign(campaign: MetadataInformated) {
+  let storeData: MetadataInformatedCampaignSet = {
     WOL: undefined,
     HOTS: undefined,
     LOTV: undefined,
@@ -70,8 +70,8 @@ export function insertActiveCampaign(campaign: CampaignInformation) {
   updateCampaignActiveStore(storeData);
 }
 
-export function removeActiveCampaign(campaign: CampaignInformation) {
-  let storeData: CampaignInformationSet = {
+export function removeStoreActiveCampaign(campaign: MetadataInformated) {
+  let storeData: MetadataInformatedCampaignSet = {
     WOL: undefined,
     HOTS: undefined,
     LOTV: undefined,

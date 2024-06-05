@@ -1,30 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { useAxios, type EasyUseAxiosReturn } from '@vueuse/integrations/useAxios'
-import { useCookies } from '@vueuse/integrations/useCookies'
-
-export const setAuthorizationHeader = () => {
-  const token = useCookies().get(import.meta.env.VITE_COOKIE_NAME)
-  if (token) {
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  } else {
-    return undefined
-  }
-}
-
-export const setAuthorization = () => {
-  const token = useCookies().get(import.meta.env.VITE_COOKIE_NAME)
-  if (token) {
-    return {
-      Authorization: `Bearer ${token}`
-    }
-  } else {
-    return undefined
-  }
-}
 
 export const axiosInstance = axios.create({
   baseURL: import.meta.env.PROD

@@ -52,14 +52,13 @@ export function initUpdaterModule() {
     getMainWindow()?.webContents.send("updater:error", err);
   });
 
-  ipcHandle(
-    "updater:check-for-updates-and-notify",
-    updater.checkForUpdatesAndNotify
+  ipcHandle("updater:check-for-updates-and-notify", () =>
+    updater.checkForUpdatesAndNotify()
   );
 
-  ipcHandle("updater:check-for-updates", updater.checkForUpdates);
+  ipcHandle("updater:check-for-updates", () => updater.checkForUpdates());
 
-  ipcHandle("updater:download-update", updater.downloadUpdate);
+  ipcHandle("updater:download-update", () => updater.downloadUpdate());
 
-  ipcHandle("updater:quit-and-install", updater.quitAndInstall);
+  ipcHandle("updater:quit-and-install", () => updater.quitAndInstall());
 }

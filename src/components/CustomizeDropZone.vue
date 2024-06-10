@@ -52,7 +52,7 @@ async function onClick() {
 }
 
 async function processFile(path: string) {
-  const { data: cfi, error } = await ipcCustomize.readCompressFileInfo(path);
+  const { data: cfi, error } = await ipcCustomize.readCompressFileInfo7z(path);
   if (error) {
     console.error(error);
     return;
@@ -129,7 +129,7 @@ async function processFile(path: string) {
       d.loading = true;
       let result = false;
       if (metadata?.manager === "SCNexus") {
-        const { data, error } = await ipcCustomize.installCompressFile(path);
+        const { data, error } = await ipcCustomize.installCompressFile7z(path);
         if (error) {
           console.error(error);
         }
@@ -137,9 +137,8 @@ async function processFile(path: string) {
           result = true;
         }
       } else if (metadata?.manager === "CCM") {
-        const { data, error } = await ipcCampaign.unzipCompressFileSimulateCCM(
-          path
-        );
+        const { data, error } =
+          await ipcCampaign.unzipCompressFile7zSimulateCCM(path);
         if (error) {
           console.error(error);
         }

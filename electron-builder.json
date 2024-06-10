@@ -55,7 +55,7 @@
   "publish": [
     {
       "provider": "generic",
-      "url": "https://scnexus-release.mengl.me/release/",
+      "url": "https://release.scnexus.net/release/",
       "useMultipleRangeRequest": false
     }
   ]

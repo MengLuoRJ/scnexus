@@ -24,6 +24,17 @@ export const ipcCustomize = {
   validateCompressFile: (path: string) =>
     useIpcRendererInvoke(`${moduleChannel}:install-compress-file`, path),
 
+  readCompressFileInfo7z: (path: string) =>
+    useIpcRendererInvoke<CompressFileInfo | null>(
+      `${moduleChannel}:read-compress-file-info-7z`,
+      path
+    ),
+  installCompressFile7z: (path: string) =>
+    useIpcRendererInvoke<ResultUncompress>(
+      `${moduleChannel}:install-compress-file-7z`,
+      path
+    ),
+
   installCustomize: (infor: MetadataInformated) =>
     useIpcRendererInvoke<ResultInstallCustomize>(
       `${moduleChannel}:install-customize`,

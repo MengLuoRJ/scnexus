@@ -2,7 +2,9 @@ import { ipcHandle } from "@electron/main/utils/ipc-util";
 
 import {
   installCompressFile,
+  installCompressFile7z,
   readCompressFileInfo,
+  readCompressFileInfo7z,
   validateCompressFile,
 } from "./compress-process";
 import {
@@ -19,6 +21,9 @@ export function initCustomizeIpc() {
   ipcHandle("customize:install-compress-file", installCompressFile);
   ipcHandle("customize:validate-compress-file", validateCompressFile);
 
+  ipcHandle("customize:read-compress-file-info-7z", readCompressFileInfo7z);
+  ipcHandle("customize:install-compress-file-7z", installCompressFile7z);
+
   ipcHandle("customize:install-customize", installCustomize);
   ipcHandle("customize:uninstall-customize", uninstallCustomize);
   ipcHandle(
@@ -33,5 +38,5 @@ export function initCustomizeIpc() {
   ipcHandle("customize:run-game-client", runGameClient);
   ipcHandle("customize:run-editor-client", runEditorClient);
 
-  ipcHandle("customize:unzip-sz", unzipSZ)
+  ipcHandle("customize:unzip-sz", unzipSZ);
 }

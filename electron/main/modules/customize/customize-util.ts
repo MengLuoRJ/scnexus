@@ -7,6 +7,7 @@ import AdmZip, { IZipEntry } from "adm-zip";
 import { getZip } from "@electron/main/utils/admzip";
 import { Logger } from "@electron/main/utils/logger";
 import { CompressFileTree } from "@shared/types/customize.type";
+import { szListFull } from "@electron/main/utils/7zip-util";
 
 /**
  * Parse the metadata from file to a Standard Metadata object
@@ -97,8 +98,9 @@ export function generateZipEntryTree(cf_path: string) {
     root: {
       name: basename(cf_path),
       path: "/",
-      files: [],
-      dirs: [],
+      isFile: false,
+      isDirectory: true,
+      children: [],
     },
   };
 
@@ -115,17 +117,19 @@ export function generateZipEntryTree(cf_path: string) {
 
       if (/\.sc2mod$|\.sc2map$/i.test(seg) && i < segments.length - 1) {
         if (
-          currentNode.files.findIndex(
-            (file) => file.name === seg && file.isComponent
+          currentNode.children?.findIndex(
+            (node) => node.name === seg && node.isComponent
           ) === -1
         ) {
-          currentNode.files.push({
+          currentNode.children.push({
             path: entry.entryName
               .split("/")
               .slice(0, i + 1)
               .join("/"),
             name: seg,
             isComponent: true,
+            isDirectory: true,
+            isFile: false,
           });
         }
         break;
@@ -133,26 +137,115 @@ export function generateZipEntryTree(cf_path: string) {
 
       if (i === segments.length - 1) {
         if (
-          currentNode.files.findIndex(
-            (file) => file.name === seg && !file.isComponent
+          currentNode.children?.findIndex(
+            (node) => node.name === seg && !node.isComponent
           ) === -1
         ) {
-          currentNode.files.push({
+          currentNode.children?.push({
             path: entry.entryName,
             name: seg,
             isComponent: false,
+            isDirectory: false,
+            isFile: true,
           });
         }
       } else {
-        let dirNode = currentNode.dirs.find((dir) => dir.name === seg);
+        let dirNode = currentNode.children?.find(
+          (dir) => dir.isDirectory && dir.name === seg
+        );
         if (!dirNode) {
           dirNode = {
             name: seg,
             path: segments.slice(0, i + 1).join("/"),
-            files: [],
-            dirs: [],
+            children: [],
+            isFile: false,
+            isDirectory: true,
           };
-          currentNode.dirs.push(dirNode);
+          currentNode.children?.push(dirNode);
+        }
+        currentNode = dirNode;
+      }
+    }
+  }
+
+  return cfTree;
+}
+
+export async function generateZipEntryTree7z(cf_path: string) {
+  const cfTree: CompressFileTree = {
+    cf_path,
+    name: basename(cf_path),
+    root: {
+      name: basename(cf_path),
+      path: "/",
+      isFile: false,
+      isDirectory: true,
+      children: [],
+    },
+  };
+
+  const entries = await szListFull(cf_path);
+
+  for (const entry of entries) {
+    const fullPath = entry.file;
+
+    let currentNode = cfTree.root;
+
+    if (entry.attributes?.match(/D/)) {
+      continue;
+    }
+
+    const segments = fullPath.split("/");
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+
+      if (/\.sc2mod$|\.sc2map$/i.test(seg) && i < segments.length - 1) {
+        if (
+          currentNode.children?.findIndex(
+            (node) => node.name === seg && node.isComponent
+          ) === -1
+        ) {
+          currentNode.children.push({
+            path: fullPath
+              .split("/")
+              .slice(0, i + 1)
+              .join("/"),
+            name: seg,
+            isComponent: true,
+            isFile: false,
+            isDirectory: true,
+          });
+        }
+        break;
+      }
+
+      if (i === segments.length - 1) {
+        if (
+          currentNode.children?.findIndex(
+            (node) => node.name === seg && !node.isComponent
+          ) === -1
+        ) {
+          currentNode.children.push({
+            path: fullPath,
+            name: seg,
+            isComponent: false,
+            isFile: true,
+            isDirectory: false,
+          });
+        }
+      } else {
+        let dirNode = currentNode.children?.find(
+          (dir) => dir.isDirectory && dir.name === seg
+        );
+        if (!dirNode) {
+          dirNode = {
+            name: seg,
+            path: segments.slice(0, i + 1).join("/"),
+            children: [],
+            isFile: false,
+            isDirectory: true,
+          };
+          currentNode.children?.push(dirNode);
         }
         currentNode = dirNode;
       }

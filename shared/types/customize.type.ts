@@ -14,12 +14,10 @@ export type CompressFileTree = {
 export type CompressFileTreeNode = {
   name: string;
   path: string;
-  files: {
-    path: string;
-    name: string;
-    isComponent: boolean;
-  }[];
-  dirs: CompressFileTreeNode[];
+  isFile: boolean;
+  isDirectory: boolean;
+  isComponent?: boolean;
+  children?: CompressFileTreeNode[];
 };
 
 export type CompressFileInfo = {

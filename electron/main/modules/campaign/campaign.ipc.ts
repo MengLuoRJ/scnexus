@@ -1,5 +1,6 @@
 import { ipcHandle, ipcHandleRemove } from "@electron/main/utils/ipc-util";
 import {
+  unzipCompressFile7zSimulateCCM,
   unzipCompressFileCCM,
   unzipCompressFileSimulateCCM,
 } from "./ccm-process";
@@ -22,6 +23,11 @@ export function initCampaignIpc() {
   ipcHandle(
     "campaign:unzip-compress-file-simulate-ccm",
     unzipCompressFileSimulateCCM
+  );
+
+  ipcHandle(
+    "campaign:unzip-compress-file-7z-simulate-ccm",
+    unzipCompressFile7zSimulateCCM
   );
 
   ipcHandle("campaign:get-campaign-lists", getCampaignLists);

@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, dirname, basename } from "node:path";
 import { existsSync, renameSync, rmSync, mkdirSync } from "node:fs";
 import { access, mkdir } from "node:fs/promises";
 
@@ -14,6 +14,7 @@ import { MetadataStandard } from "scnexus-standard/metadata";
 import {
   ccmMetadataParser,
   generateZipEntryTree,
+  generateZipEntryTree7z,
   scnexusMetadataParser,
 } from "./customize-util";
 
@@ -30,6 +31,12 @@ import {
   UNCOMPRESSING_ERROR,
 } from "@shared/errors/customize.error";
 import { profileStore } from "@electron/main/stores/profile";
+import { szList } from "@electron/main/utils/7zip";
+import {
+  szExtractFullPromisify,
+  szListFull,
+  szReadFile,
+} from "@electron/main/utils/7zip-util";
 
 export function readCompressFileInfo(cf_path: string): CompressFileInfo | null {
   let zip: AdmZip;
@@ -123,6 +130,94 @@ export function readCompressFileInfo(cf_path: string): CompressFileInfo | null {
   };
 }
 
+export async function readCompressFileInfo7z(
+  cf_path: string
+): Promise<CompressFileInfo | null> {
+  let metadata: MetadataStandard | undefined;
+
+  let ccmMetadata: MetadataStandard | undefined;
+  let ccmMetadataRoot: string | undefined;
+
+  let size: number = 0;
+  let compressedSize: number = 0;
+  let files_count: number = 0;
+
+  let fn_encoding: string = "utf8";
+
+  const result = await new Promise<boolean>((resolve, reject) => {
+    let completed = false;
+    szList(cf_path, { charset: "UTF-8" })
+      .on("data", async (data) => {
+        if (fn_encoding === "utf8") {
+          const encoding = analyse(Buffer.from(data.file));
+          if (
+            encoding.some((result) => {
+              return (
+                (result.name === "GB18030" || result.lang === "zh") &&
+                result.confidence >= 10
+              );
+            })
+          ) {
+            fn_encoding = "gb18030";
+          }
+        }
+
+        const name = basename(data.file);
+        if (name === "metadata.json") {
+          const buffer = await szReadFile(cf_path, name);
+          metadata = scnexusMetadataParser(buffer.toString());
+        }
+        if (name === "metadata.txt") {
+          const buffer = await szReadFile(cf_path, name);
+          ccmMetadata = ccmMetadataParser(buffer.toString());
+          ccmMetadataRoot = dirname(data.file);
+        }
+
+        files_count += 1;
+        size += data?.size ?? 0;
+        compressedSize += data?.sizeCompressed ?? 0;
+
+        if (completed) {
+          console.log("re completed");
+          resolve(true);
+        }
+      })
+      .on("end", () => {
+        completed = true;
+      })
+      .on("error", (e) => {
+        reject(e);
+      });
+  });
+
+  if (!result) {
+    return null;
+  }
+
+  if (!metadata && !ccmMetadata) {
+    return null;
+  }
+
+  szListFull(cf_path);
+
+  const entry_tree = await generateZipEntryTree7z(cf_path);
+
+  return {
+    metadata: metadata,
+    ccm: {
+      metadata: ccmMetadata,
+      metadata_root: ccmMetadataRoot,
+    },
+    compress_info: {
+      size: size,
+      size_compressed: compressedSize,
+      files_count: files_count,
+      fn_encoding: fn_encoding,
+    },
+    entry_tree: entry_tree ?? undefined,
+  };
+}
+
 /**
  * Install Compress file, this will uncompress the zip file.
  * @param path Path to Compress file
@@ -179,6 +274,66 @@ export async function installCompressFile(
       );
       throw new Error(UNCOMPRESSING_ERROR);
     });
+
+  return {
+    metadata: metadata,
+    cf_path: cf_path,
+    cf_info: cfi,
+  };
+}
+
+/**
+ * Install Compress file, this will uncompress the zip file.
+ * @param path Path to Compress file
+ * @returns
+ */
+export async function installCompressFile7z(
+  cf_path: string
+): Promise<ResultUncompress> {
+  const cfi = await readCompressFileInfo7z(cf_path);
+  if (!cfi) {
+    Logger.warn(`[CUSTOMIZE] ${INVALID_COMPRESSED_FILE}: cf_path = ${cf_path}`);
+    throw new Error(INVALID_COMPRESSED_FILE);
+  }
+
+  const { metadata, compress_info } = cfi;
+  if (!metadata) {
+    Logger.warn(`[CUSTOMIZE] ${METADATA_NOT_FOUND}: cf_path = ${cf_path}`);
+    throw new Error(METADATA_NOT_FOUND);
+  }
+
+  if (metadata.manager !== "SCNexus") {
+    Logger.warn(`[CUSTOMIZE] ${METHOD_SCNEXUS_ONLY}: cf_path = ${cf_path}`);
+    throw new Error(METHOD_SCNEXUS_ONLY);
+  }
+
+  let storePath: string = "";
+  if (metadata.type === "Customize") {
+    storePath = profileStore.get("PROFILE_CUSTOMIZE").LIBRARY_ROOT;
+  } else if (metadata.type === "Campaign") {
+    storePath = profileStore.get("PROFILE_CAMPAIGN").LIBRARY_ROOT;
+  } else {
+    Logger.warn(
+      `[CUSTOMIZE] ${METHOD_TYPE_UNSUPPORTED}: type = ${metadata.type}, cf_path = ${cf_path}`
+    );
+    throw new Error(METHOD_TYPE_UNSUPPORTED);
+  }
+
+  const targetPath = join(
+    storePath,
+    metadata.name.replace(/[\~\!\@\#\$\%\^\&\*\"\|\:\<\>\/\\\\]/g, "")
+  );
+
+  await access(targetPath).catch(
+    async () => await mkdir(targetPath, { recursive: true })
+  );
+
+  await szExtractFullPromisify(cf_path, targetPath).catch((err) => {
+    Logger.error(
+      `[CUSTOMIZE] ${UNCOMPRESSING_ERROR}: error = ${err}, cf_path = ${cf_path}, targetPath = ${targetPath}`
+    );
+    throw new Error(UNCOMPRESSING_ERROR);
+  });
 
   return {
     metadata: metadata,

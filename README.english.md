@@ -14,7 +14,7 @@
 
 ### Get the Application Installer
 
-- Get the Application Installer from our website: [SCNexus](https://scnexus.aiurcovenant.net/)
+- Get the Application Installer from our website: [SCNexus](https://scnexus.net/)
 
 ### Get the Application from Microsoft Store
 

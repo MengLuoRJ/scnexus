@@ -21,7 +21,7 @@
 
 **获取应用程序安装包**
 
-- 请从「星际枢纽」官方网站下载 Windows NSIS 安装包: [星际枢纽](https://scnexus.net/)
+- 请从「星际枢纽」官方网站下载 Windows NSIS 安装包：[星际枢纽](https://scnexus.net/)
 
 **从微软应用商店获取安装**
 
@@ -33,7 +33,7 @@
 
 **Github Release**
 
-由于本项目尚未完成 CI 构建工作流的开发，且没有足够的资金取得稳定的代码签名证书，恕暂无法通过 Github Release 提供安装程序。
+由于 CI 构建工作流尚未完成开发，且没有足够的资金取得稳定的代码签名证书，恕暂时无法通过 Github Release 提供安装程序。
 
 ### Linux & MacOS
 

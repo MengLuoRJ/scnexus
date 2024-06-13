@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "7z-bin": "0.0.2",
-    "@sentry/electron": "^4.24.0",
+    "@sentry/electron": "^5.1.0",
     "@vueuse/electron": "^10.9.0",
     "adm-zip": "^0.5.12",
     "chardet": "^2.0.0",

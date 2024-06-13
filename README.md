@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://scnexus.net">
+  <a href="https://scnexus.net" target="_blank" >
     <img src="./public/application_icon.png" width="150">
   </a>
   <h1>星际枢纽</h1>
@@ -46,10 +46,25 @@
 - **自制战役分发与管理**：帮助内容创作者分发自制战役和自制内容，并为玩家提供安装和管理能力，支持「星际枢纽」标准和[“CCM”格式](https://github.com/7thAce/SC2CCM)。
 - **云同步存档**(敬请期待)：为本地官方战役、自制战役和已加入“「大厅计划」云存档服务”的大厅地图提供云同步存档功能。
 
-### 问题解答与社群
+## 问题解答与社群
 
-### 国际化与本地化翻译
+[GEECG] 星际枢纽中文用户交流群：857601125
 
-### 参与共建
+[GEECG] SCNexus Discord Server: https://discord.gg/U6EbQKdkH2
 
-### 开源许可
+## 国际化与本地化翻译
+
+欢迎参与星际枢纽应用程序的本地化翻译工作，将应用程序翻译至更多版本，请先阅读 [贡献指南](./CONTRIBUTING.md)
+
+| Key | 语言     | 翻译状态    |
+| --- | :------- | :---------- |
+| zh  | 简体中文 | ✔️ 原生支持 |
+| en  | English  | ⏳ 制作中   |
+
+## 参与共建
+
+感谢你愿意尝试为本项目做出贡献，详请阅读 [贡献指南](./CONTRIBUTING.md)
+
+## 开源许可
+
+「星际枢纽」应用程序基于 [BSD 3-Clause License](https://github.com/MengLuoRJ/scnexus/blob/main/LICENSE) 开源授权。

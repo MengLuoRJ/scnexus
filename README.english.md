@@ -55,7 +55,7 @@ Plan to support them in the future, but lack of development and testing for thos
 
 ## Localized Translation
 
-Welcome to take part in the translation of SCNexus Application, to translate the application into more languages, please read [Contributing Guide](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.md) for more details.
+Welcome to take part in the translation of SCNexus Application, to translate the application into more languages, please read [Contributing Guide](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.english.md) for more details.
 
 | Key | Language | Status              |
 | --- | :------- | :------------------ |
@@ -64,7 +64,7 @@ Welcome to take part in the translation of SCNexus Application, to translate the
 
 ## Contributing
 
-Thank you for your will to contribute, please read [Contributing Guide](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.md) for more details.
+Thank you for your will to contribute, please read [Contributing Guide](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.english.md) for more details.
 
 ## License
 

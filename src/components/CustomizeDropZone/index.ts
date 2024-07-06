@@ -1,2 +1,1 @@
-import CustomizeDropZone from "./CustomizeDropZone.vue";
-export default CustomizeDropZone;
+export { default } from "./CustomizeDropZone.vue"

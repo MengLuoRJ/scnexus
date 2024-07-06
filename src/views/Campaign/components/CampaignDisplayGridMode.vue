@@ -9,7 +9,7 @@ import {
   unactiveCampaign,
 } from "../composables/useCampaign";
 
-import CustomizeDropZone from "@/components/CustomizeDropZone.vue";
+import CustomizeDropZone from "@/components/CustomizeDropZone";
 
 import CampaignSwitchDrawer from "./CampaignSwitchDrawer.vue";
 

@@ -4,7 +4,6 @@ import type { IpcRendererEvent } from "electron";
 import { toRaw } from "vue";
 
 export const ipcRenderer: Window["ipcRenderer"] = window.ipcRenderer;
-export const ipcRendererOn: Window["ipcRendererOn"] = window.ipcRendererOn;
 
 export const useIpcRendererInvoke = async <T = any>(
   channel: string,
@@ -22,27 +21,36 @@ export const useIpcRendererInvoke = async <T = any>(
   };
 };
 
-export type RendererListener<T = any> = (
+export type RendererListener<P1 = any, P2 = any, P3 = any> = (
   event: IpcRendererEvent,
-  arg: T,
+  arg1: P1,
+  arg2?: P2,
+  arg3?: P3,
   ...args: any[]
 ) => void;
 
-export const useIpcRendererOn =
-  <T = any>(channel: string) =>
-  (listener: RendererListener<T>) => {
+/**
+ * Sets up an IPC renderer listener for the specified channel.
+ * @param channel The IPC channel to listen to.
+ * @param listener Optional listener function to handle the IPC messages.
+ * @returns A function to set up the listener if not provided initially.
+ */
+export const useIpcRendererOn = <T = any>(
+  channel: string,
+  listener?: RendererListener<T>
+): ((listener: RendererListener<T>) => void) | void => {
+  const setupListener = (listener: RendererListener<T>) => {
     tryOnScopeDispose(() => {
       ipcRenderer.removeListener(channel, listener);
     });
     ipcRenderer.on(channel, listener);
   };
 
-export const useIpcRendererOnDirectly = <T = any>(
-  channel: string,
-  listener: RendererListener<T>
-) => {
-  tryOnScopeDispose(() => {
-    ipcRenderer.removeListener(channel, listener);
-  });
-  ipcRenderer.on(channel, listener);
+  if (listener) {
+    setupListener(listener);
+  } else {
+    return (listener: RendererListener<T>) => {
+      setupListener(listener);
+    };
+  }
 };

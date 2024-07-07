@@ -23,10 +23,8 @@ export async function initUpdater() {
     return;
   }
 
-  window.ipcRenderer.updater.clearError();
-  window.ipcRenderer.updater.onError((_, error) => {
+  ipcUpdater.onError((_, error) => {
     console.error(error);
-    // updaterStore.clear();
   });
 
   const { pause, resume, isActive } = useIntervalFn(

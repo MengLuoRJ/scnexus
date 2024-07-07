@@ -11,7 +11,7 @@ import {
 } from "../composables/useCampaign";
 import Campaign_thumbnail from "@/assets/campaign/Campaign_thumbnail.png";
 
-import CustomizeDropZone from "@/components/CustomizeDropZone.vue";
+import CustomizeDropZone from "@/components/CustomizeDropZone";
 import IconTooltip from "@/components/IconTooltip.vue";
 import ExternalLinkTooltip from "@/components/ExternalLinkTooltip.vue";
 import SupportIcon from "@/components/SupportIcon.vue";

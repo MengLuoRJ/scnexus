@@ -20,6 +20,18 @@ export type CompressFileTreeNode = {
   children?: CompressFileTreeNode[];
 };
 
+export type CompressFileList = {
+  cf_path: string;
+  name: string;
+  files: {
+    name: string;
+    path: string;
+    type?: "SC2Map" | "SC2Mod" | string;
+    folder?: "Root" | "Maps" | "Mods" | string;
+    isComponent?: boolean;
+  }[];
+};
+
 export type CompressFileInfo = {
   metadata?: MetadataStandard;
   ccm?: {
@@ -38,6 +50,7 @@ export type CompressFileInfo = {
     fn_encoding?: string;
   };
   entry_tree?: CompressFileTree;
+  entry_list?: CompressFileList;
 };
 
 export type ResultUncompress = {

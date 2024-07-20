@@ -14,7 +14,7 @@ import { MetadataStandard } from "scnexus-standard/metadata";
 import {
   ccmMetadataParser,
   generateZipEntryTree,
-  generateZipEntryTree7z,
+  generateZipEntryInfo7z,
   scnexusMetadataParser,
 } from "./customize-util";
 
@@ -144,63 +144,55 @@ export async function readCompressFileInfo7z(
 
   let fn_encoding: string = "utf8";
 
-  const result = await new Promise<boolean>((resolve, reject) => {
-    let completed = false;
+  let promiseList: Promise<void>[] = [];
+  const result = await new Promise<boolean>((resolve, reject) =>
     szList(cf_path, { charset: "UTF-8" })
       .on("data", async (data) => {
-        if (fn_encoding === "utf8") {
-          const encoding = analyse(Buffer.from(data.file));
-          if (
-            encoding.some((result) => {
-              return (
-                (result.name === "GB18030" || result.lang === "zh") &&
-                result.confidence >= 10
-              );
-            })
-          ) {
-            fn_encoding = "gb18030";
+        const dataProcessPromise = async () => {
+          if (fn_encoding === "utf8") {
+            const encoding = analyse(Buffer.from(data.file));
+            if (
+              encoding.some((result) => {
+                return (
+                  (result.name === "GB18030" || result.lang === "zh") &&
+                  result.confidence >= 10
+                );
+              })
+            ) {
+              fn_encoding = "gb18030";
+            }
           }
-        }
-
-        const name = basename(data.file);
-        if (name === "metadata.json") {
-          const buffer = await szReadFile(cf_path, name);
-          metadata = scnexusMetadataParser(buffer.toString());
-        }
-        if (name === "metadata.txt") {
-          const buffer = await szReadFile(cf_path, name);
-          ccmMetadata = ccmMetadataParser(buffer.toString());
-          ccmMetadataRoot = dirname(data.file);
-        }
-
-        files_count += 1;
-        size += data?.size ?? 0;
-        compressedSize += data?.sizeCompressed ?? 0;
-
-        if (completed) {
-          console.log("re completed");
-          resolve(true);
-        }
+          const name = basename(data.file);
+          if (name === "metadata.json") {
+            console.log("metadata.json");
+            const buffer = await szReadFile(cf_path, name);
+            metadata = scnexusMetadataParser(buffer.toString());
+          }
+          if (name === "metadata.txt") {
+            console.log("metadata.txt");
+            const buffer = await szReadFile(cf_path, name);
+            ccmMetadata = ccmMetadataParser(buffer.toString());
+            ccmMetadataRoot = dirname(data.file);
+          }
+          files_count += 1;
+          size += data?.size ?? 0;
+          compressedSize += data?.sizeCompressed ?? 0;
+        };
+        promiseList.push(dataProcessPromise());
       })
       .on("end", () => {
-        completed = true;
+        resolve(true);
       })
       .on("error", (e) => {
+        console.error(e);
+        Logger.error(e);
         reject(e);
-      });
-  });
+      })
+  );
 
-  if (!result) {
-    return null;
-  }
-
-  if (!metadata && !ccmMetadata) {
-    return null;
-  }
-
-  szListFull(cf_path);
-
-  const entry_tree = await generateZipEntryTree7z(cf_path);
+  if (!result) return null;
+  await Promise.all(promiseList);
+  const { cfList, cfTree } = await generateZipEntryInfo7z(cf_path);
 
   return {
     metadata: metadata,
@@ -214,7 +206,8 @@ export async function readCompressFileInfo7z(
       files_count: files_count,
       fn_encoding: fn_encoding,
     },
-    entry_tree: entry_tree ?? undefined,
+    entry_tree: cfTree ?? undefined,
+    entry_list: cfList ?? undefined,
   };
 }
 

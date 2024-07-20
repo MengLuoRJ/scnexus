@@ -6,7 +6,10 @@ import { profileStore } from "@electron/main/stores/profile";
 import AdmZip, { IZipEntry } from "adm-zip";
 import { getZip } from "@electron/main/utils/admzip";
 import { Logger } from "@electron/main/utils/logger";
-import { CompressFileTree } from "@shared/types/customize.type";
+import {
+  CompressFileList,
+  CompressFileTree,
+} from "@shared/types/customize.type";
 import { szListFull } from "@electron/main/utils/7zip-util";
 
 /**
@@ -171,7 +174,7 @@ export function generateZipEntryTree(cf_path: string) {
   return cfTree;
 }
 
-export async function generateZipEntryTree7z(cf_path: string) {
+export async function generateZipEntryInfo7z(cf_path: string) {
   const cfTree: CompressFileTree = {
     cf_path,
     name: basename(cf_path),
@@ -182,6 +185,11 @@ export async function generateZipEntryTree7z(cf_path: string) {
       isDirectory: true,
       children: [],
     },
+  };
+  const cfList: CompressFileList = {
+    cf_path,
+    name: basename(cf_path),
+    files: [],
   };
 
   const entries = await szListFull(cf_path);
@@ -198,6 +206,19 @@ export async function generateZipEntryTree7z(cf_path: string) {
     const segments = fullPath.split("/");
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i];
+      const type = seg.match(/\.sc2mod$/i)
+        ? "SC2Mod"
+        : seg.match(/\.sc2map$/i)
+        ? "SC2Map"
+        : seg.split(".")[1];
+      const folder = ("/" + fullPath).split("/")[1] ?? "Root";
+
+      const path =
+        "/" +
+        fullPath
+          .split("/")
+          .slice(0, i + 1)
+          .join("/");
 
       if (/\.sc2mod$|\.sc2map$/i.test(seg) && i < segments.length - 1) {
         if (
@@ -206,14 +227,18 @@ export async function generateZipEntryTree7z(cf_path: string) {
           ) === -1
         ) {
           currentNode.children.push({
-            path: fullPath
-              .split("/")
-              .slice(0, i + 1)
-              .join("/"),
+            path: path,
             name: seg,
             isComponent: true,
             isFile: false,
             isDirectory: true,
+          });
+          cfList.files.push({
+            name: seg,
+            path: path,
+            isComponent: true,
+            type: type,
+            folder: folder,
           });
         }
         break;
@@ -232,6 +257,13 @@ export async function generateZipEntryTree7z(cf_path: string) {
             isFile: true,
             isDirectory: false,
           });
+          cfList.files.push({
+            name: seg,
+            path: path,
+            isComponent: true,
+            type: type,
+            folder: folder,
+          });
         }
       } else {
         let dirNode = currentNode.children?.find(
@@ -240,7 +272,7 @@ export async function generateZipEntryTree7z(cf_path: string) {
         if (!dirNode) {
           dirNode = {
             name: seg,
-            path: segments.slice(0, i + 1).join("/"),
+            path: "/" + segments.slice(0, i + 1).join("/"),
             children: [],
             isFile: false,
             isDirectory: true,
@@ -252,7 +284,10 @@ export async function generateZipEntryTree7z(cf_path: string) {
     }
   }
 
-  return cfTree;
+  return {
+    cfTree,
+    cfList,
+  };
 }
 
 export async function rmDirWhitely(dirPath: string) {

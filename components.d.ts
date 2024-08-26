@@ -7,7 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
-    CustomizeDropZone: typeof import('./src/components/CustomizeDropZone.vue')['default']
+    CustomizeDropZone: typeof import('./src/components/CustomizeDropZone/CustomizeDropZone.vue')['default']
     ExternalLinkTooltip: typeof import('./src/components/ExternalLinkTooltip.vue')['default']
     GameProfileChecker: typeof import('./src/components/GameProfileChecker.vue')['default']
     IconTooltip: typeof import('./src/components/IconTooltip.vue')['default']
@@ -56,6 +56,7 @@ declare module 'vue' {
     NTabPane: typeof import('naive-ui')['NTabPane']
     NTabs: typeof import('naive-ui')['NTabs']
     NVirtualList: typeof import('naive-ui')['NVirtualList']
+    ProcessFileModal: typeof import('./src/components/CustomizeDropZone/components/ProcessFileModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SupportIcon: typeof import('./src/components/SupportIcon.vue')['default']

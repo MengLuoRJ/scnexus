@@ -8,7 +8,6 @@ import Components from "unplugin-vue-components/vite";
 import { unheadVueComposablesImports } from "@unhead/vue";
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 import electron from "vite-plugin-electron";
-import { sentryVitePlugin } from "@sentry/vite-plugin";
 import pkg from "./package.json";
 
 // https://vitejs.dev/config/
@@ -122,13 +121,6 @@ export default defineConfig(({ command, mode }) => {
           },
         },
       ]),
-
-      sentryVitePlugin({
-        org: "aiurcovenant",
-        project: "scnexus",
-        authToken: env.SENTRY_AUTH_TOKEN,
-        telemetry: false,
-      }),
     ],
     resolve: {
       alias: {

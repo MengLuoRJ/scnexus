@@ -153,10 +153,7 @@ export async function readCompressFileInfo7z(
             const encoding = analyse(Buffer.from(data.file));
             if (
               encoding.some((result) => {
-                return (
-                  (result.name === "GB18030" || result.lang === "zh") &&
-                  result.confidence >= 10
-                );
+                return result.name === "GB18030" && result.confidence >= 10;
               })
             ) {
               fn_encoding = "gb18030";

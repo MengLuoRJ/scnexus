@@ -14,7 +14,6 @@ import { useI18n } from "vue-i18n";
 import { ipcSetting } from "./apis/ipcs/setting";
 import { initUpdater } from "./composables/useUpdater";
 
-
 const localeStore = useLocaleStore();
 const locale = useLocale();
 
@@ -37,14 +36,19 @@ onMounted(async () => {
   await userStore.initUser();
 
   await initUpdater();
-
 });
 </script>
 
 <template>
   <div class="app">
     <NaiveProvider>
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <Transition>
+          <KeepAlive>
+            <component :is="Component" />
+          </KeepAlive>
+        </Transition>
+      </RouterView>
     </NaiveProvider>
   </div>
 </template>

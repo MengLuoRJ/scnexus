@@ -1,0 +1,24 @@
+{
+  "name": "@scnexus/app-preload",
+  "version": "1.0.0",
+  "description": "electron preload process",
+  "author": {
+    "name": "MengLuoRJ",
+    "email": "mengluorj@aiurcovenant.net",
+    "url": "https://github.com/MengLuoRJ"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MengLuoRJ/scnexus"
+  },
+  "type": "module",
+  "main": "dist/index.mjs",
+  "devDependencies": {
+    "electron": "^32.0.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.3"
+  },
+  "dependencies": {
+    "@sentry/electron": "^4.24.0"
+  }
+}

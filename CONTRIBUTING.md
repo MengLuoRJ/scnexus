@@ -1,10 +1,10 @@
 # 「星际枢纽」贡献指南
 
-中文 | [English](./CODE_OF_CONDUCT.english.md)
+中文 | [English](./CONTRIBUTING.english.md)
 
 感谢你愿意尝试为本项目做出贡献，期待你的卓越参与！
 
-在开始贡献前敬请阅读本贡献指南，并阅读本项目的[贡献者公约](./CODE_OF_CONDUCT.english.md)。
+在开始贡献前敬请阅读本贡献指南，并阅读本项目的[贡献者公约](./CODE_OF_CONDUCT.md)。
 
 ## 贡献代码
 

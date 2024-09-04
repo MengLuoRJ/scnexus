@@ -1,6 +1,6 @@
 # 贡献者公约
 
-中文 | English(./CODE_OF_CONDUCT.english.md)
+中文 | [English](./CODE_OF_CONDUCT.english.md)
 
 ## 我们的承诺
 

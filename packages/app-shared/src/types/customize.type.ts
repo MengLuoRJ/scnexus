@@ -3,7 +3,6 @@ import {
   MetadataInformated,
   MetadataStandard,
 } from "scnexus-standard/metadata";
-export type { CustomizeStore } from "@electron/main/stores/customize";
 
 export type CompressFileTree = {
   cf_path: string;

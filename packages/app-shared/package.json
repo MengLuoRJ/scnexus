@@ -1,0 +1,25 @@
+{
+  "name": "@scnexus/app-shared",
+  "version": "1.0.0",
+  "description": "shared codes",
+  "author": {
+    "name": "MengLuoRJ",
+    "email": "mengluorj@aiurcovenant.net",
+    "url": "https://github.com/MengLuoRJ"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MengLuoRJ/scnexus"
+  },
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./src/*.ts"
+      ]
+    }
+  }
+}

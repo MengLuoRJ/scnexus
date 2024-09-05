@@ -23,8 +23,9 @@
     "build:main": "cd ./packages/app-main && vite build",
     "build:preload": "cd ./packages/app-preload && vite build",
     "build:renderer": "cd ./packages/app-renderer && vite build",
+    "build:app:prepare": "npm run script:app:sync-version",
     "build:app": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app",
-    "build:app:release": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app:release",
+    "build:app:release": "npm run script:app:sync-version && cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app:release",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/app-main --passWithNoTests",
@@ -63,5 +64,8 @@
       }
     },
     "overrides": {}
+  },
+  "dependencies": {
+    "@electron/asar": "^3.2.10"
   }
 }

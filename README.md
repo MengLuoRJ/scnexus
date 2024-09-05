@@ -9,6 +9,16 @@
   </p>
 </div>
 
+<div align="center">
+<img alt="GitHub package.json version" src="https://img.shields.io/github/package-json/v/MengLuoRJ/scnexus">
+<img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/MengLuoRJ/scnexus">
+
+</div>
+<div align="center">
+<img alt="platform Windows" src="https://img.shields.io/badge/Platform-Windows-blue" />
+<a title="Crowdin" target="_blank" href="https://crowdin.com/project/scnexus"><img src="https://badges.crowdin.net/scnexus/localized.svg"></a>
+</div>
+
 ## 星际枢纽
 
 如果想要了解更多关于应用程序的相关信息，不妨前往项目的官方网站看看：

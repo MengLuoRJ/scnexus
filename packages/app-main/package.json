@@ -1,0 +1,49 @@
+{
+  "name": "@scnexus/app-main",
+  "version": "1.0.0",
+  "description": "electron main process",
+  "author": {
+    "name": "MengLuoRJ",
+    "email": "mengluorj@aiurcovenant.net",
+    "url": "https://github.com/MengLuoRJ"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MengLuoRJ/scnexus"
+  },
+  "type": "module",
+  "main": "packages/app-main/dist/index.js",
+  "scripts": {
+    "compile": "cross-env MODE=production && electron-builder build --config electron-builder.json --dir --config.asar=false",
+    "compile:release": "cross-env MODE=production && electron-builder build --config electron-builder.json"
+  },
+  "devDependencies": {
+    "@scnexus/app-shared": "workspace:*",
+    "@types/adm-zip": "^0.5.5",
+    "@types/node-7z": "^2.1.8",
+    "@types/uuid": "^9.0.8",
+    "@types/semver": "^7.5.8",
+    "typescript": "^5.5.4",
+    "electron": "^32.0.1",
+    "electron-builder": "^25.0.5",
+    "scnexus-standard": "^0.0.13",
+    "vite": "^5.4.3"
+  },
+  "dependencies": {
+    "@sentry/electron": "^4.24.0",
+    "electron-log": "5.1.7",
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.3.4",
+    "7z-bin": "0.0.2",
+    "adm-zip": "^0.5.16",
+    "chardet": "^2.0.0",
+    "compressing": "^1.10.1",
+    "hash-wasm": "^4.11.0",
+    "jschardet": "^3.1.3",
+    "node-7z": "^3.0.0",
+    "regedit": "^5.1.3",
+    "uuid": "^9.0.1",
+    "semver": "^7.6.3",
+    "axios": "^1.7.7"
+  }
+}

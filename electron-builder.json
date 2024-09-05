@@ -5,12 +5,13 @@
   "copyright": "Copyright © 2023 MengLuoRJ",
   "asar": true,
   "directories": {
-    "output": "release/${version}"
+    "output": "./release/${version}",
+    "buildResources": "./packages/app-main/buildResources"
   },
-  "files": ["dist-electron", "dist"],
+  "files": ["./packages/**/dist/**"],
   "extraResources": [
     {
-      "from": "node_modules/regedit/vbs",
+      "from": "./packages/app-main/node_modules/regedit/vbs",
       "to": "regedit/vbs",
       "filter": ["**/*"]
     }
@@ -22,12 +23,12 @@
     }
   ],
   "mac": {
-    "icon": "public/application_icon.png",
+    "icon": "buildResources/application_icon.png",
     "artifactName": "${productName}_${version}.${ext}",
     "target": ["dmg"]
   },
   "win": {
-    "icon": "public/application_icon.ico",
+    "icon": "buildResources/application_icon.ico",
     "target": [
       {
         "target": "nsis",

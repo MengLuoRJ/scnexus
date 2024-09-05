@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://scnexus.net" target="_blank" >
-    <img src="./public/application_icon.png" width="150">
+    <img src="./packages/app-renderer/public/application_icon.png" width="150">
   </a>
   <h1>星际枢纽</h1>
   <p>专为星际社区服务的枢纽应用</p>

@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://english.scnexus.net" target="_blank">
-    <img src="./public/application_icon.png" width="150">
+    <img src="./packages/app-renderer/public/application_icon.png" width="150">
   </a>
   <h1>SCNexus</h1>
   <p>Nexus Application for SC Community</p>

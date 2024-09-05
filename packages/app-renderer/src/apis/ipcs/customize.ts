@@ -1,11 +1,11 @@
 import { useIpcRendererInvoke } from "./ipc-util";
+import { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
 import {
   CompressFileInfo,
-  CustomizeStore,
   ResultInstallCustomize,
   ResultUncompress,
   ResultUninstallCustomize,
-} from "@shared/types/customize.type";
+} from "@scnexus/app-shared/types/customize.type";
 import { MetadataInformated } from "scnexus-standard/metadata";
 
 const moduleChannel = "customize";

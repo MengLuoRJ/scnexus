@@ -1,4 +1,4 @@
-import { ProfileStore } from "@shared/types/profile";
+import { ProfileStore } from "@scnexus/app-shared/stores/profile.store";
 import { useIpcRendererInvoke } from "./ipc-util";
 
 const moduleChannel = "profile";

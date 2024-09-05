@@ -1,4 +1,4 @@
-import { SettingStore } from "@electron/main/stores/setting";
+import { SettingStore } from "@scnexus/app-shared/stores/setting.store";
 import { useIpcRendererInvoke } from "./ipc-util";
 const moduleChannel = "setting";
 

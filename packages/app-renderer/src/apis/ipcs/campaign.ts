@@ -1,10 +1,8 @@
 import { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
 import { useIpcRendererInvoke } from "./ipc-util";
-import {
-  CampaignActiveStore,
-  CampaignStore,
-  ResultUncompressCCM,
-} from "@shared/types/campaign.type";
+import { CampaignStore } from "@scnexus/app-shared/stores/campaign.store";
+import { CampaignActiveStore } from "@scnexus/app-shared/stores/campaign-active.store";
+import { ResultUncompressCCM } from "@scnexus/app-shared/types/campaign.type";
 
 const moduleChannel = "campaign";
 

@@ -9,7 +9,7 @@ import {
   ProfileCustomize,
   ProfileDocuments,
   ProfileGame,
-} from "@shared/types/profile";
+} from "@scnexus/app-shared/types/profile.type";
 import { emitterEmit } from "@/composables/useMitt";
 
 export const useProfileStore = defineStore(

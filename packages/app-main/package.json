@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-main",
-  "version": "1.0.0",
+  "version": "0.0.21-snapshot",
   "description": "electron main process",
   "author": {
     "name": "MengLuoRJ",
@@ -14,8 +14,8 @@
   "type": "module",
   "main": "packages/app-main/dist/index.js",
   "scripts": {
-    "compile": "cross-env MODE=production && electron-builder build --config electron-builder.json --dir --config.asar=false",
-    "compile:release": "cross-env MODE=production && electron-builder build --config electron-builder.json"
+    "build:app": "cross-env MODE=production && electron-builder build --config electron-builder.json --dir --config.asar=false",
+    "build:app:release": "cross-env MODE=production && electron-builder build --config electron-builder.json"
   },
   "devDependencies": {
     "@scnexus/app-shared": "workspace:*",

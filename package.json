@@ -18,15 +18,13 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "tsx scripts/watch.ts",
+    "dev": "tsx scripts/dev-watch.ts",
     "build": "npm run build:main && npm run build:preload && npm run build:renderer",
     "build:main": "cd ./packages/app-main && vite build",
     "build:preload": "cd ./packages/app-preload && vite build",
     "build:renderer": "cd ./packages/app-renderer && vite build",
-    "compile": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json --dir --config.asar=false",
-    "compile:release": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json",
-    "compile:main": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run compile",
-    "compile:release:main": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run compile:release",
+    "build:app": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app",
+    "build:app:release": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app:release",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/app-main --passWithNoTests",
@@ -39,13 +37,14 @@
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
     "postinstall": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.js",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\"",
-    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s"
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "script:app:sync-version": "tsx scripts/sync-app-packages-version.ts",
+    "deprecated:compile": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json --dir --config.asar=false",
+    "deprecated:compile:release:": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json"
   },
   "devDependencies": {
     "@scnexus/app-main": "workspace:*",
     "@scnexus/app-shared": "workspace:*",
-    "@types/semver": "^7.5.8",
-    "@types/uuid": "^9.0.8",
     "conventional-changelog-cli": "^5.0.0",
     "cross-env": "^7.0.3",
     "electron": "^32.0.1",
@@ -56,24 +55,6 @@
     "tsx": "^4.19.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.3"
-  },
-  "dependencies": {
-    "7z-bin": "0.0.2",
-    "@electron/asar": "^3.2.10",
-    "@sentry/electron": "^4.24.0",
-    "adm-zip": "^0.5.16",
-    "axios": "^1.7.7",
-    "chardet": "^2.0.0",
-    "compressing": "^1.10.1",
-    "electron-log": "5.1.7",
-    "electron-store": "^10.0.0",
-    "electron-updater": "^6.3.4",
-    "hash-wasm": "^4.11.0",
-    "jschardet": "^3.1.3",
-    "node-7z": "^3.0.0",
-    "regedit": "^5.1.3",
-    "semver": "^7.6.3",
-    "uuid": "^9.0.1"
   },
   "pnpm": {
     "peerDependencyRules": {

@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-renderer",
-  "version": "1.0.0",
+  "version": "0.0.21-snapshot",
   "description": "electron renderer process",
   "author": {
     "name": "MengLuoRJ",
@@ -17,13 +17,16 @@
     "@unocss/transformer-directives": "^0.58.9",
     "@vitejs/plugin-vue": "^5.1.3",
     "@types/semver": "^7.5.8",
+    "@types/uuid": "^9.0.8",
     "naive-ui": "^2.39.0",
     "unocss": "^0.58.9",
     "unplugin-auto-import": "^0.17.5",
-    "unplugin-vue-components": "^0.26.0"
+    "unplugin-vue-components": "^0.26.0",
+    "mitt": "^3.0.1"
   },
   "dependencies": {
     "@unhead/vue": "^1.9.5",
+    "@sentry/electron": "^4.24.0",
     "@sentry/vue": "^7.114.0",
     "vue-i18n": "9.9.0",
     "@vueuse/core": "^10.9.0",

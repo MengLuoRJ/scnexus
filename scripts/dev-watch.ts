@@ -1,9 +1,8 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import electronPath from "electron";
 import { build, createServer, LogLevel, ViteDevServer } from "vite";
 import { spawn, type ChildProcess } from "node:child_process";
-import { resolve } from "node:path";
 
 /** @type 'production' | 'development'' */
 const mode: "production" | "development" = (process.env.MODE =

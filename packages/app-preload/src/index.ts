@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 
 const ipcRendererExposed = {
   invoke: async (channel: string, ...args: any[]) => {
@@ -19,3 +19,8 @@ const ipcRendererExposed = {
 };
 
 contextBridge.exposeInMainWorld("ipcRenderer", ipcRendererExposed);
+contextBridge.exposeInMainWorld("webUtils", {
+  getPathForFile: (file: File) => {
+    return webUtils.getPathForFile(file);
+  },
+});

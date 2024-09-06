@@ -1,5 +1,5 @@
 import { app } from "electron";
-import * as node7z from "node-7z";
+import node7z from "node-7z";
 import bin from "7z-bin";
 
 const binPath =

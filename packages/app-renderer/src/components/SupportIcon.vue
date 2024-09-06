@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Component } from "vue";
+import { Component, computed } from "vue";
 
 const props = defineProps<{
   link: string;
-  preset?: PresetType;
+  preset: PresetType;
 }>();
 
 import DonateAfdianIcon from "@/assets/support-icons/DonateAfdianIcon.vue";
@@ -15,38 +15,74 @@ import { ipcShell } from "@/apis/ipcs/shell";
 const PresetSupport = {
   social: {
     icon: "i-tabler:messages",
+    classBorder: "",
+    classIcon: "i-tabler:messages",
   },
   donate: {
     icon: "i-tabler:coffee",
+    classBorder: "border-[#F0D850]",
+    classIcon: "i-tabler:coffee text-[#F0D850]",
   },
   twitter: {
     icon: "i-tabler:brand-twitter",
     color: "#1D9BF0",
+    classBorder: "border-[#1D9BF0]",
+    classIcon: "i-tabler:brand-twitter text-[#1D9BF0]",
   },
   discord: {
     icon: "i-tabler:brand-discord",
     color: "#616BE6",
+    classBorder: "border-[#616BE6]",
+    classIcon: "i-tabler:brand-discord text-[#616BE6]",
   },
-  youtube: { icon: "i-tabler:brand-youtube", color: "#DD3E22" },
-  weibo: { icon: "i-tabler:brand-weibo", color: "#B94334" },
+  youtube: {
+    icon: "i-tabler:brand-youtube",
+    color: "#DD3E22",
+    classBorder: "border-[#DD3E22]",
+    classIcon: "i-tabler:brand-youtube text-[#DD3E22]",
+  },
+  weibo: {
+    icon: "i-tabler:brand-weibo",
+    color: "#B94334",
+    classBorder: "border-[#B94334]",
+    classIcon: "i-tabler:brand-weibo text-[#B94334]",
+  },
   bilibili: {
     iconComponent: SupportBilibiliIcon,
     color: "#FB7299",
+    classBorder: "border-[#FB7299]",
+    classIcon: "i-tabler:brand-bilibili text-[#FB7299]",
   },
   qq_group: {
     iconComponent: SupportQQIcon,
     color: "#000000",
+    classBorder: "border-[#000000]",
+    classIcon: "i-tabler:brand-qq text-[#000000]",
   },
   wechat_official_account: {},
-  paypal: { icon: "i-tabler:brand-paypal-filled", color: "#000000" },
-  patreon: { icon: "i-tabler:brand-patreon", color: "#000000" },
+  paypal: {
+    icon: "i-tabler:brand-paypal-filled",
+    color: "#000000",
+    classBorder: "border-[#000000]",
+    classIcon: "i-tabler:brand-paypal-filled text-[#000000]",
+  },
+  patreon: {
+    icon: "i-tabler:brand-patreon",
+    color: "#000000",
+    classBorder: "border-[#000000]",
+    classIcon: "i-tabler:brand-patreon text-[#000000]",
+  },
   buymeacoffee: {
     iconComponent: DonateBMCIcon,
     color: "#F0D850",
+    classBorder: "border-[#F0D850]",
+    classIcon: "i-tabler:brand-buymeacoffee text-[#F0D850]",
   },
   afdian: {
     iconComponent: DonateAfdianIcon,
     color: "#946CE6",
+    classBorder: "border-[#946CE6]",
+    classIcon: "i-tabler:brand-afdian text-[#946CE6]",
   },
 } as {
   [key: string]: {
@@ -54,14 +90,16 @@ const PresetSupport = {
     iconSrc?: string;
     iconComponent?: Component;
     color?: string;
+    classBorder?: string;
+    classIcon?: string;
   };
 };
 
 type PresetType = keyof typeof PresetSupport;
 
-const getPreset = () => {
-  return PresetSupport[props.preset!];
-};
+const getPreset = computed(() => {
+  return PresetSupport[props.preset];
+});
 
 async function openExternalLink() {
   if (
@@ -78,27 +116,27 @@ async function openExternalLink() {
   <div
     v-if="!!props.preset"
     class="support-icon w-[24px] h-[24px] flex justify-center items-center cursor-pointer border border-solid rounded-2 hover:transition-shadow duration-300 hover:shadow"
-    :class="`border-[${getPreset()?.color}]`"
+    :class="[getPreset?.classBorder]"
   >
     <n-popover trigger="hover" style="max-width: 350px" :show-arrow="false">
       <template #trigger>
         <!-- <img :src="getPreset()?.iconSrc" class="w-[30xp] h-[30px]" /> -->
         <div
-          v-if="!!getPreset().icon"
+          v-if="!!getPreset.icon"
           class="flex justify-center items-center"
           @click="openExternalLink()"
         >
           <div
             class="w-[20px] h-[20px]"
-            :class="getPreset().icon + ` text-[${getPreset()?.color}]`"
+            :class="[getPreset?.classIcon]"
           ></div>
         </div>
         <div
-          v-if="!!getPreset().iconComponent"
+          v-if="!!getPreset.iconComponent"
           class="flex justify-center items-center"
           @click="openExternalLink()"
         >
-          <n-icon :size="24" :component="getPreset()?.iconComponent"></n-icon>
+          <n-icon :size="24" :component="getPreset?.iconComponent"></n-icon>
         </div>
       </template>
       <div

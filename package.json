@@ -44,6 +44,7 @@
     "deprecated:compile:release:": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json"
   },
   "devDependencies": {
+    "@iconify-json/tabler": "^1.2.0",
     "@scnexus/app-main": "workspace:*",
     "@scnexus/app-shared": "workspace:*",
     "conventional-changelog-cli": "^5.0.0",

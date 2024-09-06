@@ -8,6 +8,7 @@ import { useProfileStore } from "@/stores/profile";
 import { ipcCustomize } from "@/apis/ipcs/customize";
 import { ipcDialog } from "@/apis/ipcs/dialog";
 import { CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
+import { webUtils } from "@/apis/web-utils";
 
 import GameProfileChecker from "@/components/GameProfileChecker.vue";
 import ProcessFileModal from "./components/ProcessFileModal.vue";
@@ -33,7 +34,12 @@ async function onDrop(files: File[] | null) {
   if (!profileStore.SUCCESS) {
     return;
   }
-  await processFile(files?.[0].path!);
+  if (!files?.[0]) {
+    return;
+  }
+  const filePath = webUtils.getPathForFile(files?.[0]);
+  if (!filePath) return;
+  await processFile(filePath);
 }
 
 async function onClick() {
@@ -71,7 +77,6 @@ async function processFile(path: string) {
     });
     return;
   }
-  console.log(data)
   set(file_path, path);
   set(cfi, data);
   refProcessFileModal.value?.open();

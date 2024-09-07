@@ -10,7 +10,7 @@ body:
     id: application-version
     attributes:
       label: 「星际枢纽」应用程序版本
-      description: 请提供出现该漏洞或错误的星际枢纽」应用程序版本号
+      description: 请提供出现该漏洞或错误的「星际枢纽」应用程序版本号
       placeholder: vX.Y.Z
     validations:
       required: true

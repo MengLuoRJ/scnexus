@@ -10,7 +10,7 @@ body:
     id: feature-description
     attributes:
       label: 对于新功能想要解决的问题的清晰且简明的描述
-      description: '作为使用「星际枢纽」应用程序的 [用户 / 玩家]，我希望 [目标 / 愿望]，以便 [好处]。如果您打算为此问题提交拉取请求，请在描述中告诉我们。十分感谢！
+      description: '作为使用「星际枢纽」应用程序的 [用户 / 玩家]，我希望 [目标 / 愿望]，以便 [好处]。如果您打算为此问题提交拉取请求，请在描述中告诉我们。十分感谢！'
     validations:
       required: true
   - type: textarea

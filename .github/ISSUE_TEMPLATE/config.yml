@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/MengLuoRJ/scnexus/discussions
+    about: Use GitHub discussions for message-board style questions and discussions.
+  - name: [GEECG] SCNexus Discord Server
+    url: https://discord.gg/U6EbQKdkH2
+    about: Ask questions and discuss with other SCNexus Application users in real time.
+  - name: [GEECG] 星际枢纽中文用户交流群
+    url: https://qm.qq.com/cgi-bin/qm/qr?k=IgP5DkVYkL-VlgMPESNmRaPiYFCQLrNI&jump_from=webapi&authKey=IH1aC/1uFvcRC43U2h3R4Ms2YhbMg082p4RTMSV4GHZSRmfIyLjJodIwwf8wAdL4
+    about: 想要参与讨论或者获得帮助？欢迎加入用户交流群
+

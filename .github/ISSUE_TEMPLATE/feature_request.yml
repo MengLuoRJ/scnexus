@@ -1,0 +1,44 @@
+name: 🚀 新功能请求
+description: 提议向「星际枢纽」应用程序添加新功能
+labels: [feature request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您对该应用程序的关注，并花费时间填写此功能请求！
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: 对于新功能想要解决的问题的清晰且简明的描述
+      description: '作为使用「星际枢纽」应用程序的 [用户 / 玩家]，我希望 [目标 / 愿望]，以便 [好处]。如果您打算为此问题提交拉取请求，请在描述中告诉我们。十分感谢！
+    validations:
+      required: true
+  - type: textarea
+    id: suggested-solution
+    attributes:
+      label: 建议的解决方案
+      description: '在模块 [xy] 中，希望能够实现以下内容……'
+    validations:
+      required: true
+  - type: textarea
+    id: alternative
+    attributes:
+      label: 备选方案
+      description: 关于新功能您曾考虑过的任何备选方案或其他功能的清晰且简明的描述。
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 附加内容
+      description: 关于新功能的任何有关内容信息或截图。
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: 验证
+      description: 在提交问题之前，请确保完成以下步骤
+      options:
+        - label: 阅读[贡献指南](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.md)。
+          required: true
+        - label: 阅读[文档](https://scnexus.net/)。
+          required: true
+        - label: 检查是否已经存在相同的新功能请求报告，以避免创建重复的报告请求。
+          required: true

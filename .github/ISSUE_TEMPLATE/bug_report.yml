@@ -1,0 +1,54 @@
+name: 🐞 漏洞或错误报告
+description: 报告「星际枢纽」应用程序的相关漏洞或错误问题
+labels: [untriaged]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您花费时间填写此漏洞或错误报告！
+  - type: input
+    id: application-version
+    attributes:
+      label: 「星际枢纽」应用程序版本
+      description: 请提供出现该漏洞或错误的星际枢纽」应用程序版本号
+      placeholder: vX.Y.Z
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 描述漏洞或错误问题
+      description: 对该漏洞或错误问题的清晰且简明的描述。如果您打算为此问题提交拉取请求，请在描述中告诉我们。十分感谢！
+      placeholder: 漏洞或错误问题描述
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 复现该漏洞或错误的清晰且简明的步骤
+      placeholder: |
+        步骤 1.
+        步骤 2.
+        步骤 3.
+    validations:
+      required: true
+  - type: textarea
+    id: system-info
+    attributes:
+      label: 系统信息
+      placeholder: 操作系统、游戏客户端版本等相关信息
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: 验证
+      description: 在提交问题之前，请确保完成以下步骤
+      options:
+        - label: 阅读[贡献指南](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.md)。
+          required: true
+        - label: 阅读[文档](https://scnexus.net/)。
+          required: true
+        - label: 检查是否已经存在[相同的报告问题](https://github.com/MengLuoRJ/scnexus/issues)，以避免创建重复的问题。
+          required: true
+        - label: 确认这是一个具体实际的漏洞或错误问题，如果希望进行问答，请使用 [GitHub 讨论](https://github.com/MengLuoRJ/scnexus/discussions)。
+          required: true

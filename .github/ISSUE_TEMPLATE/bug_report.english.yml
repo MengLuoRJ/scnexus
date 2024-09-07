@@ -1,0 +1,54 @@
+name: 🐞 Bug report
+description: Report an issue with SCNexus Application
+labels: [untriaged]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: application-version
+    attributes:
+      label: SCNexus Application Version
+      description: Please provide the version number of the SCNexus application that causing this bug.
+      placeholder: vX.Y.Z
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is. If you intend to submit a PR for this issue, tell us in the description. Thanks!
+      placeholder: Bug description
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Clear and concise steps to reproduce this bug.
+      placeholder: |
+        Step1. 
+        Step2.
+        Step3.
+    validations:
+      required: true
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      placeholder: Operating System, Game Client Version, etc
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Validations
+      description: Before submitting the issue, please make sure you do the following
+      options:
+        - label: Read the [Contributing Guidelines](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.english.md).
+          required: true
+        - label: Read the [Documentation](https://scnexus.net/).
+          required: true
+        - label: Check that there isn't [already an issue](https://github.com/MengLuoRJ/scnexus/issues) that reports the same bug to avoid creating a duplicate.
+          required: true
+        - label: Check that this is a concrete bug. For Q&A open a [GitHub Discussion](https://github.com/MengLuoRJ/scnexus/discussions).
+          required: true

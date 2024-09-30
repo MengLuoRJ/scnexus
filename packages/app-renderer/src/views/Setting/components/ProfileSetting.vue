@@ -129,24 +129,24 @@ async function hookupPathSelector(autodetect?: boolean) {
         <n-form-item size="small" label-placement="left" :show-feedback="false">
           <template #label>
             <div class="flex flex-row justify-start items-center gap-1">
-              <div>{{ "大厅存档文档目录" }}</div>
-              <IconTooltip :tooltip="'《星际争霸II》大厅自定义游戏存档目录'" />
-            </div>
-          </template>
-          <n-input
-            v-model:value="PROFILE_DOCUMENTS!.DOCUMENTS_ARCADE_BANKS_ROOT"
-            readonly
-          />
-        </n-form-item>
-        <n-form-item size="small" label-placement="left" :show-feedback="false">
-          <template #label>
-            <div class="flex flex-row justify-start items-center gap-1">
               <div>{{ "本地存档文档目录" }}</div>
               <IconTooltip :tooltip="'《星际争霸II》本地游戏存档目录'" />
             </div>
           </template>
           <n-input
             v-model:value="PROFILE_DOCUMENTS!.DOCUMENTS_LOCAL_BANKS_ROOT"
+            readonly
+          />
+        </n-form-item>
+        <n-form-item size="small" label-placement="left" :show-feedback="false">
+          <template #label>
+            <div class="flex flex-row justify-start items-center gap-1">
+              <div>{{ "大厅存档文档目录" }}</div>
+              <IconTooltip :tooltip="'《星际争霸II》大厅自定义游戏存档目录'" />
+            </div>
+          </template>
+          <n-input
+            v-model:value="PROFILE_DOCUMENTS!.DOCUMENTS_ARCADE_BANKS_ROOT"
             readonly
           />
         </n-form-item>

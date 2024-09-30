@@ -33,7 +33,7 @@ export function runGameExecutable(parameters?: GameExcutableParameters) {
   }
 }
 
-export function runEditorClient(file_path?: string) {
+export function runEditorExecutable(file_path?: string) {
   const editorExecutable =
     profileStore.get("PROFILE_GAME").GAME_EDITOR_EXECUTABLE_X64;
   if (!editorExecutable) return;

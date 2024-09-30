@@ -13,7 +13,11 @@ import {
   scanInstalledCustomizeList,
   uninstallCustomize,
 } from "./customize-manage";
-import { runEditorClient, runGameClient } from "./client-launcher";
+import {
+  runGameClient,
+  runGameExecutable,
+  runEditorExecutable,
+} from "./client-launcher";
 
 export function initCustomizeIpc() {
   ipcHandle("customize:read-compress-file-info", readCompressFileInfo);
@@ -35,5 +39,6 @@ export function initCustomizeIpc() {
   );
 
   ipcHandle("customize:run-game-client", runGameClient);
-  ipcHandle("customize:run-editor-client", runEditorClient);
+  ipcHandle("customize:run-game-executable", runGameExecutable);
+  ipcHandle("customize:run-editor-executable", runEditorExecutable);
 }

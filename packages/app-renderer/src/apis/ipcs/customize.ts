@@ -6,6 +6,7 @@ import {
   ResultUncompress,
   ResultUninstallCustomize,
 } from "@scnexus/app-shared/types/customize.type";
+import { GameExcutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
 import { MetadataInformated } from "scnexus-standard/metadata";
 
 const moduleChannel = "customize";
@@ -56,6 +57,14 @@ export const ipcCustomize = {
 
   runGameClient: (path?: string) =>
     useIpcRendererInvoke<void>(`${moduleChannel}:run-game-client`, path),
-  runEditorClient: (path?: string) =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:run-editor-client`, path),
+  runGameExecutable: (parameters?: GameExcutableParameters) =>
+    useIpcRendererInvoke<void>(
+      `${moduleChannel}:run-game-executable`,
+      parameters
+    ),
+  runEditorExecutable: (file_path?: string) =>
+    useIpcRendererInvoke<void>(
+      `${moduleChannel}:run-editor-executable`,
+      file_path
+    ),
 };

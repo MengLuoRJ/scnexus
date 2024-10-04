@@ -36,7 +36,7 @@ const config: UserConfig = {
       },
     },
     emptyOutDir: true,
-    reportCompressedSize: false,
+    reportCompressedSize: true,
   },
 };
 

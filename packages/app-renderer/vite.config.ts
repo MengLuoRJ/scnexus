@@ -41,7 +41,7 @@ const config: UserConfig = {
       input: join(PACKAGE_ROOT, "index.html"),
     },
     emptyOutDir: true,
-    reportCompressedSize: false,
+    reportCompressedSize: true,
   },
   define: {
     __INTLIFY_JIT_COMPILATION__: true,

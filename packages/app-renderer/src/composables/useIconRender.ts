@@ -20,8 +20,8 @@ export function renderUnoIcon(
   icon_class: string,
   {
     size,
-    width = "32px",
-    height = "32px",
+    width = "18px",
+    height = "18px",
   }: {
     size?: string;
     width?: string;

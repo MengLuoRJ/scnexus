@@ -59,6 +59,7 @@ declare module 'vue' {
     ProcessFileModal: typeof import('./src/components/CustomizeDropZone/components/ProcessFileModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StartButton: typeof import('./src/components/StartButton/StartButton.vue')['default']
     SupportIcon: typeof import('./src/components/SupportIcon.vue')['default']
   }
 }

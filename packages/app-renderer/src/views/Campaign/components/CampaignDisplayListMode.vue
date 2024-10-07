@@ -8,9 +8,11 @@ import { renderUnoIcon } from "@/composables/useIconRender";
 import {
   CAMPAIGN_CONSTANTS,
   unactiveCampaign,
+  uninstallCampaign,
 } from "../composables/useCampaign";
 import Campaign_thumbnail from "@/assets/campaign/Campaign_thumbnail.png";
 
+import StartButton from "@/components/StartButton";
 import CustomizeDropZone from "@/components/CustomizeDropZone";
 import IconTooltip from "@/components/IconTooltip.vue";
 import ExternalLinkTooltip from "@/components/ExternalLinkTooltip.vue";
@@ -31,8 +33,6 @@ const refDrawer =
 const runGame = async () => {
   await ipcCustomize.runGameClient();
 };
-
-
 </script>
 <template>
   <div class="campaign-manager -list">
@@ -123,11 +123,7 @@ const runGame = async () => {
                   size="small"
                   block
                   @click="refDrawer?.hookupSwitchDrawer(item, index)"
-                  :render-icon="
-                    renderUnoIcon('i-tabler:table-options', {
-                      size: '12px',
-                    })
-                  "
+                  :render-icon="renderUnoIcon('i-tabler:table-options')"
                 >
                   {{ $t("campaign.detail-mode.active-campaign") }}
                 </n-button>
@@ -155,36 +151,18 @@ const runGame = async () => {
                 >
                   {{ $t("campaign.detail-mode.switch-campaign") }}
                 </n-button>
-                <!-- <n-button
-                      v-if="!!CAMPAIGN_SET[index]"
-                      size="small"
-                      block
-                      @click="uninstallCampaignType(index)"
-                      :render-icon="
-                        renderUnoIcon('i-tabler:trash', { size: '12px' })
-                      "
-                      :disabled="!checkCampaignUninstallable(index)"
-                    >
-                      {{ $t("campaign.detail-mode.uninstall-campaign") }}
-                    </n-button> -->
-                <!-- <n-button
-                      size="small"
-                      block
-                      @click=""
-                      :render-icon="renderNaiveIcon(EditorIcon)"
-                    >
-                      {{ $t("campaign.detail-mode.launch-editor") }}
-                    </n-button> -->
                 <n-button
-                  size="large"
-                  type="primary"
-                  @click="runGame()"
+                  v-if="!!CAMPAIGN_SET[index]"
+                  size="small"
+                  block
+                  @click="uninstallCampaign(CAMPAIGN_SET[index])"
                   :render-icon="
-                    renderUnoIcon('i-tabler:player-play', { size: '12px' })
+                    renderUnoIcon('i-tabler:trash', { size: '12px' })
                   "
                 >
-                  {{ $t("campaign.detail-mode.play") }}
+                  {{ $t("campaign.detail-mode.uninstall-campaign") }}
                 </n-button>
+                <StartButton type="campaign" />
               </div>
             </div>
             <div
@@ -231,7 +209,11 @@ const runGame = async () => {
                     {{ $t("campaign.detail-mode.version") }}
                   </div>
                   <div class="text-sm">
-                    {{ CAMPAIGN_SET[index]?.version ? "v" + CAMPAIGN_SET[index]?.version :"N/A" }}
+                    {{
+                      CAMPAIGN_SET[index]?.version
+                        ? "v" + CAMPAIGN_SET[index]?.version
+                        : "N/A"
+                    }}
                   </div>
                 </div>
               </div>

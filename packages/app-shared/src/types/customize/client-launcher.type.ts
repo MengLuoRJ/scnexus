@@ -1,7 +1,7 @@
 /**
  * @see https://sc2mapster.github.io/ui/2018/02/07/testing-map-without-editor.html
  */
-export type GameExcutableParameters = {
+export type GameExecutableParameters = {
   /**
    * Runs the specified map.
    *
@@ -10,7 +10,7 @@ export type GameExcutableParameters = {
    * @type {string}
    * @example `-run "MyMap.SC2Map"`, `-run "D:\Path\To\MyMap.SC2Map"`
    */
-  run: string;
+  run?: string;
   /**
    * Mod filename. Can be relative or absolute path. Relative path assumes root SC2 installation folder.
    * @type {string}

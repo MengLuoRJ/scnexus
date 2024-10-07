@@ -1,6 +1,6 @@
 import { profileStore } from "@/stores/profile";
 import { execFile, exec } from "child_process";
-import { GameExcutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+import { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
 
 export function runGameClient() {
   const gameClient = profileStore.get("PROFILE_GAME").GAME_CLIENT;
@@ -10,7 +10,7 @@ export function runGameClient() {
   exec(`"${gameClient}" -sso=1 -launch -uid s2`);
 }
 
-export function runGameExecutable(parameters?: GameExcutableParameters) {
+export function runGameExecutable(parameters?: GameExecutableParameters) {
   const gameExecutable = profileStore.get("PROFILE_GAME").GAME_EXECUTABLE_X64;
   if (!gameExecutable) return;
   if (!parameters?.run) {

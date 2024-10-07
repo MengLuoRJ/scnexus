@@ -6,7 +6,7 @@ import {
   ResultUncompress,
   ResultUninstallCustomize,
 } from "@scnexus/app-shared/types/customize.type";
-import { GameExcutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+import { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
 import { MetadataInformated } from "scnexus-standard/metadata";
 
 const moduleChannel = "customize";
@@ -57,7 +57,7 @@ export const ipcCustomize = {
 
   runGameClient: (path?: string) =>
     useIpcRendererInvoke<void>(`${moduleChannel}:run-game-client`, path),
-  runGameExecutable: (parameters?: GameExcutableParameters) =>
+  runGameExecutable: (parameters?: GameExecutableParameters) =>
     useIpcRendererInvoke<void>(
       `${moduleChannel}:run-game-executable`,
       parameters

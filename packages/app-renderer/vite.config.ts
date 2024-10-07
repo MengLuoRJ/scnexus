@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { UserConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import vueDevTools from 'vite-plugin-vue-devtools'
+import vueDevTools from "vite-plugin-vue-devtools";
 import UnoCSS from "unocss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
@@ -9,6 +9,8 @@ import { unheadVueComposablesImports } from "@unhead/vue";
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 import { chrome } from "../app-main/.electron-vendors.cache.json";
+
+import { visualizer } from "rollup-plugin-visualizer";
 
 const PACKAGE_ROOT = __dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
@@ -40,6 +42,13 @@ const config: UserConfig = {
     minify: process.env.MODE !== "development",
     rollupOptions: {
       input: join(PACKAGE_ROOT, "index.html"),
+      output: {
+        manualChunks: {
+          vuei18n: ["vue-i18n"],
+          sentry: ["@sentry/electron", "@sentry/vue"],
+          echarts: ["echarts"],
+        },
+      },
     },
     emptyOutDir: true,
     reportCompressedSize: true,
@@ -69,6 +78,7 @@ const config: UserConfig = {
     Components({
       resolvers: [NaiveUiResolver()],
     }),
+    visualizer(),
   ],
 };
 

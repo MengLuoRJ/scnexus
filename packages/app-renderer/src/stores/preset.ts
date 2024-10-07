@@ -5,9 +5,11 @@ import { ref } from "vue";
 
 export const usePresetStore = defineStore("preset", () => {
   const campaign_display_mode = ref<"grid" | "list">("list");
+  const play_button_game_mode = ref<"client" | "executable">("client");
 
   const storeRefs = {
     campaign_display_mode,
+    play_button_game_mode,
   };
 
   return {
@@ -31,7 +33,7 @@ export const initPresetStore = async () => {
       ) {
         const pKey: PKey = key as PKey;
         const pValue: PValue = presistedPresets[key] as PValue;
-        settingStore[pKey] = pValue;
+        if (settingStore[pKey]) settingStore.$patch({ [pKey]: pValue });
       }
     });
   }

@@ -1,17 +1,65 @@
 <script lang="ts" setup>
-import { GameExcutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+import { storeToRefs } from "pinia";
+import { usePresetStore } from "@/stores/preset";
+
+import { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+import { computed } from "vue";
+import { get, set } from "@vueuse/core";
+import { ipcCustomize } from "@/apis/ipcs/customize";
+
+const { play_button_game_mode } = storeToRefs(usePresetStore());
 
 const props = defineProps<{
-  mode?: "campaign" | "customize";
+  type: "campaign" | "customize";
+  path_map_file?: string;
 }>();
 
-const executableParameters: GameExcutableParameters = {
-  run: 'start',
+const modeExecutable = computed({
+  get() {
+    return get(play_button_game_mode) === "executable";
+  },
+  set(value) {
+    set(play_button_game_mode, value ? "executable" : "client");
+  },
+});
+
+const modeClient = computed({
+  get() {
+    return get(play_button_game_mode) === "client";
+  },
+  set(value) {
+    set(play_button_game_mode, value ? "client" : "executable");
+  },
+});
+
+const executableParameters = computed<GameExecutableParameters>(() => {
+  return {
+    run: props.path_map_file,
+  };
+});
+
+const handleExecutableStart = async () => {
+  await ipcCustomize.runGameExecutable(get(executableParameters));
+};
+
+const handleClientStart = async () => {
+  await ipcCustomize.runGameClient();
+};
+
+const handleDefaultStart = async () => {
+  if (get(play_button_game_mode) === "executable") {
+    await handleExecutableStart();
+  } else if (get(play_button_game_mode) === "client") {
+    await handleClientStart();
+  }
 };
 </script>
 <template>
   <div class="start-button flex flex-row justify-center items-center">
-    <div class="starter flex flex-row justify-center items-center">
+    <div
+      class="starter flex flex-row justify-center items-center"
+      @click="handleDefaultStart"
+    >
       <div class="i-tabler:player-play w-[18px] h-[18px] mr-[5px]"></div>
       <div>{{ $t("campaign.detail-mode.play") }}</div>
     </div>
@@ -23,6 +71,37 @@ const executableParameters: GameExcutableParameters = {
           ></div>
         </div>
       </template>
+      <div class="options flex flex-col justify-center items-start">
+        <n-divider
+          :title-placement="'left'"
+          :style="{ margin: '2px 0px', fontSize: '12px' }"
+        >
+          {{ "启动模式" }}
+        </n-divider>
+        <div class="w-full my-1 flex flex-row justify-start items-center">
+          <n-button text size="small" @click="handleClientStart">
+            {{ "使用在线战网端启动" }}
+          </n-button>
+          <div class="ml-2 flex flex-row justify-center items-center gap-1">
+            <n-checkbox v-model:checked="modeClient" size="small" />
+            <div v-if="modeClient" class="text-gray-500 leading-[14px]">
+              {{ "(默认)" }}
+            </div>
+          </div>
+        </div>
+        <n-divider :style="{ margin: '2px 0px' }" dashed />
+        <div class="w-full my-1 flex flex-row justify-start items-center">
+          <n-button text size="small" @click="handleExecutableStart">
+            {{ "使用本地客户端启动" }}
+          </n-button>
+          <div class="ml-2 flex flex-row justify-center items-center gap-1">
+            <n-checkbox v-model:checked="modeExecutable" size="small" />
+            <div v-if="modeExecutable" class="text-gray-500 leading-[14px]">
+              {{ "(默认)" }}
+            </div>
+          </div>
+        </div>
+      </div>
     </n-popover>
   </div>
 </template>

@@ -6,6 +6,7 @@ import { useHead } from "@unhead/vue";
 
 import { useLocaleStore } from "@/stores/locale";
 import { useUserStore } from "./stores/user";
+import { initPresetStore } from "./stores/preset";
 
 import NaiveProvider from "@/components/NaiveProvider.vue";
 
@@ -26,6 +27,7 @@ useHead({
 });
 
 onMounted(async () => {
+  await initPresetStore();
   await localeStore.initLocale();
   set(locale, get(localeStore.current));
 

@@ -3,6 +3,9 @@
 .env.*
 .env
 
+# Analyze File
+packages/app-renderer/stats.html
+
 # Logs
 logs
 *.log

@@ -63,7 +63,7 @@ const handleDefaultStart = async () => {
       <div class="i-tabler:player-play w-[18px] h-[18px] mr-[5px]"></div>
       <div>{{ $t("campaign.detail-mode.play") }}</div>
     </div>
-    <n-popover trigger="click" :placement="'right-end'">
+    <n-popover trigger="hover" :placement="'right-end'">
       <template #trigger>
         <div class="setting group flex flex-row justify-center items-center">
           <div

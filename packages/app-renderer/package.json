@@ -22,7 +22,8 @@
     "naive-ui": "^2.40.1",
     "unocss": "^0.62.3",
     "unplugin-auto-import": "^0.17.5",
-    "unplugin-vue-components": "^0.26.0"
+    "unplugin-vue-components": "^0.26.0",
+    "vite-plugin-vue-devtools": "^7.4.6"
   },
   "dependencies": {
     "@sentry/electron": "^4.24.0",

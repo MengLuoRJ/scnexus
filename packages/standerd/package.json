@@ -1,0 +1,49 @@
+{
+  "name": "@scnexus/standard",
+  "version": "0.0.15",
+  "author": "MengLuoRJ",
+  "license": "MIT",
+  "description": "SCNexus Standard types, definitions, parsers and so on files.",
+  "keywords": [
+    "SCNexus"
+  ],
+  "homepage": "https://github.com/MengLuoRJ/scnexus/packages-standard/README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MengLuoRJ/scnexus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MengLuoRJ/scnexus/issues"
+  },
+  "exports": {
+    "./metadata": {
+      "require": {
+        "types": "./dist/metadata/index.d.ts",
+        "default": "./dist/metadata/index.js"
+      },
+      "import": {
+        "types": "./dist/metadata/index.d.mts",
+        "default": "./dist/metadata/index.mjs"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/index.d.ts"
+      ],
+      "metadata": [
+        "./dist/metadata/index.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "watch": "npm run build -- --watch src",
+    "prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  }
+}

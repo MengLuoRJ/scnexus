@@ -1,0 +1,25 @@
+{
+  "name": "@scnexus/ui",
+  "version": "0.0.1",
+  "author": "MengLuoRJ",
+  "license": "MIT",
+  "description": "SCNexus UI Components, based on shadcn UI Vue and Radix UI Vue.",
+  "keywords": [
+    "SCNexus",
+    "UI Components",
+    "shadcn",
+    "Radix",
+    "UnoCSS"
+  ],
+  "homepage": "https://github.com/MengLuoRJ/scnexus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MengLuoRJ/scnexus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MengLuoRJ/scnexus/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -244,23 +244,18 @@ function goCampaignManagrRoot() {
           v-for="(item, index) in CAMPAIGN_CONSTANTS"
           :key="index"
           :name="index"
-          :tab="
-            () =>
-              h(
-                'div',
-                { class: 'flex flex-row justify-start items-center gap-1' },
-                [
-                  h(NImage, {
-                    src: item.thumbnail,
-                    height: 24,
-                    width: 24,
-                    previewDisabled: true,
-                  }),
-                  h('div', undefined, item.name),
-                ]
-              )
-          "
         >
+          <template #tab>
+            <div class="flex flex-row justify-start items-center gap-1">
+              <n-image
+                :src="item.thumbnail"
+                height="24"
+                width="24"
+                preview-disabled
+              ></n-image>
+              <div>{{ item.name }}</div>
+            </div>
+          </template>
           <div
             class="w-full flex flex-col justify-center items-stretch gap-2 mb-2"
           >

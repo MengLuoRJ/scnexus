@@ -41,24 +41,19 @@ const runGame = async () => {
         v-for="(item, index) in CAMPAIGN_CONSTANTS"
         :key="index"
         :name="index"
-        :tab="
-          () =>
-            h(
-              'div',
-              { class: 'flex flex-row justify-start items-center gap-1' },
-              [
-                h(NImage, {
-                  src: item.thumbnail,
-                  fallbackSrc: Campaign_thumbnail,
-                  height: 24,
-                  width: 24,
-                  previewDisabled: true,
-                }),
-                h('div', undefined, item.name),
-              ]
-            )
-        "
       >
+        <template #tab>
+          <div class="flex flex-row justify-start items-center gap-1">
+            <n-image
+              :src="item.thumbnail"
+              :fallbackSrc="Campaign_thumbnail"
+              height="24"
+              width="24"
+              preview-disabled
+            ></n-image>
+            <div>{{ item.name }}</div>
+          </div>
+        </template>
         <div
           class="p-2 rounded-2 bg-cover bg-no-repeat"
           :style="{ backgroundImage: `url(${item.banner})` }"
@@ -105,12 +100,15 @@ const runGame = async () => {
                     <n-badge
                       v-if="CAMPAIGN_SET[index]?.manager !== 'SCNexus'"
                       type="info"
-                      :value="
-                        $t('campaign.detail-mode.manager-format', {
-                          manager: CAMPAIGN_SET[index]?.manager,
-                        })
-                      "
-                    ></n-badge>
+                    >
+                      <template #value>
+                        {{
+                          $t("campaign.detail-mode.manager-format", {
+                            manager: CAMPAIGN_SET[index]?.manager,
+                          })
+                        }}
+                      </template>
+                    </n-badge>
                   </div>
                 </div>
               </div>

@@ -64,6 +64,7 @@ const config: UserConfig = {
     AutoImport({
       imports: [
         "vue",
+        "vue-router",
         unheadVueComposablesImports,
         {
           "naive-ui": [

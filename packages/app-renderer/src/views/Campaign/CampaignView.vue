@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, provide } from "vue";
-import router from "@/router";
-import { renderUnoIcon } from "@/composables/useIconRender";
 import { useEmitter } from "@/composables/useMitt";
 import { usePresetStore } from "@/stores/preset";
+import { useRouterGo } from "@/composables/useRouterGo";
 
 import CampaignDisplayGridMode from "./components/CampaignDisplayGridMode.vue";
 import CampaignDisplayListMode from "./components/CampaignDisplayListMode.vue";
@@ -17,10 +16,6 @@ import {
 const preset = usePresetStore();
 
 const refDrawer = ref<InstanceType<typeof CampaignSwitchDrawer> | null>(null);
-
-function goCampaignManagement() {
-  router.push("/campaign/manage");
-}
 
 onMounted(async () => {
   useEmitter("profile-initialized-success", async () => {
@@ -62,7 +57,7 @@ provide("refDrawer", refDrawer);
             </template>
           </n-switch>
         </div>
-        <n-button size="small" @click="goCampaignManagement()">
+        <n-button size="small" @click="useRouterGo({ name: 'CampaignActive' })">
           <template #icon>
             <div class="i-tabler:folder-cog"></div>
           </template>

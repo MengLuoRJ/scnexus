@@ -41,7 +41,7 @@ const defaultlist = [
     },
   },
   {
-    key: "campaign",
+    key: "Campaign",
     label: "战役管理",
     // icon: renderUnoIcon("i-tabler:device-gamepad"),
     icon: renderMenuIcon(MenuGame),

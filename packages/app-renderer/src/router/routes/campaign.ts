@@ -4,6 +4,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/campaign",
     name: "Campaign",
+    redirect: "/campaign/active",
     component: () => import("@/layouts/BasicLayout.vue"),
     children: [
       {

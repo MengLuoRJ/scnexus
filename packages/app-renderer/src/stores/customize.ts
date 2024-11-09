@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
-import { MetadataInformated } from "scnexus-standard/metadata";
+import type { MetadataInformated } from "scnexus-standard/metadata";
 
 export const useCustomizeStore = defineStore(
   "customize",

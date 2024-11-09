@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
-import { MetadataInformatedCampaignSet } from "scnexus-standard/metadata";
+import type { MetadataInformatedCampaignSet } from "scnexus-standard/metadata";
 
 export const useCampaignActiveStore = defineStore(
   "campaign-active",

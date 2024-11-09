@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
-import { FormInst } from "naive-ui";
-import {
+import type { FormInst } from "naive-ui";
+import type {
   CampaignType,
   MetadataStandard,
   MetadataType,

@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 
 import { ipcProfile } from "@/apis/ipcs/profile";
 
-import {
+import type {
   ProfileCampaign,
   ProfileCustomize,
   ProfileDocuments,

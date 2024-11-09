@@ -1,5 +1,5 @@
 import router from "@/router";
-import { RouteLocationAsRelativeTyped, RouteMapGeneric } from "vue-router";
+import type { RouteLocationAsRelativeTyped, RouteMapGeneric } from "vue-router";
 
 export const useRouterGo = (
   resolver: RouteLocationAsRelativeTyped<RouteMapGeneric, string | symbol>,

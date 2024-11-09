@@ -1,4 +1,3 @@
-import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
@@ -12,9 +11,9 @@ export const useUpdaterStore = defineStore("updater", () => {
   const UPDATE_DOWNLOADING = ref<boolean>(false);
   const UPDATE_DOWNLOADED = ref<boolean>(false);
 
-  const updateInfo = ref<UpdateInfo>();
+  const updateInfo = ref<any>();
 
-  const downloadProgress = ref<ProgressInfo>({
+  const downloadProgress = ref<any>({
     percent: 0,
     delta: 0,
     transferred: 0,

@@ -1,5 +1,5 @@
 import { useIpcRendererInvoke } from "./ipc-util";
-import {
+import type {
   OpenDialogOptions,
   OpenDialogReturnValue,
   OpenDialogSyncOptions,

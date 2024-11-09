@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { type AxiosRequestConfig } from "axios";
 import { useAxios } from "@vueuse/integrations/useAxios";
 import { useUserStore } from "@/stores/user";
 

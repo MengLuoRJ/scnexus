@@ -1,5 +1,5 @@
-import { NIcon, commonDark } from "naive-ui";
-import { Component, h } from "vue";
+import { NIcon, } from "naive-ui";
+import { type Component, h } from "vue";
 
 export function renderNaiveIcon(
   icon: Component,

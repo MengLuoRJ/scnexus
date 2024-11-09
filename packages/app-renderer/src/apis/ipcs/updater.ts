@@ -1,34 +1,29 @@
-import { ProgressInfo, UpdateCheckResult, UpdateInfo } from "electron-updater";
 import { useIpcRendererInvoke, useIpcRendererOn } from "./ipc-util";
 
 const moduleChannel = "updater";
 
 export const ipcUpdater = {
-  onCheckingForUpdate: useIpcRendererOn<UpdateInfo>(
+  onCheckingForUpdate: useIpcRendererOn<any>(
     `${moduleChannel}:checking-for-update`
   ),
-  onUpdateAvailable: useIpcRendererOn<UpdateInfo>(
-    `${moduleChannel}:update-available`
-  ),
-  onUpdateNotAvailable: useIpcRendererOn<UpdateInfo>(
+  onUpdateAvailable: useIpcRendererOn<any>(`${moduleChannel}:update-available`),
+  onUpdateNotAvailable: useIpcRendererOn<any>(
     `${moduleChannel}:update-not-available`
   ),
-  onDownloadProgress: useIpcRendererOn<ProgressInfo>(
+  onDownloadProgress: useIpcRendererOn<any>(
     `${moduleChannel}:download-progress`
   ),
-  onUpdateDownloaded: useIpcRendererOn<UpdateInfo>(
+  onUpdateDownloaded: useIpcRendererOn<any>(
     `${moduleChannel}:update-downloaded`
   ),
   onError: useIpcRendererOn(`${moduleChannel}:error`),
 
   checkingForUpdateAndNotify: () =>
-    useIpcRendererInvoke<UpdateCheckResult | null>(
+    useIpcRendererInvoke<any | null>(
       `${moduleChannel}:checking-for-update-and-notify`
     ),
   checkForUpdates: () =>
-    useIpcRendererInvoke<UpdateCheckResult | null>(
-      `${moduleChannel}:check-for-updates`
-    ),
+    useIpcRendererInvoke<any | null>(`${moduleChannel}:check-for-updates`),
   downloadUpdate: () =>
     useIpcRendererInvoke<string[]>(`${moduleChannel}:download-update`),
   quitAndInstall: () =>

@@ -3,7 +3,7 @@ import {
   createDiscreteApi,
   lightTheme,
   darkTheme,
-  ConfigProviderProps,
+  type ConfigProviderProps,
 } from "naive-ui";
 import { computed } from "vue";
 

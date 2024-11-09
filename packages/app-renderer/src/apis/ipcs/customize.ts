@@ -1,13 +1,13 @@
 import { useIpcRendererInvoke } from "./ipc-util";
-import { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
-import {
+import type { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
+import type {
   CompressFileInfo,
   ResultInstallCustomize,
   ResultUncompress,
   ResultUninstallCustomize,
 } from "@scnexus/app-shared/types/customize.type";
-import { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
-import { MetadataInformated } from "scnexus-standard/metadata";
+import type { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+import type { MetadataInformated } from "scnexus-standard/metadata";
 
 const moduleChannel = "customize";
 

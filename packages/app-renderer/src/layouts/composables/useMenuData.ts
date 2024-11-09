@@ -1,13 +1,7 @@
-import {
-  MenuDividerOption,
-  MenuGroupOption,
-  MenuOption,
-  NImage,
-} from "naive-ui";
+import { NImage } from "naive-ui";
 import { computed, h } from "vue";
 import {
   renderNaiveIcon,
-  renderUnoIcon,
 } from "../../composables/useIconRender";
 
 import Logo from "@/assets/logo.png";

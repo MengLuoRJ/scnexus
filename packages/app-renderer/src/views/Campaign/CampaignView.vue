@@ -47,7 +47,6 @@ provide("refDrawer", refDrawer);
             v-model:value="preset.campaign_display_mode"
             checked-value="list"
             unchecked-value="grid"
-            size="medium"
           >
             <template #checked-icon>
               <div class="i-tabler:float-left"></div>
@@ -62,33 +61,17 @@ provide("refDrawer", refDrawer);
               {{ $t("campaign.display-mode.brief") }}
             </template>
           </n-switch>
-          <!-- <n-button text style="font-size: 28px" @click="displayMode = 'grid'">
-            <n-icon
-              :component="
-                renderUnoIcon('i-tabler:layout-grid', { size: '28px' })
-              "
-            ></n-icon>
-          </n-button>
-          <n-button text style="font-size: 28px" @click="displayMode = 'list'">
-            <n-icon
-              :component="
-                renderUnoIcon('i-tabler:float-left', { size: '28px' })
-              "
-            ></n-icon>
-          </n-button> -->
         </div>
-        <n-button
-          size="small"
-          :render-icon="renderUnoIcon('i-tabler:folder-cog', { size: '12px' })"
-          @click="goCampaignManagement()"
-        >
+        <n-button size="small" @click="goCampaignManagement()">
+          <template #icon>
+            <div class="i-tabler:folder-cog"></div>
+          </template>
           {{ $t("campaign.list-manage") }}
         </n-button>
-        <n-button
-          size="small"
-          :render-icon="renderUnoIcon('i-tabler:refresh', { size: '12px' })"
-          @click="updateCampaignLists()"
-        >
+        <n-button size="small" @click="updateCampaignLists()">
+          <template #icon>
+            <div class="i-tabler:refresh"></div>
+          </template>
           {{ $t("campaign.list-refresh") }}
         </n-button>
       </div>

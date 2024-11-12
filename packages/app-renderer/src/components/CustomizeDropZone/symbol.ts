@@ -1,5 +1,5 @@
-import { InjectionKey, Ref } from "vue";
-import { CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
+import type { InjectionKey, Ref } from "vue";
+import type { CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
 
 export const KEY_FILEPATH: InjectionKey<Ref<string>> = Symbol(
   "CustomizeDropZone_FilePath"

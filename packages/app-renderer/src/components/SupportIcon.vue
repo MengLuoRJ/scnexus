@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Component, computed } from "vue";
+import { type Component, computed } from "vue";
 
 const props = defineProps<{
   link: string;

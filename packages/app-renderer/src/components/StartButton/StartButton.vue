@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { usePresetStore } from "@/stores/preset";
 
-import { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+import type { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
 import { computed } from "vue";
 import { get, set } from "@vueuse/core";
 import { ipcCustomize } from "@/apis/ipcs/customize";

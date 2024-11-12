@@ -7,7 +7,7 @@ import { useDialog, useNotification } from "naive-ui";
 import { useProfileStore } from "@/stores/profile";
 import { ipcCustomize } from "@/apis/ipcs/customize";
 import { ipcDialog } from "@/apis/ipcs/dialog";
-import { CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
+import { type CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
 import { webUtils } from "@/apis/web-utils";
 
 import GameProfileChecker from "@/components/GameProfileChecker.vue";

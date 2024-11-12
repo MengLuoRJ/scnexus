@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { set } from "@vueuse/core";
-import { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
+import type { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
 import {
-  CampaignConstant,
+  type CampaignConstant,
   checkCampaignSwitchable,
   uninstallCampaign,
   activeCampaign,

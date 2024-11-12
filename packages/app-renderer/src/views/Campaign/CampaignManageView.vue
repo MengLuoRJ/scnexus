@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { renderUnoIcon } from "@/composables/useIconRender";
 import { useCampaignStore } from "@/stores/campaign";
-import { CampaignType } from "scnexus-standard/metadata";
+import { type CampaignType } from "scnexus-standard/metadata";
 import { get, set } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { reactive, ref, h } from "vue";
 import { filesize } from "filesize";
-import { NImage, NumberAnimationInst } from "naive-ui";
+import { NImage, type NumberAnimationInst } from "naive-ui";
 import { ipcShell } from "@/apis/ipcs/shell";
 
 import CampaignStatChart from "./components/CampaignStatChart.vue";

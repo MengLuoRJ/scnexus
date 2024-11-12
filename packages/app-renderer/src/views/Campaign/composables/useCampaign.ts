@@ -1,5 +1,4 @@
 import { computed, toRaw } from "vue";
-import { useThrottleFn } from "@vueuse/core";
 import { gt, lt } from "semver";
 
 import { useProfileStore } from "@/stores/profile";
@@ -10,7 +9,7 @@ import { useDiscreteApi } from "@/composables/useDiscreteApi";
 
 import { useTrans } from "@/composables/useTrans";
 
-import { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
+import type { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
 import { ipcCampaign } from "@/apis/ipcs/campaign";
 
 import WOL_LOGO from "@/assets/campaign/Campaign_WOL_LOGO.png";

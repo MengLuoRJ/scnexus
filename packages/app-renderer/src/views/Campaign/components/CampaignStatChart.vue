@@ -3,14 +3,14 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { get } from "@vueuse/core";
 
 import * as echarts from "echarts/core";
-import { LegendComponent, LegendComponentOption } from "echarts/components";
-import { PieChart, PieSeriesOption } from "echarts/charts";
+import { LegendComponent, type LegendComponentOption } from "echarts/components";
+import { PieChart, type PieSeriesOption } from "echarts/charts";
 import { LabelLayout } from "echarts/features";
 import { CanvasRenderer } from "echarts/renderers";
 
 import { filesize } from "filesize";
 
-import { CampaignType } from "scnexus-standard/metadata";
+import type { CampaignType } from "scnexus-standard/metadata";
 
 import { CAMPAIGN_CONSTANTS } from "../composables/useCampaign";
 

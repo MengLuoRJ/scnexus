@@ -4,14 +4,14 @@ import { useEmitter } from "@/composables/useMitt";
 import { usePresetStore } from "@/stores/preset";
 import { useRouterGo } from "@/composables/useRouterGo";
 
-import CampaignDisplayGridMode from "./components/CampaignDisplayGridMode.vue";
-import CampaignDisplayListMode from "./components/CampaignDisplayListMode.vue";
-import CampaignSwitchDrawer from "./components/CampaignSwitchDrawer.vue";
-
 import {
   updateActivedCampaignSet,
   updateCampaignLists,
 } from "@/views/campaign/composables/useCampaign";
+
+import CampaignDisplayGridMode from "./components/CampaignDisplayGridMode.vue";
+import CampaignDisplayListMode from "./components/CampaignDisplayListMode.vue";
+import CampaignSwitchDrawer from "./components/CampaignSwitchDrawer.vue";
 
 const preset = usePresetStore();
 
@@ -74,9 +74,7 @@ provide("refDrawer", refDrawer);
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
     <Transition name="display-change" mode="out-in">
       <CampaignDisplayGridMode v-if="preset.campaign_display_mode === 'grid'" />
-      <CampaignDisplayListMode
-        v-else-if="preset.campaign_display_mode === 'list'"
-      />
+      <CampaignDisplayListMode v-else />
     </Transition>
     <CampaignSwitchDrawer ref="refDrawer" />
   </div>

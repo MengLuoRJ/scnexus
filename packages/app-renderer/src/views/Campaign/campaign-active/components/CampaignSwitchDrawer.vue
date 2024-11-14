@@ -7,7 +7,7 @@ import {
   checkCampaignSwitchable,
   uninstallCampaign,
   activeCampaign,
-} from "../composables/useCampaign";
+} from "@/views/campaign/composables/useCampaign";
 import { renderUnoIcon } from "@/composables/useIconRender";
 
 import Campaign_thumbnail from "@/assets/campaign/Campaign_thumbnail.png";

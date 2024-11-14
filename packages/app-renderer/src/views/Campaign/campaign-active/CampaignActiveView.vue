@@ -11,7 +11,7 @@ import CampaignSwitchDrawer from "./components/CampaignSwitchDrawer.vue";
 import {
   updateActivedCampaignSet,
   updateCampaignLists,
-} from "./composables/useCampaign";
+} from "@/views/campaign/composables/useCampaign";
 
 const preset = usePresetStore();
 
@@ -57,7 +57,7 @@ provide("refDrawer", refDrawer);
             </template>
           </n-switch>
         </div>
-        <n-button size="small" @click="useRouterGo({ name: 'CampaignActive' })">
+        <n-button size="small" @click="useRouterGo({ name: 'CampaignManage' })">
           <template #icon>
             <div class="i-tabler:folder-cog"></div>
           </template>

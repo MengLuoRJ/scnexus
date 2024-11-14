@@ -7,7 +7,7 @@ import { renderUnoIcon } from "@/composables/useIconRender";
 import {
   CAMPAIGN_CONSTANTS,
   unactiveCampaign,
-} from "../composables/useCampaign";
+} from "@/views/campaign/composables/useCampaign";
 
 import CustomizeDropZone from "@/components/CustomizeDropZone";
 

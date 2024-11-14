@@ -14,7 +14,7 @@ const routes: Array<RouteRecordRaw> = [
           title: "战役模组",
           public: true,
         },
-        component: () => import("@/views/Campaign/CampaignView.vue"),
+        component: () => import("@/views/campaign/campaign-active/CampaignActiveView.vue"),
       },
       {
         path: "manage",
@@ -23,7 +23,7 @@ const routes: Array<RouteRecordRaw> = [
           title: "战役模组管理",
           public: true,
         },
-        component: () => import("@/views/Campaign/CampaignManageView.vue"),
+        component: () => import("@/views/campaign/campaign-manage/CampaignManageView.vue"),
       },
     ],
   },

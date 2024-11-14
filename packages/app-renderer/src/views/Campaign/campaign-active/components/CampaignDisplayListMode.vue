@@ -9,7 +9,7 @@ import {
   CAMPAIGN_CONSTANTS,
   unactiveCampaign,
   uninstallCampaign,
-} from "../composables/useCampaign";
+} from "@/views/campaign/composables/useCampaign";
 import Campaign_thumbnail from "@/assets/campaign/Campaign_thumbnail.png";
 
 import StartButton from "@/components/StartButton";

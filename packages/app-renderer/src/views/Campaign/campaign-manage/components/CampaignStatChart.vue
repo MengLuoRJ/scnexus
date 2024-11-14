@@ -12,7 +12,7 @@ import { filesize } from "filesize";
 
 import type { CampaignType } from "scnexus-standard/metadata";
 
-import { CAMPAIGN_CONSTANTS } from "../composables/useCampaign";
+import { CAMPAIGN_CONSTANTS } from "@/views/campaign/composables/useCampaign";
 
 echarts.use([LegendComponent, PieChart, CanvasRenderer, LabelLayout]);
 

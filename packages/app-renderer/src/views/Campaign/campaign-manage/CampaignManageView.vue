@@ -16,7 +16,7 @@ import {
   uninstallCampaign,
   checkCampaignSwitchable,
   CAMPAIGN_CONSTANTS,
-} from "./composables/useCampaign";
+} from "@/views/campaign/composables/useCampaign";
 import router from "@/router";
 
 const campaignStore = useCampaignStore();

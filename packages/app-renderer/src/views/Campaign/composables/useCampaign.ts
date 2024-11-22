@@ -1,5 +1,5 @@
 import { computed, toRaw } from "vue";
-import { gt, lt } from "semver";
+import { lt } from "semver";
 
 import { useProfileStore } from "@/stores/profile";
 import { useCampaignStore } from "@/stores/campaign";
@@ -9,7 +9,10 @@ import { useDiscreteApi } from "@/composables/useDiscreteApi";
 
 import { useTrans } from "@/composables/useTrans";
 
-import type { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
+import type {
+  CampaignType,
+  MetadataInformated,
+} from "scnexus-standard/metadata";
 import { ipcCampaign } from "@/apis/ipcs/campaign";
 
 import WOL_LOGO from "@/assets/campaign/Campaign_WOL_LOGO.png";
@@ -38,36 +41,34 @@ export type CampaignConstant = {
   background?: string;
 };
 
-export const CAMPAIGN_CONSTANTS = computed(
-  (): Record<CampaignType, CampaignConstant> => {
-    return {
-      WOL: {
-        name: t("campaign.WOL.name"),
-        logo: WOL_LOGO,
-        thumbnail: WOL_Thumbnail,
-        // banner: WOL_Banner,
-      },
-      HOTS: {
-        name: t("campaign.HOTS.name"),
-        logo: HOTS_LOGO,
-        thumbnail: HOTS_Thumbnail,
-        // banner: HOTS_Banner,
-      },
-      LOTV: {
-        name: t("campaign.LOTV.name"),
-        logo: LOTV_LOGO,
-        thumbnail: LOTV_Thumbnail,
-        // banner: LOTV_Banner,
-      },
-      NCO: {
-        name: t("campaign.NCO.name"),
-        logo: NCO_LOGO,
-        thumbnail: Campaign_thumbnail,
-        // banner: NCO_Banner,
-      },
-    };
-  }
-);
+export const CAMPAIGN_CONSTANTS = computed<
+  Record<CampaignType, CampaignConstant>
+>(() => ({
+  WOL: {
+    name: t("campaign.WOL.name"),
+    logo: WOL_LOGO,
+    thumbnail: WOL_Thumbnail,
+    // banner: WOL_Banner,
+  },
+  HOTS: {
+    name: t("campaign.HOTS.name"),
+    logo: HOTS_LOGO,
+    thumbnail: HOTS_Thumbnail,
+    // banner: HOTS_Banner,
+  },
+  LOTV: {
+    name: t("campaign.LOTV.name"),
+    logo: LOTV_LOGO,
+    thumbnail: LOTV_Thumbnail,
+    // banner: LOTV_Banner,
+  },
+  NCO: {
+    name: t("campaign.NCO.name"),
+    logo: NCO_LOGO,
+    thumbnail: Campaign_thumbnail,
+    // banner: NCO_Banner,
+  },
+}));
 
 export async function syncActivedCampaignSet() {
   if (!profileStore.SUCCESS) return;

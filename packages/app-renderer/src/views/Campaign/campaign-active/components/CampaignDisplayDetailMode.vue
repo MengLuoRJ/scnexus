@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { h, inject } from "vue";
+import { inject } from "vue";
 import { storeToRefs } from "pinia";
 import { NImage } from "naive-ui";
 
@@ -26,13 +26,9 @@ const { CAMPAIGN_SET } = storeToRefs(campaignActiveStore);
 
 const refDrawer =
   inject<InstanceType<typeof CampaignSwitchDrawer>>("refDrawer");
-
-const runGame = async () => {
-  await ipcCustomize.runGameClient();
-};
 </script>
 <template>
-  <div class="campaign-manager -list">
+  <div class="CampaignDisplayDetailMode">
     <CampaignTabs v-slot="{ constant, index }">
       <div
         class="p-2 rounded-2 bg-cover bg-no-repeat"

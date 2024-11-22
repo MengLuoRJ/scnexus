@@ -10,7 +10,7 @@ import {
 } from "@/views/campaign/composables/useCampaign";
 
 import CampaignDisplayGridMode from "./components/CampaignDisplayGridMode.vue";
-import CampaignDisplayListMode from "./components/CampaignDisplayListMode.vue";
+import CampaignDisplayDetailMode from "./components/CampaignDisplayDetailMode.vue";
 import CampaignSwitchDrawer from "./components/CampaignSwitchDrawer.vue";
 
 const preset = usePresetStore();
@@ -74,7 +74,7 @@ provide("refDrawer", refDrawer);
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
     <Transition name="display-change" mode="out-in">
       <CampaignDisplayGridMode v-if="preset.campaign_display_mode === 'grid'" />
-      <CampaignDisplayListMode v-else />
+      <CampaignDisplayDetailMode v-else />
     </Transition>
     <CampaignSwitchDrawer ref="refDrawer" />
   </div>

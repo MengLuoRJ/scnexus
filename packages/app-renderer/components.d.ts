@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    CampaignTabs: typeof import('./src/components/CampaignTabs/CampaignTabs.vue')['default']
     CustomizeDropZone: typeof import('./src/components/CustomizeDropZone/CustomizeDropZone.vue')['default']
     ExternalLinkTooltip: typeof import('./src/components/ExternalLinkTooltip.vue')['default']
     GameProfileChecker: typeof import('./src/components/GameProfileChecker.vue')['default']

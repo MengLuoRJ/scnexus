@@ -39,12 +39,12 @@ const refDrawer =
             class="basis-2/5 flex flex-col justify-center items-center gap-1 py-2 border border-gray-200 border-solid rounded-2 bg-white/75 backdrop-blur-sm"
           >
             <n-image
+              class="h-[125px] mt-[-28px]"
               :src="constant.logo"
-              preview-disabled
               height="125"
-              class="mt--6"
+              preview-disabled
             ></n-image>
-            <div class="self-center mt--6">
+            <div class="self-center mt-[-24px]">
               {{
                 $t("campaign.detail-mode.campaign-title", {
                   campaign: constant.name,
@@ -67,22 +67,24 @@ const refDrawer =
                   {{ CAMPAIGN_SET[index]?.name ?? $t("campaign.no-campaign") }}
                 </div>
                 <div class="flex flex-row justify-center items-center gap-1">
-                  <n-badge
-                    v-if="!!CAMPAIGN_SET[index]?.version"
-                    :value="'v' + CAMPAIGN_SET[index]?.version"
-                  ></n-badge>
-                  <n-badge
-                    v-if="CAMPAIGN_SET[index]?.manager !== 'SCNexus'"
-                    type="info"
+                  <n-tag type="success" size="small" round>
+                    {{ "v" + CAMPAIGN_SET[index]?.version }}
+                  </n-tag>
+                  <n-tag
+                    :type="
+                      CAMPAIGN_SET[index]?.manager === 'SCNexus'
+                        ? 'info'
+                        : undefined
+                    "
+                    size="small"
+                    round
                   >
-                    <template #value>
-                      {{
-                        $t("campaign.detail-mode.manager-format", {
-                          manager: CAMPAIGN_SET[index]?.manager,
-                        })
-                      }}
-                    </template>
-                  </n-badge>
+                    {{
+                      $t("campaign.detail-mode.manager-format", {
+                        manager: CAMPAIGN_SET[index]?.manager,
+                      })
+                    }}
+                  </n-tag>
                 </div>
               </div>
             </div>
@@ -95,8 +97,10 @@ const refDrawer =
                 size="small"
                 block
                 @click="refDrawer?.hookupSwitchDrawer(constant, index)"
-                :render-icon="renderUnoIcon('i-tabler:table-options')"
               >
+                <template #icon>
+                  <div class="i-tabler:table-options"></div>
+                </template>
                 {{ $t("campaign.detail-mode.active-campaign") }}
               </n-button>
               <n-button
@@ -104,10 +108,10 @@ const refDrawer =
                 size="small"
                 block
                 @click="unactiveCampaign(CAMPAIGN_SET[index]!, constant)"
-                :render-icon="
-                  renderUnoIcon('i-tabler:refresh', { size: '12px' })
-                "
               >
+                <template #icon>
+                  <div class="i-tabler:refresh"></div>
+                </template>
                 {{ $t("campaign.detail-mode.restore-campaign") }}
               </n-button>
               <n-button
@@ -115,12 +119,10 @@ const refDrawer =
                 size="small"
                 block
                 @click="refDrawer?.hookupSwitchDrawer(constant, index)"
-                :render-icon="
-                  renderUnoIcon('i-tabler:status-change', {
-                    size: '12px',
-                  })
-                "
               >
+                <template #icon>
+                  <div class="i-tabler:status-change"></div>
+                </template>
                 {{ $t("campaign.detail-mode.switch-campaign") }}
               </n-button>
               <n-button
@@ -128,8 +130,10 @@ const refDrawer =
                 size="small"
                 block
                 @click="uninstallCampaign(CAMPAIGN_SET[index])"
-                :render-icon="renderUnoIcon('i-tabler:trash', { size: '12px' })"
               >
+                <template #icon>
+                  <div class="i-tabler:trash"></div>
+                </template>
                 {{ $t("campaign.detail-mode.uninstall-campaign") }}
               </n-button>
               <StartButton type="campaign" />

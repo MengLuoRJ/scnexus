@@ -57,6 +57,7 @@ declare module 'vue' {
     NSwitch: typeof import('naive-ui')['NSwitch']
     NTabPane: typeof import('naive-ui')['NTabPane']
     NTabs: typeof import('naive-ui')['NTabs']
+    NTag: typeof import('naive-ui')['NTag']
     NVirtualList: typeof import('naive-ui')['NVirtualList']
     ProcessFileModal: typeof import('./src/components/CustomizeDropZone/components/ProcessFileModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

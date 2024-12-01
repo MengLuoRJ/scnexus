@@ -12,6 +12,7 @@ const { play_button_game_mode } = storeToRefs(usePresetStore());
 const props = defineProps<{
   type: "campaign" | "customize";
   path_map_file?: string;
+  size?: "small" | "large";
 }>();
 
 const modeExecutable = computed({
@@ -55,13 +56,21 @@ const handleDefaultStart = async () => {
 };
 </script>
 <template>
-  <div class="start-button flex flex-row justify-center items-center">
+  <div
+    :class="[
+      'start-button flex flex-row justify-center items-center',
+      { small: props.size === 'small' },
+    ]"
+  >
     <div
       class="starter flex flex-row justify-center items-center"
       @click="handleDefaultStart"
     >
       <div class="i-tabler:player-play w-[18px] h-[18px] mr-[5px]"></div>
-      <div>{{ $t("campaign.detail-mode.play") }}</div>
+      <div v-if="props.size === 'small'">
+        {{ $t("campaign.brief-mode.play") }}
+      </div>
+      <div v-else>{{ $t("campaign.detail-mode.play") }}</div>
     </div>
     <n-popover trigger="hover" :placement="'right-end'">
       <template #trigger>
@@ -118,6 +127,23 @@ const handleDefaultStart = async () => {
 }
 
 .start-button .setting {
+  @apply h-full px-[3px] rounded-r;
+  @apply border-l-solid b-white b-l-[0.1px];
+  @apply hover:bg-[#36ad6a] transition-all duration-300;
+}
+
+.start-button.small {
+  @apply h-[28px] text-[14px] text-white leading-[16px];
+  @apply rounded bg-[#18a058];
+  @apply cursor-pointer;
+}
+
+.start-button.small .starter {
+  @apply h-full px-[10px] rounded-l;
+  @apply hover:bg-[#36ad6a] transition-all duration-300;
+}
+
+.start-button.small .setting {
   @apply h-full px-[3px] rounded-r;
   @apply border-l-solid b-white b-l-[0.1px];
   @apply hover:bg-[#36ad6a] transition-all duration-300;

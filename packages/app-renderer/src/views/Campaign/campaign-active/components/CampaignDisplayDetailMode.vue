@@ -66,7 +66,7 @@ const refDrawer =
                 <div class="text-center text-black">
                   {{ CAMPAIGN_SET[index]?.name ?? $t("campaign.no-campaign") }}
                 </div>
-                <div class="flex flex-row justify-center items-center gap-1">
+                <div class="flex flex-row justify-center items-center flex-wrap gap-1">
                   <n-tag type="success" size="small" round>
                     {{ "v" + CAMPAIGN_SET[index]?.version }}
                   </n-tag>

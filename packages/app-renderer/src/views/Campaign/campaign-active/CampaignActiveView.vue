@@ -9,7 +9,7 @@ import {
   updateCampaignLists,
 } from "@/views/campaign/composables/useCampaign";
 
-import CampaignDisplayGridMode from "./components/CampaignDisplayGridMode.vue";
+import CampaignDisplayBriefMode from "./components/CampaignDisplayBriefMode.vue";
 import CampaignDisplayDetailMode from "./components/CampaignDisplayDetailMode.vue";
 import CampaignSwitchDrawer from "./components/CampaignSwitchDrawer.vue";
 
@@ -40,8 +40,8 @@ provide("refDrawer", refDrawer);
         <div class="mr-2 flex flex-row justify-end gap-1">
           <n-switch
             v-model:value="preset.campaign_display_mode"
-            checked-value="list"
-            unchecked-value="grid"
+            checked-value="detail"
+            unchecked-value="brief"
           >
             <template #checked-icon>
               <div class="i-tabler:float-left"></div>
@@ -73,7 +73,7 @@ provide("refDrawer", refDrawer);
     </div>
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
     <Transition name="display-change" mode="out-in">
-      <CampaignDisplayGridMode v-if="preset.campaign_display_mode === 'grid'" />
+      <CampaignDisplayBriefMode v-if="preset.campaign_display_mode === 'brief'" />
       <CampaignDisplayDetailMode v-else />
     </Transition>
     <CampaignSwitchDrawer ref="refDrawer" />

@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 export const usePresetStore = defineStore("preset", () => {
-  const campaign_display_mode = ref<"grid" | "list">("list");
+  const campaign_display_mode = ref<"brief" | "detail">("detail");
   const play_button_game_mode = ref<"client" | "executable">("client");
 
   const storeRefs = {

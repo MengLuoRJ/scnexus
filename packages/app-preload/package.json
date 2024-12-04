@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-preload",
-  "version": "0.0.21-snapshot",
+  "version": "0.0.21",
   "description": "electron preload process",
   "author": {
     "name": "MengLuoRJ",

@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-renderer",
-  "version": "0.0.21-snapshot",
+  "version": "0.0.21",
   "description": "electron renderer process",
   "author": {
     "name": "MengLuoRJ",

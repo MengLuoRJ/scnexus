@@ -3,7 +3,10 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { get } from "@vueuse/core";
 
 import * as echarts from "echarts/core";
-import { LegendComponent, type LegendComponentOption } from "echarts/components";
+import {
+  LegendComponent,
+  type LegendComponentOption,
+} from "echarts/components";
 import { PieChart, type PieSeriesOption } from "echarts/charts";
 import { LabelLayout } from "echarts/features";
 import { CanvasRenderer } from "echarts/renderers";
@@ -72,15 +75,12 @@ onMounted(() => {
         label: {
           show: true,
           // formatter: "{b} ({d}%) \n {c} ",
-          formatter: ({ name, value, percent }) => {
-            return (
-              `{${name}|}` +
-              `${get(CAMPAIGN_CONSTANTS)[name as CampaignType].name}` +
-              ` (${percent}%)` +
-              "\n" +
-              `@ ${filesize(Number(value), { standard: "jedec" })}`
-            );
-          },
+          formatter: ({ name, value, percent }) =>
+            `{${name}|}` +
+            `${get(CAMPAIGN_CONSTANTS)[name as CampaignType].name}` +
+            ` (${percent}%)` +
+            "\n" +
+            `@ ${filesize(Number(value), { standard: "jedec" })}`,
           rich: {
             WOL: {
               height: 18,

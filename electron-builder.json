@@ -8,7 +8,11 @@
     "output": "./release/${version}",
     "buildResources": "./packages/app-main/buildResources"
   },
-  "files": ["./packages/**/dist/**"],
+  "files": [
+    "./packages/app-main/dist/**",
+    "./packages/app-preload/dist/**",
+    "./packages/app-renderer/dist/**"
+  ],
   "extraResources": [
     {
       "from": "./packages/app-main/node_modules/regedit/vbs",

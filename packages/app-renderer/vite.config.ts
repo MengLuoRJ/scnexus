@@ -1,16 +1,19 @@
 import { join } from "node:path";
 import { UserConfig } from "vite";
+
 import vue from "@vitejs/plugin-vue";
+import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from "vite-plugin-vue-devtools";
+
 import UnoCSS from "unocss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
+
 import { unheadVueComposablesImports } from "@unhead/vue";
 import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
+import { visualizer } from "rollup-plugin-visualizer";
 
 import { chrome } from "../app-main/.electron-vendors.cache.json";
-
-import { visualizer } from "rollup-plugin-visualizer";
 
 const PACKAGE_ROOT = __dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
@@ -59,6 +62,7 @@ const config: UserConfig = {
   },
   plugins: [
     vue(),
+    vueJsx(),
     vueDevTools(),
     UnoCSS(),
     AutoImport({

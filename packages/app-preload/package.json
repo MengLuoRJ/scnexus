@@ -14,11 +14,11 @@
   "type": "module",
   "main": "dist/index.mjs",
   "devDependencies": {
-    "electron": "^32.2.7",
+    "electron": "^33.2.1",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11"
+    "vite": "^6.0.3"
   },
   "dependencies": {
-    "@sentry/electron": "^4.24.0"
+    "@sentry/electron": "^5.7.0"
   }
 }

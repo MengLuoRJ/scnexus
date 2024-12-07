@@ -1,22 +1,22 @@
-import { join } from "node:path";
-import { UserConfig } from "vite";
+import { join } from 'node:path'
+import { UserConfig } from 'vite'
 
-import vue from "@vitejs/plugin-vue";
+import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
-import vueDevTools from "vite-plugin-vue-devtools";
+import vueDevTools from 'vite-plugin-vue-devtools'
 
-import UnoCSS from "unocss/vite";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
+import UnoCSS from 'unocss/vite'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
 
-import { unheadVueComposablesImports } from "@unhead/vue";
-import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
-import { visualizer } from "rollup-plugin-visualizer";
+import { unheadVueComposablesImports } from '@unhead/vue'
+import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import { visualizer } from 'rollup-plugin-visualizer'
 
-import { chrome } from "../app-main/.electron-vendors.cache.json";
+import { chrome } from '../app-main/.electron-vendors.cache.json'
 
-const PACKAGE_ROOT = __dirname;
-const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
+const PACKAGE_ROOT = __dirname
+const PROJECT_ROOT = join(PACKAGE_ROOT, '../..')
 
 /**
  * @type {import('vite').UserConfig}
@@ -28,10 +28,10 @@ const config: UserConfig = {
   envDir: PROJECT_ROOT,
   resolve: {
     alias: {
-      "@/": join(PACKAGE_ROOT, "src") + "/",
+      '@/': join(PACKAGE_ROOT, 'src') + '/',
     },
   },
-  base: "",
+  base: '',
   server: {
     fs: {
       strict: true,
@@ -40,25 +40,21 @@ const config: UserConfig = {
   build: {
     sourcemap: true,
     target: `chrome${chrome}`,
-    outDir: "dist",
-    assetsDir: ".",
-    minify: process.env.MODE !== "development",
+    outDir: 'dist',
+    assetsDir: '.',
+    minify: process.env.MODE !== 'development',
     rollupOptions: {
-      input: join(PACKAGE_ROOT, "index.html"),
+      input: join(PACKAGE_ROOT, 'index.html'),
       output: {
         manualChunks: {
-          vuei18n: ["vue-i18n"],
-          sentry: ["@sentry/electron", "@sentry/vue"],
-          echarts: ["echarts"],
+          vuei18n: ['vue-i18n'],
+          sentry: ['@sentry/electron', '@sentry/vue'],
+          echarts: ['echarts'],
         },
       },
     },
     emptyOutDir: true,
     reportCompressedSize: true,
-  },
-  define: {
-    __INTLIFY_JIT_COMPILATION__: true,
-    // __INTLIFY_DROP_MESSAGE_COMPILER__: true,
   },
   plugins: [
     vue(),
@@ -67,16 +63,11 @@ const config: UserConfig = {
     UnoCSS(),
     AutoImport({
       imports: [
-        "vue",
-        "vue-router",
+        'vue',
+        'vue-router',
         unheadVueComposablesImports,
         {
-          "naive-ui": [
-            "useDialog",
-            "useMessage",
-            "useNotification",
-            "useLoadingBar",
-          ],
+          'naive-ui': ['useDialog', 'useMessage', 'useNotification', 'useLoadingBar'],
         },
       ],
     }),
@@ -85,6 +76,6 @@ const config: UserConfig = {
     }),
     visualizer(),
   ],
-};
+}
 
-export default config;
+export default config

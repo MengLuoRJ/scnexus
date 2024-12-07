@@ -44,19 +44,19 @@
     "deprecated:compile:release:": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json"
   },
   "devDependencies": {
-    "@iconify-json/tabler": "^1.2.0",
+    "@iconify-json/tabler": "^1.2.10",
     "@scnexus/app-main": "workspace:*",
     "@scnexus/app-shared": "workspace:*",
     "conventional-changelog-cli": "^5.0.0",
     "cross-env": "^7.0.3",
-    "electron": "^32.0.1",
-    "electron-builder": "^25.0.5",
+    "electron": "^32.2.7",
+    "electron-builder": "^25.1.8",
     "filesize": "^10.1.6",
     "mitt": "^3.0.1",
     "scnexus-standard": "^0.0.13",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.3"
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
   },
   "pnpm": {
     "peerDependencyRules": {
@@ -67,6 +67,6 @@
     "overrides": {}
   },
   "dependencies": {
-    "@electron/asar": "^3.2.10"
+    "@electron/asar": "^3.2.17"
   }
 }

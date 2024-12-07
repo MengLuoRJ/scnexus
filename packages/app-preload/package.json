@@ -14,9 +14,9 @@
   "type": "module",
   "main": "dist/index.mjs",
   "devDependencies": {
-    "electron": "^32.0.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.3"
+    "electron": "^32.2.7",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
   },
   "dependencies": {
     "@sentry/electron": "^4.24.0"

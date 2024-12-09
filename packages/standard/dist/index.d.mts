@@ -140,15 +140,33 @@ type Metadata = {
      * @experimental
      */
     dependencies?: {
+        snid?: number;
         name: string;
-        description: string;
+        description?: string;
         version?: string;
     }[];
     /**
      * The luancher map file which will be run when player play this customize.
      */
     luancher?: {
-        map_name: string;
+        /**
+         * Name of the map file, should with `.SC2Map` extension.
+         * @example `Luancher.SC2Map`
+         */
+        name: string;
+        description?: string;
+        version?: string;
+        /**
+         * If the file is saved as Components files
+         * @default undefined
+         */
+        components?: boolean;
+        /**
+         * Relative path to the `maps_directory` from the map file.
+         * Not used as default when the map files are in the `maps_directory` folder.
+         * @default undefined
+         */
+        relative_path?: string;
     };
     /**
      * Declear the bank type that be used when `type` set to `"Campaign"`
@@ -161,7 +179,7 @@ type Metadata = {
     bank_enable?: "offcial" | "custom";
     banks?: {
         name: string;
-        description: string;
+        description?: string;
         version?: string;
     }[];
     /**
@@ -182,19 +200,21 @@ type Metadata = {
     /**
      * The mode that how should the manager treat this package.
      *
-     * `"standard"` means the manager will recognize and process the compressed file strictly,
-     * which following the standard and the settings in this metadata file.
-     *
-     * **Please use `"standard"` as possible, low level modes as follow are not safe.**
-     *
-     * `"paths_math"` means the manager will recognize files by locating paths,
+     * `"default"` means the manager will recognize files by locating paths,
      * that decides which directory the file should be placed,
      * **path** (e.g. "Maps", "Mods") and **file extension** (e.g. ".SC2Map") will be recognized.
      * the standard and the setting in this metadata file will be ignored.
      *
-     * @default `standard`
+     * `"strict"` means the manager will recognize and process the compressed file strictly,
+     * which following the standard and the settings in this metadata file.
+     *
+     * **We encourage to use `"strict"` if possible, the `"default"` modes might not be safe.**
+     *
+     * @experimental
+     *
+     * @default `default`
      */
-    manager_mode?: "standard" | "paths_match";
+    manager_mode?: "default" | "strict";
 };
 type MetadataRichinfo = {
     website?: string;

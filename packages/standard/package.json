@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/standard",
-  "version": "0.0.15",
+  "version": "0.0.21",
   "author": "MengLuoRJ",
   "license": "MIT",
   "description": "SCNexus Standard types, definitions, parsers and so on files.",

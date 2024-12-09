@@ -26,6 +26,7 @@
     "build:app:prepare": "npm run script:app:sync-version",
     "build:app": "cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app",
     "build:app:release": "npm run script:app:sync-version && cross-env MODE=production npm run build && pnpm -F @scnexus/app-main run build:app:release",
+    "build:standard": "pnpm -F @scnexus/standard build",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/app-main --passWithNoTests",
@@ -41,7 +42,7 @@
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "script:app:sync-version": "tsx scripts/sync-app-packages-version.ts",
     "deprecated:compile": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json --dir --config.asar=false",
-    "deprecated:compile:release:": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json"
+    "deprecated:compile:release": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json"
   },
   "devDependencies": {
     "@iconify-json/tabler": "^1.2.10",

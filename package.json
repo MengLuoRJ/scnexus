@@ -3,7 +3,6 @@
   "version": "0.0.21",
   "description": "SCNexus Client",
   "author": "MengLuoRJ <mengluorj@aiurcovenant.net>",
-  "private": true,
   "keywords": [
     "SCNexus"
   ],

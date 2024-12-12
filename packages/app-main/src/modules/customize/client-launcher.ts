@@ -16,19 +16,18 @@ export function runGameExecutable(parameters?: GameExecutableParameters) {
   if (!parameters?.run) {
     execFile(gameExecutable);
   } else {
-    const command = `"${gameExecutable}" -run "${parameters.run}"`;
-    parameters.testmod && command.concat(` -testmod "${parameters.testmod}"`);
-    parameters.displaymode &&
-      command.concat(` -displaymode ${parameters.displaymode}`);
-    parameters.trigdebug && command.concat(` -trigdebug`);
-    parameters.preload && command.concat(` -preload ${parameters.preload}`);
-    parameters.NoUserCheats && command.concat(` -NoUserCheats`);
-    parameters.reloadcheck && command.concat(` -reloadcheck`);
-    parameters.meleeMod &&
-      command.concat(` -meleeMod "${parameters.meleeMod}"`);
-    parameters.difficulty &&
-      command.concat(` -difficulty ${parameters.difficulty}`);
-    parameters.speed && command.concat(` -speed ${parameters.speed}`);
+    let command = `"${gameExecutable}" -run "${parameters.run}"`;
+    if (parameters.testmod) command += ` -testmod "${parameters.testmod}"`;
+    if (parameters.displaymode)
+      command += ` -displaymode ${parameters.displaymode}`;
+    if (parameters.trigdebug) command += ` -trigdebug`;
+    if (parameters.preload) command += ` -preload ${parameters.preload}`;
+    if (parameters.NoUserCheats) command += ` -NoUserCheats`;
+    if (parameters.reloadcheck) command += ` -reloadcheck`;
+    if (parameters.meleeMod) command += ` -meleeMod "${parameters.meleeMod}"`;
+    if (parameters.difficulty)
+      command += ` -difficulty ${parameters.difficulty}`;
+    if (parameters.speed) command += ` -speed ${parameters.speed}`;
     exec(command);
   }
 }

@@ -1,9 +1,14 @@
-import { init, setUser } from "@sentry/electron/main";
 import { app } from "electron";
+import { init, setUser, close } from "@sentry/electron/main";
 
 export function initSentry() {
   if (!app.isPackaged) return;
   init({ dsn: import.meta.env.VITE_SENTRY_DSN });
+}
+
+export async function disableSentry() {
+  if (!app.isPackaged) return;
+  await close();
 }
 
 export function setSentryUser(user: {

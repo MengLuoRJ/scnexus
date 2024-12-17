@@ -1,12 +1,15 @@
-import App from './App.vue'
-import router, { setupRouter } from '@/router'
-import { i18n } from '@/locales'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createHead } from '@unhead/vue'
 import { createPersistedState } from 'pinia-plugin-persistedstate'
 import { init as sentryInit } from '@sentry/electron/renderer'
 import * as vueSentry from '@sentry/vue'
+
+import { i18n } from '@/locales'
+import router, { setupRouter } from '@/router'
+
+import App from './App.vue'
+
 import 'virtual:uno.css'
 import 'uno.css'
 

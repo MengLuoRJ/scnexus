@@ -1,6 +1,8 @@
-import { profileStore } from "@/stores/profile";
 import { execFile, exec } from "child_process";
+
 import { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
+
+import { profileStore } from "@/stores/profile";
 
 export function runGameClient() {
   const gameClient = profileStore.get("PROFILE_GAME").GAME_CLIENT;

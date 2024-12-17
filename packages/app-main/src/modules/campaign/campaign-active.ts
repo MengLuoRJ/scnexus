@@ -1,18 +1,12 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
+
 import {
-  cleanActiveOfficialCampaignMapFiles,
-  cleanCampaignFiles,
-  cleanCampaignFilesCCM,
-  copyinCampaignFiles,
-  copyinCampaignFilesCCM,
-} from "./campaign-util";
-import { getProfileStoreCampaignTypeRoot } from "@/modules/profile/profile-util";
-import {
-  ccmMetaFileParser,
-  scnexusMetaFileParser,
-} from "@/modules/customize/customize-util";
-import { countPathCompatible } from "@/utils/fs-util";
+  CampaignType,
+  MetadataInformated,
+  MetadataInformatedCampaignSet,
+  MetadataStandard,
+} from "scnexus-standard/metadata";
 
 import {
   CampaignActiveStore,
@@ -23,11 +17,19 @@ import {
   updateCampaignActiveStore,
 } from "@/stores/campaign-active";
 import {
-  CampaignType,
-  MetadataInformated,
-  MetadataInformatedCampaignSet,
-  MetadataStandard,
-} from "scnexus-standard/metadata";
+  ccmMetaFileParser,
+  scnexusMetaFileParser,
+} from "@/modules/customize/customize-util";
+import { getProfileStoreCampaignTypeRoot } from "@/modules/profile/profile-util";
+import { countPathCompatible } from "@/utils/fs-util";
+
+import {
+  cleanActiveOfficialCampaignMapFiles,
+  cleanCampaignFiles,
+  cleanCampaignFilesCCM,
+  copyinCampaignFiles,
+  copyinCampaignFilesCCM,
+} from "./campaign-util";
 
 async function ActiveCampaignSearcher(
   campaignType: CampaignType

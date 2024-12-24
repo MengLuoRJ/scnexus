@@ -20,7 +20,7 @@ export const ipcUpdater = {
 
   checkingForUpdateAndNotify: () =>
     useIpcRendererInvoke<any | null>(
-      `${moduleChannel}:checking-for-update-and-notify`
+      `${moduleChannel}:check-for-updates-and-notify`
     ),
   checkForUpdates: () =>
     useIpcRendererInvoke<any | null>(`${moduleChannel}:check-for-updates`),

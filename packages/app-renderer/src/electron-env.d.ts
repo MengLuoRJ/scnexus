@@ -1,7 +1,10 @@
 export {};
 declare global {
   interface Window {
-    ipcRenderer: import("electron").IpcRenderer;
+    ipcRenderer: {
+      invoke: (channel: string, ...args: any[]) => Promise<any>;
+      on: (channel: string, listener: (event: object, ...args: any[]) => void) => () => void;
+    };
     webUtils: import("electron").WebUtils;
   }
 }

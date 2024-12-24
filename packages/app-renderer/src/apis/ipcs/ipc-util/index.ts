@@ -1,6 +1,5 @@
 import { useDiscreteApi } from "@/composables/useDiscreteApi";
 import { tryOnScopeDispose } from "@vueuse/core";
-import type { IpcRendererEvent } from "electron";
 import { toRaw } from "vue";
 
 export const ipcRenderer: Window["ipcRenderer"] = window.ipcRenderer;
@@ -22,7 +21,7 @@ export const useIpcRendererInvoke = async <T = any>(
 };
 
 export type RendererListener<P1 = any, P2 = any, P3 = any> = (
-  event: IpcRendererEvent,
+  event: object,
   arg1: P1,
   arg2?: P2,
   arg3?: P3,
@@ -32,18 +31,14 @@ export type RendererListener<P1 = any, P2 = any, P3 = any> = (
 export const useIpcRendererOn =
   <T = any>(channel: string) =>
   (listener: RendererListener<T>) => {
-    tryOnScopeDispose(() => {
-      ipcRenderer.removeListener(channel, listener);
-    });
-    ipcRenderer.on(channel, listener);
+    const unsubscribe = ipcRenderer.on(channel, listener);
+    tryOnScopeDispose(unsubscribe);
   };
 
 export const useIpcRendererOnDirectly = <T = any>(
   channel: string,
   listener: RendererListener<T>
 ) => {
-  tryOnScopeDispose(() => {
-    ipcRenderer.removeListener(channel, listener);
-  });
-  ipcRenderer.on(channel, listener);
+  const unsubscribe = ipcRenderer.on(channel, listener);
+  tryOnScopeDispose(unsubscribe);
 };

@@ -1,24 +1,20 @@
 import type { SettingStore } from "@scnexus/app-shared/stores/setting.store";
-import { useIpcRendererInvoke } from "./ipc-util";
-const moduleChannel = "setting";
+import { useIpcApi } from "./ipc-util";
 
 export const ipcSetting = {
   getSetting: () =>
-    useIpcRendererInvoke<SettingStore>(`${moduleChannel}:get-setting`),
+    useIpcApi<SettingStore>("apiSettingGetSetting", window.apiSettingGetSetting()),
   getSettingKey: (key: keyof SettingStore) =>
-    useIpcRendererInvoke<SettingStore[keyof SettingStore]>(
-      `${moduleChannel}:get-setting-key`,
-      key
-    ),
+    useIpcApi<SettingStore[keyof SettingStore]>("apiSettingGetSettingKey", window.apiSettingGetSettingKey(key)),
   setSettingKey: (
     key: keyof SettingStore,
     value: SettingStore[keyof SettingStore]
   ) =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:set-setting-key`, key, value),
+    useIpcApi<void>("apiSettingSetSettingKey", window.apiSettingSetSettingKey(key, value)),
 
   setTrackerUser: (user: {
     id?: string;
     username?: string;
     client_id?: string;
-  }) => useIpcRendererInvoke<void>(`${moduleChannel}:set-tracker-user`, user),
+  }) => useIpcApi<void>("apiSettingSetTrackerUser", window.apiSettingSetTrackerUser(user)),
 };

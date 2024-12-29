@@ -1,61 +1,35 @@
-import { useIpcRendererInvoke } from "./ipc-util";
+import { useIpcApi } from "./ipc-util";
 import type { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
 import type { CampaignStore } from "@scnexus/app-shared/stores/campaign.store";
 import type { CampaignActiveStore } from "@scnexus/app-shared/stores/campaign-active.store";
 import type { ResultUncompressCCM } from "@scnexus/app-shared/types/campaign.type";
 
-const moduleChannel = "campaign";
-
 export const ipcCampaign = {
   unzipCompressFileCCM: (path: string) =>
-    useIpcRendererInvoke<ResultUncompressCCM>(
-      `${moduleChannel}:unzip-compress-file-ccm`,
-      path
-    ),
+    useIpcApi<ResultUncompressCCM>("apiCampaignUnzipCompressFileCCM", window.apiCampaignUnzipCompressFileCCM(path)),
   unzipCompressFileSimulateCCM: (path: string) =>
-    useIpcRendererInvoke<ResultUncompressCCM>(
-      `${moduleChannel}:unzip-compress-file-simulate-ccm`,
-      path
-    ),
+    useIpcApi<ResultUncompressCCM>("apiCampaignUnzipCompressFileSimulateCCM", window.apiCampaignUnzipCompressFileSimulateCCM(path)),
   unzipCompressFile7zSimulateCCM: (path: string) =>
-    useIpcRendererInvoke<ResultUncompressCCM>(
-      `${moduleChannel}:unzip-compress-file-7z-simulate-ccm`,
-      path
-    ),
+    useIpcApi<ResultUncompressCCM>("apiCampaignUnzipCompressFile7zSimulateCCM", window.apiCampaignUnzipCompressFile7zSimulateCCM(path)),
 
   getCampaignLists: () =>
-    useIpcRendererInvoke<CampaignStore>(`${moduleChannel}:get-campaign-lists`),
+    useIpcApi<CampaignStore>("apiCampaignGetCampaignLists", window.apiCampaignGetCampaignLists()),
   updateCampaignLists: () =>
-    useIpcRendererInvoke<CampaignStore>(
-      `${moduleChannel}:update-campaign-lists`
-    ),
+    useIpcApi<CampaignStore>("apiCampaignUpdateCampaignLists", window.apiCampaignUpdateCampaignLists()),
   uninstallCampiagnFiles: (infor: MetadataInformated) =>
-    useIpcRendererInvoke<void>(
-      `${moduleChannel}:uninstall-campaign-files`,
-      infor
-    ),
+    useIpcApi<void>("apiCampaignUninstallCampaignFiles", window.apiCampaignUninstallCampaignFiles(infor)),
 
   getActivedCampaignList: () =>
-    useIpcRendererInvoke<CampaignActiveStore>(
-      `${moduleChannel}:get-actived-campaign-list`
-    ),
+    useIpcApi<CampaignActiveStore>("apiCampaignGetActivedCampaignList", window.apiCampaignGetActivedCampaignList()),
   getActivedCampaignTyped: (type: CampaignType) =>
-    useIpcRendererInvoke<MetadataInformated>(
-      `${moduleChannel}:get-actived-campaign-typed`,
-      type
-    ),
+    useIpcApi<MetadataInformated>("apiCampaignGetActivedCampaignTyped", window.apiCampaignGetActivedCampaignTyped(type)),
   updateActivedCampaignSet: () =>
-    useIpcRendererInvoke<CampaignActiveStore>(
-      `${moduleChannel}:update-actived-campaign-set`
-    ),
+    useIpcApi<CampaignActiveStore>("apiCampaignUpdateActivedCampaignSet", window.apiCampaignUpdateActivedCampaignSet()),
 
   activeCampaign: (infor: MetadataInformated) =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:active-campaign`, infor),
+    useIpcApi<void>("apiCampaignActiveCampaign", window.apiCampaignActiveCampaign(infor)),
   unactiveCampaign: (infor: MetadataInformated) =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:unactive-campaign`, infor),
+    useIpcApi<void>("apiCampaignUnactiveCampaign", window.apiCampaignUnactiveCampaign(infor)),
   recoverCampaignType: (campaign: CampaignType) =>
-    useIpcRendererInvoke<void>(
-      `${moduleChannel}:recover-campaign-type`,
-      campaign
-    ),
+    useIpcApi<void>("apiCampaignRecoverCampaignType", window.apiCampaignRecoverCampaignType(campaign)),
 };

@@ -224,20 +224,12 @@ export async function uploadDraft(id: number) {
   // }
   // uploadCustomizeStore.setUploadUrl(url);
 
-  // window.ipcRenderer.workshop.onUploadProgress((event, progress) => {
-  //   console.log(progress);
-  //   uploadCustomizeStore.updateProgress({
-  //     ...progress,
-  //   });
-  // });
-
   // await ipcWorkshop.uploadCompressedFile(
   //   get(file_path),
   //   get(upload_url),
   //   get(upload_data).file_md5!
   // );
 
-  // window.ipcRenderer.workshop.clearUploadProgress();
 }
 
 export async function filedDraft(id: number) {

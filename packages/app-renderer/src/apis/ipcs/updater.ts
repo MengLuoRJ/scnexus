@@ -1,31 +1,16 @@
-import { useIpcRendererInvoke, useIpcRendererOn } from "./ipc-util";
-
-const moduleChannel = "updater";
+import { useIpcApi, useIpcRendererOn } from './ipc-util'
 
 export const ipcUpdater = {
-  onCheckingForUpdate: useIpcRendererOn<any>(
-    `${moduleChannel}:checking-for-update`
-  ),
-  onUpdateAvailable: useIpcRendererOn<any>(`${moduleChannel}:update-available`),
-  onUpdateNotAvailable: useIpcRendererOn<any>(
-    `${moduleChannel}:update-not-available`
-  ),
-  onDownloadProgress: useIpcRendererOn<any>(
-    `${moduleChannel}:download-progress`
-  ),
-  onUpdateDownloaded: useIpcRendererOn<any>(
-    `${moduleChannel}:update-downloaded`
-  ),
-  onError: useIpcRendererOn(`${moduleChannel}:error`),
+  onCheckingForUpdate: useIpcRendererOn<any>(window.apiUpdaterOnCheckingForUpdate),
+  onUpdateAvailable: useIpcRendererOn<any>(window.apiUpdaterOnUpdateAvailable),
+  onUpdateNotAvailable: useIpcRendererOn<any>(window.apiUpdaterOnUpdateNotAvailable),
+  onDownloadProgress: useIpcRendererOn<any>(window.apiUpdaterOnDownloadProgress),
+  onUpdateDownloaded: useIpcRendererOn<any>(window.apiUpdaterOnUpdateDownloaded),
+  onError: useIpcRendererOn(window.apiUpdaterOnError),
 
   checkingForUpdateAndNotify: () =>
-    useIpcRendererInvoke<any | null>(
-      `${moduleChannel}:check-for-updates-and-notify`
-    ),
-  checkForUpdates: () =>
-    useIpcRendererInvoke<any | null>(`${moduleChannel}:check-for-updates`),
-  downloadUpdate: () =>
-    useIpcRendererInvoke<string[]>(`${moduleChannel}:download-update`),
-  quitAndInstall: () =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:quit-and-install`),
-};
+    useIpcApi<any | null>("apiUpdaterCheckForUpdatesAndNotify", window.apiUpdaterCheckForUpdatesAndNotify()),
+  checkForUpdates: () => useIpcApi<any | null>("apiUpdaterCheckForUpdates", window.apiUpdaterCheckForUpdates()),
+  downloadUpdate: () => useIpcApi<string[]>("apiUpdaterDownloadUpdate", window.apiUpdaterDownloadUpdate()),
+  quitAndInstall: () => useIpcApi<void>("apiUpdaterQuitAndInstall", window.apiUpdaterQuitAndInstall()),
+}

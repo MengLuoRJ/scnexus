@@ -1,6 +1,6 @@
 import type { ApiListener, ApiSubscribe } from "./types";
 
-export const apiDeeplinkOnAuthentication = (
+export const apiDeepLinkOnAuthentication = (
   subscribe: ApiSubscribe,
   listener: ApiListener,
 ) => subscribe("deeplink:authentication", listener);

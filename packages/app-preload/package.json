@@ -19,6 +19,7 @@
     "vite": "^6.0.3"
   },
   "dependencies": {
+    "@scnexus/app-shared": "workspace:*",
     "@sentry/electron": "^5.7.0"
   }
 }

@@ -1,25 +1,21 @@
-import { useIpcRendererInvoke } from "./ipc-util";
-
-const moduleChannel = "app";
+import { useIpcApi } from "./ipc-util";
 
 export const ipcApp = {
   getVersion: () =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:get-version`),
+    useIpcApi<string>("apiAppGetVersion", window.apiAppGetVersion()),
 
   isPackaged: () =>
-    useIpcRendererInvoke<boolean>(`${moduleChannel}:is-packaged`),
+    useIpcApi<boolean>("apiAppIsPackaged", window.apiAppIsPackaged()),
 
-  getLocale: () => useIpcRendererInvoke<string>(`${moduleChannel}:get-locale`),
+  getLocale: () => useIpcApi<string>("apiAppGetLocale", window.apiAppGetLocale()),
 
   getSystemLocale: () =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:get-system-locale`),
+    useIpcApi<string>("apiAppGetSystemLocale", window.apiAppGetSystemLocale()),
   getLocaleCountryCode: () =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:get-locale-country-code`),
+    useIpcApi<string>("apiAppGetLocaleCountryCode", window.apiAppGetLocaleCountryCode()),
 
   getPreferredSystemLanguages: () =>
-    useIpcRendererInvoke<string[]>(
-      `${moduleChannel}:get-preferred-system-languages`
-    ),
+    useIpcApi<string[]>("apiAppGetPreferredSystemLanguages", window.apiAppGetPreferredSystemLanguages()),
 
   getPath: (
     name:
@@ -39,9 +35,7 @@ export const ipcApp = {
       | "recent"
       | "logs"
       | "crashDumps"
-  ) => useIpcRendererInvoke<string>(`${moduleChannel}:get-path`, name),
+  ) => useIpcApi<string>("apiAppGetPath", window.apiAppGetPath(name)),
   getPaths: () =>
-    useIpcRendererInvoke<{ [key: string]: string }>(
-      `${moduleChannel}:get-paths`
-    ),
+    useIpcApi<{ [key: string]: string }>("apiAppGetPaths", window.apiAppGetPaths()),
 };

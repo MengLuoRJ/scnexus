@@ -1,22 +1,14 @@
-import { useIpcRendererInvoke } from "./ipc-util";
+import { useIpcApi } from "./ipc-util";
 import type {
   OpenDialogOptions,
   OpenDialogReturnValue,
   OpenDialogSyncOptions,
 } from "electron";
 
-const moduleChannel = "dialog";
-
 export const ipcDialog = {
   showOpenDialogSync: (options: OpenDialogSyncOptions) =>
-    useIpcRendererInvoke<string[]>(
-      `${moduleChannel}:show-open-dialog-sync`,
-      options
-    ),
+    useIpcApi<string[]>("apiDialogShowOpenDialogSync", window.apiDialogShowOpenDialogSync(options)),
 
   showOpenDialog: (options: OpenDialogOptions) =>
-    useIpcRendererInvoke<OpenDialogReturnValue>(
-      `${moduleChannel}:show-open-dialog`,
-      options
-    ),
+    useIpcApi<OpenDialogReturnValue>("apiDialogShowOpenDialog", window.apiDialogShowOpenDialog(options)),
 };

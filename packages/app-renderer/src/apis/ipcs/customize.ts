@@ -1,4 +1,4 @@
-import { useIpcRendererInvoke } from "./ipc-util";
+import { useIpcApi } from "./ipc-util";
 import type { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
 import type {
   CompressFileInfo,
@@ -9,62 +9,32 @@ import type {
 import type { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
 import type { MetadataInformated } from "scnexus-standard/metadata";
 
-const moduleChannel = "customize";
-
 export const ipcCustomize = {
   readCompressFileInfo: (path: string) =>
-    useIpcRendererInvoke<CompressFileInfo | null>(
-      `${moduleChannel}:read-compress-file-info`,
-      path
-    ),
+    useIpcApi<CompressFileInfo | null>("apiCustomizeReadCompressFileInfo", window.apiCustomizeReadCompressFileInfo(path)),
   installCompressFile: (path: string) =>
-    useIpcRendererInvoke<ResultUncompress>(
-      `${moduleChannel}:install-compress-file`,
-      path
-    ),
+    useIpcApi<ResultUncompress>("apiCustomizeInstallCompressFile", window.apiCustomizeInstallCompressFile(path)),
   validateCompressFile: (path: string) =>
-    useIpcRendererInvoke(`${moduleChannel}:install-compress-file`, path),
+    useIpcApi("apiCustomizeValidateCompressFile", window.apiCustomizeValidateCompressFile(path)),
 
   readCompressFileInfo7z: (path: string) =>
-    useIpcRendererInvoke<CompressFileInfo | null>(
-      `${moduleChannel}:read-compress-file-info-7z`,
-      path
-    ),
+    useIpcApi<CompressFileInfo | null>("apiCustomizeReadCompressFileInfo7z", window.apiCustomizeReadCompressFileInfo7z(path)),
   installCompressFile7z: (path: string) =>
-    useIpcRendererInvoke<ResultUncompress>(
-      `${moduleChannel}:install-compress-file-7z`,
-      path
-    ),
+    useIpcApi<ResultUncompress>("apiCustomizeInstallCompressFile7z", window.apiCustomizeInstallCompressFile7z(path)),
 
   installCustomize: (infor: MetadataInformated) =>
-    useIpcRendererInvoke<ResultInstallCustomize>(
-      `${moduleChannel}:install-customize`,
-      infor
-    ),
+    useIpcApi<ResultInstallCustomize>("apiCustomizeInstallCustomize", window.apiCustomizeInstallCustomize(infor)),
   uninstallCustomize: (infor: MetadataInformated) =>
-    useIpcRendererInvoke<ResultUninstallCustomize>(
-      `${moduleChannel}:uninstall-customize`,
-      infor
-    ),
+    useIpcApi<ResultUninstallCustomize>("apiCustomizeUninstallCustomize", window.apiCustomizeUninstallCustomize(infor)),
   getInstalledCustomizeList: () =>
-    useIpcRendererInvoke<CustomizeStore>(
-      `${moduleChannel}:get-installed-customize-list`
-    ),
+    useIpcApi<CustomizeStore>("apiCustomizeGetInstalledCustomizeList", window.apiCustomizeGetInstalledCustomizeList()),
   scanInstalledCustomizeList: () =>
-    useIpcRendererInvoke<CustomizeStore>(
-      `${moduleChannel}:scan-installed-customize-list`
-    ),
+    useIpcApi<CustomizeStore>("apiCustomizeScanInstalledCustomizeList", window.apiCustomizeScanInstalledCustomizeList()),
 
   runGameClient: (path?: string) =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:run-game-client`, path),
+    useIpcApi<void>("apiCustomizeRunGameClient", window.apiCustomizeRunGameClient(path)),
   runGameExecutable: (parameters?: GameExecutableParameters) =>
-    useIpcRendererInvoke<void>(
-      `${moduleChannel}:run-game-executable`,
-      parameters
-    ),
+    useIpcApi<void>("apiCustomizeRunGameExecutable", window.apiCustomizeRunGameExecutable(parameters)),
   runEditorExecutable: (file_path?: string) =>
-    useIpcRendererInvoke<void>(
-      `${moduleChannel}:run-editor-executable`,
-      file_path
-    ),
+    useIpcApi<void>("apiCustomizeRunEditorExecutable", window.apiCustomizeRunEditorExecutable(file_path)),
 };

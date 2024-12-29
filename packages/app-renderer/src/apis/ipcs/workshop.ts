@@ -1,29 +1,18 @@
-import { useIpcRendererInvoke } from "./ipc-util";
-
-const moduleChannel = "workshop";
+import { useIpcApi } from "./ipc-util";
 
 export const ipcWorkshop = {
   getFileMd5: (path: string) =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:get-file-md5`, path),
+    useIpcApi<string>("apiWorkshopGetFileMd5", window.apiWorkshopGetFileMd5(path)),
   getFileMd5Wasm: (path: string) =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:get-file-md5-wasm`, path),
+    useIpcApi<string>("apiWorkshopGetFileMd5Wasm", window.apiWorkshopGetFileMd5Wasm(path)),
 
   writeMetadata: (path: string, metadata: Record<string, any>) =>
-    useIpcRendererInvoke<void>(
-      `${moduleChannel}:write-metadata`,
-      path,
-      metadata
-    ),
+    useIpcApi<void>("apiWorkshopWriteMetadata", window.apiWorkshopWriteMetadata(path, metadata)),
 
   uploadCompressedFile: (
     file_path: string,
     target_url: string,
     file_md5: string
   ) =>
-    useIpcRendererInvoke<void>(
-      `${moduleChannel}:upload-compressed-file`,
-      file_path,
-      target_url,
-      file_md5
-    ),
+    useIpcApi<void>("apiWorkshopUploadCompressedFile", window.apiWorkshopUploadCompressedFile(file_path, target_url, file_md5)),
 };

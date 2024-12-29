@@ -1,15 +1,10 @@
-import { useIpcRendererInvoke } from "./ipc-util";
-
-const moduleChannel = "shell";
+import { useIpcApi } from "./ipc-util";
 
 export const ipcShell = {
   openExternalWebsite: (link: string) =>
-    useIpcRendererInvoke<string>(
-      `${moduleChannel}:open-external-website`,
-      link
-    ),
+    useIpcApi<string>("apiShellOpenExternalWebsite", window.apiShellOpenExternalWebsite(link)),
   openPath: (path: string) =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:open-path`, path),
+    useIpcApi<string>("apiShellOpenPath", window.apiShellOpenPath(path)),
   showItemInFolder: (path: string) =>
-    useIpcRendererInvoke<string>(`${moduleChannel}:show-item-in-folder`, path),
+    useIpcApi<string>("apiShellShowItemInFolder", window.apiShellShowItemInFolder(path)),
 };

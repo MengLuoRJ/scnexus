@@ -1,25 +1,17 @@
 import type { ProfileStore } from "@scnexus/app-shared/stores/profile.store";
-import { useIpcRendererInvoke } from "./ipc-util";
-
-const moduleChannel = "profile";
+import { useIpcApi } from "./ipc-util";
 
 export const ipcProfile = {
   getProfile: () =>
-    useIpcRendererInvoke<ProfileStore>(`${moduleChannel}:get-profile`),
+    useIpcApi<ProfileStore>("apiProfileGetProfile", window.apiProfileGetProfile()),
   getProfileKey: (key: keyof ProfileStore) =>
-    useIpcRendererInvoke<ProfileStore[keyof ProfileStore]>(
-      `${moduleChannel}:get-profile-key`,
-      key
-    ),
+    useIpcApi<ProfileStore[keyof ProfileStore]>("apiProfileGetProfileKey", window.apiProfileGetProfileKey(key)),
   setProfileKey: (
     key: keyof ProfileStore,
     value: ProfileStore[keyof ProfileStore]
   ) =>
-    useIpcRendererInvoke<void>(`${moduleChannel}:set-profile-key`, key, value),
+    useIpcApi<void>("apiProfileSetProfileKey", window.apiProfileSetProfileKey(key, value)),
 
   initGameService: (path?: string) =>
-    useIpcRendererInvoke<ProfileStore>(
-      `${moduleChannel}:init-game-service`,
-      path
-    ),
+    useIpcApi<ProfileStore>("apiProfileInitGameService", window.apiProfileInitGameService(path)),
 };

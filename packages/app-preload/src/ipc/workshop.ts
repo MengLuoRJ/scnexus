@@ -4,4 +4,7 @@ import { exposeInvoke } from "./common.js";
 exposeInvoke("apiWorkshopGetFileMd5", api.apiWorkshopGetFileMd5);
 exposeInvoke("apiWorkshopGetFileMd5Wasm", api.apiWorkshopGetFileMd5Wasm);
 exposeInvoke("apiWorkshopWriteMetadata", api.apiWorkshopWriteMetadata);
-exposeInvoke("apiWorkshopUploadCompressedFile", api.apiWorkshopUploadCompressedFile);
+exposeInvoke(
+  "apiWorkshopUploadCompressedFile",
+  api.apiWorkshopUploadCompressedFile,
+);

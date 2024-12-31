@@ -66,7 +66,11 @@ declare global {
     apiWorkshopGetFileMd5: (path: string) => IpcApiRequest
     apiWorkshopGetFileMd5Wasm: (path: string) => IpcApiRequest
     apiWorkshopWriteMetadata: (path: string, metadata: Record<string, unknown>) => IpcApiRequest
-    apiWorkshopUploadCompressedFile: (filePath: string, targetUrl: string, fileMd5: string) => IpcApiRequest
+    apiWorkshopUploadCompressedFile: (
+      filePath: string,
+      targetUrl: string,
+      fileMd5: string,
+    ) => IpcApiRequest
     webUtils: import('electron').WebUtils
   }
 }

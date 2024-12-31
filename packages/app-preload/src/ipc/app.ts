@@ -6,6 +6,9 @@ exposeInvoke("apiAppIsPackaged", api.apiAppIsPackaged);
 exposeInvoke("apiAppGetLocale", api.apiAppGetLocale);
 exposeInvoke("apiAppGetSystemLocale", api.apiAppGetSystemLocale);
 exposeInvoke("apiAppGetLocaleCountryCode", api.apiAppGetLocaleCountryCode);
-exposeInvoke("apiAppGetPreferredSystemLanguages", api.apiAppGetPreferredSystemLanguages);
+exposeInvoke(
+  "apiAppGetPreferredSystemLanguages",
+  api.apiAppGetPreferredSystemLanguages,
+);
 exposeInvoke("apiAppGetPath", api.apiAppGetPath);
 exposeInvoke("apiAppGetPaths", api.apiAppGetPaths);

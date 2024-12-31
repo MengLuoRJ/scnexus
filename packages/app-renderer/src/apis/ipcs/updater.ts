@@ -9,8 +9,14 @@ export const ipcUpdater = {
   onError: useIpcRendererOn(window.apiUpdaterOnError),
 
   checkingForUpdateAndNotify: () =>
-    useIpcApi<any | null>("apiUpdaterCheckForUpdatesAndNotify", window.apiUpdaterCheckForUpdatesAndNotify()),
-  checkForUpdates: () => useIpcApi<any | null>("apiUpdaterCheckForUpdates", window.apiUpdaterCheckForUpdates()),
-  downloadUpdate: () => useIpcApi<string[]>("apiUpdaterDownloadUpdate", window.apiUpdaterDownloadUpdate()),
-  quitAndInstall: () => useIpcApi<void>("apiUpdaterQuitAndInstall", window.apiUpdaterQuitAndInstall()),
+    useIpcApi<any | null>(
+      'apiUpdaterCheckForUpdatesAndNotify',
+      window.apiUpdaterCheckForUpdatesAndNotify(),
+    ),
+  checkForUpdates: () =>
+    useIpcApi<any | null>('apiUpdaterCheckForUpdates', window.apiUpdaterCheckForUpdates()),
+  downloadUpdate: () =>
+    useIpcApi<string[]>('apiUpdaterDownloadUpdate', window.apiUpdaterDownloadUpdate()),
+  quitAndInstall: () =>
+    useIpcApi<void>('apiUpdaterQuitAndInstall', window.apiUpdaterQuitAndInstall()),
 }

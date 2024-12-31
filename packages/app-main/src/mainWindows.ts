@@ -55,15 +55,15 @@ async function createWindow() {
      */
     await mainWindow.loadFile(
       fileURLToPath(
-        new URL("./../../app-renderer/dist/index.html", import.meta.url)
-      )
+        new URL("./../../app-renderer/dist/index.html", import.meta.url),
+      ),
     );
   }
   // Test actively push message to the Electron-Renderer
   mainWindow.webContents.on("did-finish-load", () => {
     mainWindow?.webContents.send(
       "main-process-message",
-      new Date().toLocaleString()
+      new Date().toLocaleString(),
     );
   });
 

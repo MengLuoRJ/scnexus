@@ -1,4 +1,7 @@
-import { apiDeepLinkOnAuthentication } from "@scnexus/app-shared/ipc/deep-link";
-import { exposeSubscribe } from "./common.js";
+import { apiDeepLinkOnAuthentication as invokeApiDeepLinkOnAuthentication } from "@scnexus/app-shared/ipc/deep-link";
+import { exposeApis, subscribe, type ApiListener } from "./common.js";
 
-exposeSubscribe("apiDeepLinkOnAuthentication", apiDeepLinkOnAuthentication);
+export const apiDeepLinkOnAuthentication = (listener: ApiListener) =>
+	invokeApiDeepLinkOnAuthentication(subscribe, listener);
+
+exposeApis({ apiDeepLinkOnAuthentication });

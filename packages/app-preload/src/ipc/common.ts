@@ -15,20 +15,12 @@ export const subscribe: ApiSubscribe = (channel, listener) => {
   return () => ipcRenderer.removeListener(channel, wrapped);
 };
 
-export function exposeInvoke(
-  name: string,
-  api: (invoke: ApiInvoke, ...args: any[]) => Promise<unknown>,
-) {
-  contextBridge.exposeInMainWorld(name, (...args: any[]) =>
-    api(invoke, ...args),
-  );
+export type ExposedApi = (...args: any[]) => Promise<unknown> | (() => void);
+
+export function exposeApis(apis: Record<string, ExposedApi>) {
+  Object.entries(apis).forEach(([name, api]) => {
+    contextBridge.exposeInMainWorld(name, api);
+  });
 }
 
-export function exposeSubscribe(
-  name: string,
-  api: (subscribe: ApiSubscribe, listener: ApiListener) => () => void,
-) {
-  contextBridge.exposeInMainWorld(name, (listener: ApiListener) =>
-    api(subscribe, listener),
-  );
-}
+export type { ApiListener };

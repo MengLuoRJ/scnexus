@@ -6,8 +6,8 @@ import { filesize } from "filesize";
 import { KEY_FILEPATH, KEY_CFI } from "../symbol";
 
 import { emitterEmit } from "@/composables/useMitt";
-import { ipcCampaign } from "@/apis/ipcs/campaign";
-import { ipcCustomize } from "@/apis/ipcs/customize";
+import { apiCampaignUnzipCompressFile7zSimulateCCM } from "@/apis/ipcs/campaign";
+import { apiCustomizeInstallCompressFile7z } from "@/apis/ipcs/customize";
 import { get, set } from "@vueuse/core";
 import { useNotification } from "naive-ui";
 
@@ -34,7 +34,7 @@ const onContinuProcess = async () => {
 
   let result = false;
   if (vMetadata?.manager === "SCNexus") {
-    const { data, error } = await ipcCustomize.installCompressFile7z(vPath!);
+    const { data, error } = await apiCustomizeInstallCompressFile7z(vPath!);
     if (error) {
       console.error(error);
     }
@@ -42,7 +42,7 @@ const onContinuProcess = async () => {
       result = true;
     }
   } else if (vMetadata?.manager === "CCM") {
-    const { data, error } = await ipcCampaign.unzipCompressFile7zSimulateCCM(
+    const { data, error } = await apiCampaignUnzipCompressFile7zSimulateCCM(
       vPath!
     );
     if (error) {

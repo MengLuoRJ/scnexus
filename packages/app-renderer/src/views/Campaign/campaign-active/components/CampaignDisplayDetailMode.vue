@@ -19,7 +19,6 @@ import SupportIcon from "@/components/SupportIcon.vue";
 import CampaignSwitchDrawer from "./CampaignSwitchDrawer.vue";
 
 import { useCampaignActiveStore } from "@/stores/campaign-active";
-import { ipcCustomize } from "@/apis/ipcs/customize";
 
 const campaignActiveStore = useCampaignActiveStore();
 const { CAMPAIGN_SET } = storeToRefs(campaignActiveStore);

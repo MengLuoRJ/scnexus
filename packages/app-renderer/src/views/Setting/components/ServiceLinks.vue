@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ipcShell } from "@/apis/ipcs/shell";
+import { apiShellOpenExternalWebsite } from "@/apis/ipcs/shell";
 
 async function openExternalLink(link: string) {
   if (!link?.startsWith("https://") && !link?.startsWith("http://")) {
     return;
   }
-  await ipcShell.openExternalWebsite(link);
+  await apiShellOpenExternalWebsite(link);
 }
 </script>
 <template>

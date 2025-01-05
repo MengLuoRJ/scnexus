@@ -1,23 +1,21 @@
 import { useIpcApi } from './ipc-util'
 
-export const ipcApp = {
-  getVersion: () => useIpcApi<string>('apiAppGetVersion', window.apiAppGetVersion()),
-
-  isPackaged: () => useIpcApi<boolean>('apiAppIsPackaged', window.apiAppIsPackaged()),
-
-  getLocale: () => useIpcApi<string>('apiAppGetLocale', window.apiAppGetLocale()),
-
-  getSystemLocale: () => useIpcApi<string>('apiAppGetSystemLocale', window.apiAppGetSystemLocale()),
-  getLocaleCountryCode: () =>
-    useIpcApi<string>('apiAppGetLocaleCountryCode', window.apiAppGetLocaleCountryCode()),
-
-  getPreferredSystemLanguages: () =>
-    useIpcApi<string[]>(
-      'apiAppGetPreferredSystemLanguages',
-      window.apiAppGetPreferredSystemLanguages(),
-    ),
-
-  getPath: (
+export const apiAppGetVersion = () =>
+  useIpcApi<string>('apiAppGetVersion', window.apiAppGetVersion())
+export const apiAppIsPackaged = () =>
+  useIpcApi<boolean>('apiAppIsPackaged', window.apiAppIsPackaged())
+export const apiAppGetLocale = () =>
+  useIpcApi<string>('apiAppGetLocale', window.apiAppGetLocale())
+export const apiAppGetSystemLocale = () =>
+  useIpcApi<string>('apiAppGetSystemLocale', window.apiAppGetSystemLocale())
+export const apiAppGetLocaleCountryCode = () =>
+  useIpcApi<string>('apiAppGetLocaleCountryCode', window.apiAppGetLocaleCountryCode())
+export const apiAppGetPreferredSystemLanguages = () =>
+  useIpcApi<string[]>(
+    'apiAppGetPreferredSystemLanguages',
+    window.apiAppGetPreferredSystemLanguages(),
+  )
+export const apiAppGetPath = (
     name:
       | 'home'
       | 'appData'
@@ -35,6 +33,6 @@ export const ipcApp = {
       | 'recent'
       | 'logs'
       | 'crashDumps',
-  ) => useIpcApi<string>('apiAppGetPath', window.apiAppGetPath(name)),
-  getPaths: () => useIpcApi<{ [key: string]: string }>('apiAppGetPaths', window.apiAppGetPaths()),
-}
+  ) => useIpcApi<string>('apiAppGetPath', window.apiAppGetPath(name))
+export const apiAppGetPaths = () =>
+  useIpcApi<{ [key: string]: string }>('apiAppGetPaths', window.apiAppGetPaths())

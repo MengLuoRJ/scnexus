@@ -5,12 +5,12 @@ import { set } from "@vueuse/core";
 import BasicSetting from "./components/BasicSetting.vue";
 import ProfileSetting from "./components/ProfileSetting.vue";
 import ServiceLinks from "./components/ServiceLinks.vue";
-import { ipcSetting } from "@/apis/ipcs/setting";
+import { apiSettingGetSettingKey } from "@/apis/ipcs/setting";
 
 const client_id = ref("");
 
 onMounted(async () => {
-  const { data: setting_client_id } = await ipcSetting.getSettingKey(
+  const { data: setting_client_id } = await apiSettingGetSettingKey(
     "CLIENT_ID"
   );
   set(client_id, setting_client_id);

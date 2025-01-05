@@ -4,7 +4,7 @@ import { useCampaignStore } from "@/stores/campaign";
 import { storeToRefs } from "pinia";
 import { filesize } from "filesize";
 import { NImage } from "naive-ui";
-import { ipcShell } from "@/apis/ipcs/shell";
+import { apiShellShowItemInFolder } from "@/apis/ipcs/shell";
 
 import {
   activeCampaign,
@@ -143,7 +143,7 @@ const refCampaignStatistics = ref<InstanceType<typeof CampaignStatistics>>();
                     size="small"
                     :disabled="!campaign.localinfo.metadata_path"
                     @click="
-                      ipcShell.showItemInFolder(
+                      apiShellShowItemInFolder(
                         campaign.localinfo.metadata_path!
                       )
                     "

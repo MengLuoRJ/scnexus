@@ -3,7 +3,7 @@ import { useProfileStore } from "@/stores/profile";
 import { storeToRefs } from "pinia";
 
 import IconTooltip from "@/components/IconTooltip.vue";
-import { ipcDialog } from "@/apis/ipcs/dialog";
+import { apiDialogShowOpenDialogSync } from "@/apis/ipcs/dialog";
 
 const profileStore = useProfileStore();
 const {
@@ -19,7 +19,7 @@ async function hookupPathSelector(autodetect?: boolean) {
   if (!!autodetect) {
     await profileStore.initProfile();
   } else {
-    const { data: path } = await ipcDialog.showOpenDialogSync({
+    const { data: path } = await apiDialogShowOpenDialogSync({
       title: "选择游戏根目录",
       properties: ["openDirectory", "dontAddToRecent"],
     });

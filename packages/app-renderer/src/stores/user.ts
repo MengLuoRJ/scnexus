@@ -1,4 +1,4 @@
-import { ipcSetting } from "@/apis/ipcs/setting";
+import { apiSettingSetTrackerUser } from "@/apis/ipcs/setting";
 import { ref } from "vue";
 import { defineStore } from "pinia";
 import { get, set } from "@vueuse/core";
@@ -49,7 +49,7 @@ export const useUserStore = defineStore(
         email_verified: false,
         telnum_verified: false,
       });
-      await ipcSetting.setTrackerUser({
+      await apiSettingSetTrackerUser({
         client_id: get(client_id),
       });
     }
@@ -78,7 +78,7 @@ export const useUserStore = defineStore(
           set(roles, get(data).roles);
           await requestProfiles();
           console.log(get(uuid), get(username), get(client_id));
-          await ipcSetting.setTrackerUser({
+          await apiSettingSetTrackerUser({
             id: get(uuid),
             username: get(username),
             client_id: get(client_id),

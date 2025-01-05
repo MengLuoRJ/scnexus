@@ -13,7 +13,16 @@ import type {
   CampaignType,
   MetadataInformated,
 } from "scnexus-standard/metadata";
-import { ipcCampaign } from "@/apis/ipcs/campaign";
+import {
+  apiCampaignActiveCampaign,
+  apiCampaignGetActivedCampaignList,
+  apiCampaignGetCampaignLists,
+  apiCampaignRecoverCampaignType,
+  apiCampaignUnactiveCampaign,
+  apiCampaignUninstallCampaignFiles,
+  apiCampaignUpdateActivedCampaignSet,
+  apiCampaignUpdateCampaignLists,
+} from "@/apis/ipcs/campaign";
 
 import WOL_LOGO from "@/assets/campaign/Campaign_WOL_LOGO.png";
 import HOTS_LOGO from "@/assets/campaign/Campaign_HOTS_LOGO.png";
@@ -73,7 +82,7 @@ export const CAMPAIGN_CONSTANTS = computed<
 export async function syncActivedCampaignSet() {
   if (!profileStore.SUCCESS) return;
 
-  const { data, error } = await ipcCampaign.getActivedCampaignList();
+  const { data, error } = await apiCampaignGetActivedCampaignList();
   if (error) {
     console.log(error);
     return;
@@ -88,7 +97,7 @@ export async function syncActivedCampaignSet() {
 export async function updateActivedCampaignSet() {
   if (!profileStore.SUCCESS) return;
 
-  const { data, error } = await ipcCampaign.updateActivedCampaignSet();
+  const { data, error } = await apiCampaignUpdateActivedCampaignSet();
   if (error) {
     console.log(error);
     return;
@@ -110,7 +119,7 @@ export async function activeCampaign(infor: MetadataInformated) {
   });
   d.loading = true;
 
-  const { error } = await ipcCampaign.activeCampaign(toRaw(infor));
+  const { error } = await apiCampaignActiveCampaign(toRaw(infor));
   if (error) {
     console.log(error);
     return;
@@ -138,7 +147,7 @@ export async function unactiveCampaign(
     positiveText: "确认恢复",
     onPositiveClick: async () => {
       d.loading = true;
-      const { error } = await ipcCampaign.unactiveCampaign(infor);
+      const { error } = await apiCampaignUnactiveCampaign(infor);
       if (error) {
         console.log(error);
         return;
@@ -155,7 +164,7 @@ export async function unactiveCampaign(
 }
 
 export async function recoverCampaignType(campaign: CampaignType) {
-  const { error } = await ipcCampaign.recoverCampaignType(campaign);
+  const { error } = await apiCampaignRecoverCampaignType(campaign);
   if (error) {
     console.log(error);
     return;
@@ -166,7 +175,7 @@ export async function recoverCampaignType(campaign: CampaignType) {
 export async function syncCampaignLists() {
   if (!profileStore.SUCCESS) return;
 
-  const { data, error } = await ipcCampaign.getCampaignLists();
+  const { data, error } = await apiCampaignGetCampaignLists();
   if (error) {
     console.log(error);
     return;
@@ -181,7 +190,7 @@ export async function syncCampaignLists() {
 export async function updateCampaignLists() {
   if (!profileStore.SUCCESS) return;
 
-  const { data, error } = await ipcCampaign.updateCampaignLists();
+  const { data, error } = await apiCampaignUpdateCampaignLists();
   if (error) {
     return;
   }
@@ -204,7 +213,7 @@ export async function uninstallCampaign(infor: MetadataInformated) {
     positiveText: "确认删除",
     onPositiveClick: async () => {
       d.loading = true;
-      const { data, error } = await ipcCampaign.uninstallCampiagnFiles(
+      const { data, error } = await apiCampaignUninstallCampaignFiles(
         toRaw(infor)
       );
       if (error) {

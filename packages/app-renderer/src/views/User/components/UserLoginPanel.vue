@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ipcDeepLink } from "@/apis/ipcs/deep-link";
-import { ipcSetting } from "@/apis/ipcs/setting";
-import { ipcShell } from "@/apis/ipcs/shell";
+import { apiDeepLinkOnAuthentication } from "@/apis/ipcs/deep-link";
+import { apiSettingGetSettingKey } from "@/apis/ipcs/setting";
+import { apiShellOpenExternalWebsite } from "@/apis/ipcs/shell";
 import BattleNetIcon from "@/assets/BattleNetIcon.vue";
 import { useUserStore } from "@/stores/user";
 import { onMounted, onUnmounted } from "vue";
@@ -9,18 +9,18 @@ import { onMounted, onUnmounted } from "vue";
 const userStore = useUserStore();
 
 async function openBnetAuthIntl() {
-  const { data: setting_client_id } = await ipcSetting.getSettingKey(
+  const { data: setting_client_id } = await apiSettingGetSettingKey(
     "CLIENT_ID"
   );
   const url = new URL(
     import.meta.env.VITE_API_BASE_URL_DEV + "/authentication/bnet-intl"
   );
   url.searchParams.append("client_id", setting_client_id as string);
-  await ipcShell.openExternalWebsite(url.toString());
+  await apiShellOpenExternalWebsite(url.toString());
 }
 
 onMounted(() => {
-  ipcDeepLink.onAuthentication((e, data) => {
+  apiDeepLinkOnAuthentication((e, data) => {
     console.log(data);
     if (data.access_token && data.refresh_token)
       userStore.loginUser(data.access_token, data.refresh_token);

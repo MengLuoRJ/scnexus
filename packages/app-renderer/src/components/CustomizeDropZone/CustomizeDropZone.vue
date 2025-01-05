@@ -5,8 +5,8 @@ import { useI18n } from "vue-i18n";
 import { useDialog, useNotification } from "naive-ui";
 
 import { useProfileStore } from "@/stores/profile";
-import { ipcCustomize } from "@/apis/ipcs/customize";
-import { ipcDialog } from "@/apis/ipcs/dialog";
+import { apiCustomizeReadCompressFileInfo7z } from "@/apis/ipcs/customize";
+import { apiDialogShowOpenDialog } from "@/apis/ipcs/dialog";
 import { type CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
 import { webUtils } from "@/apis/web-utils";
 
@@ -47,7 +47,7 @@ async function onClick() {
     return;
   }
 
-  const { data } = await ipcDialog.showOpenDialog({
+  const { data } = await apiDialogShowOpenDialog({
     title: t("customize.drop-zone.select-file-title"),
     properties: ["openFile"],
     filters: [
@@ -65,7 +65,7 @@ async function onClick() {
 }
 
 async function processFile(path: string) {
-  const { data, error } = await ipcCustomize.readCompressFileInfo7z(path);
+  const { data, error } = await apiCustomizeReadCompressFileInfo7z(path);
   if (error) {
     console.error(error);
     return;

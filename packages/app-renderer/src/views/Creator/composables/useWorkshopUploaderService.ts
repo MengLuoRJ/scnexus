@@ -5,8 +5,12 @@ import { get } from '@vueuse/core'
 import { toRaw } from 'vue'
 import { useTrans } from '../../../composables/useTrans'
 import { useDiscreteApi } from '../../../composables/useDiscreteApi'
-import { ipcCustomize } from '@/apis/ipcs/customize'
-import { ipcWorkshop } from '@/apis/ipcs/workshop'
+import { apiCustomizeReadCompressFileInfo } from '@/apis/ipcs/customize'
+import {
+  apiWorkshopGetFileMd5,
+  apiWorkshopGetFileMd5Wasm,
+  apiWorkshopWriteMetadata,
+} from '@/apis/ipcs/workshop'
 
 const { t } = useTrans()
 const { dialog } = useDiscreteApi(['dialog', 'notification'])
@@ -46,7 +50,7 @@ export const metadataCampaignTypes = [
 ]
 
 export async function readCompressFile(path: string) {
-  const { data: cfi } = await ipcCustomize.readCompressFileInfo(path)
+  const { data: cfi } = await apiCustomizeReadCompressFileInfo(path)
   if (!cfi?.metadata) {
     dialog.error({
       title: t('customize.drop-zone.process-dialog.cfi-error-title'),
@@ -59,10 +63,10 @@ export async function readCompressFile(path: string) {
 
   let md5: string | undefined = undefined
   if (compress_info.size < 1024 * 1024) {
-    const { data } = await ipcWorkshop.getFileMd5(path)
+    const { data } = await apiWorkshopGetFileMd5(path)
     md5 = data
   } else {
-    const { data } = await ipcWorkshop.getFileMd5Wasm(path)
+    const { data } = await apiWorkshopGetFileMd5Wasm(path)
     md5 = data
   }
 
@@ -86,7 +90,7 @@ export async function readCompressFile(path: string) {
 }
 
 export async function syncMetadata() {
-  await ipcWorkshop.writeMetadata(get(file_path), {
+  await apiWorkshopWriteMetadata(get(file_path), {
     ...toRaw(get(upload_data).metadata),
     snid: get(upload_data).snid,
     name: get(upload_data).name!,
@@ -221,7 +225,7 @@ export async function uploadDraft(id: number) {
   // }
   // uploadCustomizeStore.setUploadUrl(url);
 
-  // await ipcWorkshop.uploadCompressedFile(
+  // await apiWorkshopUploadCompressedFile(
   //   get(file_path),
   //   get(upload_url),
   //   get(upload_data).file_md5!

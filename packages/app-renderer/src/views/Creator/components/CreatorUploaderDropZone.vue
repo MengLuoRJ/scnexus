@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ipcDialog } from "@/apis/ipcs/dialog";
+import { apiDialogShowOpenDialog } from "@/apis/ipcs/dialog";
 import {
   initUploader,
   readCompressFile,
@@ -18,7 +18,7 @@ async function onDrop(files: File[] | null) {
 }
 
 async function onClick() {
-  const { data } = await ipcDialog.showOpenDialog({
+  const { data } = await apiDialogShowOpenDialog({
     title: "选择将要上传的压缩包文件",
     properties: ["openFile"],
     filters: [{ name: "星际枢纽压缩包", extensions: ["zip"] }],

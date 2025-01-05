@@ -12,7 +12,7 @@ import NaiveProvider from "@/components/NaiveProvider.vue";
 
 import { useLocale } from "@/composables/useTrans";
 import { useI18n } from "vue-i18n";
-import { ipcSetting } from "./apis/ipcs/setting";
+import { apiSettingGetSettingKey } from "./apis/ipcs/setting";
 import { initUpdater } from "./composables/useUpdater";
 
 const localeStore = useLocaleStore();
@@ -31,7 +31,7 @@ onMounted(async () => {
   await localeStore.initLocale();
   set(locale, get(localeStore.current));
 
-  const { data: setting_client_id } = await ipcSetting.getSettingKey(
+  const { data: setting_client_id } = await apiSettingGetSettingKey(
     "CLIENT_ID"
   );
   await userStore.setClientId(setting_client_id as string);

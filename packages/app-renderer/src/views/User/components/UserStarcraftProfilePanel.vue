@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ipcShell } from "@/apis/ipcs/shell";
+import { apiShellOpenExternalWebsite } from "@/apis/ipcs/shell";
 import BattleNetIcon from "@/assets/BattleNetIcon.vue";
 import { regionById } from "@/composables/useResolver";
 import { useUserStore } from "@/stores/user";
@@ -11,7 +11,7 @@ const { profiles } = storeToRefs(userStore);
 
 async function openProfile(url: string) {
   const url_fixed = url.replace("stacraft2", "starcraft2");
-  await ipcShell.openExternalWebsite(url_fixed);
+  await apiShellOpenExternalWebsite(url_fixed);
 }
 </script>
 

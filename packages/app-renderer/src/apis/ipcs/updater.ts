@@ -1,22 +1,23 @@
 import { useIpcApi, useIpcRendererOn } from './ipc-util'
 
-export const ipcUpdater = {
-  onCheckingForUpdate: useIpcRendererOn<any>(window.apiUpdaterOnCheckingForUpdate),
-  onUpdateAvailable: useIpcRendererOn<any>(window.apiUpdaterOnUpdateAvailable),
-  onUpdateNotAvailable: useIpcRendererOn<any>(window.apiUpdaterOnUpdateNotAvailable),
-  onDownloadProgress: useIpcRendererOn<any>(window.apiUpdaterOnDownloadProgress),
-  onUpdateDownloaded: useIpcRendererOn<any>(window.apiUpdaterOnUpdateDownloaded),
-  onError: useIpcRendererOn(window.apiUpdaterOnError),
-
-  checkingForUpdateAndNotify: () =>
+export const apiUpdaterOnCheckingForUpdate = useIpcRendererOn<any>(
+  window.apiUpdaterOnCheckingForUpdate,
+)
+export const apiUpdaterOnUpdateAvailable = useIpcRendererOn<any>(window.apiUpdaterOnUpdateAvailable)
+export const apiUpdaterOnUpdateNotAvailable = useIpcRendererOn<any>(
+  window.apiUpdaterOnUpdateNotAvailable,
+)
+export const apiUpdaterOnDownloadProgress = useIpcRendererOn<any>(window.apiUpdaterOnDownloadProgress)
+export const apiUpdaterOnUpdateDownloaded = useIpcRendererOn<any>(window.apiUpdaterOnUpdateDownloaded)
+export const apiUpdaterOnError = useIpcRendererOn(window.apiUpdaterOnError)
+export const apiUpdaterCheckForUpdatesAndNotify = () =>
     useIpcApi<any | null>(
       'apiUpdaterCheckForUpdatesAndNotify',
       window.apiUpdaterCheckForUpdatesAndNotify(),
-    ),
-  checkForUpdates: () =>
+    )
+export const apiUpdaterCheckForUpdates = () =>
     useIpcApi<any | null>('apiUpdaterCheckForUpdates', window.apiUpdaterCheckForUpdates()),
-  downloadUpdate: () =>
-    useIpcApi<string[]>('apiUpdaterDownloadUpdate', window.apiUpdaterDownloadUpdate()),
-  quitAndInstall: () =>
-    useIpcApi<void>('apiUpdaterQuitAndInstall', window.apiUpdaterQuitAndInstall()),
-}
+export const apiUpdaterDownloadUpdate = () =>
+  useIpcApi<string[]>('apiUpdaterDownloadUpdate', window.apiUpdaterDownloadUpdate())
+export const apiUpdaterQuitAndInstall = () =>
+  useIpcApi<void>('apiUpdaterQuitAndInstall', window.apiUpdaterQuitAndInstall())

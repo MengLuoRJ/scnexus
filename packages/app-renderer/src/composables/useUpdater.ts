@@ -3,8 +3,18 @@ import { useIntervalFn, useWebNotification } from "@vueuse/core";
 import { h } from "vue";
 import { NButton } from "naive-ui";
 import { useDiscreteApi } from "./useDiscreteApi";
-import { ipcApp } from "@/apis/ipcs/app";
-import { ipcUpdater } from "@/apis/ipcs/updater";
+import { apiAppGetVersion, apiAppIsPackaged } from "@/apis/ipcs/app";
+import {
+  apiUpdaterCheckForUpdates,
+  apiUpdaterDownloadUpdate,
+  apiUpdaterOnCheckingForUpdate,
+  apiUpdaterOnDownloadProgress,
+  apiUpdaterOnError,
+  apiUpdaterOnUpdateAvailable,
+  apiUpdaterOnUpdateDownloaded,
+  apiUpdaterOnUpdateNotAvailable,
+  apiUpdaterQuitAndInstall,
+} from "@/apis/ipcs/updater";
 
 export async function initUpdater() {
   const updaterStore = useUpdaterStore();
@@ -14,16 +24,16 @@ export async function initUpdater() {
 
   updaterStore.INITIALIZED = true;
 
-  const { data: ver } = await ipcApp.getVersion();
+  const { data: ver } = await apiAppGetVersion();
   if (!ver) return;
   updaterStore.CURRENT_VERSION = "v" + ver;
 
-  const { data: packaged } = await ipcApp.isPackaged();
+  const { data: packaged } = await apiAppIsPackaged();
   if (!packaged) {
     return;
   }
 
-  ipcUpdater.onError((_, error) => {
+  apiUpdaterOnError((_, error) => {
     console.error(error);
   });
 
@@ -50,17 +60,17 @@ async function cronCheckUpdates() {
 
 export async function checkUpdates() {
   const updaterStore = useUpdaterStore();
-  ipcUpdater.onCheckingForUpdate(() => {
+  apiUpdaterOnCheckingForUpdate(() => {
     updaterStore.UPDATE_CHECKING = true;
     updaterStore.UPDATE_AVAILABLE = false;
   });
 
-  ipcUpdater.onUpdateNotAvailable(() => {
+  apiUpdaterOnUpdateNotAvailable(() => {
     updaterStore.UPDATE_CHECKING = false;
     updaterStore.UPDATE_AVAILABLE = false;
   });
 
-  ipcUpdater.onUpdateAvailable((_, info) => {
+  apiUpdaterOnUpdateAvailable((_, info) => {
     updaterStore.UPDATE_CHECKING = false;
     updaterStore.UPDATE_AVAILABLE = true;
     updaterStore.updateInfo = info;
@@ -101,7 +111,7 @@ export async function checkUpdates() {
     });
   });
 
-  await ipcUpdater.checkForUpdates();
+  await apiUpdaterCheckForUpdates();
 }
 
 export async function downloadUpdates() {
@@ -116,7 +126,7 @@ export async function downloadUpdates() {
     closable: false,
   });
 
-  ipcUpdater.onDownloadProgress((_, progress) => {
+  apiUpdaterOnDownloadProgress((_, progress) => {
     updaterStore.downloadProgress = progress;
 
     ntf_downloading.content =
@@ -127,7 +137,7 @@ export async function downloadUpdates() {
       )}KB/s)`;
   });
 
-  ipcUpdater.onUpdateDownloaded(() => {
+  apiUpdaterOnUpdateDownloaded(() => {
     updaterStore.UPDATE_DOWNLOADING = false;
     updaterStore.UPDATE_DOWNLOADED = true;
 
@@ -153,9 +163,9 @@ export async function downloadUpdates() {
     });
   });
 
-  await ipcUpdater.downloadUpdate();
+  await apiUpdaterDownloadUpdate();
 }
 
 export async function installUpdates() {
-  await ipcUpdater.quitAndInstall();
+  await apiUpdaterQuitAndInstall();
 }

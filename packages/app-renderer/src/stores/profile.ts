@@ -2,7 +2,7 @@ import { ref } from "vue";
 import { set } from "@vueuse/core";
 import { defineStore } from "pinia";
 
-import { ipcProfile } from "@/apis/ipcs/profile";
+import { apiProfileGetProfile, apiProfileInitGameService } from "@/apis/ipcs/profile";
 
 import type {
   ProfileCampaign,
@@ -24,7 +24,7 @@ export const useProfileStore = defineStore(
     const PROFILE_CUSTOMIZE = ref<ProfileCustomize>();
 
     const getProfile = async () => {
-      const { data } = await ipcProfile.getProfile();
+      const { data } = await apiProfileGetProfile();
       if (data) {
         set(SUCCESS, data.SUCCESS);
         set(ERROR_MESSAGE, data.ERROR_MESSAGE);
@@ -37,7 +37,7 @@ export const useProfileStore = defineStore(
     };
 
     const initProfile = async (path?: string) => {
-      const { data } = await ipcProfile.initGameService(path);
+      const { data } = await apiProfileInitGameService(path);
       if (data) {
         set(SUCCESS, data.SUCCESS);
         set(ERROR_MESSAGE, data.ERROR_MESSAGE);

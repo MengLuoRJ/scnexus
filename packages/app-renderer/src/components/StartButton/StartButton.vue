@@ -5,7 +5,7 @@ import { usePresetStore } from "@/stores/preset";
 import type { GameExecutableParameters } from "@scnexus/app-shared/types/customize/client-launcher.type";
 import { computed } from "vue";
 import { get, set } from "@vueuse/core";
-import { ipcCustomize } from "@/apis/ipcs/customize";
+import { apiCustomizeRunGameClient, apiCustomizeRunGameExecutable } from "@/apis/ipcs/customize";
 
 const { play_button_game_mode } = storeToRefs(usePresetStore());
 
@@ -40,11 +40,11 @@ const executableParameters = computed<GameExecutableParameters>(() => {
 });
 
 const handleExecutableStart = async () => {
-  await ipcCustomize.runGameExecutable(get(executableParameters));
+  await apiCustomizeRunGameExecutable(get(executableParameters));
 };
 
 const handleClientStart = async () => {
-  await ipcCustomize.runGameClient();
+  await apiCustomizeRunGameClient();
 };
 
 const handleDefaultStart = async () => {

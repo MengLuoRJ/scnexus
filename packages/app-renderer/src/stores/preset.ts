@@ -1,4 +1,4 @@
-import { ipcSetting } from "@/apis/ipcs/setting";
+import { apiSettingGetSetting, apiSettingSetSettingKey } from "@/apis/ipcs/setting";
 import { get } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { ref } from "vue";
@@ -23,7 +23,7 @@ export const initPresetStore = async () => {
   type PValue = (typeof settingStore.storeRefs)[PKey];
 
   const settingStore = usePresetStore();
-  const { data: presistedSetting } = await ipcSetting.getSetting();
+  const { data: presistedSetting } = await apiSettingGetSetting();
   if (presistedSetting?.PRESETS) {
     const presistedPresets = JSON.parse(presistedSetting.PRESETS);
     Object.keys(presistedPresets).map((key) => {
@@ -45,6 +45,6 @@ export const initPresetStore = async () => {
       presets[pKey] = get(state[pKey]);
     }
     const presetsJSON = JSON.stringify(presets);
-    ipcSetting.setSettingKey("PRESETS", presetsJSON);
+    apiSettingSetSettingKey("PRESETS", presetsJSON);
   });
 };

@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { apiDialogShowOpenDialogSync } from "@/apis/ipcs/dialog";
-import { useProfileStore } from "@/stores/profile";
-import { storeToRefs } from "pinia";
+import { apiDialogShowOpenDialogSync } from '@/apis/ipcs/dialog'
+import { useProfileStore } from '@/stores/profile'
+import { storeToRefs } from 'pinia'
 
-const localProfileStore = useProfileStore();
-const { SUCCESS, ERROR_MESSAGE } = storeToRefs(localProfileStore);
+const localProfileStore = useProfileStore()
+const { SUCCESS, ERROR_MESSAGE } = storeToRefs(localProfileStore)
 
 async function hookupPathSelector(autodetect?: boolean) {
   if (!!autodetect) {
-    await localProfileStore.initProfile();
+    await localProfileStore.initProfile()
   } else {
     const { data: path } = await apiDialogShowOpenDialogSync({
-      title: "选择游戏根目录",
-      properties: ["openDirectory", "dontAddToRecent"],
-    });
+      title: '选择游戏根目录',
+      properties: ['openDirectory', 'dontAddToRecent'],
+    })
     if (path) {
-      await localProfileStore.initProfile(path[0]);
+      await localProfileStore.initProfile(path[0])
     }
   }
 }
@@ -27,28 +27,24 @@ async function hookupPathSelector(autodetect?: boolean) {
   >
     <div class="flex flex-col justify-center gap-1">
       <div>
-        {{ SUCCESS ? "已成功设置" : ERROR_MESSAGE }}
+        {{ SUCCESS ? '已成功设置' : ERROR_MESSAGE }}
       </div>
       <div class="ml--1 flex flex-row justify-start items-center gap-1">
         <n-popover trigger="hover" style="max-width: 200px" :show-arrow="false">
           <template #trigger>
             <n-button class="ml-1" size="small" @click="hookupPathSelector()">
-              {{ "手动设置" }}
+              {{ '手动设置' }}
             </n-button>
           </template>
-          <div class="text-xs">{{ "手动选择游戏根目录" }}</div>
+          <div class="text-xs">{{ '手动选择游戏根目录' }}</div>
         </n-popover>
         <n-popover trigger="hover" style="max-width: 200px" :show-arrow="false">
           <template #trigger>
-            <n-button
-              class="mr-1"
-              size="small"
-              @click="hookupPathSelector(true)"
-            >
-              {{ "自动检测" }}
+            <n-button class="mr-1" size="small" @click="hookupPathSelector(true)">
+              {{ '自动检测' }}
             </n-button>
           </template>
-          <div class="text-xs">{{ "根据系统注册表自动获取游戏根目录" }}</div>
+          <div class="text-xs">{{ '根据系统注册表自动获取游戏根目录' }}</div>
         </n-popover>
       </div>
     </div>

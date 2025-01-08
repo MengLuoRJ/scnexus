@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { apiShellOpenExternalWebsite } from "@/apis/ipcs/shell";
+import { apiShellOpenExternalWebsite } from '@/apis/ipcs/shell'
 
 const props = defineProps<{
-  link: string;
-  clamp?: boolean;
-}>();
+  link: string
+  clamp?: boolean
+}>()
 
 async function openExternalLink() {
-  if (
-    !props.link?.startsWith("https://") &&
-    !props.link?.startsWith("http://")
-  ) {
-    return;
+  if (!props.link?.startsWith('https://') && !props.link?.startsWith('http://')) {
+    return
   }
-  await apiShellOpenExternalWebsite(props.link);
+  await apiShellOpenExternalWebsite(props.link)
 }
 </script>
 
@@ -24,9 +21,7 @@ async function openExternalLink() {
   >
     <n-popover trigger="hover" style="max-width: 350px" :show-arrow="false">
       <template #trigger>
-        <div
-          class="flex flex-row justify-center items-center gap-1 hover:text-blue-600"
-        >
+        <div class="flex flex-row justify-center items-center gap-1 hover:text-blue-600">
           <div class="text-xs i-tabler:external-link"></div>
           <div v-if="props.clamp" class="text-sm line-clamp-1">
             {{ props.link }}
@@ -38,7 +33,7 @@ async function openExternalLink() {
       </template>
       <div class="text-xs">{{ props.link }}</div>
       <div class="text-xs">
-        {{ "该链接由模组制作者提供，访问时请仔细甄别信息并注意安全。" }}
+        {{ '该链接由模组制作者提供，访问时请仔细甄别信息并注意安全。' }}
       </div>
     </n-popover>
   </div>

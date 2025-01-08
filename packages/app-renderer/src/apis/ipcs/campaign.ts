@@ -5,53 +5,50 @@ import type { CampaignActiveStore } from '@scnexus/app-shared/stores/campaign-ac
 import type { ResultUncompressCCM } from '@scnexus/app-shared/types/campaign.type'
 
 export const apiCampaignUnzipCompressFileCCM = (path: string) =>
-    useIpcApi<ResultUncompressCCM>(
-      'apiCampaignUnzipCompressFileCCM',
-      window.apiCampaignUnzipCompressFileCCM(path),
-    )
+  useIpcApi<ResultUncompressCCM>(
+    'apiCampaignUnzipCompressFileCCM',
+    window.apiCampaignUnzipCompressFileCCM(path),
+  )
 export const apiCampaignUnzipCompressFileSimulateCCM = (path: string) =>
-    useIpcApi<ResultUncompressCCM>(
-      'apiCampaignUnzipCompressFileSimulateCCM',
-      window.apiCampaignUnzipCompressFileSimulateCCM(path),
-    )
+  useIpcApi<ResultUncompressCCM>(
+    'apiCampaignUnzipCompressFileSimulateCCM',
+    window.apiCampaignUnzipCompressFileSimulateCCM(path),
+  )
 export const apiCampaignUnzipCompressFile7zSimulateCCM = (path: string) =>
-    useIpcApi<ResultUncompressCCM>(
-      'apiCampaignUnzipCompressFile7zSimulateCCM',
-      window.apiCampaignUnzipCompressFile7zSimulateCCM(path),
-    )
+  useIpcApi<ResultUncompressCCM>(
+    'apiCampaignUnzipCompressFile7zSimulateCCM',
+    window.apiCampaignUnzipCompressFile7zSimulateCCM(path),
+  )
 export const apiCampaignGetCampaignLists = () =>
-    useIpcApi<CampaignStore>('apiCampaignGetCampaignLists', window.apiCampaignGetCampaignLists()),
+  useIpcApi<CampaignStore>('apiCampaignGetCampaignLists', window.apiCampaignGetCampaignLists())
 export const apiCampaignUpdateCampaignLists = () =>
-    useIpcApi<CampaignStore>(
-      'apiCampaignUpdateCampaignLists',
-      window.apiCampaignUpdateCampaignLists(),
-    )
+  useIpcApi<CampaignStore>(
+    'apiCampaignUpdateCampaignLists',
+    window.apiCampaignUpdateCampaignLists(),
+  )
 export const apiCampaignUninstallCampaignFiles = (infor: MetadataInformated) =>
-    useIpcApi<void>(
-      'apiCampaignUninstallCampaignFiles',
-      window.apiCampaignUninstallCampaignFiles(infor),
-    )
+  useIpcApi<void>(
+    'apiCampaignUninstallCampaignFiles',
+    window.apiCampaignUninstallCampaignFiles(infor),
+  )
 export const apiCampaignGetActivedCampaignList = () =>
-    useIpcApi<CampaignActiveStore>(
-      'apiCampaignGetActivedCampaignList',
-      window.apiCampaignGetActivedCampaignList(),
-    )
+  useIpcApi<CampaignActiveStore>(
+    'apiCampaignGetActivedCampaignList',
+    window.apiCampaignGetActivedCampaignList(),
+  )
 export const apiCampaignGetActivedCampaignTyped = (type: CampaignType) =>
-    useIpcApi<MetadataInformated>(
-      'apiCampaignGetActivedCampaignTyped',
-      window.apiCampaignGetActivedCampaignTyped(type),
-    )
+  useIpcApi<MetadataInformated>(
+    'apiCampaignGetActivedCampaignTyped',
+    window.apiCampaignGetActivedCampaignTyped(type),
+  )
 export const apiCampaignUpdateActivedCampaignSet = () =>
-    useIpcApi<CampaignActiveStore>(
-      'apiCampaignUpdateActivedCampaignSet',
-      window.apiCampaignUpdateActivedCampaignSet(),
-    )
+  useIpcApi<CampaignActiveStore>(
+    'apiCampaignUpdateActivedCampaignSet',
+    window.apiCampaignUpdateActivedCampaignSet(),
+  )
 export const apiCampaignActiveCampaign = (infor: MetadataInformated) =>
   useIpcApi<void>('apiCampaignActiveCampaign', window.apiCampaignActiveCampaign(infor))
 export const apiCampaignUnactiveCampaign = (infor: MetadataInformated) =>
   useIpcApi<void>('apiCampaignUnactiveCampaign', window.apiCampaignUnactiveCampaign(infor))
 export const apiCampaignRecoverCampaignType = (campaign: CampaignType) =>
-    useIpcApi<void>(
-      'apiCampaignRecoverCampaignType',
-      window.apiCampaignRecoverCampaignType(campaign),
-    )
+  useIpcApi<void>('apiCampaignRecoverCampaignType', window.apiCampaignRecoverCampaignType(campaign))

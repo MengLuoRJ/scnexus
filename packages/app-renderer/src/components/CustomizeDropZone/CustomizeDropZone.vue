@@ -1,85 +1,85 @@
 <script setup lang="ts">
-import { ref, h, provide, reactive } from "vue";
-import { set, useDropZone } from "@vueuse/core";
-import { useI18n } from "vue-i18n";
-import { useDialog, useNotification } from "naive-ui";
+import { ref, h, provide, reactive } from 'vue'
+import { set, useDropZone } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+import { useDialog, useNotification } from 'naive-ui'
 
-import { useProfileStore } from "@/stores/profile";
-import { apiCustomizeReadCompressFileInfo7z } from "@/apis/ipcs/customize";
-import { apiDialogShowOpenDialog } from "@/apis/ipcs/dialog";
-import { type CompressFileInfo } from "@scnexus/app-shared/types/customize.type";
-import { webUtils } from "@/apis/web-utils";
+import { useProfileStore } from '@/stores/profile'
+import { apiCustomizeReadCompressFileInfo7z } from '@/apis/ipcs/customize'
+import { apiDialogShowOpenDialog } from '@/apis/ipcs/dialog'
+import { type CompressFileInfo } from '@scnexus/app-shared/types/customize.type'
+import { webUtils } from '@/apis/web-utils'
 
-import GameProfileChecker from "@/components/GameProfileChecker.vue";
-import ProcessFileModal from "./components/ProcessFileModal.vue";
+import GameProfileChecker from '@/components/GameProfileChecker.vue'
+import ProcessFileModal from './components/ProcessFileModal.vue'
 
-import { KEY_CFI, KEY_FILEPATH } from "./symbol";
+import { KEY_CFI, KEY_FILEPATH } from './symbol'
 
-const { t } = useI18n();
-const dialog = useDialog();
-const profileStore = useProfileStore();
+const { t } = useI18n()
+const dialog = useDialog()
+const profileStore = useProfileStore()
 
-const refDropZone = ref<HTMLDivElement>();
-const refProcessFileModal = ref<InstanceType<typeof ProcessFileModal> | null>();
+const refDropZone = ref<HTMLDivElement>()
+const refProcessFileModal = ref<InstanceType<typeof ProcessFileModal> | null>()
 
-const { isOverDropZone } = useDropZone(refDropZone, onDrop);
+const { isOverDropZone } = useDropZone(refDropZone, onDrop)
 
-const file_path = ref<string>("");
-provide(KEY_FILEPATH, file_path);
+const file_path = ref<string>('')
+provide(KEY_FILEPATH, file_path)
 
-const cfi = ref<CompressFileInfo | undefined>(undefined);
-provide(KEY_CFI, cfi);
+const cfi = ref<CompressFileInfo | undefined>(undefined)
+provide(KEY_CFI, cfi)
 
 async function onDrop(files: File[] | null) {
   if (!profileStore.SUCCESS) {
-    return;
+    return
   }
   if (!files?.[0]) {
-    return;
+    return
   }
-  const filePath = webUtils.getPathForFile(files?.[0]);
-  if (!filePath) return;
-  await processFile(filePath);
+  const filePath = webUtils.getPathForFile(files?.[0])
+  if (!filePath) return
+  await processFile(filePath)
 }
 
 async function onClick() {
   if (!profileStore.SUCCESS) {
-    return;
+    return
   }
 
   const { data } = await apiDialogShowOpenDialog({
-    title: t("customize.drop-zone.select-file-title"),
-    properties: ["openFile"],
+    title: t('customize.drop-zone.select-file-title'),
+    properties: ['openFile'],
     filters: [
-      { name: "SCNexus Compressed File", extensions: ["zip"] },
-      { name: "CCM Compressed File", extensions: ["zip"] },
-      { name: "ZIP Compressed File", extensions: ["zip"] },
+      { name: 'SCNexus Compressed File', extensions: ['zip'] },
+      { name: 'CCM Compressed File', extensions: ['zip'] },
+      { name: 'ZIP Compressed File', extensions: ['zip'] },
     ],
-  });
-  if (!data) return;
+  })
+  if (!data) return
 
-  const { filePaths, canceled } = data;
-  if (canceled || !filePaths) return;
+  const { filePaths, canceled } = data
+  if (canceled || !filePaths) return
 
-  processFile(filePaths[0]);
+  processFile(filePaths[0])
 }
 
 async function processFile(path: string) {
-  const { data, error } = await apiCustomizeReadCompressFileInfo7z(path);
+  const { data, error } = await apiCustomizeReadCompressFileInfo7z(path)
   if (error) {
-    console.error(error);
-    return;
+    console.error(error)
+    return
   }
   if (!data) {
     dialog.error({
-      title: t("customize.drop-zone.process-dialog.cfi-error-title"),
-      content: t("customize.drop-zone.process-dialog.cfi-error-message"),
-    });
-    return;
+      title: t('customize.drop-zone.process-dialog.cfi-error-title'),
+      content: t('customize.drop-zone.process-dialog.cfi-error-message'),
+    })
+    return
   }
-  set(file_path, path);
-  set(cfi, data);
-  refProcessFileModal.value?.open();
+  set(file_path, path)
+  set(cfi, data)
+  refProcessFileModal.value?.open()
 }
 </script>
 
@@ -92,27 +92,21 @@ async function processFile(path: string) {
       v-if="profileStore.SUCCESS"
     >
       <div class="w-full h-8 flex flex-col justify-center items-center gap-y-2">
-        <div
-          v-if="!isOverDropZone"
-          class="flex flex-row justify-center items-center gap-6"
-        >
+        <div v-if="!isOverDropZone" class="flex flex-row justify-center items-center gap-6">
           <div class="i-tabler:file-zip h-9 w-9"></div>
           <div class="flex flex-col justify-center items-start gap-y-1">
             <div class="text-xs text-gray-600">
-              {{ $t("customize.drop-zone.tip") }}
+              {{ $t('customize.drop-zone.tip') }}
             </div>
             <div class="text-xs text-gray-500">
-              {{ $t("customize.drop-zone.tip-extension") }}
+              {{ $t('customize.drop-zone.tip-extension') }}
             </div>
           </div>
         </div>
-        <div
-          v-if="!!isOverDropZone"
-          class="flex flex-row justify-center items-center gap-6"
-        >
+        <div v-if="!!isOverDropZone" class="flex flex-row justify-center items-center gap-6">
           <div class="i-tabler:file-download h-9 w-9"></div>
           <div class="text-xs text-gray-500">
-            {{ $t("customize.drop-zone.tip-release") }}
+            {{ $t('customize.drop-zone.tip-release') }}
           </div>
         </div>
       </div>

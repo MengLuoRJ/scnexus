@@ -1,30 +1,26 @@
 <script lang="ts" setup>
-import { inject } from "vue";
-import { storeToRefs } from "pinia";
-import { NImage } from "naive-ui";
+import { inject } from 'vue'
+import { storeToRefs } from 'pinia'
+import { NImage } from 'naive-ui'
 
-import { renderUnoIcon } from "@/composables/useIconRender";
+import { renderUnoIcon } from '@/composables/useIconRender'
 
-import {
-  unactiveCampaign,
-  uninstallCampaign,
-} from "@/views/campaign/composables/useCampaign";
+import { unactiveCampaign, uninstallCampaign } from '@/views/campaign/composables/useCampaign'
 
-import StartButton from "@/components/StartButton";
-import CustomizeDropZone from "@/components/CustomizeDropZone";
-import IconTooltip from "@/components/IconTooltip.vue";
-import ExternalLinkTooltip from "@/components/ExternalLinkTooltip.vue";
-import SupportIcon from "@/components/SupportIcon.vue";
+import StartButton from '@/components/StartButton'
+import CustomizeDropZone from '@/components/CustomizeDropZone'
+import IconTooltip from '@/components/IconTooltip.vue'
+import ExternalLinkTooltip from '@/components/ExternalLinkTooltip.vue'
+import SupportIcon from '@/components/SupportIcon.vue'
 
-import CampaignSwitchDrawer from "./CampaignSwitchDrawer.vue";
+import CampaignSwitchDrawer from './CampaignSwitchDrawer.vue'
 
-import { useCampaignActiveStore } from "@/stores/campaign-active";
+import { useCampaignActiveStore } from '@/stores/campaign-active'
 
-const campaignActiveStore = useCampaignActiveStore();
-const { CAMPAIGN_SET } = storeToRefs(campaignActiveStore);
+const campaignActiveStore = useCampaignActiveStore()
+const { CAMPAIGN_SET } = storeToRefs(campaignActiveStore)
 
-const refDrawer =
-  inject<InstanceType<typeof CampaignSwitchDrawer>>("refDrawer");
+const refDrawer = inject<InstanceType<typeof CampaignSwitchDrawer>>('refDrawer')
 </script>
 <template>
   <div class="CampaignDisplayDetailMode">
@@ -45,7 +41,7 @@ const refDrawer =
             ></n-image>
             <div class="self-center mt-[-24px]">
               {{
-                $t("campaign.detail-mode.campaign-title", {
+                $t('campaign.detail-mode.campaign-title', {
                   campaign: constant.name,
                 })
               }}
@@ -53,33 +49,26 @@ const refDrawer =
             <n-divider :style="{ margin: 0 }" />
             <div class="flex flex-col items-center gap-1">
               <div class="text-sm text-gray-500">
-                {{ $t("campaign.current-campaign") }}
+                {{ $t('campaign.current-campaign') }}
               </div>
               <div v-if="!CAMPAIGN_SET[index]" class="text-sm text-gray-500">
-                {{ $t("campaign.no-actived-campaign") }}
+                {{ $t('campaign.no-actived-campaign') }}
               </div>
-              <div
-                v-else
-                class="flex flex-col justify-center items-center gap-1 text-sm"
-              >
+              <div v-else class="flex flex-col justify-center items-center gap-1 text-sm">
                 <div class="text-center text-black">
-                  {{ CAMPAIGN_SET[index]?.name ?? $t("campaign.no-campaign") }}
+                  {{ CAMPAIGN_SET[index]?.name ?? $t('campaign.no-campaign') }}
                 </div>
                 <div class="flex flex-row justify-center items-center flex-wrap gap-1">
                   <n-tag type="success" size="small" round>
-                    {{ "v" + CAMPAIGN_SET[index]?.version }}
+                    {{ 'v' + CAMPAIGN_SET[index]?.version }}
                   </n-tag>
                   <n-tag
-                    :type="
-                      CAMPAIGN_SET[index]?.manager === 'SCNexus'
-                        ? 'info'
-                        : undefined
-                    "
+                    :type="CAMPAIGN_SET[index]?.manager === 'SCNexus' ? 'info' : undefined"
                     size="small"
                     round
                   >
                     {{
-                      $t("campaign.detail-mode.manager-format", {
+                      $t('campaign.detail-mode.manager-format', {
                         manager: CAMPAIGN_SET[index]?.manager,
                       })
                     }}
@@ -88,9 +77,7 @@ const refDrawer =
               </div>
             </div>
             <n-divider :style="{ margin: 0 }" />
-            <div
-              class="mt-auto flex flex-col justify-center items-center gap-1"
-            >
+            <div class="mt-auto flex flex-col justify-center items-center gap-1">
               <n-button
                 v-if="!CAMPAIGN_SET[index]"
                 size="small"
@@ -100,7 +87,7 @@ const refDrawer =
                 <template #icon>
                   <div class="i-tabler:table-options"></div>
                 </template>
-                {{ $t("campaign.detail-mode.active-campaign") }}
+                {{ $t('campaign.detail-mode.active-campaign') }}
               </n-button>
               <n-button
                 v-if="!!CAMPAIGN_SET[index]"
@@ -111,7 +98,7 @@ const refDrawer =
                 <template #icon>
                   <div class="i-tabler:refresh"></div>
                 </template>
-                {{ $t("campaign.detail-mode.restore-campaign") }}
+                {{ $t('campaign.detail-mode.restore-campaign') }}
               </n-button>
               <n-button
                 v-if="!!CAMPAIGN_SET[index]"
@@ -122,7 +109,7 @@ const refDrawer =
                 <template #icon>
                   <div class="i-tabler:status-change"></div>
                 </template>
-                {{ $t("campaign.detail-mode.switch-campaign") }}
+                {{ $t('campaign.detail-mode.switch-campaign') }}
               </n-button>
               <n-button
                 v-if="!!CAMPAIGN_SET[index]"
@@ -133,34 +120,30 @@ const refDrawer =
                 <template #icon>
                   <div class="i-tabler:trash"></div>
                 </template>
-                {{ $t("campaign.detail-mode.uninstall-campaign") }}
+                {{ $t('campaign.detail-mode.uninstall-campaign') }}
               </n-button>
               <StartButton type="campaign" />
             </div>
           </div>
-          <div
-            class="basis-3/5 flex flex-col gap-1 cell-normal bg-white/75 backdrop-blur-sm"
-          >
+          <div class="basis-3/5 flex flex-col gap-1 cell-normal bg-white/75 backdrop-blur-sm">
             <div
               class="cell-normal mt-1 mx-1 px-2 py-1 hover:transition-shadow duration-300 hover:shadow"
             >
               <div class="text-xs text-gray">
-                {{ $t("campaign.detail-mode.now-playing") }}
+                {{ $t('campaign.detail-mode.now-playing') }}
               </div>
               <div v-if="!!CAMPAIGN_SET[index]" class="text-base">
                 {{ CAMPAIGN_SET[index]?.name }}
               </div>
               <div v-if="!!CAMPAIGN_SET[index]" class="text-sm text-gray">
                 {{
-                  $t("campaign.detail-mode.campaign", {
+                  $t('campaign.detail-mode.campaign', {
                     campaign: constant.name,
                   })
                 }}
               </div>
               <div v-else class="text-base">
-                {{
-                  $t("campaign.offcial-campaign", { campaign: constant.name })
-                }}
+                {{ $t('campaign.offcial-campaign', { campaign: constant.name }) }}
               </div>
             </div>
             <div v-if="!!CAMPAIGN_SET[index]" class="flex flex-row gap-2 mx-1">
@@ -168,7 +151,7 @@ const refDrawer =
                 class="basis-1/2 flex flex-row justify-start items-center gap-1 px-2 py-1 cell-normal hover:transition-shadow duration-300 hover:shadow"
               >
                 <div class="text-xs text-gray">
-                  {{ $t("campaign.detail-mode.author") }}
+                  {{ $t('campaign.detail-mode.author') }}
                 </div>
                 <div class="text-sm">
                   {{ CAMPAIGN_SET[index]?.author }}
@@ -178,14 +161,10 @@ const refDrawer =
                 class="basis-1/2 flex flex-row justify-start items-center gap-1 px-2 py-1 cell-normal hover:transition-shadow duration-300 hover:shadow"
               >
                 <div class="text-xs text-gray">
-                  {{ $t("campaign.detail-mode.version") }}
+                  {{ $t('campaign.detail-mode.version') }}
                 </div>
                 <div class="text-sm">
-                  {{
-                    CAMPAIGN_SET[index]?.version
-                      ? "v" + CAMPAIGN_SET[index]?.version
-                      : "N/A"
-                  }}
+                  {{ CAMPAIGN_SET[index]?.version ? 'v' + CAMPAIGN_SET[index]?.version : 'N/A' }}
                 </div>
               </div>
             </div>
@@ -194,25 +173,20 @@ const refDrawer =
               class="cell-normal mx-1 px-2 py-1 hover:transition-shadow duration-300 hover:shadow"
             >
               <div class="text-xs text-gray">
-                {{ $t("campaign.detail-mode.description") }}
+                {{ $t('campaign.detail-mode.description') }}
               </div>
               <div v-if="!!CAMPAIGN_SET[index]" class="text-sm">
                 {{ CAMPAIGN_SET[index]?.description }}
               </div>
             </div>
-            <div
-              v-if="!!CAMPAIGN_SET[index]?.social"
-              class="flex flex-row gap-2 mx-1"
-            >
+            <div v-if="!!CAMPAIGN_SET[index]?.social" class="flex flex-row gap-2 mx-1">
               <div
                 class="basis-1/2 px-2 py-1 cell-normal hover:transition-shadow duration-300 hover:shadow"
               >
                 <div class="text-xs text-gray">
-                  {{ $t("campaign.detail-mode.social") }}
+                  {{ $t('campaign.detail-mode.social') }}
                 </div>
-                <div
-                  class="mt-1 flex flex-row justify-start items-center gap-1 text-sm"
-                >
+                <div class="mt-1 flex flex-row justify-start items-center gap-1 text-sm">
                   <SupportIcon
                     v-if="!!CAMPAIGN_SET[index]?.social?.twitter"
                     :link="CAMPAIGN_SET[index]?.social?.twitter!"
@@ -249,12 +223,10 @@ const refDrawer =
                 class="basis-1/2 px-2 py-1 cell-normal hover:transition-shadow duration-300 hover:shadow"
               >
                 <div class="text-xs text-gray">
-                  {{ $t("campaign.detail-mode.donate") }}
+                  {{ $t('campaign.detail-mode.donate') }}
                 </div>
                 <div class="text-sm">
-                  <div
-                    class="mt-1 flex flex-row justify-start items-center gap-1 text-sm"
-                  >
+                  <div class="mt-1 flex flex-row justify-start items-center gap-1 text-sm">
                     <SupportIcon
                       v-if="!!CAMPAIGN_SET[index]?.sponsor?.paypal"
                       :link="CAMPAIGN_SET[index]?.sponsor?.paypal!"
@@ -284,25 +256,19 @@ const refDrawer =
               class="cell-normal mx-1 px-2 py-1 hover:transition-shadow duration-300 hover:shadow"
             >
               <div class="text-xs text-gray">
-                {{ $t("campaign.detail-mode.website") }}
+                {{ $t('campaign.detail-mode.website') }}
               </div>
-              <ExternalLinkTooltip
-                :link="CAMPAIGN_SET[index]?.website!"
-                clamp
-              />
+              <ExternalLinkTooltip :link="CAMPAIGN_SET[index]?.website!" clamp />
             </div>
             <div
               v-if="!!CAMPAIGN_SET[index]?.snid"
               class="flex flex-row justify-start items-center gap-2 cell-normal mx-1 px-2 py-1 hover:transition-shadow duration-300 hover:shadow"
             >
               <div class="text-xs text-gray">
-                {{ $t("campaign.detail-mode.snid") }}
+                {{ $t('campaign.detail-mode.snid') }}
               </div>
               <div v-if="!!CAMPAIGN_SET[index]" class="text-xs">
-                {{
-                  CAMPAIGN_SET[index]?.snid ??
-                  $t("campaign.detail-mode.snid-none")
-                }}
+                {{ CAMPAIGN_SET[index]?.snid ?? $t('campaign.detail-mode.snid-none') }}
               </div>
             </div>
             <n-alert
@@ -312,10 +278,10 @@ const refDrawer =
               type="info"
             >
               <div class="text-xs">
-                {{ $t("campaign.detail-mode.no-actived-campaign-offial-tip") }}
+                {{ $t('campaign.detail-mode.no-actived-campaign-offial-tip') }}
               </div>
               <div class="text-xs">
-                {{ $t("campaign.detail-mode.no-actived-campaign-content-tip") }}
+                {{ $t('campaign.detail-mode.no-actived-campaign-content-tip') }}
               </div>
             </n-alert>
             <div class="mt-auto mb-1 mx-1">

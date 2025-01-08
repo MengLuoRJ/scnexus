@@ -11,7 +11,7 @@ export const apiWorkshopUploadCompressedFile = (
   target_url: string,
   file_md5: string,
 ) =>
-    useIpcApi<void>(
-      'apiWorkshopUploadCompressedFile',
-      window.apiWorkshopUploadCompressedFile(file_path, target_url, file_md5),
-    )
+  useIpcApi<void>(
+    'apiWorkshopUploadCompressedFile',
+    window.apiWorkshopUploadCompressedFile(file_path, target_url, file_md5),
+  )

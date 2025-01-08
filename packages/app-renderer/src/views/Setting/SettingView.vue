@@ -1,38 +1,31 @@
 <script setup lang="ts">
-import { h, onMounted, ref } from "vue";
-import { set } from "@vueuse/core";
+import { h, onMounted, ref } from 'vue'
+import { set } from '@vueuse/core'
 
-import BasicSetting from "./components/BasicSetting.vue";
-import ProfileSetting from "./components/ProfileSetting.vue";
-import ServiceLinks from "./components/ServiceLinks.vue";
-import { apiSettingGetSettingKey } from "@/apis/ipcs/setting";
+import BasicSetting from './components/BasicSetting.vue'
+import ProfileSetting from './components/ProfileSetting.vue'
+import ServiceLinks from './components/ServiceLinks.vue'
+import { apiSettingGetSettingKey } from '@/apis/ipcs/setting'
 
-const client_id = ref("");
+const client_id = ref('')
 
 onMounted(async () => {
-  const { data: setting_client_id } = await apiSettingGetSettingKey(
-    "CLIENT_ID"
-  );
-  set(client_id, setting_client_id);
-});
+  const { data: setting_client_id } = await apiSettingGetSettingKey('CLIENT_ID')
+  set(client_id, setting_client_id)
+})
 </script>
 
 <template>
   <div class="setting">
     <div class="flex flex-row justify-between items-center">
-      <div class="header text-lg">{{ "设置" }}</div>
+      <div class="header text-lg">{{ '设置' }}</div>
     </div>
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
     <n-tabs type="line" animated>
       <n-tab-pane
         :name="'client'"
         :tab="
-          () =>
-            h(
-              'div',
-              { class: 'flex flex-row justify-start items-center gap-1' },
-              '基本设置'
-            )
+          () => h('div', { class: 'flex flex-row justify-start items-center gap-1' }, '基本设置')
         "
       >
         <BasicSetting />
@@ -42,12 +35,7 @@ onMounted(async () => {
       <n-tab-pane
         :name="'profile'"
         :tab="
-          () =>
-            h(
-              'div',
-              { class: 'flex flex-row justify-start items-center gap-1' },
-              '游戏设置'
-            )
+          () => h('div', { class: 'flex flex-row justify-start items-center gap-1' }, '游戏设置')
         "
       >
         <ProfileSetting />

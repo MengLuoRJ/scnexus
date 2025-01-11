@@ -1,18 +1,18 @@
-import { useIpcApi } from './ipc-util'
+import { ipcApi, useIpcApi } from './ipc-util'
 
 export const apiAppGetVersion = () =>
-  useIpcApi<string>('apiAppGetVersion', window.apiAppGetVersion())
+  useIpcApi<string>('apiAppGetVersion', ipcApi['app:get-version']())
 export const apiAppIsPackaged = () =>
-  useIpcApi<boolean>('apiAppIsPackaged', window.apiAppIsPackaged())
-export const apiAppGetLocale = () => useIpcApi<string>('apiAppGetLocale', window.apiAppGetLocale())
+  useIpcApi<boolean>('apiAppIsPackaged', ipcApi['app:is-packaged']())
+export const apiAppGetLocale = () => useIpcApi<string>('apiAppGetLocale', ipcApi['app:get-locale']())
 export const apiAppGetSystemLocale = () =>
-  useIpcApi<string>('apiAppGetSystemLocale', window.apiAppGetSystemLocale())
+  useIpcApi<string>('apiAppGetSystemLocale', ipcApi['app:get-system-locale']())
 export const apiAppGetLocaleCountryCode = () =>
-  useIpcApi<string>('apiAppGetLocaleCountryCode', window.apiAppGetLocaleCountryCode())
+  useIpcApi<string>('apiAppGetLocaleCountryCode', ipcApi['app:get-locale-country-code']())
 export const apiAppGetPreferredSystemLanguages = () =>
   useIpcApi<string[]>(
     'apiAppGetPreferredSystemLanguages',
-    window.apiAppGetPreferredSystemLanguages(),
+    ipcApi['app:get-preferred-system-languages'](),
   )
 export const apiAppGetPath = (
   name:
@@ -32,6 +32,6 @@ export const apiAppGetPath = (
     | 'recent'
     | 'logs'
     | 'crashDumps',
-) => useIpcApi<string>('apiAppGetPath', window.apiAppGetPath(name))
+) => useIpcApi<string>('apiAppGetPath', ipcApi['app:get-path'](name))
 export const apiAppGetPaths = () =>
-  useIpcApi<{ [key: string]: string }>('apiAppGetPaths', window.apiAppGetPaths())
+  useIpcApi<{ [key: string]: string }>('apiAppGetPaths', ipcApi['app:get-paths']())

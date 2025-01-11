@@ -27,16 +27,18 @@ export const apiCustomizeRunEditorExecutable = (path?: string) =>
   api.apiCustomizeRunEditorExecutable(invoke, path);
 
 exposeApis({
-  apiCustomizeReadCompressFileInfo,
-  apiCustomizeInstallCompressFile,
-  apiCustomizeValidateCompressFile,
-  apiCustomizeReadCompressFileInfo7z,
-  apiCustomizeInstallCompressFile7z,
-  apiCustomizeInstallCustomize,
-  apiCustomizeUninstallCustomize,
-  apiCustomizeGetInstalledCustomizeList,
-  apiCustomizeScanInstalledCustomizeList,
-  apiCustomizeRunGameClient,
-  apiCustomizeRunGameExecutable,
-  apiCustomizeRunEditorExecutable,
+  "customize:read-compress-file-info": apiCustomizeReadCompressFileInfo,
+  "customize:install-compress-file": apiCustomizeInstallCompressFile,
+  "customize:validate-compress-file": apiCustomizeValidateCompressFile,
+  "customize:read-compress-file-info-7z": apiCustomizeReadCompressFileInfo7z,
+  "customize:install-compress-file-7z": apiCustomizeInstallCompressFile7z,
+  "customize:install-customize": apiCustomizeInstallCustomize,
+  "customize:uninstall-customize": apiCustomizeUninstallCustomize,
+  "customize:get-installed-customize-list":
+    apiCustomizeGetInstalledCustomizeList,
+  "customize:scan-installed-customize-list":
+    apiCustomizeScanInstalledCustomizeList,
+  "customize:run-game-client": apiCustomizeRunGameClient,
+  "customize:run-game-executable": apiCustomizeRunGameExecutable,
+  "customize:run-editor-executable": apiCustomizeRunEditorExecutable,
 });

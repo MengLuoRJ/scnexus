@@ -4,4 +4,4 @@ import { exposeApis, subscribe, type ApiListener } from "./common.js";
 export const apiDeepLinkOnAuthentication = (listener: ApiListener) =>
   invokeApiDeepLinkOnAuthentication(subscribe, listener);
 
-exposeApis({ apiDeepLinkOnAuthentication });
+exposeApis({ "deeplink:authentication": apiDeepLinkOnAuthentication });

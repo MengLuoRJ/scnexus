@@ -1,27 +1,27 @@
-import { useIpcApi, useIpcRendererOn } from './ipc-util'
+import { ipcApi, useIpcApi, useIpcRendererOn } from './ipc-util'
 
 export const apiUpdaterOnCheckingForUpdate = useIpcRendererOn<any>(
-  window.apiUpdaterOnCheckingForUpdate,
+  ipcApi['updater:checking-for-update'],
 )
-export const apiUpdaterOnUpdateAvailable = useIpcRendererOn<any>(window.apiUpdaterOnUpdateAvailable)
+export const apiUpdaterOnUpdateAvailable = useIpcRendererOn<any>(ipcApi['updater:update-available'])
 export const apiUpdaterOnUpdateNotAvailable = useIpcRendererOn<any>(
-  window.apiUpdaterOnUpdateNotAvailable,
+  ipcApi['updater:update-not-available'],
 )
 export const apiUpdaterOnDownloadProgress = useIpcRendererOn<any>(
-  window.apiUpdaterOnDownloadProgress,
+  ipcApi['updater:download-progress'],
 )
 export const apiUpdaterOnUpdateDownloaded = useIpcRendererOn<any>(
-  window.apiUpdaterOnUpdateDownloaded,
+  ipcApi['updater:update-downloaded'],
 )
-export const apiUpdaterOnError = useIpcRendererOn(window.apiUpdaterOnError)
+export const apiUpdaterOnError = useIpcRendererOn(ipcApi['updater:error'])
 export const apiUpdaterCheckForUpdatesAndNotify = () =>
   useIpcApi<any | null>(
     'apiUpdaterCheckForUpdatesAndNotify',
-    window.apiUpdaterCheckForUpdatesAndNotify(),
+    ipcApi['updater:check-for-updates-and-notify'](),
   )
 export const apiUpdaterCheckForUpdates = () =>
-  useIpcApi<any | null>('apiUpdaterCheckForUpdates', window.apiUpdaterCheckForUpdates())
+  useIpcApi<any | null>('apiUpdaterCheckForUpdates', ipcApi['updater:check-for-updates']())
 export const apiUpdaterDownloadUpdate = () =>
-  useIpcApi<string[]>('apiUpdaterDownloadUpdate', window.apiUpdaterDownloadUpdate())
+  useIpcApi<string[]>('apiUpdaterDownloadUpdate', ipcApi['updater:download-update']())
 export const apiUpdaterQuitAndInstall = () =>
-  useIpcApi<void>('apiUpdaterQuitAndInstall', window.apiUpdaterQuitAndInstall())
+  useIpcApi<void>('apiUpdaterQuitAndInstall', ipcApi['updater:quit-and-install']())

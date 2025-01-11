@@ -10,8 +10,8 @@ export const apiSettingSetTrackerUser = (user: unknown) =>
   api.apiSettingSetTrackerUser(invoke, user);
 
 exposeApis({
-  apiSettingGetSetting,
-  apiSettingGetSettingKey,
-  apiSettingSetSettingKey,
-  apiSettingSetTrackerUser,
+  "setting:get-setting": apiSettingGetSetting,
+  "setting:get-setting-key": apiSettingGetSettingKey,
+  "setting:set-setting-key": apiSettingSetSettingKey,
+  "setting:set-tracker-user": apiSettingSetTrackerUser,
 });

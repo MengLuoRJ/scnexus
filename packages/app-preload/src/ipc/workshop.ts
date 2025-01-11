@@ -16,8 +16,8 @@ export const apiWorkshopUploadCompressedFile = (
 ) => api.apiWorkshopUploadCompressedFile(invoke, filePath, targetUrl, fileMd5);
 
 exposeApis({
-  apiWorkshopGetFileMd5,
-  apiWorkshopGetFileMd5Wasm,
-  apiWorkshopWriteMetadata,
-  apiWorkshopUploadCompressedFile,
+  "workshop:get-file-md5": apiWorkshopGetFileMd5,
+  "workshop:get-file-md5-wasm": apiWorkshopGetFileMd5Wasm,
+  "workshop:write-metadata": apiWorkshopWriteMetadata,
+  "workshop:upload-compressed-file": apiWorkshopUploadCompressedFile,
 });

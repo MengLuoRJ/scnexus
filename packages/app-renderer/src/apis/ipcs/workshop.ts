@@ -1,11 +1,11 @@
-import { useIpcApi } from './ipc-util'
+import { ipcApi, useIpcApi } from './ipc-util'
 
 export const apiWorkshopGetFileMd5 = (path: string) =>
-  useIpcApi<string>('apiWorkshopGetFileMd5', window.apiWorkshopGetFileMd5(path))
+  useIpcApi<string>('apiWorkshopGetFileMd5', ipcApi['workshop:get-file-md5'](path))
 export const apiWorkshopGetFileMd5Wasm = (path: string) =>
-  useIpcApi<string>('apiWorkshopGetFileMd5Wasm', window.apiWorkshopGetFileMd5Wasm(path))
+  useIpcApi<string>('apiWorkshopGetFileMd5Wasm', ipcApi['workshop:get-file-md5-wasm'](path))
 export const apiWorkshopWriteMetadata = (path: string, metadata: Record<string, any>) =>
-  useIpcApi<void>('apiWorkshopWriteMetadata', window.apiWorkshopWriteMetadata(path, metadata))
+  useIpcApi<void>('apiWorkshopWriteMetadata', ipcApi['workshop:write-metadata'](path, metadata))
 export const apiWorkshopUploadCompressedFile = (
   file_path: string,
   target_url: string,
@@ -13,5 +13,5 @@ export const apiWorkshopUploadCompressedFile = (
 ) =>
   useIpcApi<void>(
     'apiWorkshopUploadCompressedFile',
-    window.apiWorkshopUploadCompressedFile(file_path, target_url, file_md5),
+    ipcApi['workshop:upload-compressed-file'](file_path, target_url, file_md5),
   )

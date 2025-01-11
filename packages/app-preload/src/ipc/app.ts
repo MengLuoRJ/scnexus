@@ -13,12 +13,12 @@ export const apiAppGetPath = (name: string) => api.apiAppGetPath(invoke, name);
 export const apiAppGetPaths = () => api.apiAppGetPaths(invoke);
 
 exposeApis({
-  apiAppGetVersion,
-  apiAppIsPackaged,
-  apiAppGetLocale,
-  apiAppGetSystemLocale,
-  apiAppGetLocaleCountryCode,
-  apiAppGetPreferredSystemLanguages,
-  apiAppGetPath,
-  apiAppGetPaths,
+  "app:get-version": apiAppGetVersion,
+  "app:is-packaged": apiAppIsPackaged,
+  "app:get-locale": apiAppGetLocale,
+  "app:get-system-locale": apiAppGetSystemLocale,
+  "app:get-locale-country-code": apiAppGetLocaleCountryCode,
+  "app:get-preferred-system-languages": apiAppGetPreferredSystemLanguages,
+  "app:get-path": apiAppGetPath,
+  "app:get-paths": apiAppGetPaths,
 });

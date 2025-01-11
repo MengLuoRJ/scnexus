@@ -1,6 +1,8 @@
 import { useDiscreteApi } from '@/composables/useDiscreteApi'
 import { tryOnScopeDispose } from '@vueuse/core'
 
+export const ipcApi = window as unknown as IpcApi
+
 export const useIpcApi = async <T = any>(
   apiName: string,
   request: IpcApiRequest,

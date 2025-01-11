@@ -9,7 +9,7 @@ export const apiShellShowItemInFolder = (path: string) =>
   api.apiShellShowItemInFolder(invoke, path);
 
 exposeApis({
-  apiShellOpenExternalWebsite,
-  apiShellOpenPath,
-  apiShellShowItemInFolder,
+  "shell:open-external-website": apiShellOpenExternalWebsite,
+  "shell:open-path": apiShellOpenPath,
+  "shell:show-item-in-folder": apiShellShowItemInFolder,
 });

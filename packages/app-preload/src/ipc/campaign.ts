@@ -27,16 +27,18 @@ export const apiCampaignRecoverCampaignType = (type: string) =>
   api.apiCampaignRecoverCampaignType(invoke, type);
 
 exposeApis({
-  apiCampaignUnzipCompressFileCCM,
-  apiCampaignUnzipCompressFileSimulateCCM,
-  apiCampaignUnzipCompressFile7zSimulateCCM,
-  apiCampaignGetCampaignLists,
-  apiCampaignUpdateCampaignLists,
-  apiCampaignUninstallCampaignFiles,
-  apiCampaignGetActivedCampaignList,
-  apiCampaignGetActivedCampaignTyped,
-  apiCampaignUpdateActivedCampaignSet,
-  apiCampaignActiveCampaign,
-  apiCampaignUnactiveCampaign,
-  apiCampaignRecoverCampaignType,
+  "campaign:unzip-compress-file-ccm": apiCampaignUnzipCompressFileCCM,
+  "campaign:unzip-compress-file-simulate-ccm":
+    apiCampaignUnzipCompressFileSimulateCCM,
+  "campaign:unzip-compress-file-7z-simulate-ccm":
+    apiCampaignUnzipCompressFile7zSimulateCCM,
+  "campaign:get-campaign-lists": apiCampaignGetCampaignLists,
+  "campaign:update-campaign-lists": apiCampaignUpdateCampaignLists,
+  "campaign:uninstall-campaign-files": apiCampaignUninstallCampaignFiles,
+  "campaign:get-actived-campaign-list": apiCampaignGetActivedCampaignList,
+  "campaign:get-actived-campaign-typed": apiCampaignGetActivedCampaignTyped,
+  "campaign:update-actived-campaign-set": apiCampaignUpdateActivedCampaignSet,
+  "campaign:active-campaign": apiCampaignActiveCampaign,
+  "campaign:unactive-campaign": apiCampaignUnactiveCampaign,
+  "campaign:recover-campaign-type": apiCampaignRecoverCampaignType,
 });

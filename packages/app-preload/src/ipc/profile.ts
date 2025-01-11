@@ -10,8 +10,8 @@ export const apiProfileInitGameService = (path?: string) =>
   api.apiProfileInitGameService(invoke, path);
 
 exposeApis({
-  apiProfileGetProfile,
-  apiProfileGetProfileKey,
-  apiProfileSetProfileKey,
-  apiProfileInitGameService,
+  "profile:get-profile": apiProfileGetProfile,
+  "profile:get-profile-key": apiProfileGetProfileKey,
+  "profile:set-profile-key": apiProfileSetProfileKey,
+  "profile:init-game-service": apiProfileInitGameService,
 });

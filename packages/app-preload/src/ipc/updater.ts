@@ -23,14 +23,14 @@ export const apiUpdaterOnError = (listener: ApiListener) =>
   api.apiUpdaterOnError(subscribe, listener);
 
 exposeApis({
-  apiUpdaterCheckForUpdatesAndNotify,
-  apiUpdaterCheckForUpdates,
-  apiUpdaterDownloadUpdate,
-  apiUpdaterQuitAndInstall,
-  apiUpdaterOnCheckingForUpdate,
-  apiUpdaterOnUpdateAvailable,
-  apiUpdaterOnUpdateNotAvailable,
-  apiUpdaterOnDownloadProgress,
-  apiUpdaterOnUpdateDownloaded,
-  apiUpdaterOnError,
+  "updater:check-for-updates-and-notify": apiUpdaterCheckForUpdatesAndNotify,
+  "updater:check-for-updates": apiUpdaterCheckForUpdates,
+  "updater:download-update": apiUpdaterDownloadUpdate,
+  "updater:quit-and-install": apiUpdaterQuitAndInstall,
+  "updater:checking-for-update": apiUpdaterOnCheckingForUpdate,
+  "updater:update-available": apiUpdaterOnUpdateAvailable,
+  "updater:update-not-available": apiUpdaterOnUpdateNotAvailable,
+  "updater:download-progress": apiUpdaterOnDownloadProgress,
+  "updater:update-downloaded": apiUpdaterOnUpdateDownloaded,
+  "updater:error": apiUpdaterOnError,
 });

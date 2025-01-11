@@ -6,4 +6,7 @@ export const apiDialogShowOpenDialogSync = (options: unknown) =>
 export const apiDialogShowOpenDialog = (options: unknown) =>
   api.apiDialogShowOpenDialog(invoke, options);
 
-exposeApis({ apiDialogShowOpenDialogSync, apiDialogShowOpenDialog });
+exposeApis({
+  "dialog:show-open-dialog-sync": apiDialogShowOpenDialogSync,
+  "dialog:show-open-dialog": apiDialogShowOpenDialog,
+});

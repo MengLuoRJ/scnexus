@@ -54,7 +54,10 @@ export const apiCustomizeScanInstalledCustomizeList = () =>
 export const apiCustomizeRunGameClient = (path?: string) =>
   useIpcApi<void>('apiCustomizeRunGameClient', ipcApi['customize:run-game-client'](path))
 export const apiCustomizeRunGameExecutable = (parameters?: GameExecutableParameters) =>
-  useIpcApi<void>('apiCustomizeRunGameExecutable', ipcApi['customize:run-game-executable'](parameters))
+  useIpcApi<void>(
+    'apiCustomizeRunGameExecutable',
+    ipcApi['customize:run-game-executable'](parameters),
+  )
 export const apiCustomizeRunEditorExecutable = (file_path?: string) =>
   useIpcApi<void>(
     'apiCustomizeRunEditorExecutable',

@@ -4,7 +4,8 @@ export const apiAppGetVersion = () =>
   useIpcApi<string>('apiAppGetVersion', ipcApi['app:get-version']())
 export const apiAppIsPackaged = () =>
   useIpcApi<boolean>('apiAppIsPackaged', ipcApi['app:is-packaged']())
-export const apiAppGetLocale = () => useIpcApi<string>('apiAppGetLocale', ipcApi['app:get-locale']())
+export const apiAppGetLocale = () =>
+  useIpcApi<string>('apiAppGetLocale', ipcApi['app:get-locale']())
 export const apiAppGetSystemLocale = () =>
   useIpcApi<string>('apiAppGetSystemLocale', ipcApi['app:get-system-locale']())
 export const apiAppGetLocaleCountryCode = () =>

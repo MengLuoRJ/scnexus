@@ -51,4 +51,7 @@ export const apiCampaignActiveCampaign = (infor: MetadataInformated) =>
 export const apiCampaignUnactiveCampaign = (infor: MetadataInformated) =>
   useIpcApi<void>('apiCampaignUnactiveCampaign', ipcApi['campaign:unactive-campaign'](infor))
 export const apiCampaignRecoverCampaignType = (campaign: CampaignType) =>
-  useIpcApi<void>('apiCampaignRecoverCampaignType', ipcApi['campaign:recover-campaign-type'](campaign))
+  useIpcApi<void>(
+    'apiCampaignRecoverCampaignType',
+    ipcApi['campaign:recover-campaign-type'](campaign),
+  )

@@ -1,16 +1,15 @@
-import * as api from "@scnexus/app-shared/ipc/app";
 import { exposeApis, invoke } from "./common.js";
 
-export const apiAppGetVersion = () => api.apiAppGetVersion(invoke);
-export const apiAppIsPackaged = () => api.apiAppIsPackaged(invoke);
-export const apiAppGetLocale = () => api.apiAppGetLocale(invoke);
-export const apiAppGetSystemLocale = () => api.apiAppGetSystemLocale(invoke);
+export const apiAppGetVersion = () => invoke("app:get-version");
+export const apiAppIsPackaged = () => invoke("app:is-packaged");
+export const apiAppGetLocale = () => invoke("app:get-locale");
+export const apiAppGetSystemLocale = () => invoke("app:get-system-locale");
 export const apiAppGetLocaleCountryCode = () =>
-  api.apiAppGetLocaleCountryCode(invoke);
+  invoke("app:get-locale-country-code");
 export const apiAppGetPreferredSystemLanguages = () =>
-  api.apiAppGetPreferredSystemLanguages(invoke);
-export const apiAppGetPath = (name: string) => api.apiAppGetPath(invoke, name);
-export const apiAppGetPaths = () => api.apiAppGetPaths(invoke);
+  invoke("app:get-preferred-system-languages");
+export const apiAppGetPath = (name: string) => invoke("app:get-path", name);
+export const apiAppGetPaths = () => invoke("app:get-paths");
 
 exposeApis({
   "app:get-version": apiAppGetVersion,

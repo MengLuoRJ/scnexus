@@ -1,19 +1,18 @@
-import * as api from "@scnexus/app-shared/ipc/workshop";
 import { exposeApis, invoke } from "./common.js";
 
 export const apiWorkshopGetFileMd5 = (path: string) =>
-  api.apiWorkshopGetFileMd5(invoke, path);
+  invoke("workshop:get-file-md5", path);
 export const apiWorkshopGetFileMd5Wasm = (path: string) =>
-  api.apiWorkshopGetFileMd5Wasm(invoke, path);
+  invoke("workshop:get-file-md5-wasm", path);
 export const apiWorkshopWriteMetadata = (
   path: string,
   metadata: Record<string, unknown>,
-) => api.apiWorkshopWriteMetadata(invoke, path, metadata);
+) => invoke("workshop:write-metadata", path, metadata);
 export const apiWorkshopUploadCompressedFile = (
   filePath: string,
   targetUrl: string,
   fileMd5: string,
-) => api.apiWorkshopUploadCompressedFile(invoke, filePath, targetUrl, fileMd5);
+) => invoke("workshop:upload-compressed-file", filePath, targetUrl, fileMd5);
 
 exposeApis({
   "workshop:get-file-md5": apiWorkshopGetFileMd5,

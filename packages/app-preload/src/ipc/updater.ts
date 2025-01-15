@@ -1,26 +1,25 @@
-import * as api from "@scnexus/app-shared/ipc/updater";
 import { exposeApis, invoke, subscribe, type ApiListener } from "./common.js";
 
 export const apiUpdaterCheckForUpdatesAndNotify = () =>
-  api.apiUpdaterCheckForUpdatesAndNotify(invoke);
+  invoke("updater:check-for-updates-and-notify");
 export const apiUpdaterCheckForUpdates = () =>
-  api.apiUpdaterCheckForUpdates(invoke);
+  invoke("updater:check-for-updates");
 export const apiUpdaterDownloadUpdate = () =>
-  api.apiUpdaterDownloadUpdate(invoke);
+  invoke("updater:download-update");
 export const apiUpdaterQuitAndInstall = () =>
-  api.apiUpdaterQuitAndInstall(invoke);
+  invoke("updater:quit-and-install");
 export const apiUpdaterOnCheckingForUpdate = (listener: ApiListener) =>
-  api.apiUpdaterOnCheckingForUpdate(subscribe, listener);
+  subscribe("updater:checking-for-update", listener);
 export const apiUpdaterOnUpdateAvailable = (listener: ApiListener) =>
-  api.apiUpdaterOnUpdateAvailable(subscribe, listener);
+  subscribe("updater:update-available", listener);
 export const apiUpdaterOnUpdateNotAvailable = (listener: ApiListener) =>
-  api.apiUpdaterOnUpdateNotAvailable(subscribe, listener);
+  subscribe("updater:update-not-available", listener);
 export const apiUpdaterOnDownloadProgress = (listener: ApiListener) =>
-  api.apiUpdaterOnDownloadProgress(subscribe, listener);
+  subscribe("updater:download-progress", listener);
 export const apiUpdaterOnUpdateDownloaded = (listener: ApiListener) =>
-  api.apiUpdaterOnUpdateDownloaded(subscribe, listener);
+  subscribe("updater:update-downloaded", listener);
 export const apiUpdaterOnError = (listener: ApiListener) =>
-  api.apiUpdaterOnError(subscribe, listener);
+  subscribe("updater:error", listener);
 
 exposeApis({
   "updater:check-for-updates-and-notify": apiUpdaterCheckForUpdatesAndNotify,

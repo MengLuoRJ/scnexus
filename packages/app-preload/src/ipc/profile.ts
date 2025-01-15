@@ -1,13 +1,12 @@
-import * as api from "@scnexus/app-shared/ipc/profile";
 import { exposeApis, invoke } from "./common.js";
 
-export const apiProfileGetProfile = () => api.apiProfileGetProfile(invoke);
+export const apiProfileGetProfile = () => invoke("profile:get-profile");
 export const apiProfileGetProfileKey = (key: string) =>
-  api.apiProfileGetProfileKey(invoke, key);
+  invoke("profile:get-profile-key", key);
 export const apiProfileSetProfileKey = (key: string, value: unknown) =>
-  api.apiProfileSetProfileKey(invoke, key, value);
+  invoke("profile:set-profile-key", key, value);
 export const apiProfileInitGameService = (path?: string) =>
-  api.apiProfileInitGameService(invoke, path);
+  invoke("profile:init-game-service", path);
 
 exposeApis({
   "profile:get-profile": apiProfileGetProfile,

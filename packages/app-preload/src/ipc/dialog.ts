@@ -1,10 +1,9 @@
-import * as api from "@scnexus/app-shared/ipc/dialog";
 import { exposeApis, invoke } from "./common.js";
 
 export const apiDialogShowOpenDialogSync = (options: unknown) =>
-  api.apiDialogShowOpenDialogSync(invoke, options);
+  invoke("dialog:show-open-dialog-sync", options);
 export const apiDialogShowOpenDialog = (options: unknown) =>
-  api.apiDialogShowOpenDialog(invoke, options);
+  invoke("dialog:show-open-dialog", options);
 
 exposeApis({
   "dialog:show-open-dialog-sync": apiDialogShowOpenDialogSync,

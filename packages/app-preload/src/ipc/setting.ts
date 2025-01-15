@@ -1,13 +1,12 @@
-import * as api from "@scnexus/app-shared/ipc/setting";
 import { exposeApis, invoke } from "./common.js";
 
-export const apiSettingGetSetting = () => api.apiSettingGetSetting(invoke);
+export const apiSettingGetSetting = () => invoke("setting:get-setting");
 export const apiSettingGetSettingKey = (key: string) =>
-  api.apiSettingGetSettingKey(invoke, key);
+  invoke("setting:get-setting-key", key);
 export const apiSettingSetSettingKey = (key: string, value: unknown) =>
-  api.apiSettingSetSettingKey(invoke, key, value);
+  invoke("setting:set-setting-key", key, value);
 export const apiSettingSetTrackerUser = (user: unknown) =>
-  api.apiSettingSetTrackerUser(invoke, user);
+  invoke("setting:set-tracker-user", user);
 
 exposeApis({
   "setting:get-setting": apiSettingGetSetting,

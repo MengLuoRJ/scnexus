@@ -1,30 +1,29 @@
-import * as api from "@scnexus/app-shared/ipc/customize";
 import { exposeApis, invoke } from "./common.js";
 
 export const apiCustomizeReadCompressFileInfo = (path: string) =>
-  api.apiCustomizeReadCompressFileInfo(invoke, path);
+  invoke("customize:read-compress-file-info", path);
 export const apiCustomizeInstallCompressFile = (path: string) =>
-  api.apiCustomizeInstallCompressFile(invoke, path);
+  invoke("customize:install-compress-file", path);
 export const apiCustomizeValidateCompressFile = (path: string) =>
-  api.apiCustomizeValidateCompressFile(invoke, path);
+  invoke("customize:validate-compress-file", path);
 export const apiCustomizeReadCompressFileInfo7z = (path: string) =>
-  api.apiCustomizeReadCompressFileInfo7z(invoke, path);
+  invoke("customize:read-compress-file-info-7z", path);
 export const apiCustomizeInstallCompressFile7z = (path: string) =>
-  api.apiCustomizeInstallCompressFile7z(invoke, path);
+  invoke("customize:install-compress-file-7z", path);
 export const apiCustomizeInstallCustomize = (info: unknown) =>
-  api.apiCustomizeInstallCustomize(invoke, info);
+  invoke("customize:install-customize", info);
 export const apiCustomizeUninstallCustomize = (info: unknown) =>
-  api.apiCustomizeUninstallCustomize(invoke, info);
+  invoke("customize:uninstall-customize", info);
 export const apiCustomizeGetInstalledCustomizeList = () =>
-  api.apiCustomizeGetInstalledCustomizeList(invoke);
+  invoke("customize:get-installed-customize-list");
 export const apiCustomizeScanInstalledCustomizeList = () =>
-  api.apiCustomizeScanInstalledCustomizeList(invoke);
+  invoke("customize:scan-installed-customize-list");
 export const apiCustomizeRunGameClient = (path?: string) =>
-  api.apiCustomizeRunGameClient(invoke, path);
+  invoke("customize:run-game-client", path);
 export const apiCustomizeRunGameExecutable = (parameters?: unknown) =>
-  api.apiCustomizeRunGameExecutable(invoke, parameters);
+  invoke("customize:run-game-executable", parameters);
 export const apiCustomizeRunEditorExecutable = (path?: string) =>
-  api.apiCustomizeRunEditorExecutable(invoke, path);
+  invoke("customize:run-editor-executable", path);
 
 exposeApis({
   "customize:read-compress-file-info": apiCustomizeReadCompressFileInfo,

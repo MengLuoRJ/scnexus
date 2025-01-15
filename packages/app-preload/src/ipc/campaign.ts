@@ -1,30 +1,29 @@
-import * as api from "@scnexus/app-shared/ipc/campaign";
 import { exposeApis, invoke } from "./common.js";
 
 export const apiCampaignUnzipCompressFileCCM = (path: string) =>
-  api.apiCampaignUnzipCompressFileCCM(invoke, path);
+  invoke("campaign:unzip-compress-file-ccm", path);
 export const apiCampaignUnzipCompressFileSimulateCCM = (path: string) =>
-  api.apiCampaignUnzipCompressFileSimulateCCM(invoke, path);
+  invoke("campaign:unzip-compress-file-simulate-ccm", path);
 export const apiCampaignUnzipCompressFile7zSimulateCCM = (path: string) =>
-  api.apiCampaignUnzipCompressFile7zSimulateCCM(invoke, path);
+  invoke("campaign:unzip-compress-file-7z-simulate-ccm", path);
 export const apiCampaignGetCampaignLists = () =>
-  api.apiCampaignGetCampaignLists(invoke);
+  invoke("campaign:get-campaign-lists");
 export const apiCampaignUpdateCampaignLists = () =>
-  api.apiCampaignUpdateCampaignLists(invoke);
+  invoke("campaign:update-campaign-lists");
 export const apiCampaignUninstallCampaignFiles = (info: unknown) =>
-  api.apiCampaignUninstallCampaignFiles(invoke, info);
+  invoke("campaign:uninstall-campaign-files", info);
 export const apiCampaignGetActivedCampaignList = () =>
-  api.apiCampaignGetActivedCampaignList(invoke);
+  invoke("campaign:get-actived-campaign-list");
 export const apiCampaignGetActivedCampaignTyped = (type: string) =>
-  api.apiCampaignGetActivedCampaignTyped(invoke, type);
+  invoke("campaign:get-actived-campaign-typed", type);
 export const apiCampaignUpdateActivedCampaignSet = () =>
-  api.apiCampaignUpdateActivedCampaignSet(invoke);
+  invoke("campaign:update-actived-campaign-set");
 export const apiCampaignActiveCampaign = (info: unknown) =>
-  api.apiCampaignActiveCampaign(invoke, info);
+  invoke("campaign:active-campaign", info);
 export const apiCampaignUnactiveCampaign = (info: unknown) =>
-  api.apiCampaignUnactiveCampaign(invoke, info);
+  invoke("campaign:unactive-campaign", info);
 export const apiCampaignRecoverCampaignType = (type: string) =>
-  api.apiCampaignRecoverCampaignType(invoke, type);
+  invoke("campaign:recover-campaign-type", type);
 
 exposeApis({
   "campaign:unzip-compress-file-ccm": apiCampaignUnzipCompressFileCCM,

@@ -4,8 +4,7 @@ export const apiUpdaterCheckForUpdatesAndNotify = () =>
   invoke("updater:check-for-updates-and-notify");
 export const apiUpdaterCheckForUpdates = () =>
   invoke("updater:check-for-updates");
-export const apiUpdaterDownloadUpdate = () =>
-  invoke("updater:download-update");
+export const apiUpdaterDownloadUpdate = () => invoke("updater:download-update");
 export const apiUpdaterQuitAndInstall = () =>
   invoke("updater:quit-and-install");
 export const apiUpdaterOnCheckingForUpdate = (listener: ApiListener) =>

@@ -91,14 +91,22 @@ export class SevenZipWrapper {
     files: string | string[],
     options: SevenZipAddOptions = {},
   ): Promise<SevenZipResult> {
-    const args = ["a", archive, ...toArray(files), ...buildCommonSwitches(options)];
+    const args = [
+      "a",
+      archive,
+      ...toArray(files),
+      ...buildCommonSwitches(options),
+    ];
 
     if (options.archiveType) args.push(`-t${options.archiveType}`);
-    if (options.compressionLevel !== undefined) args.push(`-mx=${options.compressionLevel}`);
-    if (options.compressionMethod) args.push(`-m0=${options.compressionMethod}`);
+    if (options.compressionLevel !== undefined)
+      args.push(`-mx=${options.compressionLevel}`);
+    if (options.compressionMethod)
+      args.push(`-m0=${options.compressionMethod}`);
     if (options.encryptFileNames) args.push("-mhe=on");
     if (options.recursive !== false) args.push("-r");
-    if (options.solid !== undefined) args.push(`-ms=${options.solid ? "on" : "off"}`);
+    if (options.solid !== undefined)
+      args.push(`-ms=${options.solid ? "on" : "off"}`);
     if (options.threads !== undefined) args.push(`-mmt=${options.threads}`);
     appendPatterns(args, "-x!", options.exclude);
 
@@ -162,8 +170,14 @@ export class SevenZipWrapper {
     options: SevenZipCommonOptions = {},
   ): Promise<SevenZipResult> {
     await assertPathExists(archive);
-    const names = pairs.flatMap(([source, destination]) => [source, destination]);
-    return this.run(["rn", archive, ...names, ...buildCommonSwitches(options)], options);
+    const names = pairs.flatMap(([source, destination]) => [
+      source,
+      destination,
+    ]);
+    return this.run(
+      ["rn", archive, ...names, ...buildCommonSwitches(options)],
+      options,
+    );
   }
 
   async hash(
@@ -172,7 +186,12 @@ export class SevenZipWrapper {
     options: SevenZipCommonOptions = {},
   ): Promise<SevenZipResult> {
     return this.run(
-      ["h", ...toArray(files), `-scrc${algorithm}`, ...buildCommonSwitches(options)],
+      [
+        "h",
+        ...toArray(files),
+        `-scrc${algorithm}`,
+        ...buildCommonSwitches(options),
+      ],
       options,
     );
   }
@@ -240,7 +259,12 @@ export class SevenZipWrapper {
         };
 
         if (timedOut) {
-          reject(new SevenZipError(`7-Zip timed out after ${options.timeout}ms`, result));
+          reject(
+            new SevenZipError(
+              `7-Zip timed out after ${options.timeout}ms`,
+              result,
+            ),
+          );
         } else if (result.exitCode === 0 || result.exitCode === 1) {
           resolve(result);
         } else {
@@ -257,7 +281,7 @@ export class SevenZipWrapper {
     return spawn(this.binaryPath, args, {
       cwd: options.cwd,
       windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
     });
   }
 }
@@ -331,7 +355,9 @@ function parseTechnicalList(output: string, archive: string): SevenZipEntry[] {
       attributes: properties.Attributes,
       crc: properties.CRC,
       method: properties.Method,
-      isDirectory: properties.Folder === "+" || properties.Attributes?.startsWith("D") === true,
+      isDirectory:
+        properties.Folder === "+" ||
+        properties.Attributes?.startsWith("D") === true,
       properties,
     });
   }

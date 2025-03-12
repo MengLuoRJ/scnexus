@@ -65,10 +65,7 @@ export type SevenZipWrapperOptions = {
   binaryPath?: string;
 };
 
-export type SevenZipRenamePair = readonly [
-  source: string,
-  destination: string,
-];
+export type SevenZipRenamePair = readonly [source: string, destination: string];
 
 export type SevenZipCommandApi = {
   add(

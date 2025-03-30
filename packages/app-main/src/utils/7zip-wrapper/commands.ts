@@ -61,8 +61,7 @@ export async function add(
   if (options.archiveType) args.push(`-t${options.archiveType}`);
   if (options.compressionLevel !== undefined)
     args.push(`-mx=${options.compressionLevel}`);
-  if (options.compressionMethod)
-    args.push(`-m0=${options.compressionMethod}`);
+  if (options.compressionMethod) args.push(`-m0=${options.compressionMethod}`);
   if (options.encryptFileNames) args.push("-mhe=on");
   if (options.recursive !== false) args.push("-r");
   if (options.solid !== undefined)

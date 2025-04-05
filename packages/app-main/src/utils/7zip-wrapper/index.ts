@@ -42,11 +42,7 @@ export class SevenZipWrapper implements SevenZipCommandApi {
     this.commands = createCommands(runner);
   }
 
-  add(
-    archive: string,
-    files: string | string[],
-    options?: SevenZipAddOptions,
-  ) {
+  add(archive: string, files: string | string[], options?: SevenZipAddOptions) {
     return this.commands.add(archive, files, options);
   }
 

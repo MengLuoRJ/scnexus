@@ -31,6 +31,16 @@ export type SevenZipListResult = SevenZipResult & {
   entries: SevenZipEntry[];
 };
 
+export type SevenZipTreeNode = {
+  name: string;
+  path: string;
+  type: "file" | "directory";
+  size?: number;
+  packedSize?: number;
+  modified?: Date;
+  children?: SevenZipTreeNode[];
+};
+
 export type SevenZipCommonOptions = {
   password?: string;
   timeout?: number;
@@ -61,6 +71,10 @@ export type SevenZipListOptions = SevenZipCommonOptions & {
   files?: string[];
 };
 
+export type SevenZipReadFileOptions = SevenZipCommonOptions & {
+  maxBytes?: number;
+};
+
 export type SevenZipWrapperOptions = {
   binaryPath?: string;
 };
@@ -81,6 +95,10 @@ export type SevenZipCommandApi = {
     archive: string,
     options?: SevenZipListOptions,
   ): Promise<SevenZipListResult>;
+  listTree(
+    archive: string,
+    options?: SevenZipListOptions,
+  ): Promise<SevenZipTreeNode>;
   test(
     archive: string,
     options?: SevenZipCommonOptions,
@@ -110,4 +128,15 @@ export type SevenZipCommandApi = {
     file: string,
     options?: SevenZipCommonOptions,
   ): Promise<Buffer>;
+  readFile(
+    archive: string,
+    file: string,
+    options?: SevenZipReadFileOptions,
+  ): Promise<Buffer>;
+  readTextFile(
+    archive: string,
+    file: string,
+    encoding?: BufferEncoding,
+    options?: SevenZipReadFileOptions,
+  ): Promise<string>;
 };

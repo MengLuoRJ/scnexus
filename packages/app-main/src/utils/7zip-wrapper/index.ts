@@ -6,6 +6,7 @@ import type {
   SevenZipCommonOptions,
   SevenZipExtractOptions,
   SevenZipListOptions,
+  SevenZipReadFileOptions,
   SevenZipRenamePair,
   SevenZipWrapperOptions,
 } from "./types";
@@ -20,8 +21,10 @@ export type {
   SevenZipListOptions,
   SevenZipListResult,
   SevenZipProgress,
+  SevenZipReadFileOptions,
   SevenZipRenamePair,
   SevenZipResult,
+  SevenZipTreeNode,
   SevenZipWrapperOptions,
 } from "./types";
 export {
@@ -52,6 +55,10 @@ export class SevenZipWrapper implements SevenZipCommandApi {
 
   list(archive: string, options?: SevenZipListOptions) {
     return this.commands.list(archive, options);
+  }
+
+  listTree(archive: string, options?: SevenZipListOptions) {
+    return this.commands.listTree(archive, options);
   }
 
   test(archive: string, options?: SevenZipCommonOptions) {
@@ -97,6 +104,23 @@ export class SevenZipWrapper implements SevenZipCommandApi {
   ) {
     return this.commands.extractToBuffer(archive, file, options);
   }
+
+  readFile(
+    archive: string,
+    file: string,
+    options?: SevenZipReadFileOptions,
+  ) {
+    return this.commands.readFile(archive, file, options);
+  }
+
+  readTextFile(
+    archive: string,
+    file: string,
+    encoding?: BufferEncoding,
+    options?: SevenZipReadFileOptions,
+  ) {
+    return this.commands.readTextFile(archive, file, encoding, options);
+  }
 }
 
 export function createSevenZip(options?: SevenZipWrapperOptions) {
@@ -108,12 +132,15 @@ export const sevenZip = createSevenZip();
 export const add = sevenZip.add.bind(sevenZip);
 export const extract = sevenZip.extract.bind(sevenZip);
 export const list = sevenZip.list.bind(sevenZip);
+export const listTree = sevenZip.listTree.bind(sevenZip);
 export const test = sevenZip.test.bind(sevenZip);
 export const deleteFiles = sevenZip.delete.bind(sevenZip);
 export const rename = sevenZip.rename.bind(sevenZip);
 export const hash = sevenZip.hash.bind(sevenZip);
 export const extractToStream = sevenZip.extractToStream.bind(sevenZip);
 export const extractToBuffer = sevenZip.extractToBuffer.bind(sevenZip);
+export const readFile = sevenZip.readFile.bind(sevenZip);
+export const readTextFile = sevenZip.readTextFile.bind(sevenZip);
 
 export const quick = {
   zip: (files: string | string[], output: string) =>

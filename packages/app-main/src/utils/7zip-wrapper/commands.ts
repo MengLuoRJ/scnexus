@@ -337,6 +337,16 @@ function buildTree(
       parent = directory;
     }
 
+    if (entry.isDirectory) {
+      const existingDirectory = directories.get(path);
+      if (existingDirectory) {
+        existingDirectory.size = entry.size;
+        existingDirectory.packedSize = entry.packedSize;
+        existingDirectory.modified = entry.modified;
+        continue;
+      }
+    }
+
     const node: SevenZipTreeNode = {
       name: parts.at(-1)!,
       path,

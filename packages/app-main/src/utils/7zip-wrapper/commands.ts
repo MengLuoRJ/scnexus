@@ -204,7 +204,9 @@ export function extractToStream(
   child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
   child.on("error", (error) => {
     if (timeout) clearTimeout(timeout);
-    output.destroy(new SevenZipError(`Failed to start 7-Zip: ${error.message}`));
+    output.destroy(
+      new SevenZipError(`Failed to start 7-Zip: ${error.message}`),
+    );
   });
   child.on("close", (exitCode) => {
     if (timeout) clearTimeout(timeout);

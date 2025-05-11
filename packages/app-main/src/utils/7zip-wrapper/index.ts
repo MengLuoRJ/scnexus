@@ -105,11 +105,7 @@ export class SevenZipWrapper implements SevenZipCommandApi {
     return this.commands.extractToBuffer(archive, file, options);
   }
 
-  readFile(
-    archive: string,
-    file: string,
-    options?: SevenZipReadFileOptions,
-  ) {
+  readFile(archive: string, file: string, options?: SevenZipReadFileOptions) {
     return this.commands.readFile(archive, file, options);
   }
 

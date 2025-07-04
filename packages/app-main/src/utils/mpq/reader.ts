@@ -142,6 +142,18 @@ export class MpqReader {
     return this.findHashEntry(path) !== undefined;
   }
 
+  async readUserData(): Promise<Buffer | undefined> {
+    const userData = this.header.userData;
+    if (!userData) return undefined;
+    const payloadOffset = userData.offset + BigInt(userData.headerSize);
+    const payloadLength = userData.headerOffset - userData.headerSize;
+    const payload = await this.source.read(payloadOffset, payloadLength);
+    if (payload.length !== payloadLength) {
+      throw new MpqFormatError("Unexpected end of MPQ user data");
+    }
+    return payload;
+  }
+
   async readFile(path: string, options: MpqReadOptions = {}): Promise<Buffer> {
     const found = this.findHashEntry(path);
     if (!found) throw new MpqFileNotFoundError(path);

@@ -216,9 +216,10 @@ function createHeader(options: {
 
 function createUserDataHeader(size: number) {
   const header = Buffer.alloc(0x10);
+  const totalSize = 0x10 + size;
   header.writeUInt32LE(0x1b51504d, 0);
-  header.writeUInt32LE(size, 4);
-  header.writeUInt32LE(0x10 + size, 8);
+  header.writeUInt32LE(totalSize, 4);
+  header.writeUInt32LE(totalSize, 8);
   header.writeUInt32LE(0x10, 0x0c);
   return header;
 }

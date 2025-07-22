@@ -35,6 +35,7 @@ type StagedRename = {
 export class MpqArchive implements MpqArchiveApi {
   private source: MpqSource;
   private reader: MpqReader;
+  private entries: MpqFileEntry[];
   private readonly openOptions: MpqOpenOptions;
   private sourcePath?: string;
   private readonly added = new Map<string, StagedFile>();
@@ -47,11 +48,13 @@ export class MpqArchive implements MpqArchiveApi {
     reader: MpqReader,
     sourcePath: string | undefined,
     options: MpqOpenOptions,
+    entries: MpqFileEntry[],
   ) {
     this.source = source;
     this.reader = reader;
     this.sourcePath = sourcePath;
     this.openOptions = options;
+    this.entries = entries;
   }
 
   static async open(
@@ -66,6 +69,7 @@ export class MpqArchive implements MpqArchiveApi {
         reader,
         typeof input === "string" ? input : undefined,
         options,
+        await reader.list(),
       );
     } catch (error) {
       await source.close();
@@ -78,7 +82,10 @@ export class MpqArchive implements MpqArchiveApi {
   }
 
   get fileCount(): number {
-    return this.reader.fileCount - this.deleted.size + this.added.size;
+    this.assertOpen();
+    return this.entries.filter((entry) => entry.isFile &&
+      (!entry.name || (!this.deleted.has(keyOf(entry.name)) &&
+        !this.added.has(keyOf(entry.name))))).length + this.added.size;
   }
 
   async list(): Promise<MpqFileEntry[]> {
@@ -121,21 +128,25 @@ export class MpqArchive implements MpqArchiveApi {
   }
 
   async hasFile(path: string): Promise<boolean> {
+    this.assertOpen();
     const key = keyOf(path);
-    if (this.deleted.has(key)) return false;
     if (this.added.has(key)) return true;
+    if (this.deleted.has(key)) return false;
     if ([...this.renamed.values()].some((value) => keyOf(value.newPath) === key)) {
       return true;
     }
+    if (this.renamed.has(key)) return false;
     return this.reader.hasFile(path);
   }
 
   async readFile(path: string, options: MpqReadOptions = {}): Promise<Buffer> {
     this.assertOpen();
     const key = keyOf(path);
-    if (this.deleted.has(key)) throw new MpqFileNotFoundError(path);
     const staged = this.added.get(key);
     if (staged) return enforceReadLimit(staged.data, path, options);
+    if (this.deleted.has(key) || this.renamed.has(key)) {
+      throw new MpqFileNotFoundError(path);
+    }
     const originalPath = this.originalPathFor(path);
     return this.reader.readFile(originalPath, options);
   }
@@ -174,6 +185,11 @@ export class MpqArchive implements MpqArchiveApi {
       throw new Error(`MPQ file already exists: ${path}`);
     }
     const data = await materialize(source);
+    const originalKey = keyOf(this.originalPathFor(path));
+    if (originalKey !== key) {
+      this.deleted.add(originalKey);
+      this.renamed.delete(originalKey);
+    }
     this.added.set(key, { path, data, options });
     this.deleted.delete(key);
   }
@@ -181,8 +197,11 @@ export class MpqArchive implements MpqArchiveApi {
   async delete(path: string): Promise<void> {
     this.assertWritable();
     if (!(await this.hasFile(path))) throw new MpqFileNotFoundError(path);
-    const key = keyOf(path);
-    if (!this.added.delete(key)) this.deleted.add(key);
+    const originalKey = keyOf(this.originalPathFor(path));
+    this.added.delete(keyOf(path));
+    if (this.entries.some((entry) => entry.name && keyOf(entry.name) === originalKey)) {
+      this.deleted.add(originalKey);
+    }
     this.removeRename(path);
   }
 
@@ -201,8 +220,9 @@ export class MpqArchive implements MpqArchiveApi {
       });
       return;
     }
-    this.renamed.set(oldKey, {
-      oldPath: normalizeMpqPath(path),
+    const originalPath = this.originalPathFor(path);
+    this.renamed.set(keyOf(originalPath), {
+      oldPath: normalizeMpqPath(originalPath),
       newPath: normalizedNewPath,
     });
   }
@@ -304,6 +324,7 @@ export class MpqArchive implements MpqArchiveApi {
   private async reopen(path: string) {
     this.source = await openMpqSource(path, this.openOptions);
     this.reader = await MpqReader.open(this.source, this.openOptions);
+    this.entries = await this.reader.list();
     this.sourcePath = path;
     this.closed = false;
   }

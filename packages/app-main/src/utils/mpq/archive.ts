@@ -185,6 +185,22 @@ export class MpqArchive implements MpqArchiveApi {
       throw new Error(`MPQ file already exists: ${path}`);
     }
     const data = await materialize(source);
+    const previousRename = this.renamed.get(key);
+    if (previousRename) {
+      const entry = this.entries.find((value) => value.name && keyOf(value.name) === key)!;
+      const previousData = await this.reader.readFile(previousRename.oldPath);
+      this.added.set(keyOf(previousRename.newPath), {
+        path: previousRename.newPath,
+        data: previousData,
+        options: {
+          compress: entry.isCompressed,
+          encrypt: entry.isEncrypted,
+          locale: entry.locale,
+          platform: entry.platform,
+        },
+      });
+      this.renamed.delete(key);
+    }
     const originalKey = keyOf(this.originalPathFor(path));
     if (originalKey !== key) {
       this.deleted.add(originalKey);
@@ -214,6 +230,9 @@ export class MpqArchive implements MpqArchiveApi {
     const staged = this.added.get(oldKey);
     if (staged) {
       this.added.delete(oldKey);
+      if (this.entries.some((entry) => entry.name && keyOf(entry.name) === oldKey)) {
+        this.deleted.add(oldKey);
+      }
       this.added.set(keyOf(normalizedNewPath), {
         ...staged,
         path: normalizedNewPath,

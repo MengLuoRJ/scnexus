@@ -90,6 +90,21 @@ test("replacement, chained rename and deletion agree before and after save", asy
     await archive.delete("x");
     await archive.save();
     assert.equal(await archive.hasFile("x"), false);
+    await archive.add(Buffer.from("one"), { archivePath: "x" });
+    await archive.save();
+    await archive.add(Buffer.from("two"), { archivePath: "x", replace: true });
+    await archive.rename("x", "y");
+    assert.equal(await archive.hasFile("x"), false);
+    await archive.save();
+    assert.equal(await archive.hasFile("x"), false);
+    assert.equal(await archive.readTextFile("y"), "two");
+    await archive.rename("y", "z");
+    await archive.add(Buffer.from("three"), { archivePath: "y" });
+    assert.equal(await archive.readTextFile("z"), "two");
+    await archive.save();
+    assert.equal(await archive.readTextFile("z"), "two");
+    assert.equal(await archive.readTextFile("y"), "three");
+    assert.equal(archive.fileCount, (await archive.list()).filter(entry => entry.isFile).length);
   } finally {
     await archive.close();
     await rm(directory, { recursive: true, force: true });

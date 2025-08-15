@@ -104,7 +104,9 @@ export async function openMpqSource(
 
 function safePosition(offset: bigint): number {
   if (offset < 0n || offset > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new RangeError(`MPQ offset is outside the safe Node.js range: ${offset}`);
+    throw new RangeError(
+      `MPQ offset is outside the safe Node.js range: ${offset}`,
+    );
   }
   return Number(offset);
 }

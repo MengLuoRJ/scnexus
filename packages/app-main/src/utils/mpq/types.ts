@@ -85,7 +85,10 @@ export interface MpqArchiveApi {
     destination: string,
     options?: MpqExtractOptions,
   ): Promise<void>;
-  add(source: string | Buffer | Readable, options: MpqAddOptions): Promise<void>;
+  add(
+    source: string | Buffer | Readable,
+    options: MpqAddOptions,
+  ): Promise<void>;
   delete(path: string): Promise<void>;
   rename(path: string, newPath: string): Promise<void>;
   save(destination?: string): Promise<void>;

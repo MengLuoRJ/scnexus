@@ -46,7 +46,7 @@ class Archive : public Napi::ObjectWrap<Archive> {
     const auto mode = info[1].As<Napi::String>().Utf8Value();
     writable = mode != "read";
     const bool success = mode == "create"
-      ? SFileCreateArchive(path.c_str(), MPQ_CREATE_LISTFILE, info[2].As<Napi::Number>().Uint32Value(), &handle)
+      ? SFileCreateArchive(path.c_str(), MPQ_CREATE_LISTFILE | MPQ_CREATE_ARCHIVE_V2, info[2].As<Napi::Number>().Uint32Value(), &handle)
       : SFileOpenArchive(path.c_str(), 0, writable ? 0 : MPQ_OPEN_READ_ONLY, &handle);
     if (!success) Fail(info.Env(), mode);
   }

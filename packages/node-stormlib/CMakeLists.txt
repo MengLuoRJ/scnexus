@@ -22,13 +22,25 @@ execute_process(COMMAND node -p "require('node-addon-api').include_dir"
   OUTPUT_VARIABLE NAPI_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE
   COMMAND_ERROR_IS_FATAL ANY)
 add_library(node_stormlib SHARED src/native.cpp ${CMAKE_JS_SRC})
-set_target_properties(node_stormlib PROPERTIES PREFIX "" SUFFIX ".node")
+set_target_properties(node_stormlib PROPERTIES PREFIX "" SUFFIX ".node"
+  LIBRARY_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_BINARY_DIR}/Release>"
+  RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_BINARY_DIR}/Release>")
 target_include_directories(node_stormlib PRIVATE ${CMAKE_JS_INC} "${CMAKE_CURRENT_SOURCE_DIR}/${NAPI_INCLUDE}")
 target_compile_definitions(node_stormlib PRIVATE NAPI_VERSION=8 NAPI_CPP_EXCEPTIONS)
 if(WIN32)
   target_compile_definitions(node_stormlib PRIVATE UNICODE _UNICODE)
 endif()
 target_link_libraries(node_stormlib PRIVATE StormLib::storm ${CMAKE_JS_LIB})
+get_target_property(STORM_SOURCE_ROOT storm SOURCE_DIR)
+file(GLOB_RECURSE STORM_LICENSES RELATIVE "${STORM_SOURCE_ROOT}"
+  "${STORM_SOURCE_ROOT}/*LICENSE*" "${STORM_SOURCE_ROOT}/*COPYING*")
+list(APPEND STORM_LICENSES src/zlib/README src/zlib/zlib.h src/bzip2/bzlib.h)
+foreach(LICENSE_PATH IN LISTS STORM_LICENSES)
+  if(EXISTS "${STORM_SOURCE_ROOT}/${LICENSE_PATH}")
+    configure_file("${STORM_SOURCE_ROOT}/${LICENSE_PATH}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/dist/licenses/StormLib/${LICENSE_PATH}" COPYONLY)
+  endif()
+endforeach()
 if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
   execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF}
     /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS}

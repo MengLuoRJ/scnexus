@@ -83,9 +83,15 @@ export class MpqArchive implements MpqArchiveApi {
 
   get fileCount(): number {
     this.assertOpen();
-    return this.entries.filter((entry) => entry.isFile &&
-      (!entry.name || (!this.deleted.has(keyOf(entry.name)) &&
-        !this.added.has(keyOf(entry.name))))).length + this.added.size;
+    return (
+      this.entries.filter(
+        (entry) =>
+          entry.isFile &&
+          (!entry.name ||
+            (!this.deleted.has(keyOf(entry.name)) &&
+              !this.added.has(keyOf(entry.name)))),
+      ).length + this.added.size
+    );
   }
 
   async list(): Promise<MpqFileEntry[]> {
@@ -132,7 +138,9 @@ export class MpqArchive implements MpqArchiveApi {
     const key = keyOf(path);
     if (this.added.has(key)) return true;
     if (this.deleted.has(key)) return false;
-    if ([...this.renamed.values()].some((value) => keyOf(value.newPath) === key)) {
+    if (
+      [...this.renamed.values()].some((value) => keyOf(value.newPath) === key)
+    ) {
       return true;
     }
     if (this.renamed.has(key)) return false;
@@ -187,7 +195,9 @@ export class MpqArchive implements MpqArchiveApi {
     const data = await materialize(source);
     const previousRename = this.renamed.get(key);
     if (previousRename) {
-      const entry = this.entries.find((value) => value.name && keyOf(value.name) === key)!;
+      const entry = this.entries.find(
+        (value) => value.name && keyOf(value.name) === key,
+      )!;
       const previousData = await this.reader.readFile(previousRename.oldPath);
       this.added.set(keyOf(previousRename.newPath), {
         path: previousRename.newPath,
@@ -215,7 +225,11 @@ export class MpqArchive implements MpqArchiveApi {
     if (!(await this.hasFile(path))) throw new MpqFileNotFoundError(path);
     const originalKey = keyOf(this.originalPathFor(path));
     this.added.delete(keyOf(path));
-    if (this.entries.some((entry) => entry.name && keyOf(entry.name) === originalKey)) {
+    if (
+      this.entries.some(
+        (entry) => entry.name && keyOf(entry.name) === originalKey,
+      )
+    ) {
       this.deleted.add(originalKey);
     }
     this.removeRename(path);
@@ -224,13 +238,16 @@ export class MpqArchive implements MpqArchiveApi {
   async rename(path: string, newPath: string): Promise<void> {
     this.assertWritable();
     if (!(await this.hasFile(path))) throw new MpqFileNotFoundError(path);
-    if (await this.hasFile(newPath)) throw new Error(`MPQ file already exists: ${newPath}`);
+    if (await this.hasFile(newPath))
+      throw new Error(`MPQ file already exists: ${newPath}`);
     const oldKey = keyOf(path);
     const normalizedNewPath = normalizeMpqPath(newPath);
     const staged = this.added.get(oldKey);
     if (staged) {
       this.added.delete(oldKey);
-      if (this.entries.some((entry) => entry.name && keyOf(entry.name) === oldKey)) {
+      if (
+        this.entries.some((entry) => entry.name && keyOf(entry.name) === oldKey)
+      ) {
         this.deleted.add(oldKey);
       }
       this.added.set(keyOf(normalizedNewPath), {
@@ -249,7 +266,9 @@ export class MpqArchive implements MpqArchiveApi {
   async save(destination = this.sourcePath): Promise<void> {
     this.assertWritable();
     if (!destination) {
-      throw new Error("A destination path is required for stream-backed MPQ archives");
+      throw new Error(
+        "A destination path is required for stream-backed MPQ archives",
+      );
     }
     const existing = await this.reader.list();
     const unknown = existing.find((entry) => !entry.name && entry.isFile);
@@ -260,7 +279,8 @@ export class MpqArchive implements MpqArchiveApi {
     }
     const finalNames = this.finalNames(existing);
     const userData = await this.reader.readUserData();
-    const samePath = this.sourcePath !== undefined && destination === this.sourcePath;
+    const samePath =
+      this.sourcePath !== undefined && destination === this.sourcePath;
     const rebuildPath = samePath
       ? `${destination}.${randomUUID()}.rebuild`
       : destination;
@@ -377,7 +397,9 @@ function sourceName(source: string | Buffer | Readable): string {
   throw new Error("archivePath is required when adding a Buffer or stream");
 }
 
-async function materialize(source: string | Buffer | Readable): Promise<Buffer> {
+async function materialize(
+  source: string | Buffer | Readable,
+): Promise<Buffer> {
   if (typeof source === "string") return readDiskFile(source);
   if (Buffer.isBuffer(source)) return Buffer.from(source);
   const chunks: Buffer[] = [];
@@ -448,14 +470,12 @@ function sortTree(node: MpqTreeNode) {
 
 function isRegeneratedInternalFile(path: string) {
   const key = keyOf(path);
-  return key === "(LISTFILE)" || key === "(ATTRIBUTES)" || key === "(SIGNATURE)";
+  return (
+    key === "(LISTFILE)" || key === "(ATTRIBUTES)" || key === "(SIGNATURE)"
+  );
 }
 
-function enforceReadLimit(
-  data: Buffer,
-  path: string,
-  options: MpqReadOptions,
-) {
+function enforceReadLimit(data: Buffer, path: string, options: MpqReadOptions) {
   if (options.maxBytes !== undefined && data.length > options.maxBytes) {
     throw new RangeError(
       `MPQ file exceeds the ${options.maxBytes} byte read limit: ${path}`,

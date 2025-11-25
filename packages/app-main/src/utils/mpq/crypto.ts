@@ -22,10 +22,8 @@ export function hashString(value: string, hashType: number): number {
 
   for (let index = 0; index < value.length; index += 1) {
     const character = normalizeCharacter(value.charCodeAt(index) & 0xff);
-    seed1 =
-      (cryptTable[hashType + character] ^ ((seed1 + seed2) >>> 0)) >>> 0;
-    seed2 =
-      (character + seed1 + seed2 + ((seed2 << 5) >>> 0) + 3) >>> 0;
+    seed1 = (cryptTable[hashType + character] ^ ((seed1 + seed2) >>> 0)) >>> 0;
+    seed2 = (character + seed1 + seed2 + ((seed2 << 5) >>> 0) + 3) >>> 0;
   }
 
   return seed1;

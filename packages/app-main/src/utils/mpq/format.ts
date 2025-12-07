@@ -78,7 +78,10 @@ export async function readClassicTables(
   header: MpqHeader,
 ): Promise<{ hashTable: MpqHashEntry[]; blockTable: MpqBlockEntry[] }> {
   if (!header.hashTableEntries || !header.blockTableEntries) {
-    if (header.hetTableOffset !== undefined || header.betTableOffset !== undefined) {
+    if (
+      header.hetTableOffset !== undefined ||
+      header.betTableOffset !== undefined
+    ) {
       throw new MpqFormatError(
         "HET/BET-only MPQ archives are not supported by the classic table reader",
       );
@@ -134,7 +137,9 @@ async function tryReadHeader(
   const hashHigh = headerSize >= 0x2c ? BigInt(data.readUInt16LE(0x28)) : 0n;
   const blockHigh = headerSize >= 0x2c ? BigInt(data.readUInt16LE(0x2a)) : 0n;
   const archiveSize =
-    headerSize >= 0x44 ? data.readBigUInt64LE(0x2c) : BigInt(data.readUInt32LE(8));
+    headerSize >= 0x44
+      ? data.readBigUInt64LE(0x2c)
+      : BigInt(data.readUInt32LE(8));
 
   const header: MpqHeader = {
     offset,
@@ -162,10 +167,7 @@ async function tryReadHeader(
   return header;
 }
 
-function parseUserDataHeader(
-  data: Buffer,
-  offset: bigint,
-): MpqUserDataHeader {
+function parseUserDataHeader(data: Buffer, offset: bigint): MpqUserDataHeader {
   const size = data.readUInt32LE(4);
   const headerOffset = data.readUInt32LE(8);
   const headerSize = data.readUInt32LE(0x0c);
@@ -216,9 +218,8 @@ async function readHighBlockTable(
     header.offset + header.highBlockTableOffset!,
     header.blockTableEntries * 2,
   );
-  return Uint16Array.from(
-    { length: header.blockTableEntries },
-    (_, index) => data.readUInt16LE(index * 2),
+  return Uint16Array.from({ length: header.blockTableEntries }, (_, index) =>
+    data.readUInt16LE(index * 2),
   );
 }
 

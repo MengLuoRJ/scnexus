@@ -16,9 +16,9 @@
       "name": "Nova Covert Ops"
     },
     "message": {
-      "campaign-actived": "已激活战役·模组",
-      "campaign-recovered": "已成功恢复 {campaign} 战役",
-      "campaign-uninstalled": "已成功卸载 {campaign} 战役"
+      "campaign-actived": "Campaign pack activated",
+      "campaign-recovered": "Successfully restored {campaign} campaign",
+      "campaign-uninstalled": "Successfully uninstalled {campaign} campaign"
     },
     "display-mode": {
       "details": "DETAIL",

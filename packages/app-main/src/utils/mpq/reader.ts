@@ -70,10 +70,7 @@ export class MpqReader {
     source: MpqSource,
     options: MpqOpenOptions = {},
   ): Promise<MpqReader> {
-    const header = await readMpqHeader(
-      source,
-      options.maxHeaderSearchBytes,
-    );
+    const header = await readMpqHeader(source, options.maxHeaderSearchBytes);
     const { hashTable, blockTable } = await readClassicTables(source, header);
     const reader = new MpqReader(source, header, hashTable, blockTable);
     await reader.loadNames(options.listfile);
@@ -88,7 +85,8 @@ export class MpqReader {
     const entries: MpqFileEntry[] = [];
     for (let hashIndex = 0; hashIndex < this.hashTable.length; hashIndex += 1) {
       const hash = this.hashTable[hashIndex];
-      if (!isActiveHash(hash) || hash.blockIndex >= this.blockTable.length) continue;
+      if (!isActiveHash(hash) || hash.blockIndex >= this.blockTable.length)
+        continue;
       entries.push(
         this.toFileEntry(hashIndex, hash, this.blockTable[hash.blockIndex]),
       );
@@ -112,7 +110,9 @@ export class MpqReader {
       let parent = root;
       let parentPath = "";
       for (let index = 0; index < parts.length - 1; index += 1) {
-        parentPath = parentPath ? `${parentPath}/${parts[index]}` : parts[index];
+        parentPath = parentPath
+          ? `${parentPath}/${parts[index]}`
+          : parts[index];
         let node = directories.get(parentPath);
         if (!node) {
           node = {
@@ -197,7 +197,8 @@ export class MpqReader {
   }
 
   private async loadNames(externalNames: string[] = []): Promise<void> {
-    for (const name of [...INTERNAL_NAMES, ...externalNames]) this.rememberName(name);
+    for (const name of [...INTERNAL_NAMES, ...externalNames])
+      this.rememberName(name);
     const listfile = this.findHashEntry("(listfile)");
     if (!listfile) return;
     try {
@@ -222,7 +223,8 @@ export class MpqReader {
 
   private findHashEntry(path: string) {
     const normalized = normalizeMpqPath(path);
-    const start = hashString(normalized, MPQ_HASH.TABLE_INDEX) % this.hashTable.length;
+    const start =
+      hashString(normalized, MPQ_HASH.TABLE_INDEX) % this.hashTable.length;
     const hashA = hashString(normalized, MPQ_HASH.NAME_A);
     const hashB = hashString(normalized, MPQ_HASH.NAME_B);
     let fallback: { hashIndex: number; hash: MpqHashEntry } | undefined;
@@ -267,7 +269,10 @@ export class MpqReader {
     };
   }
 
-  private async readBlock(block: MpqBlockEntry, path?: string): Promise<Buffer> {
+  private async readBlock(
+    block: MpqBlockEntry,
+    path?: string,
+  ): Promise<Buffer> {
     if (!(block.flags & MPQ_FILE_FLAGS.EXISTS)) {
       throw new MpqFileNotFoundError(path ?? "<unknown>");
     }
@@ -307,11 +312,14 @@ export class MpqReader {
     block: MpqBlockEntry,
     key: number,
   ): Buffer {
-    if (!(block.flags & MPQ_FILE_FLAGS.ENCRYPTED)) return raw.subarray(0, block.size);
+    if (!(block.flags & MPQ_FILE_FLAGS.ENCRYPTED))
+      return raw.subarray(0, block.size);
     const sectors: Buffer[] = [];
     for (let offset = 0, index = 0; offset < block.size; index += 1) {
       const length = Math.min(this.info.sectorSize, block.size - offset);
-      sectors.push(decryptBlock(raw.subarray(offset, offset + length), key + index));
+      sectors.push(
+        decryptBlock(raw.subarray(offset, offset + length), key + index),
+      );
       offset += length;
     }
     return Buffer.concat(sectors, block.size);
@@ -327,13 +335,14 @@ export class MpqReader {
     }
     const sectorCount = Math.ceil(block.size / this.info.sectorSize);
     const tableLength = (sectorCount + 1) * 4;
-    if (raw.length < tableLength) throw new MpqFormatError("Invalid MPQ sector table");
-    const table = block.flags & MPQ_FILE_FLAGS.ENCRYPTED
-      ? decryptBlock(raw.subarray(0, tableLength), (key - 1) >>> 0)
-      : raw.subarray(0, tableLength);
-    const offsets = Array.from(
-      { length: sectorCount + 1 },
-      (_, index) => table.readUInt32LE(index * 4),
+    if (raw.length < tableLength)
+      throw new MpqFormatError("Invalid MPQ sector table");
+    const table =
+      block.flags & MPQ_FILE_FLAGS.ENCRYPTED
+        ? decryptBlock(raw.subarray(0, tableLength), (key - 1) >>> 0)
+        : raw.subarray(0, tableLength);
+    const offsets = Array.from({ length: sectorCount + 1 }, (_, index) =>
+      table.readUInt32LE(index * 4),
     );
     validateSectorOffsets(offsets, raw.length, tableLength);
     const sectors: Buffer[] = [];

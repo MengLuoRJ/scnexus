@@ -30,7 +30,8 @@ export async function rebuildMpq(
   options: MpqCreateOptions = {},
 ): Promise<void> {
   const normalizedNames = names.map(normalizeMpqPath);
-  if (!normalizedNames.includes("(listfile)")) normalizedNames.push("(listfile)");
+  if (!normalizedNames.includes("(listfile)"))
+    normalizedNames.push("(listfile)");
   const hashTableSize = normalizeHashTableSize(
     options.hashTableSize ?? normalizedNames.length * 2,
   );
@@ -54,7 +55,8 @@ export async function rebuildMpq(
     for await (const file of appendListfile(files, normalizedNames)) {
       const path = normalizeMpqPath(file.path);
       const folded = path.toUpperCase();
-      if (seen.has(folded)) throw new MpqFormatError(`Duplicate MPQ path: ${path}`);
+      if (seen.has(folded))
+        throw new MpqFormatError(`Duplicate MPQ path: ${path}`);
       seen.add(folded);
 
       const encoded = encodeSingleUnit(

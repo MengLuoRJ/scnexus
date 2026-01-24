@@ -24,9 +24,17 @@ function report(id: number, error: unknown) {
 
 try {
   const binding = require("../build/Release/node_stormlib.node") as {
-    Archive: new (path: string, mode: string, capacity: number) => NativeArchive;
+    Archive: new (
+      path: string,
+      mode: string,
+      capacity: number,
+    ) => NativeArchive;
   };
-  archive = new binding.Archive(workerData.path, workerData.mode, workerData.capacity);
+  archive = new binding.Archive(
+    workerData.path,
+    workerData.mode,
+    workerData.capacity,
+  );
   port.postMessage({ id: 0, value: undefined });
 } catch (error) {
   report(0, error);
@@ -34,17 +42,24 @@ try {
 }
 
 if (archive) {
-  port.on("message", ({ id, operation, args }: {
-    id: number;
-    operation: string;
-    args: unknown[];
-  }) => {
-    try {
-      const value = archive!.call(operation, args);
-      port.postMessage({ id, value });
-      if (operation === "close") port.close();
-    } catch (error) {
-      report(id, error);
-    }
-  });
+  port.on(
+    "message",
+    ({
+      id,
+      operation,
+      args,
+    }: {
+      id: number;
+      operation: string;
+      args: unknown[];
+    }) => {
+      try {
+        const value = archive!.call(operation, args);
+        port.postMessage({ id, value });
+        if (operation === "close") port.close();
+      } catch (error) {
+        report(id, error);
+      }
+    },
+  );
 }

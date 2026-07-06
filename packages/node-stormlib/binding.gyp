@@ -70,5 +70,27 @@
         "CLANG_CXX_LIBRARY": "libc++", "MACOSX_DEPLOYMENT_TARGET": "10.15"
       } }]
     ]
+  }, {
+    "target_name": "stormlib_bindings",
+    "cflags!": ["-fno-exceptions"],
+    "cflags_cc!": ["-fno-exceptions"],
+    "cflags_cc": ["-std=c++17"],
+    "include_dirs": ["<!@(node -p \"require('node-addon-api').include\")", "vendor/StormLib/src"],
+    "defines": ["NAPI_VERSION=8", "NAPI_CPP_EXCEPTIONS", "__STORMLIB_NO_STATIC_LINK__", "_7ZIP_ST"],
+    "sources": [
+      "src/reference/addon.cpp", "src/reference/archive.cpp", "src/reference/file.cpp", "src/reference/errors.cpp",
+      "<!@(node scripts/list-storm-sources.mjs)"
+    ],
+    "conditions": [
+      ["OS=='win'", {
+        "defines": ["WIN32", "_WINDOWS"], "libraries": ["wininet.lib"],
+        "msvs_settings": { "VCCLCompilerTool": { "ExceptionHandling": 1, "AdditionalOptions": ["/std:c++17"] } }
+      }],
+      ["OS=='linux'", { "defines": ["BZ_STRICT_ANSI"] }],
+      ["OS=='mac'", { "xcode_settings": {
+        "GCC_ENABLE_CPP_EXCEPTIONS": "YES", "CLANG_CXX_LANGUAGE_STANDARD": "c++17",
+        "CLANG_CXX_LIBRARY": "libc++", "MACOSX_DEPLOYMENT_TARGET": "10.15"
+      } }]
+    ]
   }]
 }

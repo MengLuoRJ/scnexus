@@ -10,6 +10,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./compat": {
+      "types": "./dist/compat/index.d.ts",
+      "import": "./dist/compat/index.js"
+    },
+    "./bindings": {
+      "types": "./dist/compat/bindings.d.ts",
+      "import": "./dist/compat/bindings.js"
+    },
+    "./constants": {
+      "types": "./dist/compat/constants.d.ts",
+      "import": "./dist/compat/constants.js"
     }
   },
   "files": [
@@ -18,7 +30,8 @@
     "src",
     "test",
     "tsconfig.json",
-    "CMakeLists.txt",
+    "binding.gyp",
+    "scripts",
     "README.md"
   ],
   "engines": {
@@ -26,7 +39,7 @@
   },
   "scripts": {
     "build": "npm run build:native && npm run build:ts",
-    "build:native": "cmake-js compile",
+    "build:native": "node scripts/prepare-native.mjs && node-gyp rebuild",
     "build:ts": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test test/*.test.mjs"
@@ -36,7 +49,7 @@
   },
   "devDependencies": {
     "@types/node": "22.10.2",
-    "cmake-js": "8.0.0",
+    "node-gyp": "13.1.0",
     "typescript": "5.7.2"
   }
 }

@@ -835,7 +835,14 @@ Napi::Value MpqArchive::GetFileChecksums(const Napi::CallbackInfo& info) {
 
   Napi::Object result = Napi::Object::New(env);
   result.Set("crc32", Napi::Number::New(env, crc32));
-  result.Set("md5", Napi::String::New(env, md5));
+  static constexpr char digits[] = "0123456789abcdef";
+  std::string digest;
+  for (size_t index = 0; index < 16; ++index) {
+    const auto byte = static_cast<unsigned char>(md5[index]);
+    digest += digits[byte >> 4];
+    digest += digits[byte & 15];
+  }
+  result.Set("md5", Napi::String::New(env, digest));
   return result;
 }
 

@@ -7,9 +7,13 @@ calling event loop; it is not a process-level crash or security boundary.
 
 ## Build
 
-Requirements: Node.js 20+, CMake 3.25+, and a C++17 compiler. On Windows, install
+Runtime requires Node.js 20+. Building with node-gyp 13.1.0 requires Node.js
+22.22.2+, 24.15+ or 26+, Python, Git and a C++17 compiler. On Windows, install
 Visual Studio with the Desktop development with C++ workload and a Windows SDK.
-Ensure `cmake` is available on PATH. Dependencies are managed by the workspace.
+The build uses `binding.gyp`, adapted from the reference package. CMake is no
+longer used. Dependencies are managed by the workspace. Native compilation is
+an explicit build step; use `--ignore-scripts` when installing dependencies
+without a prepared native toolchain.
 
 ```powershell
 pnpm install
@@ -22,13 +26,16 @@ The build fetches StormLib commit
 dependencies. To use the reference checkout without downloading again:
 
 ```powershell
-pnpm --filter @scnexus/node-stormlib build:native -- --CDSTORMLIB_SOURCE_DIR="D:/Project_SCNexus/scnexus-client/stormlib-reference/thirdparty/StormLib"
+$env:STORMLIB_SOURCE_DIR = "D:/Project_SCNexus/scnexus-client/stormlib-reference/thirdparty/StormLib"
+pnpm --filter @scnexus/node-stormlib build:native
 pnpm --filter @scnexus/node-stormlib build:ts
 ```
 
-An explicit source override is trusted and is not checked against the pinned
-commit. Build output is `build/Release/node_stormlib.node` and `dist/`.
-Upstream license texts are collected into `dist/licenses` during configuration.
+An explicit source override must match the pinned commit and have no tracked
+modifications. Sources are prepared under the ignored `vendor/StormLib` directory.
+Build output includes `build/Release/node_stormlib.node` (Worker binding),
+`build/Release/stormlib_bindings.node` (reference binding) and `dist/`.
+Upstream license texts are collected into `dist/licenses` during preparation.
 This package does not yet publish a platform-specific prebuilt binary matrix.
 Build and package separately for each operating system and CPU architecture.
 
@@ -84,8 +91,55 @@ hashes; enumeration can include StormLib-generated names.
 Native failures expose a numeric code through `StormLibError.code`. Validation
 and worker failures use ordinary JavaScript errors. Always await `close()`;
 it drains already queued work and rejects new operations. No cancellation API
-is provided. Full StormLib coverage (patch attachment, signatures, locale
-selection, raw file handles, arbitrary info classes) is not exposed yet.
+is provided. Advanced operations are exposed through the separate reference API
+below, not through this serialized Worker facade.
+
+## Reference API
+
+The `@scnexus/node-stormlib/compat` entry exports the reference package's
+high-level `Archive`, `File`, `StormError`, constants and helpers. The
+`@scnexus/node-stormlib/bindings` entry exports `MPQArchiveBinding`,
+`MPQFileBinding`, native interfaces and last-error accessors. Low-level methods
+retain the exact `SFile...` names. Constants are also available from
+`@scnexus/node-stormlib/constants`.
+
+```typescript
+import { Archive, MPQ_OPEN_READ_ONLY } from "@scnexus/node-stormlib/compat";
+
+const archive = await Archive.openAsync("example.SC2Map", {
+  flags: MPQ_OPEN_READ_ONLY,
+});
+try {
+  const file = archive.openFile("MapScript.galaxy");
+  try {
+    const bytes = await file.readAllAsync();
+  } finally {
+    file.close();
+  }
+} finally {
+  archive.close();
+}
+```
+
+This layer includes raw file handles, seek/read/write/finish, archive capacity,
+attributes, checksums, verification/signatures, locales, patch attachment,
+embedded archives, arbitrary info classes, listfile and buffer/text helpers.
+Its semantics follow the reference package: most calls are synchronous;
+`openAsync`, `readAllAsync` and other explicit async variants use libuv workers.
+It does not use the main entry's request queue, read limits, exclusive creation,
+stream input or extraction-overwrite protections. Never close or mutate a
+handle during an async operation. Close files before their owning archive;
+borrowed handles must not outlive their owner. Locale settings affect the native
+module globally. Do not load this reference binding in multiple Node Worker
+environments; use the main entry for dedicated Worker isolation.
+
+On Windows the reference binding retains ANSI filesystem-path semantics;
+use the main entry for Unicode filesystem paths. Signatures, patch chains,
+locale variants and every info class have not received dedicated fixture tests.
+The added reference tests exercise file creation/writing, seeking, checksums,
+async reopening/reading, missing-file errors and embedded archives, alongside
+the original three Worker regression tests. The CLI and prebuilt binary matrix
+from the reference project are not included.
 
 ## Electron and Distribution
 
@@ -102,5 +156,9 @@ package automatically.
 
 The API and build approach were informed by
 [casclib-stormlib-monorepo](https://github.com/jamiephan/casclib-stormlib-monorepo).
-This package uses its own binding implementation and links the original
+The reference native sources and adapted TypeScript wrapper are taken from
+commit `9afb1fb34be82d58d1483a0242a3a93a1b1a2838`; the MIT license and provenance
+are included in `src/reference`. Local changes include ESM loading and correct
+hexadecimal encoding of binary MD5 checksums. The main entry retains its own
+Worker binding implementation. Both bindings compile the original
 [StormLib](https://github.com/ladislav-zezula/StormLib) source.

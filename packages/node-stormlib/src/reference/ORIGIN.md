@@ -1,6 +1,6 @@
 # Reference Binding Sources
 
-The C++ files in this directory are vendored from the MIT-licensed
+The C++ files in this directory and TypeScript files in `../compat` are adapted from the MIT-licensed
 `jamiephan/casclib-stormlib-monorepo`, package `stormlib`, commit
 `9afb1fb34be82d58d1483a0242a3a93a1b1a2838`.
 

@@ -4,6 +4,7 @@
   "description": "Worker-backed Node-API bindings for StormLib",
   "license": "MIT",
   "type": "module",
+  "gypfile": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

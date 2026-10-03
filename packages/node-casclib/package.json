@@ -11,6 +11,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./compat": {
+      "types": "./dist/compat/index.d.ts",
+      "import": "./dist/compat/index.js"
+    },
+    "./bindings": {
+      "types": "./dist/compat/bindings.d.ts",
+      "import": "./dist/compat/bindings.js"
+    },
+    "./constants": {
+      "types": "./dist/compat/constants.d.ts",
+      "import": "./dist/compat/constants.js"
     }
   },
   "files": [

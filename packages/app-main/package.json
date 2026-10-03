@@ -23,7 +23,7 @@
     "@types/node-7z": "^2.1.10",
     "@types/semver": "^7.5.8",
     "@types/uuid": "^10.0.0",
-    "electron": "^33.2.1",
+    "electron": "^44.5.1",
     "electron-builder": "^25.1.8",
     "scnexus-standard": "^0.0.13",
     "typescript": "^5.7.2",

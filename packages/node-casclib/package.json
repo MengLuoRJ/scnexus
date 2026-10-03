@@ -39,6 +39,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "install": "node -e \"console.log('Native build skipped; run pnpm run build explicitly')\"",
     "build": "npm run build:native && npm run build:ts",
     "build:native": "node scripts/prepare-native.mjs && node-gyp rebuild",
     "build:ts": "tsc -p tsconfig.json",

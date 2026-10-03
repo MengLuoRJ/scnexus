@@ -38,7 +38,6 @@
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
     "postinstall": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.js",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\"",
-    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "script:app:sync-version": "tsx scripts/sync-app-packages-version.ts",
     "deprecated:compile": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json --dir --config.asar=false",
     "deprecated:compile:release": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.json"
@@ -47,21 +46,12 @@
     "@iconify-json/tabler": "^1.2.10",
     "@scnexus/app-main": "workspace:*",
     "@scnexus/app-shared": "workspace:*",
-    "conventional-changelog-cli": "^5.0.0",
     "cross-env": "^7.0.3",
-    "electron": "^33.2.1",
+    "electron": "^44.5.1",
     "electron-builder": "^25.1.8",
     "scnexus-standard": "^0.0.13",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.3"
-  },
-  "pnpm": {
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "eslint": "*"
-      }
-    },
-    "overrides": {}
   }
 }

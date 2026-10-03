@@ -21,7 +21,7 @@ if (source) {
   if (git(["rev-parse", "HEAD"], path) !== revision) throw new Error("StormLib source revision does not match the pinned revision");
   if (git(["status", "--porcelain"], path)) throw new Error("StormLib source must have no modifications or untracked files");
   await rm(destination, { recursive: true, force: true });
-  await cp(path, destination, { recursive: true, filter: (entry) => entry !== join(path, ".git") });
+  await cp(path, destination, { recursive: true });
 } else {
   try {
     const marker = await readFile(join(destination, ".source-revision"), "utf8");

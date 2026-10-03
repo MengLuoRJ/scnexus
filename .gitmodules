@@ -1,0 +1,6 @@
+[submodule "packages/node-stormlib/vendor/StormLib"]
+	path = packages/node-stormlib/vendor/StormLib
+	url = https://github.com/ladislav-zezula/StormLib.git
+[submodule "packages/node-casclib/vendor/CascLib"]
+	path = packages/node-casclib/vendor/CascLib
+	url = https://github.com/ladislav-zezula/CascLib.git

@@ -1,18 +1,6 @@
 name: Native packages
 
 on:
-  push:
-    paths:
-      - ".gitmodules"
-      - "packages/node-stormlib/**"
-      - "packages/node-casclib/**"
-      - ".github/workflows/native-packages.yml"
-  pull_request:
-    paths:
-      - ".gitmodules"
-      - "packages/node-stormlib/**"
-      - "packages/node-casclib/**"
-      - ".github/workflows/native-packages.yml"
   workflow_dispatch:
 
 permissions:

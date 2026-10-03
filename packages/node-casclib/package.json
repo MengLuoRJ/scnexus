@@ -4,6 +4,7 @@
   "description": "Worker-backed Node-API bindings for CascLib",
   "license": "MIT",
   "type": "module",
+  "gypfile": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -18,7 +19,8 @@
     "src",
     "test",
     "tsconfig.json",
-    "CMakeLists.txt",
+    "binding.gyp",
+    "scripts",
     "README.md"
   ],
   "engines": {
@@ -26,7 +28,7 @@
   },
   "scripts": {
     "build": "npm run build:native && npm run build:ts",
-    "build:native": "cmake-js compile",
+    "build:native": "node scripts/prepare-native.mjs && node-gyp rebuild",
     "build:ts": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test test/*.test.mjs"
@@ -36,7 +38,7 @@
   },
   "devDependencies": {
     "@types/node": "22.10.2",
-    "cmake-js": "8.0.0",
+    "node-gyp": "13.1.0",
     "typescript": "5.7.2"
   }
 }

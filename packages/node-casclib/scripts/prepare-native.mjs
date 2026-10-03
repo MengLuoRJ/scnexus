@@ -15,7 +15,20 @@ function git(args, cwd) {
 
 await mkdir(dirname(destination), { recursive: true });
 const source = process.env.CASCLIB_SOURCE_DIR;
-if (source) {
+const registration = spawnSync("git", ["ls-files", "--stage", "--", "vendor/CascLib"], { cwd: root, encoding: "utf8" });
+const declaration = spawnSync("git", ["config", "--file", resolve(root, "../../.gitmodules"), "--get", "submodule.packages/node-casclib/vendor/CascLib.path"], { encoding: "utf8" });
+const indexedRevision = registration.status === 0 ? /^160000 ([0-9a-f]{40}) /.exec(registration.stdout)?.[1] : undefined;
+const submoduleRevision = indexedRevision ?? (declaration.status === 0 && declaration.stdout.trim() === "packages/node-casclib/vendor/CascLib" ? revision : undefined);
+if (submoduleRevision && !indexedRevision) throw new Error("CascLib is declared in .gitmodules but its gitlink is missing from the parent index; register the submodule before building");
+if (submoduleRevision) {
+    if (source && resolve(source) !== destination) throw new Error("CASCLIB_SOURCE_DIR cannot replace a registered submodule");
+    if (git(["rev-parse", "--show-toplevel"], destination).replaceAll("\\", "/").toLowerCase() !== destination.replaceAll("\\", "/").toLowerCase()) {
+        throw new Error("CascLib submodule is not initialized; run git submodule update --init --recursive");
+    }
+    if (git(["rev-parse", "HEAD"], destination) !== submoduleRevision) throw new Error("CascLib submodule differs from the recorded commit; run git submodule update --init --recursive");
+    await rm(join(destination, ".source-revision"), { force: true });
+    if (git(["status", "--porcelain"], destination)) throw new Error("CascLib submodule must be clean");
+} else if (source) {
     const path = resolve(source);
     if (path === destination) throw new Error("CASCLIB_SOURCE_DIR must not be the generated vendor directory");
     if (git(["rev-parse", "HEAD"], path) !== revision) throw new Error("CascLib source revision does not match the pinned revision");
@@ -36,10 +49,10 @@ if (source) {
         git(["checkout", "--detach", "FETCH_HEAD"], destination);
     }
 }
-await writeFile(join(destination, ".source-revision"), revision);
+if (!submoduleRevision) await writeFile(join(destination, ".source-revision"), revision);
 for (const file of ["LICENSE", "src/zlib/zlib.h"]) {
     const target = join(root, "dist", "licenses", "CascLib", file);
     await mkdir(dirname(target), { recursive: true });
     await cp(join(destination, file), target);
 }
-console.log(`Prepared CascLib ${revision}`);
+console.log(`Prepared CascLib ${submoduleRevision ?? revision}`);

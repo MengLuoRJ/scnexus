@@ -41,11 +41,19 @@ paths are ANSI on Windows; use the main entry for Unicode paths.
 
 ## Reproducible builds
 
-Each package pins its upstream commit in scripts/prepare-native.mjs. Builds
-fetch upstream independently; stormlib-reference is not a build/runtime input.
-Optional STORMLIB_SOURCE_DIR/CASCLIB_SOURCE_DIR must point to a clean upstream
-checkout at the pinned commit. Keep MIT reference LICENSE/ORIGIN and copied
-upstream license texts when removing the reference checkout.
+The parent repository records StormLib and CascLib commits as Git submodules
+under each package's vendor directory. After cloning or switching revisions,
+run `git submodule update --init --recursive`. Preparation validates the parent
+index commit and clean submodule checkout; it never replaces submodule sources.
+Missing gitlinks, uninitialized submodules and mismatched commits fail explicitly.
+CI initializes submodules recursively. stormlib-reference is not a build input.
+
+Standalone packages without parent submodule declarations fetch the fallback
+commit pinned in scripts/prepare-native.mjs. STORMLIB_SOURCE_DIR/CASCLIB_SOURCE_DIR
+are standalone-only clean-checkout overrides; they cannot replace repository
+submodules. Upstream upgrades must update the submodule pointer explicitly and
+pass build/tests. Synchronize the standalone fallback SHA before publishing.
+Keep reference LICENSE/ORIGIN and upstream license texts.
 
 Use node-gyp/binding.gyp, node-addon-api 8.9.2 and NAPI_VERSION=8. Explicit build
 runs source preparation first; gypfile:false suppresses implicit install builds.

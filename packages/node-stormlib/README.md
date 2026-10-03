@@ -16,14 +16,17 @@ an explicit build step; use `--ignore-scripts` when installing dependencies
 without a prepared native toolchain.
 
 ```powershell
+git submodule update --init --recursive
 pnpm install
 pnpm --filter @scnexus/node-stormlib build
 pnpm --filter @scnexus/node-stormlib test
 ```
 
-The build fetches StormLib commit
-`44ebfbfc109d76e2a85bbd5d8b0c949df7e65c6f` and statically links its bundled
-dependencies (system zlib/bzip2 on macOS). To use a clean local upstream checkout:
+In this repository, the build validates the StormLib submodule against the
+parent Git index and never replaces its source directory. Its initial commit is
+`44ebfbfc109d76e2a85bbd5d8b0c949df7e65c6f`. The build statically links bundled
+dependencies (system zlib/bzip2 on macOS). Outside this repository, the standalone
+package fetches the pinned fallback commit, or accepts a clean local checkout:
 
 ```powershell
 $env:STORMLIB_SOURCE_DIR = "D:/Sources/StormLib"
@@ -31,8 +34,11 @@ pnpm --filter @scnexus/node-stormlib build:native
 pnpm --filter @scnexus/node-stormlib build:ts
 ```
 
-An explicit source override must match the pinned commit and have no tracked
-modifications or untracked files. Sources are prepared under the ignored `vendor/StormLib` directory.
+An explicit standalone source override must match the pinned fallback commit
+and have no modifications or untracked files. Overrides cannot replace the
+registered submodule at `vendor/StormLib`. Update the submodule pointer explicitly
+when upgrading upstream, then rebuild and test; also update the standalone
+fallback revision in `scripts/prepare-native.mjs` for a release.
 Build output includes `build/Release/node_stormlib.node` (Worker binding),
 `build/Release/stormlib_bindings.node` (reference binding) and `dist/`.
 Upstream license texts are collected into `dist/licenses` during preparation.

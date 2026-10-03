@@ -15,13 +15,17 @@ Windows SDK. The build uses `binding.gyp`, not CMake. `gypfile: false` disables
 npm's implicit install-time compilation; build explicitly after installation.
 
 ```powershell
+git submodule update --init --recursive
 pnpm --filter @scnexus/node-casclib install
 pnpm --filter @scnexus/node-casclib build
 pnpm --filter @scnexus/node-casclib test
 ```
 
-The source preparation script fetches CascLib commit `2a280f5a231966dc5d1b534978dd9f9f04a374cd`
-by default. A local checkout can be selected without downloading sources:
+In this repository, source preparation validates the CascLib submodule against
+the parent Git index and never replaces its source directory. Its initial
+commit is `2a280f5a231966dc5d1b534978dd9f9f04a374cd`. Outside this repository,
+the standalone package fetches the pinned fallback commit. A clean local
+checkout can be selected for standalone builds:
 
 ```powershell
 $env:CASCLIB_SOURCE_DIR = "D:/sources/CascLib"
@@ -29,8 +33,11 @@ pnpm --filter @scnexus/node-casclib build:native
 pnpm --filter @scnexus/node-casclib build:ts
 ```
 
-The local checkout must match the pinned commit and have no tracked modifications.
-Prepared sources live under the ignored `vendor/CascLib` directory. Both native
+The standalone checkout must match the fallback commit and have no modifications
+or untracked files. Overrides cannot replace the registered `vendor/CascLib`
+submodule. Upstream upgrades require an explicit submodule pointer update,
+rebuild and tests; update the fallback revision in `scripts/prepare-native.mjs`
+for a release as well. Both native
 targets compile CascLib and its bundled zlib decoder into the addon. The Node-API
 target is kept at version 8, independently of the node-addon-api header version.
 Do not distribute a Windows binary as a Linux or macOS binary: build for each

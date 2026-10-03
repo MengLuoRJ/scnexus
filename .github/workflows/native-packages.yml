@@ -3,11 +3,13 @@ name: Native packages
 on:
   push:
     paths:
+      - ".gitmodules"
       - "packages/node-stormlib/**"
       - "packages/node-casclib/**"
       - ".github/workflows/native-packages.yml"
   pull_request:
     paths:
+      - ".gitmodules"
       - "packages/node-stormlib/**"
       - "packages/node-casclib/**"
       - ".github/workflows/native-packages.yml"
@@ -38,6 +40,8 @@ jobs:
         working-directory: packages/${{ matrix.package }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: recursive
       - uses: actions/setup-node@v7
         with:
           node-version: 26

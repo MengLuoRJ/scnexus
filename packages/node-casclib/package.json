@@ -6,9 +6,24 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist", "build/Release/*.node", "src", "test", "tsconfig.json", "CMakeLists.txt", "README.md"],
-  "engines": { "node": ">=20" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "build/Release/*.node",
+    "src",
+    "test",
+    "tsconfig.json",
+    "CMakeLists.txt",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "npm run build:native && npm run build:ts",
     "build:native": "cmake-js compile",
@@ -16,6 +31,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test test/*.test.mjs"
   },
-  "dependencies": { "node-addon-api": "8.9.2" },
-  "devDependencies": { "@types/node": "22.10.2", "cmake-js": "8.0.0", "typescript": "5.7.2" }
+  "dependencies": {
+    "node-addon-api": "8.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "cmake-js": "8.0.0",
+    "typescript": "5.7.2"
+  }
 }

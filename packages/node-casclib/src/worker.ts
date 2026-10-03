@@ -12,11 +12,14 @@ let storage: NativeStorage | undefined;
 
 function report(id: number, error: unknown) {
   const failure = error as Error & { code?: number };
-  port!.postMessage({ id, error: {
-    message: failure.message ?? String(error),
-    name: failure.name ?? "Error",
-    code: failure.code,
-  } });
+  port!.postMessage({
+    id,
+    error: {
+      message: failure.message ?? String(error),
+      name: failure.name ?? "Error",
+      code: failure.code,
+    },
+  });
 }
 
 try {
@@ -31,15 +34,24 @@ try {
 }
 
 if (storage) {
-  port.on("message", ({ id, operation, args }: {
-    id: number; operation: string; args: unknown[];
-  }) => {
-    try {
-      const value = storage!.call(operation, args);
-      port.postMessage({ id, value });
-      if (operation === "close") port.close();
-    } catch (error) {
-      report(id, error);
-    }
-  });
+  port.on(
+    "message",
+    ({
+      id,
+      operation,
+      args,
+    }: {
+      id: number;
+      operation: string;
+      args: unknown[];
+    }) => {
+      try {
+        const value = storage!.call(operation, args);
+        port.postMessage({ id, value });
+        if (operation === "close") port.close();
+      } catch (error) {
+        report(id, error);
+      }
+    },
+  );
 }

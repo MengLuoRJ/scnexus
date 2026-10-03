@@ -45,9 +45,13 @@ try {
   const info = await storage.getInfo();
   const entries = await storage.list({ mask: "*" });
   const tree = await storage.listTree();
-  const candidate = entries.find((entry) => entry.available && entry.size < 1024 * 1024);
+  const candidate = entries.find(
+    (entry) => entry.available && entry.size < 1024 * 1024,
+  );
   if (candidate) {
-    const bytes = await storage.readFile(candidate.name, { maxBytes: 1024 * 1024 });
+    const bytes = await storage.readFile(candidate.name, {
+      maxBytes: 1024 * 1024,
+    });
     await storage.extract(candidate.name, "D:/Exports/file.bin");
   }
 } finally {

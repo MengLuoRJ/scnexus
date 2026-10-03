@@ -56,7 +56,8 @@ pass build/tests. Synchronize the standalone fallback SHA before publishing.
 Keep reference LICENSE/ORIGIN and upstream license texts.
 
 Use node-gyp/binding.gyp, node-addon-api 8.9.2 and NAPI_VERSION=8. Explicit build
-runs source preparation first; gypfile:false suppresses implicit install builds.
+runs source preparation first; explicit no-build install scripts suppress implicit
+install builds. Do not rely on gypfile:false alone with pnpm.
 Node 26 satisfies the pinned node-gyp build requirement; runtime supports Node
 20+. Build each OS/architecture separately; native binaries are not portable.
 
@@ -67,8 +68,10 @@ Overwatch implementation, not the reference stub.
 
 ## Verification and release gates
 
-The native CI matrix builds and tests both packages on Windows, Linux and macOS,
-each with x64 and arm64. Offline MPQ and BLTE fixtures belong in existing test
+The supported native targets are Windows x64, Linux x64, macOS x64 and macOS
+arm64. Linux arm64 and Windows arm64 are not supported targets and are excluded
+from validation and CI. The native CI matrix builds and tests both packages on
+all four supported targets. Offline MPQ and BLTE fixtures belong in existing test
 files. Test EOF, seek, invalid lengths, pending-operation conflicts, failed async
 open recovery, independent handles and owner retention. Real CASC integration
 requires CASCLIB_TEST_STORAGE (and optionally CASCLIB_TEST_PRODUCT).
@@ -77,7 +80,7 @@ Before release, test Node and the supported Electron runtime, actual SC2 MPQ
 and installed CASC content, clean upstream download builds and packaged-app
 loading. Verify npm pack includes both native modules, dist declarations and
 licenses. Publishing prebuilt binaries is not implemented: require a complete
-six-platform artifact matrix, package/version consistency, dry-run and provenance
+four-platform artifact matrix, package/version consistency, dry-run and provenance
 before introducing automated publishing. Do not copy upstream release secrets
 or project-specific agent instructions.
 

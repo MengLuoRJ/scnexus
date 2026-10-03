@@ -96,7 +96,7 @@ class Archive : public Napi::ObjectWrap<Archive> {
       SFILE_FIND_DATA data{};
       HANDLE found = SFileFindFirstFile(handle, "*", &data, nullptr);
       auto result = Napi::Array::New(env);
-      if (!found || found == INVALID_HANDLE_VALUE) {
+      if (!found) {
         const auto code = SErrGetLastError();
         if (code != ERROR_NO_MORE_FILES && code != ERROR_FILE_NOT_FOUND) Fail(env, operation, code);
         return result;

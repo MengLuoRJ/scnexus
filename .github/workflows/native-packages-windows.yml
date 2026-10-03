@@ -1,4 +1,4 @@
-name: Native packages
+name: Native packages - Windows
 
 on:
   workflow_dispatch:
@@ -7,13 +7,13 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  test-windows:
+    name: Windows (${{ matrix.package }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-15-intel, macos-15]
         package: [node-stormlib, node-casclib]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     timeout-minutes: 30
     defaults:
       run:

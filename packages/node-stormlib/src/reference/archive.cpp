@@ -14,6 +14,7 @@ public:
     : Napi::AsyncWorker(env, "stormlib:openAsync"),
       deferred(Napi::Promise::Deferred::New(env)),
       receiverRef(Napi::Persistent(receiver)),
+      pendingState(Napi::ObjectWrap<MpqArchive>::Unwrap(receiver)->pending),
       archive(archive), path(std::move(path)), flags(flags),
       hMpq(nullptr), errorCode(0) {}
 
@@ -25,12 +26,14 @@ public:
   }
 
   void OnOK() override {
+    --*pendingState;
     archive->hMpq = hMpq;
     archive->isOpen = true;
     deferred.Resolve(Napi::Boolean::New(Env(), true));
   }
 
   void OnError(const Napi::Error& e) override {
+    --*pendingState;
     std::string message = e.Message() + " (StormError=" + std::to_string(errorCode) +
                           " " + StormErrorName(errorCode) + ")";
     deferred.Reject(MakeStormError(Env(), message, errorCode).Value());
@@ -41,6 +44,7 @@ public:
 private:
   Napi::Promise::Deferred deferred;
   Napi::ObjectReference receiverRef;
+  std::shared_ptr<size_t> pendingState;
   MpqArchive* archive;
   std::string path;
   DWORD flags;
@@ -58,6 +62,7 @@ public:
     : Napi::AsyncWorker(env, "stormlib:openFileArchiveAsync"),
       deferred(Napi::Promise::Deferred::New(env)),
       receiverRef(Napi::Persistent(receiver)),
+      pendingState(Napi::ObjectWrap<MpqArchive>::Unwrap(receiver)->pending),
       hParentMpq(hParentMpq), fileName(std::move(fileName)),
       priority(priority), flags(flags), hMpq(nullptr), errorCode(0) {}
 
@@ -69,10 +74,15 @@ public:
   }
 
   void OnOK() override {
-    deferred.Resolve(MpqArchive::NewInstance(Env(), hMpq, true));
+    --*pendingState;
+    Napi::Object result = MpqArchive::NewInstance(Env(), hMpq, true);
+    MpqArchive* parent = MpqArchive::Unwrap(receiverRef.Value());
+    MpqArchive::Unwrap(result)->Attach(receiverRef.Value(), parent->children, pendingState);
+    deferred.Resolve(result);
   }
 
   void OnError(const Napi::Error& e) override {
+    --*pendingState;
     std::string message = e.Message() + " (StormError=" + std::to_string(errorCode) +
                           " " + StormErrorName(errorCode) + ")";
     deferred.Reject(MakeStormError(Env(), message, errorCode).Value());
@@ -83,6 +93,7 @@ public:
 private:
   Napi::Promise::Deferred deferred;
   Napi::ObjectReference receiverRef;
+  std::shared_ptr<size_t> pendingState;
   HANDLE hParentMpq;
   std::string fileName;
   DWORD priority;
@@ -99,6 +110,7 @@ public:
     : Napi::AsyncWorker(env, "stormlib:extractFileAsync"),
       deferred(Napi::Promise::Deferred::New(env)),
       receiverRef(Napi::Persistent(receiver)),
+      pendingState(Napi::ObjectWrap<MpqArchive>::Unwrap(receiver)->pending),
       archive(archive), source(std::move(source)), dest(std::move(dest)),
       errorCode(0) {}
 
@@ -110,10 +122,12 @@ public:
   }
 
   void OnOK() override {
+    --*pendingState;
     deferred.Resolve(Napi::Boolean::New(Env(), true));
   }
 
   void OnError(const Napi::Error& e) override {
+    --*pendingState;
     std::string message = e.Message() + " (StormError=" + std::to_string(errorCode) +
                           " " + StormErrorName(errorCode) + ")";
     deferred.Reject(MakeStormError(Env(), message, errorCode).Value());
@@ -124,6 +138,7 @@ public:
 private:
   Napi::Promise::Deferred deferred;
   Napi::ObjectReference receiverRef;
+  std::shared_ptr<size_t> pendingState;
   MpqArchive* archive;
   std::string source;
   std::string dest;
@@ -134,39 +149,39 @@ Napi::Object MpqArchive::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "Archive", {
-    InstanceMethod("SFileOpenArchive", &MpqArchive::Open),
-    InstanceMethod("openAsync", &MpqArchive::OpenAsync),
-    InstanceMethod("extractFileAsync", &MpqArchive::ExtractFileAsync),
-    InstanceMethod("SFileCreateArchive", &MpqArchive::Create),
-    InstanceMethod("SFileCloseArchive", &MpqArchive::Close),
-    InstanceMethod("SFileFlushArchive", &MpqArchive::Flush),
-    InstanceMethod("SFileCompactArchive", &MpqArchive::Compact),
-    InstanceMethod("SFileOpenFileEx", &MpqArchive::OpenFile),
-    InstanceMethod("SFileOpenFileArchive", &MpqArchive::OpenFileArchive),
-    InstanceMethod("openFileArchiveAsync", &MpqArchive::OpenFileArchiveAsync),
-    InstanceMethod("SFileHasFile", &MpqArchive::HasFile),
-    InstanceMethod("SFileExtractFile", &MpqArchive::ExtractFile),
-    InstanceMethod("SFileAddFile", &MpqArchive::AddFile),
-    InstanceMethod("SFileAddFileEx", &MpqArchive::AddFileEx),
-    InstanceMethod("SFileRemoveFile", &MpqArchive::RemoveFile),
-    InstanceMethod("SFileRenameFile", &MpqArchive::RenameFile),
-    InstanceMethod("SFileGetMaxFileCount", &MpqArchive::GetMaxFileCount),
-    InstanceMethod("SFileSetMaxFileCount", &MpqArchive::SetMaxFileCount),
-    InstanceMethod("SFileGetAttributes", &MpqArchive::GetAttributes),
-    InstanceMethod("SFileSetAttributes", &MpqArchive::SetAttributes),
-    InstanceMethod("SFileVerifyFile", &MpqArchive::VerifyFile),
-    InstanceMethod("SFileVerifyArchive", &MpqArchive::VerifyArchive),
-    InstanceMethod("SFileSignArchive", &MpqArchive::SignArchive),
-    InstanceMethod("SFileGetFileChecksums", &MpqArchive::GetFileChecksums),
-    InstanceMethod("SFileAddListFile", &MpqArchive::AddListFile),
-    InstanceMethod("SFileOpenPatchArchive", &MpqArchive::OpenPatchArchive),
-    InstanceMethod("SFileIsPatchedArchive", &MpqArchive::IsPatchedArchive),
-    InstanceMethod("SFileFindFirstFile", &MpqArchive::FindFirstFile),
-    InstanceMethod("SFileEnumLocales", &MpqArchive::EnumLocales),
-    InstanceMethod("SFileCreateFile", &MpqArchive::CreateFile),
-    InstanceMethod("SFileAddWave", &MpqArchive::AddWave),
-    InstanceMethod("SFileUpdateFileAttributes", &MpqArchive::UpdateFileAttributes),
-    InstanceMethod("SFileGetFileInfo", &MpqArchive::GetFileInfo),
+    InstanceMethod("SFileOpenArchive", &MpqArchive::Guard<&MpqArchive::Open>),
+    InstanceMethod("openAsync", &MpqArchive::Guard<&MpqArchive::OpenAsync>),
+    InstanceMethod("extractFileAsync", &MpqArchive::Guard<&MpqArchive::ExtractFileAsync>),
+    InstanceMethod("SFileCreateArchive", &MpqArchive::Guard<&MpqArchive::Create>),
+    InstanceMethod("SFileCloseArchive", &MpqArchive::Guard<&MpqArchive::Close>),
+    InstanceMethod("SFileFlushArchive", &MpqArchive::Guard<&MpqArchive::Flush>),
+    InstanceMethod("SFileCompactArchive", &MpqArchive::Guard<&MpqArchive::Compact>),
+    InstanceMethod("SFileOpenFileEx", &MpqArchive::Guard<&MpqArchive::OpenFile>),
+    InstanceMethod("SFileOpenFileArchive", &MpqArchive::Guard<&MpqArchive::OpenFileArchive>),
+    InstanceMethod("openFileArchiveAsync", &MpqArchive::Guard<&MpqArchive::OpenFileArchiveAsync>),
+    InstanceMethod("SFileHasFile", &MpqArchive::Guard<&MpqArchive::HasFile>),
+    InstanceMethod("SFileExtractFile", &MpqArchive::Guard<&MpqArchive::ExtractFile>),
+    InstanceMethod("SFileAddFile", &MpqArchive::Guard<&MpqArchive::AddFile>),
+    InstanceMethod("SFileAddFileEx", &MpqArchive::Guard<&MpqArchive::AddFileEx>),
+    InstanceMethod("SFileRemoveFile", &MpqArchive::Guard<&MpqArchive::RemoveFile>),
+    InstanceMethod("SFileRenameFile", &MpqArchive::Guard<&MpqArchive::RenameFile>),
+    InstanceMethod("SFileGetMaxFileCount", &MpqArchive::Guard<&MpqArchive::GetMaxFileCount>),
+    InstanceMethod("SFileSetMaxFileCount", &MpqArchive::Guard<&MpqArchive::SetMaxFileCount>),
+    InstanceMethod("SFileGetAttributes", &MpqArchive::Guard<&MpqArchive::GetAttributes>),
+    InstanceMethod("SFileSetAttributes", &MpqArchive::Guard<&MpqArchive::SetAttributes>),
+    InstanceMethod("SFileVerifyFile", &MpqArchive::Guard<&MpqArchive::VerifyFile>),
+    InstanceMethod("SFileVerifyArchive", &MpqArchive::Guard<&MpqArchive::VerifyArchive>),
+    InstanceMethod("SFileSignArchive", &MpqArchive::Guard<&MpqArchive::SignArchive>),
+    InstanceMethod("SFileGetFileChecksums", &MpqArchive::Guard<&MpqArchive::GetFileChecksums>),
+    InstanceMethod("SFileAddListFile", &MpqArchive::Guard<&MpqArchive::AddListFile>),
+    InstanceMethod("SFileOpenPatchArchive", &MpqArchive::Guard<&MpqArchive::OpenPatchArchive>),
+    InstanceMethod("SFileIsPatchedArchive", &MpqArchive::Guard<&MpqArchive::IsPatchedArchive>),
+    InstanceMethod("SFileFindFirstFile", &MpqArchive::Guard<&MpqArchive::FindFirstFile>),
+    InstanceMethod("SFileEnumLocales", &MpqArchive::Guard<&MpqArchive::EnumLocales>),
+    InstanceMethod("SFileCreateFile", &MpqArchive::Guard<&MpqArchive::CreateFile>),
+    InstanceMethod("SFileAddWave", &MpqArchive::Guard<&MpqArchive::AddWave>),
+    InstanceMethod("SFileUpdateFileAttributes", &MpqArchive::Guard<&MpqArchive::UpdateFileAttributes>),
+    InstanceMethod("SFileGetFileInfo", &MpqArchive::Guard<&MpqArchive::GetFileInfo>),
     StaticMethod("SFileGetLocale", &MpqArchive::GetLocale),
     StaticMethod("SFileSetLocale", &MpqArchive::SetLocale)
   });
@@ -194,6 +209,7 @@ MpqArchive::~MpqArchive() {
   }
   hMpq = nullptr;
   isOpen = false;
+  Detach();
 }
 
 Napi::Object MpqArchive::NewInstance(Napi::Env env, HANDLE hMpq, bool owned) {
@@ -261,6 +277,7 @@ Napi::Value MpqArchive::OpenAsync(const Napi::CallbackInfo& info) {
   auto* worker = new OpenArchiveWorker(env, info.This().As<Napi::Object>(), this,
                                        std::move(path), flags);
   Napi::Promise promise = worker->Promise();
+  ++*pending;
   worker->Queue();
   return promise;
 }
@@ -314,6 +331,7 @@ Napi::Value MpqArchive::Close(const Napi::CallbackInfo& info) {
   hMpq = nullptr;
   isOpen = false;
 
+  Detach();
   return Napi::Boolean::New(env, true);
 }
 
@@ -347,6 +365,7 @@ Napi::Value MpqArchive::OpenFile(const Napi::CallbackInfo& info) {
 
   // Create an MpqFile object
   Napi::Object fileObj = MpqFile::NewInstance(env, hFile);
+  MpqFile::Unwrap(fileObj)->Attach(info.This().As<Napi::Object>(), children, pending);
   return fileObj;
 }
 
@@ -384,7 +403,9 @@ Napi::Value MpqArchive::OpenFileArchive(const Napi::CallbackInfo& info) {
   }
 
   // The nested archive is a genuinely new, independently-owned handle.
-  return MpqArchive::NewInstance(env, hNestedMpq, true);
+  Napi::Object result = MpqArchive::NewInstance(env, hNestedMpq, true);
+  MpqArchive::Unwrap(result)->Attach(info.This().As<Napi::Object>(), children, pending);
+  return result;
 }
 
 Napi::Value MpqArchive::OpenFileArchiveAsync(const Napi::CallbackInfo& info) {
@@ -417,6 +438,7 @@ Napi::Value MpqArchive::OpenFileArchiveAsync(const Napi::CallbackInfo& info) {
   auto* worker = new OpenFileArchiveWorker(env, info.This().As<Napi::Object>(), hMpq,
                                            std::move(fileName), priority, flags);
   Napi::Promise promise = worker->Promise();
+  ++*pending;
   worker->Queue();
   return promise;
 }
@@ -489,6 +511,7 @@ Napi::Value MpqArchive::ExtractFileAsync(const Napi::CallbackInfo& info) {
   auto* worker = new ExtractFileWorker(env, info.This().As<Napi::Object>(), this,
                                        std::move(source), std::move(dest));
   Napi::Promise promise = worker->Promise();
+  ++*pending;
   worker->Queue();
   return promise;
 }
@@ -1037,6 +1060,7 @@ Napi::Value MpqArchive::CreateFile(const Napi::CallbackInfo& info) {
 
   // Create an MpqFile object
   Napi::Object fileObj = MpqFile::NewInstance(env, hFile);
+  MpqFile::Unwrap(fileObj)->Attach(info.This().As<Napi::Object>(), children, pending);
   return fileObj;
 }
 

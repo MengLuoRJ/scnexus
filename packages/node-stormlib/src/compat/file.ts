@@ -1,7 +1,7 @@
-import { MPQFile } from './bindings.js';
-import { invoke, invokeAsync } from './errors.js';
-import { kDispose } from './dispose.js';
-import { Archive } from './archive.js';
+import { MPQFile } from "./bindings.js";
+import { invoke, invokeAsync } from "./errors.js";
+import { kDispose } from "./dispose.js";
+import { Archive } from "./archive.js";
 
 /**
  * StormLib File wrapper class
@@ -24,12 +24,12 @@ export class File {
    * @returns Buffer containing the read data
    */
   read(bytesToRead?: number): Buffer {
-    return invoke(() => this.file.SFileReadFile(bytesToRead || 4096));
+    return invoke(() => this.file.SFileReadFile(bytesToRead ?? 4096));
   }
 
   /**
-   * Read all data from the file
-   * @returns Buffer containing all file data
+   * Read remaining data from the current cursor (up to 256 MiB).
+   * @returns Buffer containing the remaining file data
    */
   readAll(): Buffer {
     return invoke(() => this.file.readFileAll());

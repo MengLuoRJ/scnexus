@@ -1,13 +1,28 @@
 #include "file.h"
 #include "errors.h"
 #include <vector>
+#include <cmath>
+#include <stdexcept>
+
+static DWORD RemainingBytes(HANDLE handle) {
+  ULONGLONG size = 0, position = 0;
+  if (!CascGetFileSize64(handle, &size) || !CascSetFilePointer64(handle, 0, &position, FILE_CURRENT)) throw std::runtime_error("Failed to get file size or position");
+  ULONGLONG remaining = position < size ? size - position : 0;
+  if (remaining > 256 * 1024 * 1024) throw std::range_error("Read exceeds 256 MiB limit; use chunked reads");
+  return DWORD(remaining);
+}
+
+static Napi::Value ExactInteger(Napi::Env env, ULONGLONG value) {
+  if (value > 9007199254740991ULL) return Napi::BigInt::New(env, uint64_t(value));
+  return Napi::Number::New(env, double(value));
+}
 
 Napi::FunctionReference CascFile::constructor;
 
 // Reads the remaining file contents on a worker thread. CASC reads can
 // trigger CDN downloads for online storages, so this must not block the
 // event loop. The receiver keeps the JS File object (and thus the native
-// handle) alive while the worker runs.
+// object) alive while the worker runs; Guard prevents conflicting calls.
 class CascReadAllWorker : public Napi::AsyncWorker {
 public:
   CascReadAllWorker(Napi::Env env, Napi::Object receiver, CascFile* file)
@@ -17,11 +32,14 @@ public:
       file(file), bytesRead(0), errorCode(0) {}
 
   void Execute() override {
-    DWORD fileSize = CascGetFileSize(file->hFile, nullptr);
+    DWORD fileSize;
+    try { fileSize = RemainingBytes(file->hFile); }
+    catch (const std::exception& error) { SetError(error.what()); return; }
     if (fileSize == 0) {
       return;
     }
-    buffer.resize(fileSize);
+    try { buffer.resize(fileSize); }
+    catch (const std::exception& error) { SetError(error.what()); return; }
     if (!CascReadFile(file->hFile, buffer.data(), fileSize, &bytesRead)) {
       errorCode = GetCascError();
       SetError("Failed to read file");
@@ -29,10 +47,14 @@ public:
   }
 
   void OnOK() override {
+    file->busy = false;
+    if (file->parentPending) --*file->parentPending;
     deferred.Resolve(Napi::Buffer<uint8_t>::Copy(Env(), buffer.data(), bytesRead));
   }
 
   void OnError(const Napi::Error& e) override {
+    file->busy = false;
+    if (file->parentPending) --*file->parentPending;
     std::string message = e.Message() + " (CascError=" + std::to_string(errorCode) +
                           " " + CascErrorName(errorCode) + ")";
     deferred.Reject(MakeCascError(Env(), message, errorCode).Value());
@@ -53,18 +75,18 @@ Napi::Object CascFile::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "File", {
-    InstanceMethod("CascReadFile", &CascFile::Read),
-    InstanceMethod("readFileAll", &CascFile::ReadAll),
-    InstanceMethod("readAllAsync", &CascFile::ReadAllAsync),
-    InstanceMethod("CascGetFileSize", &CascFile::GetSize),
-    InstanceMethod("CascGetFileSize64", &CascFile::GetSize64),
-    InstanceMethod("CascGetFilePointer", &CascFile::GetPosition),
-    InstanceMethod("CascGetFilePointer64", &CascFile::GetPosition64),
-    InstanceMethod("CascSetFilePointer", &CascFile::SetPosition),
-    InstanceMethod("CascSetFilePointer64", &CascFile::SetPosition64),
-    InstanceMethod("CascGetFileInfo", &CascFile::GetFileInfo),
-    InstanceMethod("CascSetFileFlags", &CascFile::SetFileFlags),
-    InstanceMethod("CascCloseFile", &CascFile::Close)
+    InstanceMethod("CascReadFile", &CascFile::Guard<&CascFile::Read>),
+    InstanceMethod("readFileAll", &CascFile::Guard<&CascFile::ReadAll>),
+    InstanceMethod("readAllAsync", &CascFile::Guard<&CascFile::ReadAllAsync>),
+    InstanceMethod("CascGetFileSize", &CascFile::Guard<&CascFile::GetSize>),
+    InstanceMethod("CascGetFileSize64", &CascFile::Guard<&CascFile::GetSize64>),
+    InstanceMethod("CascGetFilePointer", &CascFile::Guard<&CascFile::GetPosition>),
+    InstanceMethod("CascGetFilePointer64", &CascFile::Guard<&CascFile::GetPosition64>),
+    InstanceMethod("CascSetFilePointer", &CascFile::Guard<&CascFile::SetPosition>),
+    InstanceMethod("CascSetFilePointer64", &CascFile::Guard<&CascFile::SetPosition64>),
+    InstanceMethod("CascGetFileInfo", &CascFile::Guard<&CascFile::GetFileInfo>),
+    InstanceMethod("CascSetFileFlags", &CascFile::Guard<&CascFile::SetFileFlags>),
+    InstanceMethod("CascCloseFile", &CascFile::Guard<&CascFile::Close>)
   });
 
   constructor = Napi::Persistent(func);
@@ -93,6 +115,7 @@ CascFile::~CascFile() {
     hFile = nullptr;
     isOpen = false;
   }
+  Detach();
 }
 
 Napi::Value CascFile::Read(const Napi::CallbackInfo& info) {
@@ -106,9 +129,18 @@ Napi::Value CascFile::Read(const Napi::CallbackInfo& info) {
 
   DWORD bytesToRead = 4096; // Default buffer size
   if (info.Length() > 0 && info[0].IsNumber()) {
-    bytesToRead = info[0].As<Napi::Number>().Uint32Value();
+    double requested = info[0].As<Napi::Number>().DoubleValue();
+    if (!std::isfinite(requested) || requested < 0 || requested > 256 * 1024 * 1024 || std::floor(requested) != requested) {
+      Napi::RangeError::New(env, "Read size must be an integer between 0 and 256 MiB").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+    bytesToRead = DWORD(requested);
+  } else if (info.Length() > 0 && !info[0].IsUndefined()) {
+    Napi::TypeError::New(env, "Read size must be a number").ThrowAsJavaScriptException();
+    return env.Null();
   }
 
+  if (bytesToRead == 0) return Napi::Buffer<uint8_t>::New(env, 0);
   std::vector<uint8_t> buffer(bytesToRead);
   DWORD bytesRead = 0;
 
@@ -129,7 +161,12 @@ Napi::Value CascFile::ReadAll(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  DWORD fileSize = CascGetFileSize(hFile, nullptr);
+  DWORD fileSize;
+  try { fileSize = RemainingBytes(hFile); }
+  catch (const std::exception& error) {
+    Napi::RangeError::New(env, error.what()).ThrowAsJavaScriptException();
+    return env.Null();
+  }
   
   if (fileSize == 0) {
     return Napi::Buffer<uint8_t>::New(env, 0);
@@ -157,6 +194,8 @@ Napi::Value CascFile::ReadAllAsync(const Napi::CallbackInfo& info) {
 
   auto* worker = new CascReadAllWorker(env, info.This().As<Napi::Object>(), this);
   Napi::Promise promise = worker->Promise();
+  busy = true;
+  if (parentPending) ++*parentPending;
   worker->Queue();
   return promise;
 }
@@ -223,6 +262,7 @@ Napi::Value CascFile::Close(const Napi::CallbackInfo& info) {
     isOpen = false;
   }
 
+  Detach();
   return Napi::Boolean::New(env, true);
 }
 
@@ -241,7 +281,7 @@ Napi::Value CascFile::GetSize64(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  return Napi::Number::New(env, (double)fileSize);
+  return ExactInteger(env, fileSize);
 }
 
 Napi::Value CascFile::GetPosition64(const Napi::CallbackInfo& info) {
@@ -259,7 +299,7 @@ Napi::Value CascFile::GetPosition64(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  return Napi::Number::New(env, (double)position);
+  return ExactInteger(env, position);
 }
 
 Napi::Value CascFile::SetPosition64(const Napi::CallbackInfo& info) {
@@ -271,13 +311,28 @@ Napi::Value CascFile::SetPosition64(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (info.Length() < 1 || !info[0].IsNumber()) {
+  if (info.Length() < 1 || (!info[0].IsNumber() && !info[0].IsBigInt())) {
     Napi::TypeError::New(env, "Expected position as first argument")
       .ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  LONGLONG position = (LONGLONG)info[0].As<Napi::Number>().Int64Value();
+  LONGLONG position = 0;
+  if (info[0].IsBigInt()) {
+    bool lossless = false;
+    position = info[0].As<Napi::BigInt>().Int64Value(&lossless);
+    if (!lossless) {
+      Napi::RangeError::New(env, "Position must fit a signed 64-bit integer").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+  } else {
+    double requested = info[0].As<Napi::Number>().DoubleValue();
+    if (!std::isfinite(requested) || std::abs(requested) > 9007199254740991.0 || std::floor(requested) != requested) {
+      Napi::RangeError::New(env, "Position must be a bigint or safe integer").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+    position = LONGLONG(requested);
+  }
   DWORD moveMethod = FILE_BEGIN;
 
   if (info.Length() > 1 && info[1].IsNumber()) {
@@ -290,7 +345,7 @@ Napi::Value CascFile::SetPosition64(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  return Napi::Number::New(env, (double)newPosition);
+  return ExactInteger(env, newPosition);
 }
 
 Napi::Value CascFile::GetFileInfo(const Napi::CallbackInfo& info) {
@@ -335,12 +390,12 @@ Napi::Value CascFile::GetFileInfo(const Napi::CallbackInfo& info) {
         result.Set("ckey", Napi::Buffer<BYTE>::Copy(env, fullInfo.CKey, MD5_HASH_SIZE));
         result.Set("ekey", Napi::Buffer<BYTE>::Copy(env, fullInfo.EKey, MD5_HASH_SIZE));
         result.Set("dataFileName", Napi::String::New(env, fullInfo.DataFileName));
-        result.Set("storageOffset", Napi::Number::New(env, (double)fullInfo.StorageOffset));
-        result.Set("segmentOffset", Napi::Number::New(env, (double)fullInfo.SegmentOffset));
-        result.Set("tagBitMask", Napi::Number::New(env, (double)fullInfo.TagBitMask));
-        result.Set("fileNameHash", Napi::Number::New(env, (double)fullInfo.FileNameHash));
-        result.Set("contentSize", Napi::Number::New(env, (double)fullInfo.ContentSize));
-        result.Set("encodedSize", Napi::Number::New(env, (double)fullInfo.EncodedSize));
+        result.Set("storageOffset", ExactInteger(env, fullInfo.StorageOffset));
+        result.Set("segmentOffset", ExactInteger(env, fullInfo.SegmentOffset));
+        result.Set("tagBitMask", ExactInteger(env, fullInfo.TagBitMask));
+        result.Set("fileNameHash", ExactInteger(env, fullInfo.FileNameHash));
+        result.Set("contentSize", ExactInteger(env, fullInfo.ContentSize));
+        result.Set("encodedSize", ExactInteger(env, fullInfo.EncodedSize));
         result.Set("segmentIndex", Napi::Number::New(env, fullInfo.SegmentIndex));
         result.Set("spanCount", Napi::Number::New(env, fullInfo.SpanCount));
         result.Set("fileDataId", Napi::Number::New(env, fullInfo.FileDataId));

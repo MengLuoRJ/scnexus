@@ -2,12 +2,28 @@
 #include "archive.h"
 #include "errors.h"
 #include <vector>
+#include <cmath>
+#include <stdexcept>
+
+static DWORD RemainingBytes(HANDLE handle) {
+  DWORD high = 0;
+  DWORD low = SFileGetFileSize(handle, &high);
+  if (low == SFILE_INVALID_SIZE && SErrGetLastError() != ERROR_SUCCESS) throw std::runtime_error("Failed to get file size");
+  LONG positionHigh = 0;
+  DWORD positionLow = SFileSetFilePointer(handle, 0, &positionHigh, FILE_CURRENT);
+  if (positionLow == SFILE_INVALID_POS && SErrGetLastError() != ERROR_SUCCESS) throw std::runtime_error("Failed to get file position");
+  uint64_t size = (uint64_t(high) << 32) | low;
+  uint64_t position = (uint64_t(uint32_t(positionHigh)) << 32) | positionLow;
+  uint64_t remaining = position < size ? size - position : 0;
+  if (remaining > 256 * 1024 * 1024) throw std::range_error("Read exceeds 256 MiB limit; use chunked reads");
+  return DWORD(remaining);
+}
 
 Napi::FunctionReference MpqFile::constructor;
 
 // Reads the remaining file contents on a worker thread so large or highly
 // compressed files do not block the event loop. The receiver keeps the JS
-// File object (and thus the native handle) alive while the worker runs.
+// File object alive while the worker runs; Guard prevents conflicting calls.
 class MpqReadAllWorker : public Napi::AsyncWorker {
 public:
   MpqReadAllWorker(Napi::Env env, Napi::Object receiver, MpqFile* file)
@@ -17,22 +33,30 @@ public:
       file(file), bytesRead(0), errorCode(0) {}
 
   void Execute() override {
-    DWORD fileSize = SFileGetFileSize(file->hFile, nullptr);
+    DWORD fileSize;
+    try { fileSize = RemainingBytes(file->hFile); }
+    catch (const std::exception& error) { SetError(error.what()); return; }
     if (fileSize == 0 || fileSize == SFILE_INVALID_SIZE) {
       return;
     }
-    buffer.resize(fileSize);
-    if (!SFileReadFile(file->hFile, buffer.data(), fileSize, &bytesRead, nullptr)) {
+    try { buffer.resize(fileSize); }
+    catch (const std::exception& error) { SetError(error.what()); return; }
+    if (!SFileReadFile(file->hFile, buffer.data(), fileSize, &bytesRead, nullptr) &&
+      SErrGetLastError() != ERROR_HANDLE_EOF) {
       errorCode = SErrGetLastError();
       SetError("Failed to read file");
     }
   }
 
   void OnOK() override {
+    file->busy = false;
+    if (file->parentPending) --*file->parentPending;
     deferred.Resolve(Napi::Buffer<uint8_t>::Copy(Env(), buffer.data(), bytesRead));
   }
 
   void OnError(const Napi::Error& e) override {
+    file->busy = false;
+    if (file->parentPending) --*file->parentPending;
     std::string message = e.Message() + " (StormError=" + std::to_string(errorCode) +
                           " " + StormErrorName(errorCode) + ")";
     deferred.Reject(MakeStormError(Env(), message, errorCode).Value());
@@ -53,19 +77,19 @@ Napi::Object MpqFile::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "File", {
-    InstanceMethod("SFileReadFile", &MpqFile::Read),
-    InstanceMethod("readFileAll", &MpqFile::ReadAll),
-    InstanceMethod("readAllAsync", &MpqFile::ReadAllAsync),
-    InstanceMethod("SFileWriteFile", &MpqFile::Write),
-    InstanceMethod("SFileFinishFile", &MpqFile::Finish),
-    InstanceMethod("SFileGetFileSize", &MpqFile::GetSize),
-    InstanceMethod("SFileGetFilePointer", &MpqFile::GetPosition),
-    InstanceMethod("SFileSetFilePointer", &MpqFile::SetPosition),
-    InstanceMethod("SFileGetFileName", &MpqFile::GetFileName),
-    InstanceMethod("SFileSetFileLocale", &MpqFile::SetLocale),
-    InstanceMethod("SFileGetFileInfo", &MpqFile::GetFileInfo),
-    InstanceMethod("SFileGetFileArchive", &MpqFile::GetFileArchive),
-    InstanceMethod("SFileCloseFile", &MpqFile::Close)
+    InstanceMethod("SFileReadFile", &MpqFile::Guard<&MpqFile::Read>),
+    InstanceMethod("readFileAll", &MpqFile::Guard<&MpqFile::ReadAll>),
+    InstanceMethod("readAllAsync", &MpqFile::Guard<&MpqFile::ReadAllAsync>),
+    InstanceMethod("SFileWriteFile", &MpqFile::Guard<&MpqFile::Write>),
+    InstanceMethod("SFileFinishFile", &MpqFile::Guard<&MpqFile::Finish>),
+    InstanceMethod("SFileGetFileSize", &MpqFile::Guard<&MpqFile::GetSize>),
+    InstanceMethod("SFileGetFilePointer", &MpqFile::Guard<&MpqFile::GetPosition>),
+    InstanceMethod("SFileSetFilePointer", &MpqFile::Guard<&MpqFile::SetPosition>),
+    InstanceMethod("SFileGetFileName", &MpqFile::Guard<&MpqFile::GetFileName>),
+    InstanceMethod("SFileSetFileLocale", &MpqFile::Guard<&MpqFile::SetLocale>),
+    InstanceMethod("SFileGetFileInfo", &MpqFile::Guard<&MpqFile::GetFileInfo>),
+    InstanceMethod("SFileGetFileArchive", &MpqFile::Guard<&MpqFile::GetFileArchive>),
+    InstanceMethod("SFileCloseFile", &MpqFile::Guard<&MpqFile::Close>)
   });
 
   constructor = Napi::Persistent(func);
@@ -94,6 +118,7 @@ MpqFile::~MpqFile() {
     hFile = nullptr;
     isOpen = false;
   }
+  Detach();
 }
 
 Napi::Value MpqFile::Read(const Napi::CallbackInfo& info) {
@@ -107,13 +132,23 @@ Napi::Value MpqFile::Read(const Napi::CallbackInfo& info) {
 
   DWORD bytesToRead = 4096; // Default buffer size
   if (info.Length() > 0 && info[0].IsNumber()) {
-    bytesToRead = info[0].As<Napi::Number>().Uint32Value();
+    double requested = info[0].As<Napi::Number>().DoubleValue();
+    if (!std::isfinite(requested) || requested < 0 || requested > 256 * 1024 * 1024 || std::floor(requested) != requested) {
+      Napi::RangeError::New(env, "Read size must be an integer between 0 and 256 MiB").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+    bytesToRead = DWORD(requested);
+  } else if (info.Length() > 0 && !info[0].IsUndefined()) {
+    Napi::TypeError::New(env, "Read size must be a number").ThrowAsJavaScriptException();
+    return env.Null();
   }
 
+  if (bytesToRead == 0) return Napi::Buffer<uint8_t>::New(env, 0);
   std::vector<uint8_t> buffer(bytesToRead);
   DWORD bytesRead = 0;
 
-  if (!SFileReadFile(hFile, buffer.data(), bytesToRead, &bytesRead, nullptr)) {
+  if (!SFileReadFile(hFile, buffer.data(), bytesToRead, &bytesRead, nullptr) &&
+      SErrGetLastError() != ERROR_HANDLE_EOF) {
     ThrowStormError(env, "Failed to read file");
     return env.Null();
   }
@@ -130,7 +165,12 @@ Napi::Value MpqFile::ReadAll(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  DWORD fileSize = SFileGetFileSize(hFile, nullptr);
+  DWORD fileSize;
+  try { fileSize = RemainingBytes(hFile); }
+  catch (const std::exception& error) {
+    Napi::RangeError::New(env, error.what()).ThrowAsJavaScriptException();
+    return env.Null();
+  }
   
   if (fileSize == 0 || fileSize == SFILE_INVALID_SIZE) {
     return Napi::Buffer<uint8_t>::New(env, 0);
@@ -139,7 +179,8 @@ Napi::Value MpqFile::ReadAll(const Napi::CallbackInfo& info) {
   std::vector<uint8_t> buffer(fileSize);
   DWORD bytesRead = 0;
 
-  if (!SFileReadFile(hFile, buffer.data(), fileSize, &bytesRead, nullptr)) {
+  if (!SFileReadFile(hFile, buffer.data(), fileSize, &bytesRead, nullptr) &&
+      SErrGetLastError() != ERROR_HANDLE_EOF) {
     ThrowStormError(env, "Failed to read file");
     return env.Null();
   }
@@ -158,6 +199,8 @@ Napi::Value MpqFile::ReadAllAsync(const Napi::CallbackInfo& info) {
 
   auto* worker = new MpqReadAllWorker(env, info.This().As<Napi::Object>(), this);
   Napi::Promise promise = worker->Promise();
+  busy = true;
+  if (parentPending) ++*parentPending;
   worker->Queue();
   return promise;
 }
@@ -224,6 +267,7 @@ Napi::Value MpqFile::Close(const Napi::CallbackInfo& info) {
     isOpen = false;
   }
 
+  Detach();
   return Napi::Boolean::New(env, true);
 }
 
@@ -274,6 +318,7 @@ Napi::Value MpqFile::Finish(const Napi::CallbackInfo& info) {
   // File is closed after finishing
   hFile = nullptr;
   isOpen = false;
+  Detach();
 
   return Napi::Boolean::New(env, true);
 }
@@ -373,6 +418,8 @@ Napi::Value MpqFile::GetFileArchive(const Napi::CallbackInfo& info) {
 
   // Borrowed handle: it belongs to whichever Archive originally opened it
   // (or a patch archive in its chain), so this wrapper must never close it.
-  return MpqArchive::NewInstance(env, hMpq, false);
+  Napi::Object result = MpqArchive::NewInstance(env, hMpq, false);
+  if (childCount) MpqArchive::Unwrap(result)->Attach(owner.Value(), childCount, parentPending);
+  return result;
 }
 

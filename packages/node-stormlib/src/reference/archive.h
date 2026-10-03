@@ -2,6 +2,7 @@
 #define STORMLIB_ARCHIVE_H
 
 #include <napi.h>
+#include <memory>
 #include "StormLib.h"
 
 // Define INVALID_HANDLE_VALUE for non-Windows platforms
@@ -19,8 +20,25 @@ public:
   static Napi::Object NewInstance(Napi::Env env, HANDLE hMpq, bool owned);
   MpqArchive(const Napi::CallbackInfo& info);
   ~MpqArchive();
+  void Attach(Napi::Object parent, std::shared_ptr<size_t> count, std::shared_ptr<size_t> state) {
+    owner = Napi::Persistent(parent); parentChildren = count; pending = state; ++*parentChildren;
+  }
 
 private:
+  friend class MpqFile;
+  void Detach() { if (parentChildren) { --*parentChildren; parentChildren.reset(); } owner.Reset(); }
+  Napi::ObjectReference owner;
+  std::shared_ptr<size_t> parentChildren;
+  template<Napi::Value (MpqArchive::*method)(const Napi::CallbackInfo&)>
+  Napi::Value Guard(const Napi::CallbackInfo& info) {
+    if (*pending || (method == &MpqArchive::Close && *children)) {
+      Napi::Error::New(info.Env(), "Native operation is pending or files are still open").ThrowAsJavaScriptException();
+      return info.Env().Undefined();
+    }
+    return (this->*method)(info);
+  }
+  std::shared_ptr<size_t> children = std::make_shared<size_t>(0);
+  std::shared_ptr<size_t> pending = std::make_shared<size_t>(0);
   static Napi::FunctionReference constructor;
   friend class OpenArchiveWorker;
   friend class ExtractFileWorker;

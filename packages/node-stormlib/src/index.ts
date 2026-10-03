@@ -108,9 +108,16 @@ export class Archive {
         const error =
           reply.error.code !== undefined
             ? new StormLibError(reply.error.message, reply.error.code)
-            : Object.assign(new Error(reply.error.message), {
-                name: reply.error.name,
-              });
+            : Object.assign(
+                reply.error.name === "RangeError"
+                  ? new RangeError(reply.error.message)
+                  : reply.error.name === "TypeError"
+                    ? new TypeError(reply.error.message)
+                    : new Error(reply.error.message),
+                {
+                  name: reply.error.name,
+                },
+              );
         pending.reject(error);
       } else pending.resolve(reply.value);
       if (!this.pending.size) this.worker.unref();

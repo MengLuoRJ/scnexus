@@ -1,15 +1,15 @@
-import * as fs from 'fs';
-import * as nodePath from 'path';
+import * as fs from "fs";
+import * as nodePath from "path";
 import {
   CascStorageBinding,
   CascFindData,
   CascStorageInfo,
   CascOpenStorageExOptions,
-  CascStorage
-} from './bindings.js';
-import { invoke, invokeAsync } from './errors.js';
-import { kDispose } from './dispose.js';
-import { File } from './file.js';
+  CascStorage,
+} from "./bindings.js";
+import { invoke, invokeAsync } from "./errors.js";
+import { kDispose } from "./dispose.js";
+import { File } from "./file.js";
 
 /**
  * Options for opening a CASC storage
@@ -75,7 +75,10 @@ export class Storage {
    * @param path - Path to the CASC storage directory
    * @param options - Optional opening options
    */
-  static async openAsync(path: string, options?: StorageOpenOptions): Promise<Storage> {
+  static async openAsync(
+    path: string,
+    options?: StorageOpenOptions,
+  ): Promise<Storage> {
     const storage = new Storage();
     await storage.openAsync(path, options);
     return storage;
@@ -100,7 +103,10 @@ export class Storage {
    * @param connection - Connection string, see {@link Storage.openOnline}
    * @param options - Optional opening options
    */
-  static async openOnlineAsync(connection: string, options?: StorageOpenOptions): Promise<Storage> {
+  static async openOnlineAsync(
+    connection: string,
+    options?: StorageOpenOptions,
+  ): Promise<Storage> {
     const storage = new Storage();
     await storage.openOnlineAsync(connection, options);
     return storage;
@@ -176,7 +182,9 @@ export class Storage {
    * ```
    */
   openOnline(connection: string, options?: StorageOpenOptions): void {
-    invoke(() => this.storage.CascOpenOnlineStorage(connection, options?.flags || 0));
+    invoke(() =>
+      this.storage.CascOpenOnlineStorage(connection, options?.flags || 0),
+    );
     this.opened = true;
   }
 
@@ -184,8 +192,13 @@ export class Storage {
    * Open an online CASC storage on a worker thread (does not block the event loop).
    * See {@link Storage.openOnline} for the connection string format.
    */
-  async openOnlineAsync(connection: string, options?: StorageOpenOptions): Promise<void> {
-    await invokeAsync(this.storage.openOnlineAsync(connection, options?.flags || 0));
+  async openOnlineAsync(
+    connection: string,
+    options?: StorageOpenOptions,
+  ): Promise<void> {
+    await invokeAsync(
+      this.storage.openOnlineAsync(connection, options?.flags || 0),
+    );
     this.opened = true;
   }
 
@@ -218,7 +231,9 @@ export class Storage {
    * @returns A File object
    */
   openFile(filename: string, options?: FileOpenOptions): File {
-    const file = invoke(() => this.storage.CascOpenFile(filename, options?.flags || 0));
+    const file = invoke(() =>
+      this.storage.CascOpenFile(filename, options?.flags || 0),
+    );
     return new File(file);
   }
 
@@ -264,7 +279,10 @@ export class Storage {
    * Read a file from storage on a worker thread (does not block the event loop).
    * Opens and closes the file internally.
    */
-  async readFileAsync(filename: string, options?: FileOpenOptions): Promise<Buffer> {
+  async readFileAsync(
+    filename: string,
+    options?: FileOpenOptions,
+  ): Promise<Buffer> {
     const file = this.openFile(filename, options);
     try {
       return await file.readAllAsync();
@@ -277,7 +295,10 @@ export class Storage {
    * Read a file from storage as a string.
    * @param encoding Buffer encoding (default 'utf-8').
    */
-  readFileAsString(filename: string, encoding: BufferEncoding = 'utf-8'): string {
+  readFileAsString(
+    filename: string,
+    encoding: BufferEncoding = "utf-8",
+  ): string {
     return this.readFile(filename).toString(encoding);
   }
 
@@ -285,7 +306,7 @@ export class Storage {
    * Read a file from storage and parse as JSON.
    */
   readFileAsJson<T = unknown>(filename: string): T {
-    return JSON.parse(this.readFileAsString(filename, 'utf-8')) as T;
+    return JSON.parse(this.readFileAsString(filename, "utf-8")) as T;
   }
 
   /**
@@ -293,7 +314,10 @@ export class Storage {
    * (does not block the event loop).
    * @param encoding Buffer encoding (default 'utf-8').
    */
-  async readFileAsStringAsync(filename: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
+  async readFileAsStringAsync(
+    filename: string,
+    encoding: BufferEncoding = "utf-8",
+  ): Promise<string> {
     return (await this.readFileAsync(filename)).toString(encoding);
   }
 
@@ -301,7 +325,7 @@ export class Storage {
    * Get the size of a file in storage without reading its contents.
    * Throws CascError if the file does not exist.
    */
-  getFileSize(filename: string): number {
+  getFileSize(filename: string): number | bigint {
     const file = this.openFile(filename);
     try {
       return file.getSize64();
@@ -324,7 +348,10 @@ export class Storage {
    * Extract a file from storage to a path on disk without blocking the
    * event loop. Returns the number of bytes written.
    */
-  async extractFileAsync(filename: string, destination: string): Promise<number> {
+  async extractFileAsync(
+    filename: string,
+    destination: string,
+  ): Promise<number> {
     const buf = await this.readFileAsync(filename);
     await fs.promises.writeFile(destination, buf);
     return buf.length;
@@ -364,7 +391,10 @@ export class Storage {
    */
   getProductInfo(): { codeName: string; buildNumber: number } {
     const info = this.getStorageInfo(4 /* CascStorageProduct */);
-    return { codeName: info.codeName ?? '', buildNumber: info.buildNumber ?? 0 };
+    return {
+      codeName: info.codeName ?? "",
+      buildNumber: info.buildNumber ?? 0,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -408,7 +438,10 @@ export class Storage {
    * }
    * ```
    */
-  *files(mask: string = '*', listFile?: string): IterableIterator<CascFindData> {
+  *files(
+    mask: string = "*",
+    listFile?: string,
+  ): IterableIterator<CascFindData> {
     let entry = this.findFirstFile(mask, listFile);
     if (!entry) return;
     try {
@@ -431,22 +464,25 @@ export class Storage {
    * Find all files matching a mask, returning an array.
    * Wraps the stateful findFirstFile/findNextFile/findClose loop.
    */
-  findAllFiles(mask: string = '*', listFile?: string): CascFindData[] {
+  findAllFiles(mask: string = "*", listFile?: string): CascFindData[] {
     return [...this.files(mask, listFile)];
   }
 
   /**
    * Get all file names matching a mask.
    */
-  getFileNames(mask: string = '*'): string[] {
-    return this.findAllFiles(mask).map(f => f.fileName);
+  getFileNames(mask: string = "*"): string[] {
+    return this.findAllFiles(mask).map((f) => f.fileName);
   }
 
   /**
    * Invoke a callback for each file matching a mask.
    * Iteration stops if the callback returns false.
    */
-  forEachFile(mask: string, callback: (entry: CascFindData) => boolean | void): void {
+  forEachFile(
+    mask: string,
+    callback: (entry: CascFindData) => boolean | void,
+  ): void {
     for (const entry of this.files(mask)) {
       if (callback(entry) === false) return;
     }
@@ -465,7 +501,9 @@ export class Storage {
    * ```
    */
   findFilesMatching(pattern: RegExp, listFile?: string): CascFindData[] {
-    return this.findAllFiles('*', listFile).filter(f => pattern.test(f.fileName));
+    return this.findAllFiles("*", listFile).filter((f) =>
+      pattern.test(f.fileName),
+    );
   }
 
   /**
@@ -484,10 +522,14 @@ export class Storage {
    * console.log(`Extracted ${extracted.length} files (${failed.length} failed)`);
    * ```
    */
-  extractFiles(outputDir: string, pattern: string | RegExp = '*'): { extracted: string[]; failed: string[] } {
-    const entries = typeof pattern === 'string'
-      ? this.findAllFiles(pattern)
-      : this.findFilesMatching(pattern);
+  extractFiles(
+    outputDir: string,
+    pattern: string | RegExp = "*",
+  ): { extracted: string[]; failed: string[] } {
+    const entries =
+      typeof pattern === "string"
+        ? this.findAllFiles(pattern)
+        : this.findFilesMatching(pattern);
     const extracted: string[] = [];
     const failed: string[] = [];
     for (const entry of entries) {
@@ -512,10 +554,14 @@ export class Storage {
    * blocking the event loop. Files are extracted sequentially — a storage
    * handle must not run concurrent operations.
    */
-  async extractFilesAsync(outputDir: string, pattern: string | RegExp = '*'): Promise<{ extracted: string[]; failed: string[] }> {
-    const entries = typeof pattern === 'string'
-      ? this.findAllFiles(pattern)
-      : this.findFilesMatching(pattern);
+  async extractFilesAsync(
+    outputDir: string,
+    pattern: string | RegExp = "*",
+  ): Promise<{ extracted: string[]; failed: string[] }> {
+    const entries =
+      typeof pattern === "string"
+        ? this.findAllFiles(pattern)
+        : this.findFilesMatching(pattern);
     const extracted: string[] = [];
     const failed: string[] = [];
     for (const entry of entries) {
@@ -525,7 +571,9 @@ export class Storage {
         continue;
       }
       try {
-        await fs.promises.mkdir(nodePath.dirname(destination), { recursive: true });
+        await fs.promises.mkdir(nodePath.dirname(destination), {
+          recursive: true,
+        });
         await this.extractFileAsync(entry.fileName, destination);
         extracted.push(entry.fileName);
       } catch {
@@ -542,9 +590,16 @@ export class Storage {
    * then verify the resolved path stays under the output root (zip-slip
    * guard).
    */
-  private static safeDestination(outputDir: string, fileName: string): string | null {
-    const parts = fileName.split(/[\\/]+/).filter(p => p && p !== '.');
-    if (parts.length === 0 || parts.some(p => p === '..' || /^[a-zA-Z]:$/.test(p))) return null;
+  private static safeDestination(
+    outputDir: string,
+    fileName: string,
+  ): string | null {
+    const parts = fileName.split(/[\\/]+/).filter((p) => p && p !== ".");
+    if (
+      parts.length === 0 ||
+      parts.some((p) => p === ".." || /^[a-zA-Z]:$/.test(p))
+    )
+      return null;
     const destination = nodePath.resolve(outputDir, ...parts);
     const root = nodePath.resolve(outputDir) + nodePath.sep;
     if (!destination.startsWith(root)) return null;
@@ -561,7 +616,7 @@ export class Storage {
    * @param key - Key data as Buffer
    * @returns true if added successfully
    */
-  addEncryptionKey(keyName: number, key: Buffer): boolean {
+  addEncryptionKey(keyName: number | bigint, key: Buffer): boolean {
     return invoke(() => this.storage.CascAddEncryptionKey(keyName, key));
   }
 
@@ -571,8 +626,10 @@ export class Storage {
    * @param keyStr - Key as string
    * @returns true if added successfully
    */
-  addStringEncryptionKey(keyName: number, keyStr: string): boolean {
-    return invoke(() => this.storage.CascAddStringEncryptionKey(keyName, keyStr));
+  addStringEncryptionKey(keyName: number | bigint, keyStr: string): boolean {
+    return invoke(() =>
+      this.storage.CascAddStringEncryptionKey(keyName, keyStr),
+    );
   }
 
   /**
@@ -598,7 +655,7 @@ export class Storage {
    * @param keyName - Name/ID of the key
    * @returns Key data or null if not found
    */
-  findEncryptionKey(keyName: number): Buffer | null {
+  findEncryptionKey(keyName: number | bigint): Buffer | null {
     return invoke(() => this.storage.CascFindEncryptionKey(keyName));
   }
 
@@ -606,7 +663,7 @@ export class Storage {
    * Get the name of an encryption key that was not found
    * @returns Key name or null
    */
-  getNotFoundEncryptionKey(): number | null {
+  getNotFoundEncryptionKey(): number | bigint | null {
     return invoke(() => this.storage.CascGetNotFoundEncryptionKey());
   }
 
@@ -627,14 +684,16 @@ export class Storage {
  *     s => { s.openOnline('/tmp/cache*hero'); return s.readFileAsString('buildid.txt'); }
  *   );
  */
-export function withStorage<T>(
-  fn: (storage: Storage) => T
-): T {
+export function withStorage<T>(fn: (storage: Storage) => T): T {
   const storage = new Storage();
   try {
     return fn(storage);
   } finally {
-    try { storage.close(); } catch { /* already closed */ }
+    try {
+      storage.close();
+    } catch {
+      /* already closed */
+    }
   }
 }
 
@@ -648,12 +707,16 @@ export function withStorage<T>(
  *   });
  */
 export async function withStorageAsync<T>(
-  fn: (storage: Storage) => Promise<T>
+  fn: (storage: Storage) => Promise<T>,
 ): Promise<T> {
   const storage = new Storage();
   try {
     return await fn(storage);
   } finally {
-    try { storage.close(); } catch { /* already closed */ }
+    try {
+      storage.close();
+    } catch {
+      /* already closed */
+    }
   }
 }

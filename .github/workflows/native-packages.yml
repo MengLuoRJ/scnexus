@@ -1,0 +1,51 @@
+name: Native packages
+
+on:
+  push:
+    paths:
+      - "packages/node-stormlib/**"
+      - "packages/node-casclib/**"
+      - ".github/workflows/native-packages.yml"
+  pull_request:
+    paths:
+      - "packages/node-stormlib/**"
+      - "packages/node-casclib/**"
+      - ".github/workflows/native-packages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          [
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            windows-11-arm,
+            macos-15-intel,
+            macos-15,
+          ]
+        package: [node-stormlib, node-casclib]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: npm install --workspaces=false --ignore-scripts --package-lock=false
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm pack --dry-run

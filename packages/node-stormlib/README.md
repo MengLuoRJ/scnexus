@@ -23,16 +23,16 @@ pnpm --filter @scnexus/node-stormlib test
 
 The build fetches StormLib commit
 `44ebfbfc109d76e2a85bbd5d8b0c949df7e65c6f` and statically links its bundled
-dependencies. To use the reference checkout without downloading again:
+dependencies (system zlib/bzip2 on macOS). To use a clean local upstream checkout:
 
 ```powershell
-$env:STORMLIB_SOURCE_DIR = "D:/Project_SCNexus/scnexus-client/stormlib-reference/thirdparty/StormLib"
+$env:STORMLIB_SOURCE_DIR = "D:/Sources/StormLib"
 pnpm --filter @scnexus/node-stormlib build:native
 pnpm --filter @scnexus/node-stormlib build:ts
 ```
 
 An explicit source override must match the pinned commit and have no tracked
-modifications. Sources are prepared under the ignored `vendor/StormLib` directory.
+modifications or untracked files. Sources are prepared under the ignored `vendor/StormLib` directory.
 Build output includes `build/Release/node_stormlib.node` (Worker binding),
 `build/Release/stormlib_bindings.node` (reference binding) and `dist/`.
 Upstream license texts are collected into `dist/licenses` during preparation.
@@ -126,9 +126,12 @@ attributes, checksums, verification/signatures, locales, patch attachment,
 embedded archives, arbitrary info classes, listfile and buffer/text helpers.
 Its semantics follow the reference package: most calls are synchronous;
 `openAsync`, `readAllAsync` and other explicit async variants use libuv workers.
-It does not use the main entry's request queue, read limits, exclusive creation,
-stream input or extraction-overwrite protections. Never close or mutate a
-handle during an async operation. Close files before their owning archive;
+It does not use the main entry's request queue, exclusive creation,
+stream input or extraction-overwrite protections. Compat reads are limited to
+256 MiB per call; readAll/readAllAsync read the remaining bytes from the cursor.
+Use incremental reads for larger files. Pending async operations reject
+conflicting operations on related handles. Files and nested/borrowed archives
+retain their owner. Close files and nested/borrowed views before their archive;
 borrowed handles must not outlive their owner. Locale settings affect the native
 module globally. Do not load this reference binding in multiple Node Worker
 environments; use the main entry for dedicated Worker isolation.

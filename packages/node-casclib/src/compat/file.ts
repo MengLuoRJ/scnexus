@@ -1,6 +1,6 @@
-import { CascFile, CascFileInfoResult } from './bindings.js';
-import { invoke, invokeAsync } from './errors.js';
-import { kDispose } from './dispose.js';
+import { CascFile, CascFileInfoResult } from "./bindings.js";
+import { invoke, invokeAsync } from "./errors.js";
+import { kDispose } from "./dispose.js";
 
 /**
  * CascLib File wrapper class
@@ -23,12 +23,12 @@ export class File {
    * @returns Buffer containing the read data
    */
   read(bytesToRead?: number): Buffer {
-    return invoke(() => this.file.CascReadFile(bytesToRead || 4096));
+    return invoke(() => this.file.CascReadFile(bytesToRead ?? 4096));
   }
 
   /**
-   * Read all data from the file
-   * @returns Buffer containing all file data
+   * Read remaining data from the current cursor (up to 256 MiB).
+   * @returns Buffer containing the remaining file data
    */
   readAll(): Buffer {
     return invoke(() => this.file.readFileAll());
@@ -57,7 +57,7 @@ export class File {
    * Get the file size (64-bit)
    * @returns File size in bytes
    */
-  getSize64(): number {
+  getSize64(): number | bigint {
     return invoke(() => this.file.CascGetFileSize64());
   }
 
@@ -73,7 +73,7 @@ export class File {
    * Get the current file position (64-bit)
    * @returns Current position in bytes
    */
-  getPosition64(): number {
+  getPosition64(): number | bigint {
     return invoke(() => this.file.CascGetFilePointer64());
   }
 
@@ -92,7 +92,10 @@ export class File {
    * @param moveMethod - Move method (FILE_BEGIN, FILE_CURRENT, FILE_END)
    * @returns The new position
    */
-  setPosition64(position: number, moveMethod?: number): number {
+  setPosition64(
+    position: number | bigint,
+    moveMethod?: number,
+  ): number | bigint {
     return invoke(() => this.file.CascSetFilePointer64(position, moveMethod));
   }
 

@@ -25,9 +25,31 @@ test("reference Archive/File bindings create, seek, checksum and reopen MPQ file
         assert.equal(opened.getSize(), 5);
         assert.equal(opened.read(2).toString(), "he");
         assert.equal(opened.getPosition(), 2);
+        assert.equal(opened.readAll().toString(), "llo");
+        assert.equal(opened.readAll().length, 0);
+        opened.setPosition(0);
+        assert.equal(opened.read(4096).toString(), "hello");
+        assert.equal(opened.read(0).length, 0);
+        for (const size of [-1, 1.5, NaN, Infinity, 256 * 1024 * 1024 + 1]) {
+            assert.throws(() => opened.read(size), RangeError);
+        }
+        assert.throws(() => archive.close(), /still open/);
+        opened.setPosition(2);
+        const pending = opened.readAllAsync();
+        assert.throws(() => opened.close(), /pending/);
+        assert.throws(() => opened.setPosition(0), /pending/);
+        assert.throws(() => opened.readAllAsync(), /pending/);
+        assert.throws(() => archive.close(), /pending/);
+        assert.equal((await pending).toString(), "llo");
         opened.setPosition(0);
         assert.equal(opened.readAll().toString(), "hello");
+        const borrowed = opened.getArchive();
+        assert.throws(() => archive.close(), /still open/);
+        borrowed.close();
         opened.close();
+        const pendingExtract = archive.extractFileAsync("folder/file.txt", join(directory, "extracted.txt"));
+        assert.throws(() => archive.close(), /pending/);
+        await pendingExtract;
         assert.equal(archive.hasFile("folder/file.txt"), true);
         const checksums = archive.getFileChecksums("folder/file.txt");
         assert.equal(typeof checksums.crc32, "number");
@@ -38,6 +60,14 @@ test("reference Archive/File bindings create, seek, checksum and reopen MPQ file
         assert.equal((await reopened.readAllAsync()).toString(), "hello");
         reopened.close();
         assert.throws(() => archive.openFile("missing.txt"), StormError);
+        const failed = new MPQArchiveBinding();
+        const pendingOpen = failed.openAsync(join(directory, "missing.mpq"), MPQ_OPEN_READ_ONLY);
+        assert.throws(() => failed.SFileCloseArchive(), /pending/);
+        assert.throws(() => failed.openAsync(path, MPQ_OPEN_READ_ONLY), /pending/);
+        await assert.rejects(pendingOpen);
+        assert.equal(failed.SFileCloseArchive(), false);
+        await failed.openAsync(path, MPQ_OPEN_READ_ONLY);
+        failed.SFileCloseArchive();
     } finally {
         archive?.close();
         await rm(directory, { recursive: true, force: true });
@@ -56,6 +86,7 @@ test("reference API opens embedded MPQ archives", async () => {
         outer.addBuffer("inner.mpq", await readFile(innerPath));
         outer.flush();
         nested = outer.openFileArchive("inner.mpq", { flags: MPQ_OPEN_READ_ONLY });
+        assert.throws(() => outer.close(), /still open/);
         const file = nested.openFile("content.txt");
         assert.equal(file.readAll().toString(), "nested");
         file.close();

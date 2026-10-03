@@ -19,13 +19,15 @@ if (source) {
   const path = resolve(source);
   if (path === destination) throw new Error("STORMLIB_SOURCE_DIR must not be the generated vendor directory");
   if (git(["rev-parse", "HEAD"], path) !== revision) throw new Error("StormLib source revision does not match the pinned revision");
-  if (git(["status", "--porcelain", "--untracked-files=no"], path)) throw new Error("StormLib source must have no tracked modifications");
+  if (git(["status", "--porcelain"], path)) throw new Error("StormLib source must have no modifications or untracked files");
   await rm(destination, { recursive: true, force: true });
   await cp(path, destination, { recursive: true, filter: (entry) => entry !== join(path, ".git") });
 } else {
   try {
     const marker = await readFile(join(destination, ".source-revision"), "utf8");
     if (marker !== revision) throw new Error("Revision changed");
+    if (git(["rev-parse", "HEAD"], destination) !== revision) throw new Error("Cached source revision changed");
+    if (git(["status", "--porcelain", "--untracked-files=no"], destination)) throw new Error("Cached sources changed");
   } catch {
     await rm(destination, { recursive: true, force: true });
     await mkdir(destination, { recursive: true });

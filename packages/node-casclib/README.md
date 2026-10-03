@@ -124,12 +124,17 @@ try {
 }
 ```
 
-Close files before their storage and never close or mutate a handle during an
-async operation. Do not load the reference binding in multiple Node Worker
+Close files before their storage. Pending async operations reject conflicting
+handle operations, including close; files retain their owning storage.
+Do not load the reference binding in multiple Node Worker
 environments. On Windows it retains ANSI filesystem-path semantics; use the
 main entry for Unicode paths. The reference API does not inherit the main
-entry's memory limits, overwrite protections or bigint encryption-key names.
-Its number-based 64-bit values may lose precision above Number.MAX_SAFE_INTEGER.
+entry's overwrite protections. Reference reads are limited to 256 MiB per call;
+readAll/readAllAsync read only the remaining bytes. Use incremental reads for
+larger files. Encryption-key names accept uint64 bigint or nonnegative safe
+integers. Size/position/full-file-info 64-bit values return number when safe,
+otherwise bigint; setPosition64 also accepts signed int64 bigint. Legacy 32-bit
+methods remain 32-bit; enumeration metadata still follows the reference API.
 The inherited `StorageOpenOptions.flags` field is passed as the locale mask for
 basic opens; use `openEx` options to separate `localeMask` and feature `flags`.
 The CLI and prebuilt binary distribution from the reference are not included.

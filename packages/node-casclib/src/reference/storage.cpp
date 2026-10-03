@@ -2,6 +2,19 @@
 #include "file.h"
 #include "errors.h"
 #include <string>
+#include <cmath>
+
+static ULONGLONG KeyName(Napi::Value value) {
+  if (value.IsBigInt()) {
+    bool lossless = false;
+    uint64_t key = value.As<Napi::BigInt>().Uint64Value(&lossless);
+    if (lossless) return key;
+  } else if (value.IsNumber()) {
+    double key = value.As<Napi::Number>().DoubleValue();
+    if (std::isfinite(key) && key >= 0 && key <= 9007199254740991.0 && std::floor(key) == key) return ULONGLONG(key);
+  }
+  throw Napi::RangeError::New(value.Env(), "Key name must be a uint64 bigint or nonnegative safe integer");
+}
 
 Napi::FunctionReference CascStorage::constructor;
 
@@ -16,6 +29,7 @@ public:
     : Napi::AsyncWorker(env, online ? "casclib:openOnlineAsync" : "casclib:openAsync"),
       deferred(Napi::Promise::Deferred::New(env)),
       receiverRef(Napi::Persistent(receiver)),
+      pendingState(Napi::ObjectWrap<CascStorage>::Unwrap(receiver)->pending),
       storage(storage), path(std::move(path)), flags(flags), online(online),
       hStorage(nullptr), errorCode(0) {}
 
@@ -31,12 +45,14 @@ public:
   }
 
   void OnOK() override {
+    --*pendingState;
     storage->hStorage = hStorage;
     storage->isOpen = true;
     deferred.Resolve(Napi::Boolean::New(Env(), true));
   }
 
   void OnError(const Napi::Error& e) override {
+    --*pendingState;
     std::string message = e.Message() + " (CascError=" + std::to_string(errorCode) +
                           " " + CascErrorName(errorCode) + ")";
     deferred.Reject(MakeCascError(Env(), message, errorCode).Value());
@@ -47,6 +63,7 @@ public:
 private:
   Napi::Promise::Deferred deferred;
   Napi::ObjectReference receiverRef;
+  std::shared_ptr<size_t> pendingState;
   CascStorage* storage;
   std::string path;
   DWORD flags;
@@ -59,25 +76,25 @@ Napi::Object CascStorage::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "Storage", {
-    InstanceMethod("CascOpenStorage", &CascStorage::Open),
-    InstanceMethod("CascOpenOnlineStorage", &CascStorage::OpenOnline),
-    InstanceMethod("openAsync", &CascStorage::OpenAsync),
-    InstanceMethod("openOnlineAsync", &CascStorage::OpenOnlineAsync),
-    InstanceMethod("CascOpenStorageEx", &CascStorage::OpenEx),
-    InstanceMethod("CascCloseStorage", &CascStorage::Close),
-    InstanceMethod("CascOpenFile", &CascStorage::OpenFile),
-    InstanceMethod("CascGetFileInfo", &CascStorage::GetFileInfo),
-    InstanceMethod("fileExists", &CascStorage::FileExists),
-    InstanceMethod("CascGetStorageInfo", &CascStorage::GetStorageInfo),
-    InstanceMethod("CascFindFirstFile", &CascStorage::FindFirstFile),
-    InstanceMethod("CascFindNextFile", &CascStorage::FindNextFile),
-    InstanceMethod("CascFindClose", &CascStorage::FindClose),
-    InstanceMethod("CascAddEncryptionKey", &CascStorage::AddEncryptionKey),
-    InstanceMethod("CascAddStringEncryptionKey", &CascStorage::AddStringEncryptionKey),
-    InstanceMethod("CascImportKeysFromString", &CascStorage::ImportKeysFromString),
-    InstanceMethod("CascImportKeysFromFile", &CascStorage::ImportKeysFromFile),
-    InstanceMethod("CascFindEncryptionKey", &CascStorage::FindEncryptionKey),
-    InstanceMethod("CascGetNotFoundEncryptionKey", &CascStorage::GetNotFoundEncryptionKey)
+    InstanceMethod("CascOpenStorage", &CascStorage::Guard<&CascStorage::Open>),
+    InstanceMethod("CascOpenOnlineStorage", &CascStorage::Guard<&CascStorage::OpenOnline>),
+    InstanceMethod("openAsync", &CascStorage::Guard<&CascStorage::OpenAsync>),
+    InstanceMethod("openOnlineAsync", &CascStorage::Guard<&CascStorage::OpenOnlineAsync>),
+    InstanceMethod("CascOpenStorageEx", &CascStorage::Guard<&CascStorage::OpenEx>),
+    InstanceMethod("CascCloseStorage", &CascStorage::Guard<&CascStorage::Close>),
+    InstanceMethod("CascOpenFile", &CascStorage::Guard<&CascStorage::OpenFile>),
+    InstanceMethod("CascGetFileInfo", &CascStorage::Guard<&CascStorage::GetFileInfo>),
+    InstanceMethod("fileExists", &CascStorage::Guard<&CascStorage::FileExists>),
+    InstanceMethod("CascGetStorageInfo", &CascStorage::Guard<&CascStorage::GetStorageInfo>),
+    InstanceMethod("CascFindFirstFile", &CascStorage::Guard<&CascStorage::FindFirstFile>),
+    InstanceMethod("CascFindNextFile", &CascStorage::Guard<&CascStorage::FindNextFile>),
+    InstanceMethod("CascFindClose", &CascStorage::Guard<&CascStorage::FindClose>),
+    InstanceMethod("CascAddEncryptionKey", &CascStorage::Guard<&CascStorage::AddEncryptionKey>),
+    InstanceMethod("CascAddStringEncryptionKey", &CascStorage::Guard<&CascStorage::AddStringEncryptionKey>),
+    InstanceMethod("CascImportKeysFromString", &CascStorage::Guard<&CascStorage::ImportKeysFromString>),
+    InstanceMethod("CascImportKeysFromFile", &CascStorage::Guard<&CascStorage::ImportKeysFromFile>),
+    InstanceMethod("CascFindEncryptionKey", &CascStorage::Guard<&CascStorage::FindEncryptionKey>),
+    InstanceMethod("CascGetNotFoundEncryptionKey", &CascStorage::Guard<&CascStorage::GetNotFoundEncryptionKey>)
   });
 
   constructor = Napi::Persistent(func);
@@ -174,6 +191,7 @@ static Napi::Value QueueOpenStorageWorker(const Napi::CallbackInfo& info, CascSt
   auto* worker = new OpenStorageWorker(env, info.This().As<Napi::Object>(), self,
                                        std::move(path), flags, online);
   Napi::Promise promise = worker->Promise();
+  self->BeginOperation();
   worker->Queue();
   return promise;
 }
@@ -232,6 +250,7 @@ Napi::Value CascStorage::OpenFile(const Napi::CallbackInfo& info) {
 
   // Create a CascFile object
   Napi::Object fileObj = CascFile::NewInstance(env, hFile);
+  CascFile::Unwrap(fileObj)->Attach(info.This().As<Napi::Object>(), children, pending);
   return fileObj;
 }
 
@@ -583,7 +602,7 @@ Napi::Value CascStorage::AddEncryptionKey(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  ULONGLONG keyName = info[0].As<Napi::Number>().Int64Value();
+  ULONGLONG keyName = KeyName(info[0]);
   
   if (!info[1].IsBuffer()) {
     Napi::TypeError::New(env, "Key must be a Buffer")
@@ -620,7 +639,7 @@ Napi::Value CascStorage::AddStringEncryptionKey(const Napi::CallbackInfo& info) 
     return env.Null();
   }
 
-  ULONGLONG keyName = info[0].As<Napi::Number>().Int64Value();
+  ULONGLONG keyName = KeyName(info[0]);
   std::string keyStr = info[1].As<Napi::String>().Utf8Value();
 
   bool result = CascAddStringEncryptionKey(hStorage, keyName, keyStr.c_str());
@@ -676,13 +695,13 @@ Napi::Value CascStorage::FindEncryptionKey(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (info.Length() < 1 || !info[0].IsNumber()) {
+  if (info.Length() < 1 || (!info[0].IsNumber() && !info[0].IsBigInt())) {
     Napi::TypeError::New(env, "Expected keyName as argument")
       .ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  ULONGLONG keyName = info[0].As<Napi::Number>().Int64Value();
+  ULONGLONG keyName = KeyName(info[0]);
   LPBYTE key = CascFindEncryptionKey(hStorage, keyName);
 
   if (!key) {
@@ -708,5 +727,6 @@ Napi::Value CascStorage::GetNotFoundEncryptionKey(const Napi::CallbackInfo& info
     return env.Null();
   }
 
+  if (keyName > 9007199254740991ULL) return Napi::BigInt::New(env, uint64_t(keyName));
   return Napi::Number::New(env, (double)keyName);
 }

@@ -1,0 +1,248 @@
+# app-main 模块与存储设计
+
+## 1. 范围与状态
+
+本文细化 [目标架构](./architecture.md)。保留现有业务能力，调整能力边界、窗口生命周期和存储访问方式，不以此次设计为理由删除原功能。
+
+本文是待实施设计：当前源码仍保留 common、原窗口管理和 electron-store v10。本轮只更新 docs，不修改 README、AGENTS、依赖或代码。日志和错误处理见 [日志与错误规范](./logging-and-errors.md)。
+
+## 2. 模块划分
+
+移除 common 作为能力集合的业务边界，将其每项能力提到 modules 的一级目录；窗口管理也作为独立模块。
+
+| 模块 | 能力与边界 | 主要依赖 |
+| --- | --- | --- |
+| app | 应用版本、系统语言、应用路径等查询；不负责创建窗口 | Electron app |
+| window | 主窗口创建、加载、恢复、聚焦、关闭、renderer-ready 状态 | Electron BrowserWindow |
+| deep-link | 协议注册、首次启动/第二实例/open-url 入口、解析及待投递队列 | window |
+| dialog | 文件和目录选择；统一绑定所属窗口 | window、Electron dialog |
+| shell | 打开网页、路径、定位文件，校验协议和输入 | Electron shell |
+| tray | 托盘创建、菜单、动作与销毁；保留原能力，是否启用单独控制 | window、应用退出协调 |
+| updater | 检查、下载、安装与状态事件；不承载普通内容包下载 | window 事件适配、更新工具 |
+| setting | 用户偏好与客户端设置，含统一日志等级 | setting repository |
+| profile | 游戏环境配置、检测、验证、派生路径、配置变更 | profile repository、游戏检测工具 |
+| campaign | 战役库、激活、取消激活、恢复和卸载 | profile、内容索引与文件工具 |
+| customize | 自定义地图/模组导入、安装、卸载及游戏启动 | profile、内容索引与归档工具 |
+| workshop | 内容元数据、摘要、上传及后续下载 | setting（下载目录）、网络与归档工具 |
+| logging | 日志入口、等级应用、各进程日志归集与脱敏 | electron-log；通过装配接收等级 |
+| telemetry | 用户授权后的 Sentry 初始化、错误上报、身份绑定和关闭 | Sentry；通过装配接收遥测偏好 |
+
+现有 utils/logger.ts 与 utils/sentry.ts 的能力分别迁入 modules/logging 和 modules/telemetry，不再作为 utils 中的全局有状态单例。两个模块遵循同一基础文件结构，通过 index.ts 初始化及导出能力；Sentry SDK 适配实现放在 telemetry 内部。
+
+logging 负责本地日志输出和跨进程归集，telemetry 负责用户授权后的远程上报。二者不合并：关闭遥测不影响本地日志，日志阈值也不代表上报授权。utils 仅保留无生命周期、无全局状态的基础工具，不再负责日志或 Sentry 初始化。
+
+logging 管理诊断能力，不持有 setting Store，也不在错误报告过程中调用 setting。存储错误不能递归触发存储写入。
+
+每个 app-main 模块统一包含三个基础文件，额外实现按需要拆分：
+
+- `index.ts`：模块 init、生命周期装配及公开能力导出。其他模块通过该入口访问，不导入内部实现文件。
+- `xxx.ipc.ts`：注册该模块的 IPC，校验来源/参数、调用能力并转换 DTO；不承载具体业务实现。
+- `xxx.ts`：该模块的具体实现与 main 内部业务能力；不再以 `xxx.service.ts` 作为基础文件名。
+- 其他具体实现文件：按实际需要拆分检测、任务、适配等逻辑，由基础实现或入口组织。
+
+没有面向 renderer 的能力时仍保留 `xxx.ipc.ts` 及注册入口，但不为满足目录结构制造无用 channel。
+
+目标形态：
+
+```text
+src/
+  index.ts
+  bootstrap.ts
+  modules/
+    <module>/
+      index.ts                 init、生命周期装配、能力导出
+      <module>.ipc.ts          设置 IPC、校验参数、转换 DTO
+      <module>.ts              具体实现与 main 内部业务能力
+      <其他实现>.ts            按需要拆分的具体实现
+    window/
+    logging/
+    telemetry/
+    setting/
+    profile/
+  stores/
+    setting.repository.ts
+    profile.repository.ts
+    <content>.repository.ts
+    migrations/               显式数据迁移
+  utils/                      通用文件与归档能力
+```
+
+三个基础文件是所有模块的统一约定，其余文件仅按实际需要创建。“服务”表示业务职责，不要求对应 `.service.ts` 文件。原 campaign/customize/workshop 能力逐步迁移，不做无关重写。
+
+## 3. setting 与 profile：独立模块，不合并业务
+
+### 推荐结论
+
+**都作为 module；共享 electron-store 基础设施，但不合并为一个配置业务模块或一个可任意修改的 Store。**
+
+| 维度 | setting | profile |
+| --- | --- | --- |
+| 内容 | 用户偏好、日志等级、下载目录、客户端标识 | 游戏安装目录、检测状态、派生执行路径与内容目录 |
+| 修改频率 | 用户可频繁修改 | 需要验证并影响整个本地业务环境 |
+| 校验 | 枚举、路径选择、偏好约束 | 游戏目录、实际文件、执行能力与路径归属 |
+| 后果 | 应用偏好立即生效 | 使内容缓存失效，可能与正在执行的安装冲突 |
+| main 调用者 | logging 装配、workshop 等 | campaign、customize、游戏启动等 |
+
+合并只会减少文件数量，却让生命周期、校验和依赖混杂。若 UI 需要同时读取二者，可由 preload/renderer 聚合结果，不合并存储职责，也不引入所谓“全局配置万能模块”。
+
+### setting 字段与修改归属
+
+| 字段 | 含义与默认值 | 修改归属 |
+| --- | --- | --- |
+| clientId | 客户端安装标识，首次创建一次 UUID；迁移保留旧值 | main 内部维护，UI 只读 |
+| lastUpdatedAt | 客户端最近成功完成版本更新的时间，Unix 毫秒时间戳；尚无已知更新时为 null | updater/启动版本确认流程，UI 只读 |
+| downloadDirectory | 默认文件下载目录，首次使用系统 downloads 路径 | 用户通过受控 IPC 修改，main 校验 |
+| displayLanguage | 显示语言选择，默认 system；显式选择支持的语言 | 用户通过受控 IPC 修改 |
+| logLevel | 全局输出阈值，默认 error | 用户或 main 通过日志等级协调流程修改 |
+| telemetryEnabled | 是否启用遥测，默认 false | 用户主动授权或撤销，通过受控 IPC 修改 |
+
+schemaVersion、revision 是存储管理字段，不属于用户偏好。lastUpdatedAt 不随设置保存、更新检查或下载完成而变化；仅在新版本实际安装并成功启动确认后更新。实现时保留内部已确认版本信息以避免每次启动重复更新时间；初次安装不冒充一次版本更新，旧 LAST_UPDATED_TIME 不直接迁移为该值。
+
+显示语言存储“选择策略”和运行时“有效语言”分离：system 按系统首选语言顺序匹配 zh-CN、en-US、zh-TW，英文变体归入 en-US，繁体中文变体归入 zh-TW，简体中文归入 zh-CN；无法匹配时回退 zh-CN。显式选择不被系统语言覆盖。renderer 从 setting 快照获得有效语言并设置 Vue I18n，不独立保存另一份语言偏好。
+
+setting 业务字段全部采用顶层结构，不增加 preferences 包装层。字段层级不承担权限划分：设置快照只读返回，用户可修改字段明确限定为 downloadDirectory、displayLanguage、logLevel、telemetryEnabled；clientId、lastUpdatedAt、schemaVersion、revision 由 main 维护。下载目录、语言、日志及遥测修改统一走 setting 业务入口；涉及运行时副作用的字段不可绕过协调流程直接提交 Store。默认 false 不等于已授权，旧配置没有明确授权也按关闭处理。
+
+### 两种入口，共用业务服务
+
+```text
+renderer → preload → setting/profile IPC → service → repository
+其他 main 模块 ───────────────────────→ service → repository
+```
+
+- main 模块直接调用服务，不绕 IPC，不访问 Store 实例。
+- IPC 不暴露任意 key 的 set/get、整包替换或磁盘文件路径；只提供允许的查询和修改。
+- setting 提供 getSnapshot、updatePreferences；clientId、lastUpdatedAt、schemaVersion 等内部字段不可被 UI patch。logLevel 和 telemetryEnabled 修改必须走各自协调流程，通用偏好更新不能绕过该流程直接写这些字段。
+- profile 提供 getSnapshot、configureGame、refreshGameStatus；不允许 UI 直接写 SUCCESS、派生路径或路径授权列表。
+- main 内部写入也经过服务校验；内部维护动作提供明确方法，不给其他模块通用写权限。
+- 返回独立的只读快照 DTO，调用者修改对象不应改变存储。
+- 变更成功后发布带 revision 的快照或失效事件，renderer 更新 Pinia；订阅必须支持取消。
+
+profile 的 configureGame 应串行化：检查任务互斥 → 验证候选目录 → 计算派生数据 → 提交配置 → 使旧缓存失效 → 发出变更。刷新失败独立报告，不伪装成配置写入失败；缓存标记为需要重建。
+
+安装/激活开始时固定使用一个 profile revision 的配置快照，任务期间拒绝切换游戏根目录，防止中途混用新旧路径。
+
+## 4. electron-store v11 与 repository
+
+### 版本与运行边界
+
+- 目标升级到 electron-store v11；它是原生 ESM，要求 Electron 30+，与 Electron 44 的目标范围匹配。
+- 仅 main 创建 Store。即使库支持 renderer 使用，也不启用 Store.initRenderer，不向 preload/renderer 暴露存储能力。
+- 在明确的启动阶段创建实例，不在模块 import 时读路径、建目录或写文件。
+- 保持用户数据目录下的 SCNexusStorage；旧文件在迁移成功前保留。
+- Store 的单文件原子写入不意味着多文件事务，也不意味着游戏文件与配置事务。
+
+### 数据组织
+
+setting、profile 和内容索引继续分开保存。默认沿用原文件名：store-setting、store-profile、store-campaign、store-campaign-active、store-customize，避免升级时意外失去旧数据。
+
+新模型采用明确字段，例如：
+
+```text
+SettingData
+  schemaVersion
+  revision
+  clientId
+  lastUpdatedAt             默认 null，仅成功更新后记录
+  downloadDirectory
+  displayLanguage 默认 system
+  logLevel       默认 error
+  telemetryEnabled 默认 false
+
+ProfileData
+  schemaVersion
+  revision
+  gameRoot                   已验证并提交的游戏目录
+```
+
+游戏存在性、当前版本、启动器是否可用等属于可变环境状态，启动/刷新时重新检测。优先由 gameRoot 派生路径，不持久化另一套可独立修改的路径；运行时维护检测快照供业务读取。授权目录从有效配置计算，不允许通过普通设置修改。
+
+内容索引保持可重建缓存语义，不把“记录存在”当作“已经安装成功”。字段迁移不在本设计阶段直接执行。
+
+### repository 规则
+
+- 每类数据有自身 schema/defaults，限制对象结构与枚举，读写前进行业务校验。
+- repository 提供 load/save 等有限方法，不导出 electron-store 原始实例。
+- 对一次更新构造完整候选对象并验证，以一次提交更新 schemaVersion、revision 和数据；不以多次 set 模拟事务。
+- 服务负责业务语义、串行更新和变更事件，repository 只负责持久化与存储错误转换。
+- revision 在对应文件中递增；不能用不同文件的 revision 比较全局时间顺序。
+- 非必要不启用外部文件 watch，默认只允许 main 写入。若支持用户外部编辑，需要另行定义校验和冲突处理。
+- 写失败不发成功事件，不改变对外有效快照。
+- 损坏、权限和磁盘错误使用明确错误码。不得静默清空用户配置；备份损坏文件后再提供恢复选择。
+- 失败的配置存储不阻止 logging 以 error 降级运行，但配置修改必须返回失败，不能假装已保存。
+
+### 迁移设计
+
+electron-store v11 文档明确提示内置 migrations 存在已知问题。采用应用自己的 schemaVersion 与可测试迁移，不把应用版本号直接作为数据版本。
+
+1. 读取旧格式并检查结构，不先套用会拒绝旧字段的新 schema。
+2. 保留原始备份，转换旧大写字段为新模型；原有 CLIENT_ID 必须保留。
+3. 旧文件无日志等级时补 error；无显示语言时补 system，无明确遥测授权时补 false。旧 LAST_UPDATED_TIME 的含义不能证明客户端更新完成，因此 lastUpdatedAt 初始化为 null；旧下载目录通过验证后保留。默认值不按开发/生产环境改变。
+4. 校验完整目标数据，原子提交对应文件，成功后标记该文件版本。
+5. 内容索引可标记待重建，不迁移无法信任的绝对路径缓存。
+6. 重复启动迁移应幂等；失败不删除原数据、不继续按错误的新数据启动业务。
+7. 新版本数据被旧程序打开时不降级覆写；提示不支持的数据版本或使用兼容策略。
+
+备份与恢复策略在实施时补测试，包括首次运行、v10 数据、部分文件已迁移、坏 JSON、写入失败和降级。
+
+## 5. 窗口模块
+
+### 职责与内部 API
+
+window 是唯一创建和维护主 BrowserWindow 的模块，避免其他模块根据 getAllWindows() 随意选择窗口。
+
+建议服务方法：ensureMainWindow、restoreAndFocus、getStatus、sendWhenReady、dispose。尽量不向业务服务暴露 BrowserWindow；对话框的父窗口需求由适配层处理。
+
+renderer 不接受任意窗口配置、URL 或 preload 路径；窗口 IPC 只暴露产品确有需要的操作。
+
+### 生命周期
+
+```text
+absent → creating → loading → ready → closed
+             └──失败──→ failed → 显式重试
+```
+
+- ensureMainWindow 使用一个共享创建 Promise，防止第二实例、activate 与启动并发创建多个窗口。
+- closed 时清除引用、就绪状态与监听器；销毁对象不能继续发送消息。
+- ready-to-show 只控制展示时机；业务事件投递依赖 renderer 完成订阅后的显式 ready 握手。
+- 每次页面 reload 使握手失效，旧握手不得激活新页面；仅接受所属窗口当前页面的信号。
+- deep-link 保存有界待投递队列，覆盖冷启动、第二实例和 open-url；不静默丢弃、不落盘登录令牌。
+- deep-link 是需要重投的命令；更新状态等可查询快照的事件在握手后重新同步，不无限累积队列。
+- 页面加载失败提供诊断与重试；renderer 崩溃/重载后重新握手并读取状态。
+- 生命周期监听只注册一次，启动协调管理 app 生命周期，窗口模块管理窗口生命周期。
+
+初期保持原产品行为：Windows/Linux 关闭最后窗口退出，macOS 保持应用并支持 activate 重建。托盘启用不自动改为关闭隐藏；如要改变，需要单独确认产品行为。
+
+开发加载 v2 dev server，生产加载 v2 静态文件；迁移完成前保留旧入口兼容。nodeIntegration=false、contextIsolation=true，preload 路径固定，外链交给 shell 模块验证。
+
+## 6. 装配顺序与依赖
+
+```text
+1. logging：无存储依赖的 error 启动日志
+2. stores：打开、校验和迁移 setting/profile
+3. setting：读取日志偏好，装配器将等级应用到 logging
+4. profile：构建游戏环境快照
+5. window：注册生命周期与控制接口
+6. app/dialog/shell/deep-link/tray/updater 及业务模块注册
+7. 创建窗口 → preload 桥接 → renderer ready → 同步快照
+```
+
+协议的首次启动参数与早期 open-url 入口应在入口尽早捕获，稍后交给 deep-link；不能等到步骤 6 才开始监听而丢失事件。
+
+setting 的普通变更由装配器分发；日志等级及遥测偏好在对应协调流程成功后发布。logging/telemetry 不反向读取或写入 setting。telemetry 在 setting 加载后按已保存授权状态启动，存储未恢复时保持关闭。模块内部服务用显式参数或轻量装配传入，不引入 DI 框架。
+
+profile 无有效游戏配置时，查询与配置接口仍可用；campaign/customize handler 也注册，但相关操作返回 M011（PROFILE-NOT-READY）。updater 不适用当前平台时返回明确能力状态。可选模块失败不导致窗口完全打不开。
+
+## 7. 实施与验收
+
+1. 建立共享错误码及日志门面，接入启动日志和统一等级。
+2. 升级 electron-store v11，提供旧数据迁移、setting/profile 服务与受限 IPC。
+3. 重构 window，验证并发创建、关闭重建、ready 握手及冷启动深链接。
+4. 将 common 能力迁到一级模块，保持现有 channel 兼容或同步迁移三个包。
+5. 逐步让 campaign/customize/workshop 通过服务读取配置，移除原始 Store 耦合。
+
+至少覆盖：main 内部与 IPC 更新走同一校验、写失败不发成功事件、非法 profile 不覆盖有效配置、任务期间配置互斥、日志等级跨进程同步、旧数据保留、窗口失败和销毁后的行为。路径移动不是功能删除，不顺带删除原有更新、托盘或兼容内容格式能力。
+
+## 8. 依据
+
+- [electron-store v11 文档](https://github.com/sindresorhus/electron-store/blob/v11.0.0/readme.md)：ESM、Electron 版本、schema、单文件原子写入及 migrations 限制。
+- [日志与错误规范](./logging-and-errors.md)：错误码表、日志传输与等级更新流程。

@@ -1,0 +1,220 @@
+# 桌面应用架构
+
+## 1. 文档范围与状态
+
+本文定义 SCNexus 桌面应用的目标架构及后续建设顺序。当前阶段仅建立文档和开发规范，不升级依赖、不修改构建脚本、不迁移业务。
+
+本文中的“目标”“应”“建议目录”表示后续实施约定，不代表已经完成。依赖的实际安装版本以各包的 manifest 和根目录锁文件为准；不能仅根据本文判断运行环境已升级。
+
+## 2. 技术基线
+
+| 层次          | 目标技术                   | 职责                             |
+| ------------- | -------------------------- | -------------------------------- |
+| 开发环境      | Node.js 26                 | 安装、构建、测试和开发工具运行   |
+| 工作区        | pnpm monorepo              | 工作区依赖、统一锁文件、包级命令 |
+| 构建          | Vite 8 / Rolldown          | 主进程、preload、renderer 构建   |
+| 桌面运行时    | Electron 44                | 主进程、隔离桥接、Chromium 页面  |
+| 打包          | electron-builder 36        | 应用资源、安装包及发布产物       |
+| 主进程持久化  | electron-store v11         | 本地配置及小规模结构化状态       |
+| 应用日志      | electron-log               | main 归集三进程日志，共用等级，默认 error |
+| UI            | Vue 3、Vue Router 5、Pinia | 组件、路由、界面状态             |
+| 前端基础能力  | Axios、VueUse              | HTTP 请求与组合式工具            |
+| UI 组件与样式 | Nuxt UI（`@nuxt/ui`）      | Vue 组件及其配套样式体系         |
+
+注意：
+
+- Node 26 是开发工具链基线，不表示 Electron 内嵌 Node 的版本。主进程与 preload 的运行能力应以 Electron 44 实际运行时为准。
+- renderer 的构建目标应匹配 Electron 的 Chromium，不按宿主 Node 设置。
+- Nuxt UI 用于普通 Vue/Vite 应用，不因此引入 Nuxt 服务端、SSR 或 Nitro。
+- Vite 8 使用 Rolldown；迁移时检查现有插件、external、输出格式和打包结果，不盲目复制旧 Rollup 配置。
+- electron-builder 36 是目标版本；实施升级时需确认该版本的可用性和 Electron 兼容性。发现阻塞时记录并讨论，不静默替换目标。
+- 除上述明确的主版本外，TypeScript、测试工具及插件的具体版本在实施时按兼容性确定。
+
+## 3. 包职责与依赖方向
+
+桌面应用由三个运行包构成：
+
+| 包                         | 职责                                                                        | 不应承担的职责                               |
+| -------------------------- | --------------------------------------------------------------------------- | -------------------------------------------- |
+| `packages/app-main`        | 应用生命周期、窗口、本地服务、文件系统、游戏进程、持久化、日志、IPC handler | 页面状态、Vue 组件、界面交互编排             |
+| `packages/app-preload`     | 通过 contextBridge 暴露受控 IPC API，封装调用和订阅                         | 游戏业务逻辑、直接操作文件、保存业务状态     |
+| `packages/app-renderer-v2` | 页面、路由、Pinia、HTTP 请求、用户交互与任务状态展示                        | 直接使用 Node/Electron、直接修改本地游戏文件 |
+
+`packages/app-renderer` 保留为旧实现参考。新增页面与功能在 v2 开发；迁移时按业务行为重建，不复制旧实现中的隐式依赖。旧 renderer 暂不删除，也不自动从当前构建入口移除。
+
+`packages/app-shared` 是三个运行包可复用的契约辅助包，不是第四个应用进程。可放 IPC 类型、DTO、错误码及不依赖运行环境的纯校验逻辑；不能引入 Electron、Node 文件系统或 Vue。
+
+其他工作区包（标准与归档工具等）保留其独立职责。此次文档建设不要求删除、升级或接入这些包。
+
+```text
+renderer-v2 ──受控 API──> preload ──IPC──> main
+     │                                      │
+     └──Axios──> 远程服务                   ├──electron-store
+                                            ├──electron-log
+                                            └──本地文件 / 游戏进程
+
+main、preload、renderer-v2 ──类型与契约──> app-shared
+```
+
+运行包不得导入其他运行包的源码。跨进程通信只走契约；工作区辅助包通过其公开导出使用，不通过相邻包内部路径访问。
+
+## 4. 主进程组织
+
+优先在现有业务模块内明确边界，不为了分层立即重写全部模块。
+
+建议逐步组织为：
+
+```text
+src/
+  index.ts                 应用入口与装配
+  modules/
+    window/                窗口创建及生命周期
+    logging/               日志归集与等级应用
+    telemetry/             用户授权后的 Sentry 遥测
+    <domain>/
+      index.ts             init、生命周期装配及能力导出
+      <domain>.ipc.ts      设置 IPC、参数校验、转换结果
+      <domain>.ts          具体实现与 main 内部业务能力
+      <其他实现>.ts        按实际需要拆分
+  stores/                  electron-store 读写与迁移
+  utils/                   无生命周期、无全局状态的基础工具
+```
+
+规则：
+
+- 保留现有业务能力；common 中的 app、deep-link、dialog、shell、tray、updater 分别迁为一级模块，window 也作为独立模块。
+- setting 与 profile 保留独立业务模块，共享存储基础设施；main 内部与 IPC 修改都走各自服务，不直接暴露 Store。
+- 模块划分、窗口握手、存储迁移及装配顺序见 [app-main 设计](./app-main-design.md)。
+- 入口负责装配，不承载安装、扫描等业务逻辑。
+- IPC handler 是适配层，不直接堆叠长流程。
+- 服务不依赖 BrowserWindow；业务事件由主进程适配层转发给界面。
+- 每个模块必须包含 index.ts、对应的 xxx.ipc.ts 和 xxx.ts；其他实现文件按需增加。不引入无实际需要的 factory 或 DI 容器。
+- handler 应始终注册。游戏尚未配置时返回明确错误，而不是缺失 channel。
+- 初始化失败必须有可诊断日志和可交互的错误状态；可选服务失败不应阻止整个应用打开。
+- 退出、窗口销毁和重复初始化时，应释放所属监听器、任务及资源。
+
+## 5. IPC 契约
+
+### API 形式
+
+目标是在 renderer 中提供一个命名空间 API，例如 `window.scnexus`。该名字及结构是目标约定，现有逐 channel 暴露方式在迁移期间继续存在。
+
+```ts
+interface DesktopApi {
+  app: {
+    getVersion(): Promise<IpcResult<string>>;
+  };
+}
+
+type IpcResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: AppErrorDto };
+```
+
+AppErrorDto 是共享契约，包含静态定义 code、name、可选 description，以及本次抛出的 errorId、可选 message、可选业务 taskId。code 采用责任进程前缀和三位编号（M/P/R），name 使用全大写连字符名称；定义和全局码表见 [日志与错误规范](./logging-and-errors.md)。
+
+契约迁移必须同步更新 main、preload、v2 与测试。旧 renderer 仍被使用时，不直接破坏旧契约；兼容适配应集中放置并在迁移结束后删除。
+
+### 通信规则
+
+- channel 使用 `domain:action`，事件使用一致的命名规则。
+- preload 只暴露明确方法，不暴露任意 channel 的 `invoke`、`send` 或原始 `ipcRenderer`。
+- main 对参数做运行时校验，并检查调用来源；类型声明不等于运行时可信。
+- 返回值使用可序列化 DTO；不传递原始 Error、进程句柄、Stream 或 Electron event。
+- 失败只有一种业务返回通道，不能把 Error 当作成功 data。
+- 事件订阅返回取消函数；组件卸载时取消，不泄漏 Electron 原始事件。
+- 多个并行长任务的事件必须带 taskId。短操作不强制包装为任务。
+- 内部日志可记录诊断细节，面向 UI 的错误信息不包含令牌和不必要的敏感路径。
+
+## 6. 数据与本地操作
+
+### 持久化
+
+- electron-store v11 仅在 main 使用，由 repository 封装，保存游戏配置、客户端设置和小规模本地状态；不启用 renderer 直接存储。
+- 设置和游戏环境分开持久化，用户与 main 的修改统一经过服务；不暴露任意 key 写入。
+- setting 包含客户端 ID、客户端最后成功更新时间、默认下载目录、显示语言、日志等级及遥测开关；业务字段全部位于顶层，不增加 preferences 包装。语言默认跟随系统并回退 zh-CN，遥测默认关闭。字段修改权限通过服务和 IPC 白名单控制，不依赖对象嵌套层级。
+- utils 中原 logger/sentry 能力分别迁入 logging/telemetry 模块，独立初始化并通过模块入口使用。
+- 用户启用遥测后才初始化 Sentry 并绑定客户端身份；撤销后停止捕获和发送。遥测与本地日志等级独立，详见 [日志与错误规范](./logging-and-errors.md)。
+- 日志等级由 setting 保存，共用一个阈值控制三进程归集日志的控制台与文件输出，默认 error；具体补偿及同步流程见 [日志与错误规范](./logging-and-errors.md)。
+- Pinia 保存 UI 状态与主进程数据的界面投影，不能成为游戏安装状态的另一份独立事实来源。
+- 持久化字段应有默认值、运行时校验与 schemaVersion；结构变更提供迁移策略。
+- Profile 配置整体校验后再提交。切换游戏根目录时使相关缓存失效并刷新。
+- 内容库及安装状态可从磁盘重建；Store 中的列表是缓存或索引，不能证明文件一定存在。
+- 令牌等敏感信息不默认写入 electron-store、localStorage 或日志；需要持久化时单独设计存储方案。
+
+### 文件操作
+
+安装、激活和卸载属于可能破坏现有内容的操作，应按实际影响实施：
+
+```text
+校验输入与目标 → 唯一暂存目录 → 解压/准备
+→ 校验产物 → 备份受影响内容 → 提交
+→ 更新状态 → 清理；失败时恢复并报告
+```
+
+- 目标路径必须规范化并验证目录边界，不用字符串前缀作为目录归属判断。
+- 只有“不存在”可按预期忽略，权限、占用和复制失败继续向上传递。
+- 涉及同一游戏目标目录的修改互斥，避免并发激活或卸载。
+- 长任务逐步提供进度、取消、超时及失败恢复；只有在可安全停止的阶段允许取消。
+- 高频或大体积同步压缩、哈希、归档操作不放在主进程事件循环上。
+
+## 7. renderer-v2 开发结构
+
+建议目录：
+
+```text
+src/
+  main.ts
+  App.vue
+  router/
+  views/                  路由页面
+  components/             复用组件
+  composables/            组合式逻辑
+  stores/                 Pinia setup stores
+  apis/http/              Axios 客户端及远程 API
+  apis/desktop/           桌面桥接适配
+  assets/
+```
+
+- Vue 使用 Composition API 与 `<script setup lang="ts">`。
+- 优先使用 Nuxt UI 组件及其配套样式体系；局部样式使用 scoped CSS。
+- VueUse 用于适合的组合式工具，不为已有简单逻辑强制增加包装。
+- Pinia 使用 setup store，按业务域划分；持久化插件不作为默认依赖。
+- Axios 统一配置基础 URL、超时及错误转换，组件不重复创建客户端。
+- HTTP 与桌面 IPC 分开封装，不通过同一个无类型 request 工具混用。
+- 打包后通过本地文件加载页面时，路由优先采用 hash history；只有明确实现协议或回退机制后才使用其他模式。
+- 自动导入只有在插件配置和生成类型已存在时才使用；否则显式导入。
+- 不假定权限指令、国际化配置或旧 store 已在 v2 存在。已有国际化能力按功能迁移，不在新组件内新增无组织的多语言文本。
+
+## 8. 开发与验证规范
+
+- pnpm 是目标统一包管理器；工作区使用根目录 pnpm-lock.yaml，不引入新的 npm/yarn 锁文件。
+- 依赖在使用它的包中声明，内部依赖使用 `workspace:*`；hoisted 布局不能代替依赖声明。
+- 通过 pnpm 工作区过滤执行包命令。根目录命令负责应用编排，包级命令负责自身职责。
+- Vite 构建不代替 TypeScript 类型检查；两者都应作为验证步骤。
+- 测试逐步覆盖纯逻辑、服务临时目录测试、IPC 契约、Vue 组件和 Electron 启动冒烟。
+- “没有找到测试文件”不作为业务测试通过的证据。node:test 与 Vitest 测试需要各自明确的执行入口。
+- 打包验证应检查 preload 路径、renderer 静态资源、外部二进制和归档工具在安装包中的可用性。
+- 修复使用最小相关验证；不为文档修改安装依赖或运行完整打包。
+
+## 9. 当前差距与实施顺序
+
+当前仓库已存在 v2 包，但根目录 renderer 构建及主窗口仍指向旧 renderer。根目录 Node/Vite/electron-builder 声明也尚未对齐目标。v2 虽声明了 Nuxt UI 等依赖，但仅有依赖声明不等于插件、样式和业务已接入。原主进程已有功能应保留至相应迁移完成。
+
+后续分阶段实施，每阶段独立验收：
+
+1. **工具链对齐**：Node 26、pnpm、Vite 8、Electron 44、electron-builder 36；确认插件、类型、开发启动及构建兼容。
+2. **三包运行闭环**：开发和生产入口接入 v2，preload 可用，打包后静态页面正常加载；旧 renderer 仅保留参考。
+3. **基础主进程与桥接**：electron-store、electron-log、配置生命周期、受控 API 及错误契约。
+4. **逐业务迁移**：先游戏配置与基础页面，再内容导入、安装/激活，最后工坊等扩展；同时补正确性和失败恢复测试。
+
+不在阶段一顺带迁移全部业务，不因为编写新架构文档删除旧功能，不把尚未实现的能力写为已完成。
+
+## 10. 相关文档
+
+- [app-main 模块与存储设计](./app-main-design.md)
+- [全局错误码与日志设计](./logging-and-errors.md)
+
+- [开发规范](../AGENTS.md)
+- [v2 包说明](../packages/app-renderer-v2/README.md)
+- [原生归档包维护](./native-packages.md)

@@ -211,7 +211,17 @@ src/
 
 不在阶段一顺带迁移全部业务，不因为编写新架构文档删除旧功能，不把尚未实现的能力写为已完成。
 
-## 10. 相关文档
+## 10. campaign/customize 后续业务设计
+
+campaign 战役包与 customize 自制作品保持独立。后续统一压缩包/文件夹分析，campaign 提供 SCNexus、CCM、自动识别预留三种模式，customize 提供 SCNexus、自动识别预留两种模式。自动识别当前不实现。
+
+战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/未来自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 后续迁为 scii-game-setting，先完善路径信息、暂不实现游戏版本检测；这些业务改动尚未落地。
+
+完整规则、现有代码依据和待决策项见 [campaign/customize 设计](./campaign-customize-design.md)。本文的基础存储和已实现 profile 说明不表示该后续方案已经完成。
+
+## 11. 相关文档
+
+- [战役包与自制作品设计](./campaign-customize-design.md)
 
 - [app-main 模块与存储设计](./app-main-design.md)
 - [全局错误码与日志设计](./logging-and-errors.md)

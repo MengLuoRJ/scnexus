@@ -283,7 +283,13 @@ profile 无有效游戏配置时，查询与配置接口仍可用；campaign/cus
 
 不包含实际游戏目录修改、真实 Sentry 网络上报、NSIS 更新安装、v2 界面或完整安装包验证。app-main 已移除 node:test 入口，统一由 Vitest 发现并执行上述用例。
 
-## 9. 依据
+## 9. 后续内容业务重构边界
+
+[战役包与自制作品设计](./campaign-customize-design.md) 已定义新 Package 标准、分析模式、地图/模组映射、管理标记及扫描重建。后续 profile Store 迁为 scii-game-setting，customize/campaign/campaign-active Store 迁为 Package 与本地安装记录；当前旧字段属于仍在运行的兼容实现，不是后续数据模型要求。
+
+描述读取和格式解析从 campaign/customize 分离，自动识别只预留位置。两种描述文件独立深入定位最外层有效包根，CCM 来源可选择原 CCM 或转换为 SCNexus。持久化按用户选择：CCM 用 metadata.txt，SCNexus/未来自动模式用 SCNexusCustomizeData 和 package.json。新增可为空的推荐模式与按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突对，冲突选择覆盖/保留/取消；scii-game-setting 当前聚焦路径，版本检测暂不实现。文档方案不在本轮直接修改模块、Store 或 IPC。
+
+## 10. 依据
 
 - [electron-store v11 文档](https://github.com/sindresorhus/electron-store/blob/v11.0.0/readme.md)：ESM、Electron 版本、schema、单文件原子写入及 migrations 限制。
 - [日志与错误规范](./logging-and-errors.md)：错误码表、日志传输与等级更新流程。

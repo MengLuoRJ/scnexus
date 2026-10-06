@@ -101,10 +101,6 @@ export const profileStore = {
     return profileRepository.getSnapshot();
   },
 };
-export const profileStoreFunction = {
-  get: profileStore.get,
-  set: profileStore.set,
-};
 export const getProfileStore = profileRepository.getSnapshot;
 export const getProfileStoreKey = profileRepository.getKey;
 export const updateProfileStore = profileRepository.update;

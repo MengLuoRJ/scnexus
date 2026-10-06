@@ -3,7 +3,7 @@ import { join, basename } from "node:path";
 import { readFile } from "node:fs/promises";
 import { szExtract, szExtractFull, szList } from "./7zip";
 import { Data } from "node-7z";
-import { Logger } from "./logger";
+import { Logger } from "../modules/logging";
 
 const tempPath = join(app.getPath("temp"), ".scnexus", "operations");
 

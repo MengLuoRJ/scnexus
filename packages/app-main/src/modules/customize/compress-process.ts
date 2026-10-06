@@ -2,7 +2,7 @@ import { join, dirname, basename } from "node:path";
 import { existsSync, renameSync, rmSync, mkdirSync } from "node:fs";
 import { access, mkdir } from "node:fs/promises";
 
-import { Logger } from "@/utils/logger";
+import { Logger } from "@/modules/logging";
 
 import { getZip, AdmZip, IZipEntry } from "@/utils/admzip";
 

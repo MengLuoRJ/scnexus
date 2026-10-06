@@ -6,7 +6,6 @@ import {
   updateSetting,
   updateSettingKey,
 } from "./setting";
-import { setSentryUser } from "../telemetry/telemetry";
 
 const legacyKeys: Record<string, string> = {
   CLIENT_ID: "clientId",
@@ -43,5 +42,6 @@ export function initSettingIpc() {
       throw new AppError(ERRORS.IPC_INVALID_ARGUMENT);
     return updateSettingKey(legacyKeys[key] ?? key, value);
   });
-  ipcHandle("setting:set-tracker-user", setSentryUser);
+  // Retained renderer login callbacks must not change telemetry consent or installation identity.
+  ipcHandle("setting:set-tracker-user", () => undefined);
 }

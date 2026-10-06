@@ -18,7 +18,9 @@ import {
   createSettingRepository,
   configureSettingDefaults,
   settingRepository,
-  settingStore,
+  getSettingStore,
+  getSettingStoreKey,
+  updateSettingStore,
 } from "../setting";
 import {
   createProfileRepository,
@@ -391,20 +393,24 @@ test("profile migration and legacy get/set/store keep old fields with validation
   assert.equal(backend.backups.length, 1);
 });
 
-test("setting compatibility maps old fields to validated canonical fields", async () => {
+test("setting exports operate on canonical fields after legacy migration", async () => {
   configureSettingDefaults(downloads);
   settingRepository.init(await fileBackend(legacySetting));
-  assert.equal(settingStore.get("CLIENT_ID"), "existing-client");
-  assert.equal(settingStore.get("LAST_UPDATED_TIME"), null);
-  settingStore.set("DOWNLOAD_FOLDER", "D:\\NewDownloads");
-  assert.equal(
-    settingRepository.getKey("downloadDirectory"),
-    "D:\\NewDownloads",
-  );
-  settingStore.set("displayLanguage", "zh-TW");
-  assert.equal(settingStore.store.displayLanguage, "zh-TW");
+  assert.equal(getSettingStoreKey("clientId"), "existing-client");
+  assert.equal(getSettingStoreKey("lastUpdatedAt"), null);
+  updateSettingStore({
+    ...getSettingStore(),
+    downloadDirectory: "D:\\NewDownloads",
+    displayLanguage: "zh-TW",
+  });
+  assert.equal(getSettingStoreKey("downloadDirectory"), "D:\\NewDownloads");
+  assert.equal(getSettingStore().displayLanguage, "zh-TW");
   assert.throws(
-    () => settingStore.set("DOWNLOAD_FOLDER", "relative"),
+    () =>
+      updateSettingStore({
+        ...getSettingStore(),
+        downloadDirectory: "relative",
+      }),
     code(ERRORS.STORE_DATA_INVALID.code),
   );
 });

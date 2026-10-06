@@ -260,7 +260,7 @@ profile 无有效游戏配置时，查询与配置接口仍可用；campaign/cus
 ## 8. 当前实现与验证
 
 - 每个模块包含 index.ts、xxx.ipc.ts、xxx.ts；common 集合已移除。tray 只注册能力，默认不创建托盘，避免改变关闭行为。
-- mainWindows.ts、utils/logger.ts、utils/sentry.ts 保留薄兼容导出；状态和初始化已由对应模块管理。
+- 旧 mainWindows.ts、utils/logger.ts、utils/sentry.ts 已删除，调用直接使用 window/logging/telemetry 模块入口；空的 compress-compatible.ts 及未使用的 Store 兼容包装已删除。旧 renderer 所需 channel 兼容集中保留在 IPC 层。
 - Store repository 提供 init、getSnapshot、getKey、updateKey、update；五类旧文件名保留。每次写入验证并增加 _revision，迁移保留备份，损坏数据不静默重置。各 Store 独立尝试初始化，失败集中报告。schema 拒绝结构错误，日常数据读写由真实 electron-store 处理，不重复维护 snapshot。
 - 设置新数据类型为 SettingData；旧 SettingStore 类型与旧大写字段查询保留兼容。内部增加 _lastConfirmedVersion，打包运行时以首次成功启动建立基线，后续确认版本升级才记录 lastUpdatedAt。
 - preload 暴露 window.scnexus 的 app/window/setting/logging/telemetry/deepLink API，同时保留旧 channel 函数。备用 preload 不再暴露原始 ipcRenderer。

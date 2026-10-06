@@ -1,4 +1,4 @@
-import { getMainWindow } from "@/mainWindows";
+import { getMainWindow } from "@/modules/window";
 import { pipeline } from "node:stream";
 import { createReadStream, createWriteStream, statSync } from "node:fs";
 import { promisify } from "node:util";

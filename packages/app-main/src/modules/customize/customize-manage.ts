@@ -17,7 +17,7 @@ import {
   removeStoreCustomize,
   updateCustomizeStore,
 } from "@/stores/customize";
-import { Logger } from "@/utils/logger";
+import { Logger } from "@/modules/logging";
 import {
   FILES_COPY_ERROR,
   FILES_REMOVE_ERROR,

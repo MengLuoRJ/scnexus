@@ -6,7 +6,7 @@ import {
   readCompressFileInfo,
   readCompressFileInfo7z,
 } from "../customize/compress-process";
-import { Logger } from "@/utils/logger";
+import { Logger } from "@/modules/logging";
 import { METHOD_CCM_ONLY } from "@scnexus/app-shared/errors/campaign.error";
 import {
   INVALID_COMPRESSED_FILE,

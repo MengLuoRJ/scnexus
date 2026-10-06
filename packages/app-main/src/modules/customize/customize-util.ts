@@ -4,7 +4,7 @@ import { readFile, access, readdir, rm } from "node:fs/promises";
 import { CampaignType, MetadataStandard } from "scnexus-standard/metadata";
 import { profileStore } from "@/stores/profile";
 import { AdmZip, getZip } from "@/utils/admzip";
-import { Logger } from "@/utils/logger";
+import { Logger } from "@/modules/logging";
 import {
   CompressFileList,
   CompressFileTree,

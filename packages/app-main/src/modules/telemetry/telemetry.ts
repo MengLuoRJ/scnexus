@@ -113,9 +113,6 @@ export function reportTelemetry(error: {
     tags: { code: error.code, errorName: error.name, errorId: error.errorId },
   });
 }
-export function setSentryUser(_user: unknown) {
-  // The installation identity is owned by setting; legacy login callbacks cannot change consent or identity.
-}
 export function reportRendererError(error: AppErrorDto) {
   reportTelemetry(error);
 }

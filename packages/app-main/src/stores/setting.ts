@@ -1,9 +1,6 @@
 import { versionSchema, stringSchema } from "./store-schema";
 import { randomUUID } from "node:crypto";
-import type {
-  SettingData,
-  LegacySettingStore,
-} from "@scnexus/app-shared/stores/setting.store";
+import type { SettingData } from "@scnexus/app-shared/stores/setting.store";
 import { createRepository, invalidData } from "./store-repository";
 import { bool, directory, keys, record, text, time } from "./store-validation";
 
@@ -87,55 +84,6 @@ export function configureSettingDefaults(downloadDirectory: string) {
   downloads = downloadDirectory;
 }
 
-const legacyKeys = {
-  CLIENT_ID: "clientId",
-  DOWNLOAD_FOLDER: "downloadDirectory",
-  LAST_UPDATED_TIME: "lastUpdatedAt",
-} as const;
-type CompatibilitySetting = SettingData & LegacySettingStore;
-let legacyInitialized = true;
-export const settingStore = {
-  get<K extends keyof CompatibilitySetting>(key: K): CompatibilitySetting[K] {
-    return this.store[key];
-  },
-  set<K extends keyof CompatibilitySetting>(
-    key: K,
-    value: CompatibilitySetting[K],
-  ): void {
-    if (key === "IS_INITIAL") {
-      bool(value);
-      // This retired flag is compatibility state, not a persisted preference.
-      settingRepository.getSnapshot();
-      legacyInitialized = value as boolean;
-      return;
-    }
-    if (key === "PRESETS")
-      invalidData(
-        "Legacy presets are preserved in the migration backup and are not supported settings",
-      );
-    const canonicalKey = Object.hasOwn(legacyKeys, key)
-      ? legacyKeys[key as keyof typeof legacyKeys]
-      : key;
-    settingRepository.updateKey(
-      canonicalKey as keyof SettingData,
-      value as SettingData[keyof SettingData],
-    );
-  },
-  get store(): CompatibilitySetting {
-    const data = settingRepository.getSnapshot();
-    return {
-      ...data,
-      IS_INITIAL: legacyInitialized,
-      CLIENT_ID: data.clientId,
-      DOWNLOAD_FOLDER: data.downloadDirectory,
-      LAST_UPDATED_TIME: data.lastUpdatedAt,
-    };
-  },
-};
-export const settingStoreFunction = {
-  get: settingStore.get.bind(settingStore),
-  set: settingStore.set.bind(settingStore),
-};
 export const getSettingStore = settingRepository.getSnapshot;
 export const getSettingStoreKey = settingRepository.getKey;
 export const updateSettingStore = settingRepository.update;

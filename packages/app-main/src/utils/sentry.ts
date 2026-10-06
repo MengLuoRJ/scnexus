@@ -1,26 +1,5 @@
-import { app } from "electron";
-import { init, setUser, close } from "@sentry/electron/main";
-
-export function initSentry() {
-  if (!app.isPackaged) return;
-  init({ dsn: import.meta.env.VITE_SENTRY_DSN });
-}
-
-export async function disableSentry() {
-  if (!app.isPackaged) return;
-  await close();
-}
-
-export function setSentryUser(user: {
-  id?: string;
-  username?: string;
-  client_id?: string;
-}) {
-  // if any field in `user` not undefined, then set the whole user `setUser(user)`,
-  // else all fields are undefined, then `setUser(null)`.
-  if (user.id || user.username || user.client_id) {
-    setUser(user);
-  } else {
-    setUser(null);
-  }
-}
+export {
+  enableTelemetry,
+  disableTelemetry as disableSentry,
+  setSentryUser,
+} from "../modules/telemetry";

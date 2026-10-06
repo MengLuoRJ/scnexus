@@ -1,7 +1,4 @@
-import { join } from "node:path";
-import { app } from "electron";
-import Store from "electron-store";
-import {
+import type {
   MetadataInformated,
   MetadataInformatedCampaignSet,
   CampaignType,
@@ -10,46 +7,50 @@ import {
 import { type CampaignActiveStore } from "@scnexus/app-shared/stores/campaign-active.store";
 export { type CampaignActiveStore } from "@scnexus/app-shared/stores/campaign-active.store";
 
-const appDataRoot = app.getPath("userData");
+import { createRepository } from "./store-repository";
+import { migrateLegacy } from "./store-validation";
+import { contentSchema } from "./store-schema";
+import type { Schema } from "electron-store";
 
-const defaultProfile: CampaignActiveStore = {
+const defaults = (): CampaignActiveStore => ({
+  _schemaVersion: 1,
+  _revision: 0,
   ININTIALIZED: false,
-  LAST_REFRESH_TIME: new Date().getTime(),
+  LAST_REFRESH_TIME: 0,
   CAMPAIGN_SET: {
     WOL: undefined,
     HOTS: undefined,
     LOTV: undefined,
     NCO: undefined,
   },
-};
+});
 
-const campaignActiveStore = new Store<CampaignActiveStore>({
-  name: "store-campaign-active",
-  cwd: join(appDataRoot, "SCNexusStorage"),
-  fileExtension: "json",
-  defaults: defaultProfile,
+export const campaignActiveRepository = createRepository<CampaignActiveStore>({
+  defaults,
+  schema: contentSchema("CAMPAIGN_SET") as Schema<CampaignActiveStore>,
+  validate() {},
+  migrate: migrateLegacy,
 });
 
 export function updateCampaignActiveStore(
-  newCampaignActiveSet: MetadataInformatedCampaignSet
+  newCampaignActiveSet: MetadataInformatedCampaignSet,
 ): CampaignActiveStore {
-  campaignActiveStore.set("CAMPAIGN_SET", newCampaignActiveSet);
-  campaignActiveStore.set("LAST_REFRESH_TIME", new Date().getTime());
-  const ININTIALIZED = campaignActiveStore.get("ININTIALIZED");
-  if (!ININTIALIZED) {
-    campaignActiveStore.set("ININTIALIZED", true);
-  }
-  return campaignActiveStore.store;
+  return campaignActiveRepository.update({
+    ...campaignActiveRepository.getSnapshot(),
+    CAMPAIGN_SET: newCampaignActiveSet,
+    LAST_REFRESH_TIME: Date.now(),
+    ININTIALIZED: true,
+  });
 }
 
 export function getCampaignActiveStore(): CampaignActiveStore {
-  return campaignActiveStore.store;
+  return campaignActiveRepository.getSnapshot();
 }
 
 export function getCampaignActiveStoreKey<T extends keyof CampaignActiveStore>(
-  key: T
+  key: T,
 ): CampaignActiveStore[T] {
-  return campaignActiveStore.get(key);
+  return campaignActiveRepository.getKey(key);
 }
 
 export function insertStoreActiveCampaign(campaign: MetadataInformated) {
@@ -79,5 +80,5 @@ export function removeStoreActiveCampaign(campaign: MetadataInformated) {
     storeData = store.CAMPAIGN_SET;
   }
   storeData[campaign.campaign as CampaignType] = undefined;
-  updateCampaignActiveStore(store.CAMPAIGN_SET);
+  updateCampaignActiveStore(storeData);
 }

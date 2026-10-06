@@ -1,48 +1,49 @@
-import { join } from "node:path";
-import { app } from "electron";
-import Store from "electron-store";
-import {
+import type {
   MetadataInformated,
   MetadataInformatedList,
 } from "scnexus-standard/metadata";
 
-import { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
+import type { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
 
-const appDataRoot = app.getPath("userData");
+import { createRepository } from "./store-repository";
+import { migrateLegacy } from "./store-validation";
+import { contentSchema } from "./store-schema";
+import type { Schema } from "electron-store";
 
-const defaultProfile: CustomizeStore = {
+const defaults = (): CustomizeStore => ({
+  _schemaVersion: 1,
+  _revision: 0,
   ININTIALIZED: false,
-  LAST_REFRESH_TIME: new Date().getTime(),
+  LAST_REFRESH_TIME: 0,
   CUSTOMIZE_LIST: [],
-};
+});
 
-const customizeStore = new Store<CustomizeStore>({
-  name: "store-customize",
-  cwd: join(appDataRoot, "SCNexusStorage"),
-  fileExtension: "json",
-  defaults: defaultProfile,
+export const customizeRepository = createRepository<CustomizeStore>({
+  defaults,
+  schema: contentSchema("CUSTOMIZE_LIST") as Schema<CustomizeStore>,
+  validate() {},
+  migrate: migrateLegacy,
 });
 
 export function updateCustomizeStore(
-  newCustomizeList: MetadataInformatedList
+  newCustomizeList: MetadataInformatedList,
 ): CustomizeStore {
-  customizeStore.set("CUSTOMIZE_LIST", newCustomizeList);
-  customizeStore.set("LAST_REFRESH_TIME", new Date().getTime());
-  const ININTIALIZED = customizeStore.get("ININTIALIZED");
-  if (!ININTIALIZED) {
-    customizeStore.set("ININTIALIZED", true);
-  }
-  return customizeStore.store;
+  return customizeRepository.update({
+    ...customizeRepository.getSnapshot(),
+    CUSTOMIZE_LIST: newCustomizeList,
+    LAST_REFRESH_TIME: Date.now(),
+    ININTIALIZED: true,
+  });
 }
 
 export function getCustomizeStore(): CustomizeStore {
-  return customizeStore.store;
+  return customizeRepository.getSnapshot();
 }
 
 export function getCustomizeStoreKey<T extends keyof CustomizeStore>(
-  key: T
+  key: T,
 ): CustomizeStore[T] {
-  return customizeStore.get(key);
+  return customizeRepository.getKey(key);
 }
 
 export function insertStoreCustomize(customize: MetadataInformated) {

@@ -4,14 +4,14 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
-import test from "node:test";
-import { hashString, MPQ_HASH, MPQ_TABLE_KEYS } from "./crypto";
+import { test } from "vitest";
+import { hashString, MPQ_HASH, MPQ_TABLE_KEYS } from "../crypto";
 import {
   createMpq,
   openMpq,
   MpqFileNotFoundError,
   MpqReadOnlyError,
-} from "./index";
+} from "../index";
 
 test("MPQ table keys match known constants", () => {
   assert.equal(

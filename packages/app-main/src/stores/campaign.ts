@@ -1,55 +1,56 @@
-import { join } from "node:path";
-import { app } from "electron";
-import Store from "electron-store";
-import {
+import type {
   MetadataInformated,
   MetadataInformatedCampaignListSet,
   CampaignType,
   MetadataInformatedList,
 } from "scnexus-standard/metadata";
 
-import { CampaignStore } from "@scnexus/app-shared/stores/campaign.store";
+import type { CampaignStore } from "@scnexus/app-shared/stores/campaign.store";
 
-const appDataRoot = app.getPath("userData");
+import { createRepository } from "./store-repository";
+import { migrateLegacy } from "./store-validation";
+import { contentSchema } from "./store-schema";
+import type { Schema } from "electron-store";
 
-const defaultProfile: CampaignStore = {
+const defaults = (): CampaignStore => ({
+  _schemaVersion: 1,
+  _revision: 0,
   ININTIALIZED: false,
-  LAST_REFRESH_TIME: new Date().getTime(),
+  LAST_REFRESH_TIME: 0,
   CAMPAIGN_LIST_SET: {
     WOL: [],
     HOTS: [],
     LOTV: [],
     NCO: [],
   },
-};
+});
 
-const campaignStore = new Store<CampaignStore>({
-  name: "store-campaign",
-  cwd: join(appDataRoot, "SCNexusStorage"),
-  fileExtension: "json",
-  defaults: defaultProfile,
+export const campaignRepository = createRepository<CampaignStore>({
+  defaults,
+  schema: contentSchema("CAMPAIGN_LIST_SET") as Schema<CampaignStore>,
+  validate() {},
+  migrate: migrateLegacy,
 });
 
 export function updateCampaignStore(
-  newCampaignListSet: MetadataInformatedCampaignListSet
+  newCampaignListSet: MetadataInformatedCampaignListSet,
 ): CampaignStore {
-  campaignStore.set("CAMPAIGN_LIST_SET", newCampaignListSet);
-  campaignStore.set("LAST_REFRESH_TIME", new Date().getTime());
-  const ININTIALIZED = campaignStore.get("ININTIALIZED");
-  if (!ININTIALIZED) {
-    campaignStore.set("ININTIALIZED", true);
-  }
-  return campaignStore.store;
+  return campaignRepository.update({
+    ...campaignRepository.getSnapshot(),
+    CAMPAIGN_LIST_SET: newCampaignListSet,
+    LAST_REFRESH_TIME: Date.now(),
+    ININTIALIZED: true,
+  });
 }
 
 export function getCampaignStore(): CampaignStore {
-  return campaignStore.store;
+  return campaignRepository.getSnapshot();
 }
 
 export function getCampaignStoreKey<T extends keyof CampaignStore>(
-  key: T
+  key: T,
 ): CampaignStore[T] {
-  return campaignStore.get(key);
+  return campaignRepository.getKey(key);
 }
 
 export function insertStoreCampaign(campaign: MetadataInformated) {
@@ -79,8 +80,6 @@ export function removeStoreCampaign(campaign: MetadataInformated) {
   });
   if (rIndex === -1) return;
   storeData.splice(rIndex, 1);
-
-  storeData.push(campaign);
   store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType] = storeData;
 
   updateCampaignStore(store.CAMPAIGN_LIST_SET);

@@ -2,7 +2,7 @@
 
 ## 1. 状态与目标
 
-本文是待实施设计，本轮只更新 docs。三个应用包共用错误契约；main、renderer-v2 使用 electron-log 输出，preload 的桥接诊断统一归集。
+main 与 preload 的错误注册表、结构化 IPC、日志归集和受控遥测基础能力已实现；renderer-v2 尚未接入，页面端异常捕获、设置 UI 和完整生产遥测验证仍待完成。三个应用包共用错误契约；main 使用 electron-log，renderer-v2 后续通过 preload 受控桥接归集到 main。
 
 用户已确认：**共用一个持久化等级，同时控制控制台与文件输出，默认 error；preload 也遵循同一等级。** 开发模式不自动放宽为 debug。
 

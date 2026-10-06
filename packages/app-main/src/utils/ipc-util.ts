@@ -1,43 +1,69 @@
-import { ipcMain } from "electron";
-import { type IpcMainInvokeEvent } from "electron";
-import { Logger } from "./logger";
+import { ipcMain, type IpcMainInvokeEvent } from "electron";
+import {
+  AppError,
+  ERRORS,
+  normalizeError,
+  toErrorDto,
+} from "@scnexus/app-shared/errors/app.error";
+import { assertIpcSource } from "./ipc-source";
+import { reportError } from "../modules/logging/logging";
+import { profileStore } from "../stores/profile";
 
-export function ipcHandleRegister(
+function guard(channel: string, event: IpcMainInvokeEvent) {
+  assertIpcSource(event);
+  if (/^(campaign|customize):/.test(channel) && !profileStore.get("SUCCESS")) {
+    throw new AppError(ERRORS.PROFILE_NOT_READY);
+  }
+}
+
+function register(
   channel: string,
   func: (...args: any[]) => any,
-  passEvent: boolean = false
+  passEvent: boolean,
+  typed: boolean,
 ) {
-  ipcMain.handle(channel, async (e: IpcMainInvokeEvent, ...args: any[]) => {
+  ipcMain.removeHandler(channel);
+  ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
-      const dataPromise = passEvent ? func(e, ...args) : func(...args);
-      const data = await dataPromise;
-      return { data };
-    } catch (error) {
-      Logger.error(
-        `[IPC Communication] Invoke Error: channel = ${channel}, error = ${error}`
-      );
-      return { error: (error as Error).message };
+      guard(channel, event);
+      const data = await (passEvent ? func(event, ...args) : func(...args));
+      return typed ? { ok: true, data } : { data };
+    } catch (value) {
+      const error = normalizeError(value);
+      reportError(error, channel);
+      const dto = toErrorDto(error);
+      return typed
+        ? { ok: false, error: dto }
+        : { error: error.message || error.name, errorDetail: dto };
     }
   });
 }
-
+export function ipcHandleRegister(
+  channel: string,
+  func: (...args: any[]) => any,
+  passEvent = false,
+) {
+  register(channel, func, passEvent, false);
+}
 export function ipcHandleRemove(channel: string) {
   ipcMain.removeHandler(channel);
 }
-
+export function ipcHandle(
+  channel: string,
+  func: (...args: any[]) => any,
+  passEvent = false,
+) {
+  register(channel, func, passEvent, false);
+}
+export function ipcHandleTyped(
+  channel: string,
+  func: (...args: any[]) => any,
+  passEvent = false,
+) {
+  register(channel, func, passEvent, true);
+}
 export type ipcHandleConfig = {
   channel: string;
   function: (...args: any[]) => any;
   passEvent: boolean;
 };
-
-export function ipcHandle(
-  channel: string,
-  func: (...args: any[]) => any,
-  passEvent: boolean = false
-) {
-  // try remove handle beforce handle another to avoid repeat handle
-  ipcHandleRemove(channel);
-  // handle ipc channel with function
-  ipcHandleRegister(channel, func, passEvent);
-}

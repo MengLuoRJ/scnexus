@@ -1,61 +1,82 @@
-import { app, Menu, } from "electron";
-import { release } from "node:os";
-import { initModules } from "./modules/init";
-import { initLogger } from "./utils/logger";
-import { initSentry } from "./utils/sentry";
-import {
-  destroyMainWindow,
-  getMainWindow,
-  restoreOrCreateWindow,
-} from "./mainWindows";
+import { app, dialog, Menu } from "electron";
+import { initLoggingModule, reportError } from "./modules/logging";
+import { initModules, disposeModules } from "./modules/init";
+import { captureDeepLink } from "./modules/deep-link";
+import { restoreOrCreateWindow } from "./modules/window";
 
-// init electron-log
-initLogger();
-// init Sentry main
-initSentry();
-
-// process.env.PUBLIC = process.env.VITE_DEV_SERVER_URL
-//   ? join(process.env.DIST_ELECTRON, "../public")
-//   : process.env.DIST;
-
-// Disable GPU Acceleration for Windows 7
-if (release().startsWith("6.1")) app.disableHardwareAcceleration();
-
-// Set application name for Windows 10+ notifications
-if (process.platform === "win32") app.setAppUserModelId(app.getName());
-
-/**
- * Prevent electron from running multiple instances.
- */
+initLoggingModule();
+process.on("uncaughtException", (error) => {
+  reportError(error, "uncaught-exception");
+  app.exit(1);
+});
+process.on("unhandledRejection", (error) => {
+  reportError(error, "unhandled-rejection");
+  app.quit();
+});
+function receiveDeepLink(url: string) {
+  try {
+    captureDeepLink(url);
+  } catch (error) {
+    reportError(error, "deep-link");
+  }
+}
 if (!app.requestSingleInstanceLock()) {
   app.quit();
-  process.exit(0);
+} else {
+  if (process.platform === "win32") app.setAppUserModelId(app.getName());
+  for (const argument of process.argv)
+    if (argument.startsWith("scnexus://")) receiveDeepLink(argument);
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    receiveDeepLink(url);
+  });
+  app.on("second-instance", (_event, args) => {
+    for (const argument of args)
+      if (argument.startsWith("scnexus://")) receiveDeepLink(argument);
+    void app
+      .whenReady()
+      .then(restoreOrCreateWindow)
+      .catch((error) => reportError(error, "window"));
+  });
+  app.on("activate", () => {
+    void app
+      .whenReady()
+      .then(restoreOrCreateWindow)
+      .catch((error) => reportError(error, "window"));
+  });
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+  let exiting = false;
+  app.on("before-quit", (event) => {
+    if (exiting) return;
+    event.preventDefault();
+    exiting = true;
+    void disposeModules().finally(() => app.quit());
+  });
+  void app
+    .whenReady()
+    .then(async () => {
+      Menu.setApplicationMenu(null);
+      const failures = await initModules();
+      await restoreOrCreateWindow();
+      if (failures.length)
+        dialog.showErrorBox(
+          "SCNexus 初始化异常",
+          failures
+            .map(
+              (error) =>
+                `${error.code} ${error.name}\nerrorId=${error.errorId}`,
+            )
+            .join("\n\n"),
+        );
+    })
+    .catch((value) => {
+      const error = reportError(value, "startup");
+      dialog.showErrorBox(
+        "SCNexus 启动失败",
+        `${error.code} ${error.name}\nerrorId=${error.errorId}`,
+      );
+      app.quit();
+    });
 }
-
-// Remove electron security warnings
-// This warning only shows in development mode
-// Read more on https://www.electronjs.org/docs/latest/tutorial/security
-// process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
-
-app.on("second-instance", restoreOrCreateWindow);
-
-app.on("window-all-closed", () => {
-  destroyMainWindow();
-  if (process.platform !== "darwin") app.quit();
-});
-
-app.on("activate", restoreOrCreateWindow);
-
-app.whenReady().then(async () => {
-  Menu.setApplicationMenu(null);
-
-  // Initialize all modules.
-  await initModules();
-
-  // Create the main window when the application is ready
-  await restoreOrCreateWindow();
-});
-
-app.on("open-url", (event, url) => {
-  getMainWindow()?.webContents.send("open-url", url);
-});

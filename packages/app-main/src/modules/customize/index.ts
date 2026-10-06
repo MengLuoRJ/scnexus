@@ -1,30 +1,18 @@
-import { join } from "node:path";
-
-import { mkdirIfNotExist } from "@/utils/fs-util";
-import { initCustomizeIpc } from "./customize.ipc";
 import { profileStore } from "@/stores/profile";
+import { initCustomizeIpc } from "./customize.ipc";
+import {
+  initSCNexusCustomizeDirectory,
+  initSCNexusCampaignDirectory,
+} from "./customize";
+export * from "./customize";
 
-async function initSCNexusCustomizeDirectory(): Promise<void> {
-  const customizePaths = profileStore.get("PROFILE_CUSTOMIZE");
-  const scnexusRoot = join(customizePaths.LIBRARY_ROOT);
-  if (scnexusRoot) {
-    await mkdirIfNotExist(scnexusRoot, { recursive: true });
-  }
-}
-
-export async function initSCNexusCampaignDirectory(): Promise<void> {
-  const customizePaths = profileStore.get("PROFILE_CAMPAIGN");
-  const scnexusRoot = join(customizePaths.LIBRARY_ROOT);
-  if (scnexusRoot) {
-    await mkdirIfNotExist(scnexusRoot, { recursive: true });
-  }
-}
-
+let registered = false;
 export async function initCustomizeModule(): Promise<void> {
+  if (!registered) {
+    initCustomizeIpc();
+    registered = true;
+  }
   if (!profileStore.get("SUCCESS")) return;
-
   await initSCNexusCustomizeDirectory();
   await initSCNexusCampaignDirectory();
-
-  initCustomizeIpc();
 }

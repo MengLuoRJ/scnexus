@@ -1,11 +1,13 @@
-import {
+import type {
   ProfileCampaign,
   ProfileCustomize,
   ProfileDocuments,
   ProfileGame,
-} from "@/types/profile.type";
+} from "../types/profile.type";
 
 export type ProfileStore = {
+  _schemaVersion: number;
+  _revision: number;
   SUCCESS: boolean;
   ERROR_MESSAGE?: string;
   PATH_WHITE_LIST?: string[];

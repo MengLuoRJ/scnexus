@@ -1,5 +1,7 @@
-import { Menu, MenuItem, Tray, nativeImage } from "electron";
+import { app, Menu, Tray, nativeImage } from "electron";
+import type { MenuItem } from "electron";
 import { join } from "node:path";
+import { Logger } from "@/modules/logging";
 
 let tray: Tray | undefined = undefined;
 
@@ -8,11 +10,24 @@ let contextMenu: Menu | undefined = undefined;
 export function initTray() {
   if (tray) return tray;
 
-  const trayIcon = nativeImage.createFromPath(
-    join(process.env.PUBLIC, "application_icon.png")
+  const iconPath = join(
+    app.getAppPath(),
+    "packages",
+    "app-renderer",
+    app.isPackaged ? "dist" : "public",
+    "application_icon.png",
   );
-
-  tray = new Tray(trayIcon);
+  const trayIcon = nativeImage.createFromPath(iconPath);
+  if (trayIcon.isEmpty()) {
+    Logger.warn("Tray icon is missing or unreadable", iconPath);
+    return;
+  }
+  try {
+    tray = new Tray(trayIcon);
+  } catch (error) {
+    Logger.warn("Failed to create tray", error);
+    return;
+  }
 
   // contextMenu = new Menu();
 

@@ -4,7 +4,7 @@
 
 本文细化 [目标架构](./architecture.md)。保留现有业务能力，调整能力边界、窗口生命周期和存储访问方式，不以此次设计为理由删除原功能。
 
-本文是待实施设计：当前源码仍保留 common、原窗口管理和 electron-store v10。本轮只更新 docs，不修改 README、AGENTS、依赖或代码。日志和错误处理见 [日志与错误规范](./logging-and-errors.md)。
+基础实现已落地到 main 与 preload：common 已拆分、window/logging/telemetry 已模块化，五类 Store 使用 electron-store v11 并显式初始化。renderer-v2 尚未接入，当前仍加载旧 renderer；旧业务的安装、激活及工坊具体流程未在本轮重写。日志和错误处理见 [日志与错误规范](./logging-and-errors.md)。
 
 ## 2. 模块划分
 
@@ -60,10 +60,10 @@ src/
     setting/
     profile/
   stores/
-    setting.repository.ts
-    profile.repository.ts
-    <content>.repository.ts
-    migrations/               显式数据迁移
+    setting.ts / profile.ts / <content>.ts
+    store-repository.ts             受限读取与完整提交，无额外状态快照
+    store-electron-backend.ts        electron-store 与启动迁移、备份
+    store-schema.ts                 JSON Schema 通用字段与内容结构
   utils/                      通用文件与归档能力
 ```
 
@@ -96,11 +96,11 @@ src/
 | logLevel | 全局输出阈值，默认 error | 用户或 main 通过日志等级协调流程修改 |
 | telemetryEnabled | 是否启用遥测，默认 false | 用户主动授权或撤销，通过受控 IPC 修改 |
 
-schemaVersion、revision 是存储管理字段，不属于用户偏好。lastUpdatedAt 不随设置保存、更新检查或下载完成而变化；仅在新版本实际安装并成功启动确认后更新。实现时保留内部已确认版本信息以避免每次启动重复更新时间；初次安装不冒充一次版本更新，旧 LAST_UPDATED_TIME 不直接迁移为该值。
+_schemaVersion、_revision 是存储管理字段，不属于用户偏好。lastUpdatedAt 不随设置保存、更新检查或下载完成而变化；仅在新版本实际安装并成功启动确认后更新。实现时保留内部已确认版本信息以避免每次启动重复更新时间；初次安装不冒充一次版本更新，旧 LAST_UPDATED_TIME 不直接迁移为该值。
 
 显示语言存储“选择策略”和运行时“有效语言”分离：system 按系统首选语言顺序匹配 zh-CN、en-US、zh-TW，英文变体归入 en-US，繁体中文变体归入 zh-TW，简体中文归入 zh-CN；无法匹配时回退 zh-CN。显式选择不被系统语言覆盖。renderer 从 setting 快照获得有效语言并设置 Vue I18n，不独立保存另一份语言偏好。
 
-setting 业务字段全部采用顶层结构，不增加 preferences 包装层。字段层级不承担权限划分：设置快照只读返回，用户可修改字段明确限定为 downloadDirectory、displayLanguage、logLevel、telemetryEnabled；clientId、lastUpdatedAt、schemaVersion、revision 由 main 维护。下载目录、语言、日志及遥测修改统一走 setting 业务入口；涉及运行时副作用的字段不可绕过协调流程直接提交 Store。默认 false 不等于已授权，旧配置没有明确授权也按关闭处理。
+setting 业务字段全部采用顶层结构，不增加 preferences 包装层。字段层级不承担权限划分：设置快照只读返回，用户可修改字段明确限定为 downloadDirectory、displayLanguage、logLevel、telemetryEnabled；clientId、lastUpdatedAt、_schemaVersion、_revision 由 main 维护。下载目录、语言、日志及遥测修改统一走 setting 业务入口；涉及运行时副作用的字段不可绕过协调流程直接提交 Store。默认 false 不等于已授权，旧配置没有明确授权也按关闭处理。
 
 ### 两种入口，共用业务服务
 
@@ -111,17 +111,27 @@ renderer → preload → setting/profile IPC → service → repository
 
 - main 模块直接调用服务，不绕 IPC，不访问 Store 实例。
 - IPC 不暴露任意 key 的 set/get、整包替换或磁盘文件路径；只提供允许的查询和修改。
-- setting 提供 getSnapshot、updatePreferences；clientId、lastUpdatedAt、schemaVersion 等内部字段不可被 UI patch。logLevel 和 telemetryEnabled 修改必须走各自协调流程，通用偏好更新不能绕过该流程直接写这些字段。
+- setting 提供 getSnapshot、updatePreferences；clientId、lastUpdatedAt、_schemaVersion 等内部字段不可被 UI patch。logLevel 和 telemetryEnabled 修改必须走各自协调流程，通用偏好更新不能绕过该流程直接写这些字段。
 - profile 提供 getSnapshot、configureGame、refreshGameStatus；不允许 UI 直接写 SUCCESS、派生路径或路径授权列表。
 - main 内部写入也经过服务校验；内部维护动作提供明确方法，不给其他模块通用写权限。
 - 返回独立的只读快照 DTO，调用者修改对象不应改变存储。
-- 变更成功后发布带 revision 的快照或失效事件，renderer 更新 Pinia；订阅必须支持取消。
+- 变更成功后发布带 _revision 的快照或失效事件，renderer 更新 Pinia；订阅必须支持取消。
 
 profile 的 configureGame 应串行化：检查任务互斥 → 验证候选目录 → 计算派生数据 → 提交配置 → 使旧缓存失效 → 发出变更。刷新失败独立报告，不伪装成配置写入失败；缓存标记为需要重建。
 
-安装/激活开始时固定使用一个 profile revision 的配置快照，任务期间拒绝切换游戏根目录，防止中途混用新旧路径。
+安装/激活开始时固定使用一个 profile _revision 的配置快照，任务期间拒绝切换游戏根目录，防止中途混用新旧路径。
 
 ## 4. electron-store v11 与 repository
+
+存储基础文件统一使用 `store-` 前缀：
+
+| 文件 | 职责 |
+| --- | --- |
+| `store-schema.ts` | 定义复用 JSON Schema，由 electron-store 校验字段类型、枚举、范围和内容索引结构 |
+| `store-validation.ts` | 保留 schema 之外的校验及旧数据迁移辅助，如绝对路径检查和旧字段检查；不替代 schema |
+| `store-repository.ts` | 提供初始化、快照读取、按 key 获取/更新和完整更新，维护内部版本字段与统一错误；不保存重复内存快照 |
+| `store-electron-backend.ts` | 创建 electron-store 实例，启动时识别旧格式、备份和迁移，配置 schema；日常读写由 electron-store 执行 |
+
 
 ### 版本与运行边界
 
@@ -139,18 +149,19 @@ setting、profile 和内容索引继续分开保存。默认沿用原文件名�
 
 ```text
 SettingData
-  schemaVersion
-  revision
+  _schemaVersion
+  _revision
   clientId
   lastUpdatedAt             默认 null，仅成功更新后记录
+  _lastConfirmedVersion      main 内部用于版本确认，默认 null
   downloadDirectory
   displayLanguage 默认 system
   logLevel       默认 error
   telemetryEnabled 默认 false
 
 ProfileData
-  schemaVersion
-  revision
+  _schemaVersion
+  _revision
   gameRoot                   已验证并提交的游戏目录
 ```
 
@@ -161,10 +172,10 @@ ProfileData
 ### repository 规则
 
 - 每类数据有自身 schema/defaults，限制对象结构与枚举，读写前进行业务校验。
-- repository 提供 load/save 等有限方法，不导出 electron-store 原始实例。
-- 对一次更新构造完整候选对象并验证，以一次提交更新 schemaVersion、revision 和数据；不以多次 set 模拟事务。
+- repository 提供 init、getSnapshot、getKey、updateKey、update，不导出 electron-store 原始实例。日常读取直接使用 electron-store 的 store，完整候选数据以一次 store 赋值提交；不自行 fs 读取/JSON 解析，不再维护一份内存 snapshot。返回值仍是隔离副本。
+- 对一次更新构造完整候选对象，以 electron-store v11 的 schema、rootSchema.required 和 additionalProperties 校验通用类型、必需字段及未知字段；业务目录、语言、日志与授权的模块校验保留。_schemaVersion 由存储管理，_revision 随一次完整提交递增；不以多次 set 模拟事务。
 - 服务负责业务语义、串行更新和变更事件，repository 只负责持久化与存储错误转换。
-- revision 在对应文件中递增；不能用不同文件的 revision 比较全局时间顺序。
+- _revision 在对应文件中递增；不能用不同文件的 _revision 比较全局时间顺序。
 - 非必要不启用外部文件 watch，默认只允许 main 写入。若支持用户外部编辑，需要另行定义校验和冲突处理。
 - 写失败不发成功事件，不改变对外有效快照。
 - 损坏、权限和磁盘错误使用明确错误码。不得静默清空用户配置；备份损坏文件后再提供恢复选择。
@@ -172,12 +183,12 @@ ProfileData
 
 ### 迁移设计
 
-electron-store v11 文档明确提示内置 migrations 存在已知问题。采用应用自己的 schemaVersion 与可测试迁移，不把应用版本号直接作为数据版本。
+electron-store v11 文档明确提示内置 migrations 存在已知问题。采用应用自己的 _schemaVersion 与可测试迁移，不把应用版本号直接作为数据版本。
 
-1. 读取旧格式并检查结构，不先套用会拒绝旧字段的新 schema。
-2. 保留原始备份，转换旧大写字段为新模型；原有 CLIENT_ID 必须保留。
+1. 仅在启动迁移前使用 fs 读取旧格式并检查数据版本；任一 _schemaVersion 或旧 schemaVersion 高于当前版本即拒绝打开，不备份、不覆写。当前格式由 electron-store schema 校验，缺失字段不以默认值掩盖。
+2. 同时支持 v10 大写字段和本轮旧 schemaVersion/revision/lastConfirmedVersion 格式的一次迁移。旧小写模型只重命名内部字段为 _schemaVersion/_revision/_lastConfirmedVersion，保留业务数据与 revision；v10 的 CLIENT_ID 必须保留，clientId、lastUpdatedAt 不加下划线。
 3. 旧文件无日志等级时补 error；无显示语言时补 system，无明确遥测授权时补 false。旧 LAST_UPDATED_TIME 的含义不能证明客户端更新完成，因此 lastUpdatedAt 初始化为 null；旧下载目录通过验证后保留。默认值不按开发/生产环境改变。
-4. 校验完整目标数据，原子提交对应文件，成功后标记该文件版本。
+4. 迁移候选通过同一 electron-store schema 写入独立迁移文件；验证完成后备份原文件并替换，失败保留原始数据且清理迁移文件。fs 仅承担启动旧格式检查、备份、迁移文件提交及损坏恢复的必要操作；不配置 electron-store migrations。
 5. 内容索引可标记待重建，不迁移无法信任的绝对路径缓存。
 6. 重复启动迁移应幂等；失败不删除原数据、不继续按错误的新数据启动业务。
 7. 新版本数据被旧程序打开时不降级覆写；提示不支持的数据版本或使用兼容策略。
@@ -240,9 +251,39 @@ profile 无有效游戏配置时，查询与配置接口仍可用；campaign/cus
 4. 将 common 能力迁到一级模块，保持现有 channel 兼容或同步迁移三个包。
 5. 逐步让 campaign/customize/workshop 通过服务读取配置，移除原始 Store 耦合。
 
+测试统一使用 Vitest，模块用例位于 `src/modules/<module>/__test__/xxx.test.ts`（也允许 `.spec.ts`）；基础能力用例位于 `src/stores/__test__` 和 `src/utils/<utility>/__test__`。包级 `test` 执行一次，`test:watch` 启动监听，根目录 `test:main` 委托包级命令。
+
+存储测试使用项目目录内隔离的真实文件与已安装的 electron-store v11，验证真实 schema，而不是模拟 schema；只注入读取/写入及迁移备份/提交失败。生命周期清理和 mock 使用 Vitest API，测试目录自动清理。
+
 至少覆盖：main 内部与 IPC 更新走同一校验、写失败不发成功事件、非法 profile 不覆盖有效配置、任务期间配置互斥、日志等级跨进程同步、旧数据保留、窗口失败和销毁后的行为。路径移动不是功能删除，不顺带删除原有更新、托盘或兼容内容格式能力。
 
-## 8. 依据
+## 8. 当前实现与验证
+
+- 每个模块包含 index.ts、xxx.ipc.ts、xxx.ts；common 集合已移除。tray 只注册能力，默认不创建托盘，避免改变关闭行为。
+- mainWindows.ts、utils/logger.ts、utils/sentry.ts 保留薄兼容导出；状态和初始化已由对应模块管理。
+- Store repository 提供 init、getSnapshot、getKey、updateKey、update；五类旧文件名保留。每次写入验证并增加 _revision，迁移保留备份，损坏数据不静默重置。各 Store 独立尝试初始化，失败集中报告。schema 拒绝结构错误，日常数据读写由真实 electron-store 处理，不重复维护 snapshot。
+- 设置新数据类型为 SettingData；旧 SettingStore 类型与旧大写字段查询保留兼容。内部增加 _lastConfirmedVersion，打包运行时以首次成功启动建立基线，后续确认版本升级才记录 lastUpdatedAt。
+- preload 暴露 window.scnexus 的 app/window/setting/logging/telemetry/deepLink API，同时保留旧 channel 函数。备用 preload 不再暴露原始 ipcRenderer。
+- 用户设置只允许四个可编辑顶层字段。setting.replace 是完整替换用户偏好，不是覆写 clientId 或数据版本；main 内部完整 Store 更新通过 repository。
+- profile 当前仍保留旧业务字段与初始化流程；IPC 任意 key 写入被拒绝，配置走原 init-game-service。派生路径模型与业务对服务的全面解耦仍属后续工作。
+- renderer 目前使用旧页面，preload 在页面加载后提供过渡性 ready 通知；v2 接入时改用订阅完成后的显式握手。不能将该过渡机制视为完整 v2 ready 生命周期。
+- Sentry 默认不启用；生产包且 DSN 有效时按用户授权开启。使用无离线积压的受控 transport 门控，关闭时使旧代 transport 失效；错误经自有桥接归集，不启用自动 renderer SDK 注入。真实服务发送和安装包场景尚未验证。
+
+已执行：
+
+| 检查 | 结果 |
+| --- | --- |
+| `pnpm run typecheck:main` | 通过 |
+| `pnpm run typecheck:preload` | 通过 |
+| `pnpm run test:main` | 5 个 Vitest 文件、25 项测试通过（含 14 项真实 electron-store 存储测试和 4 项 MPQ 测试） |
+| `pnpm run build:main` | 通过；原 Vite 配置仍有 native configLoader 迁移提示 |
+| `pnpm run build:preload` | 通过；同上 |
+| 上一轮 Electron 44 临时 userData 真实运行冒烟（本轮未重新执行） | 首次启动及重启通过：默认设置、设置写入、只读字段拒绝、旧 API 兼容、单窗口、日志文件等级过滤和 clientId/等级持久化 |
+| `pnpm exec vue-tsc --noEmit -p packages/app-renderer/tsconfig.json` | 未能完成：旧 vue-tsc 与当前 TypeScript 不兼容，出现 supportedTSExtensions 查找失败；本轮未修改旧 renderer 工具链 |
+
+不包含实际游戏目录修改、真实 Sentry 网络上报、NSIS 更新安装、v2 界面或完整安装包验证。app-main 已移除 node:test 入口，统一由 Vitest 发现并执行上述用例。
+
+## 9. 依据
 
 - [electron-store v11 文档](https://github.com/sindresorhus/electron-store/blob/v11.0.0/readme.md)：ESM、Electron 版本、schema、单文件原子写入及 migrations 限制。
 - [日志与错误规范](./logging-and-errors.md)：错误码表、日志传输与等级更新流程。

@@ -1,4 +1,5 @@
 import { contextBridge, webUtils } from "electron";
+import "./desktop.js";
 import "./ipc/app.js";
 import "./ipc/campaign.js";
 import "./ipc/customize.js";

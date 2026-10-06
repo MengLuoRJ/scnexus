@@ -28,7 +28,7 @@
     "build:standard": "pnpm -F @scnexus/standard build",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
-    "test:main": "vitest run -r packages/app-main --passWithNoTests",
+    "test:main": "pnpm --filter @scnexus/app-main test",
     "test:preload": "vitest run -r packages/app-preload --passWithNoTests",
     "test:renderer": "vitest run -r packages/app-renderer --passWithNoTests",
     "lint": "eslint .",

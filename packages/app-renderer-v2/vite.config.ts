@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import vueDevTools from "vite-plugin-vue-devtools";
-import { chrome } from "../app-main/.electron-vendors.cache.json";
+import electronVendorsCache from "../app-main/.electron-vendors.cache.json" with { type: "json" };
 
 const PACKAGE_ROOT = fileURLToPath(new URL(".", import.meta.url));
 const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
@@ -23,7 +23,7 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    target: `chrome${chrome}`,
+    target: `chrome${electronVendorsCache.chrome}`,
     outDir: "dist",
     assetsDir: ".",
     minify: process.env.MODE !== "development",

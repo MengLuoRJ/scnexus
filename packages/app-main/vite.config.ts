@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { UserConfig } from "vite";
 
-import { node } from "./.electron-vendors.cache.json";
+import electronVendorsCache from "./.electron-vendors.cache.json" with { type: "json" };
 
 const PACKAGE_ROOT = __dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
@@ -22,7 +22,7 @@ const config: UserConfig = {
   build: {
     ssr: true,
     sourcemap: "inline",
-    target: `node${node}`,
+    target: `node${electronVendorsCache.node}`,
     outDir: "dist",
     assetsDir: ".",
     minify: process.env.MODE !== "development",

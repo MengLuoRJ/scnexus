@@ -13,7 +13,7 @@ import { unheadVueComposablesImports } from '@unhead/vue'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import { visualizer } from 'rollup-plugin-visualizer'
 
-import { chrome } from '../app-main/.electron-vendors.cache.json'
+import electronVendorsCache from '../app-main/.electron-vendors.cache.json' with { type: "json" }
 
 const PACKAGE_ROOT = __dirname
 const PROJECT_ROOT = join(PACKAGE_ROOT, '../..')
@@ -39,7 +39,7 @@ const config: UserConfig = {
   },
   build: {
     sourcemap: true,
-    target: `chrome${chrome}`,
+    target: `chrome${electronVendorsCache.chrome}`,
     outDir: 'dist',
     assetsDir: '.',
     minify: process.env.MODE !== 'development',

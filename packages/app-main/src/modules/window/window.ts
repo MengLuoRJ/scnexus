@@ -158,7 +158,13 @@ async function createMainWindow(): Promise<BrowserWindow> {
   } catch (cause) {
     window.destroy();
     state = "failed";
-    throw new AppError(ERRORS.WINDOW_LOAD_FAILED, {}, { cause });
+    throw new AppError(
+      ERRORS.WINDOW_LOAD_FAILED,
+      {
+        message: `Failed to load ${target}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      },
+      { cause },
+    );
   }
 }
 

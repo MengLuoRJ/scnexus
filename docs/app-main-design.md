@@ -336,3 +336,10 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 - safety-index.ts 原先仅导入 index.ts，没有独立安全策略或行为，已移除源码与构建入口。仅产出 dist/index.mjs；不改变 IPC channel、页面方法或取消订阅方式。
 
 验证：pnpm run typecheck:preload、pnpm run build:preload 均通过；模拟执行构建产物检查 59 个暴露入口、游戏初始化 invoke 和旧事件取消订阅通过。构建仍有既有 __dirname 配置警告，本轮不改无关工具链配置。
+
+
+### 开发窗口加载诊断
+
+pnpm dev 必须等待 preload 首次 writeBundle 后才启动 main watcher，首次 preload 构建不广播 full-reload；后续更新仍刷新页面。主进程重构建先等待旧 Electron 退出再启动新进程，超过 10 秒报错，避免新旧实例竞争。
+
+M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；不将所有加载失败归为构建竞态，也不通过无条件重试隐藏错误。窗口加载失败的原因输出与后续重建已有单元测试（2 项通过）。实际用户开发会话中的偶发失败仍需用增强日志确认。

@@ -76,3 +76,17 @@ test("window singleton, reload handshake, renderer failure and recreation", asyn
   expect(instances).toHaveLength(2);
   service.destroyMainWindow();
 });
+
+test("load failure includes underlying Electron reason and permits later recreation", async () => {
+  const failure = vi
+    .spyOn(FakeWindow.prototype, "loadFile")
+    .mockRejectedValueOnce(new Error("ERR_CONNECTION_REFUSED (-102)"));
+  await expect(service.restoreOrCreateWindow()).rejects.toMatchObject({
+    code: "M017",
+    message: expect.stringContaining("ERR_CONNECTION_REFUSED (-102)"),
+  });
+  expect(service.getMainWindow()).toBeNull();
+  failure.mockRestore();
+  await service.restoreOrCreateWindow();
+  service.destroyMainWindow();
+});

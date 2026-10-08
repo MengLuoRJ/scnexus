@@ -37,11 +37,28 @@ function setupMainPackageWatcher({ resolvedUrls }: ViteDevServer) {
     plugins: [
       {
         name: "reload-app-on-main-package-change",
-        writeBundle() {
-          /** Kill electron if process already exist */
+        async writeBundle() {
           if (electronApp !== null) {
-            electronApp.removeListener("exit", process.exit);
-            electronApp.kill("SIGINT");
+            const previous = electronApp;
+            previous.removeListener("exit", process.exit);
+            if (previous.exitCode === null && previous.signalCode === null) {
+              await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  previous.removeListener("exit", stopped);
+                  reject(
+                    new Error(
+                      "Previous Electron process did not exit within 10 seconds",
+                    ),
+                  );
+                }, 10_000);
+                const stopped = () => {
+                  clearTimeout(timeout);
+                  resolve();
+                };
+                previous.once("exit", stopped);
+                previous.kill("SIGINT");
+              });
+            }
             electronApp = null;
           }
 
@@ -64,8 +81,15 @@ function setupMainPackageWatcher({ resolvedUrls }: ViteDevServer) {
  * @param {import('vite').ViteDevServer} watchServer Renderer watch server instance.
  * Required to access the web socket of the page. By sending the `full-reload` command to the socket, it reloads the web page.
  */
-function setupPreloadPackageWatcher({ ws }: ViteDevServer) {
-  return build({
+async function setupPreloadPackageWatcher({ ws }: ViteDevServer) {
+  let firstBuild = true;
+  let resolveReady: () => void;
+  let rejectReady: (error: unknown) => void;
+  const ready = new Promise<void>((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+  const watcher = await build({
     mode,
     logLevel,
     configFile: "packages/app-preload/vite.config.ts",
@@ -79,7 +103,15 @@ function setupPreloadPackageWatcher({ ws }: ViteDevServer) {
     plugins: [
       {
         name: "reload-page-on-preload-package-change",
+        buildEnd(error) {
+          if (firstBuild && error) rejectReady(error);
+        },
         writeBundle() {
+          if (firstBuild) {
+            firstBuild = false;
+            resolveReady();
+            return;
+          }
           ws.send({
             type: "full-reload",
           });
@@ -87,6 +119,8 @@ function setupPreloadPackageWatcher({ ws }: ViteDevServer) {
       },
     ],
   });
+  await ready;
+  return watcher;
 }
 
 /**

@@ -127,5 +127,20 @@ export function createRepository<T extends StoreVersion>(
     return update(candidate);
   }
 
-  return { init, getSnapshot, get: getSnapshot, getKey, updateKey, update };
+  function reload(persistence: PersistenceBackend): T {
+    const opened = persistence.open(options);
+    store = opened;
+    return getSnapshot();
+  }
+
+  return {
+    init,
+    reload,
+    isInitialized: () => store !== undefined,
+    getSnapshot,
+    get: getSnapshot,
+    getKey,
+    updateKey,
+    update,
+  };
 }

@@ -3,6 +3,19 @@ import { stat, mkdir, realpath } from "node:fs/promises";
 import { sciiGameSettingRepository } from "../../stores/scii-game-setting";
 import type { GamePaths } from "@scnexus/app-shared/types/content.type";
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
+import { initGameStore } from "../../stores";
+
+let configured: (() => Promise<void>) | undefined;
+export function onGameConfigured(callback?: () => Promise<void>) {
+  configured = callback;
+}
+async function startDependents() {
+  try {
+    await configured?.();
+  } catch (cause) {
+    throw new AppError(ERRORS.GAME_MODULE_INITIALIZATION_FAILED, {}, { cause });
+  }
+}
 let busy = false;
 export async function withGameLock<T>(run: () => Promise<T>): Promise<T> {
   if (busy) throw new AppError(ERRORS.TASK_CONFLICT);
@@ -48,17 +61,20 @@ export async function configureGame(input: unknown) {
   if (busy) throw new AppError(ERRORS.PROFILE_CHANGE_BLOCKED);
   if (typeof input !== "string" || !isAbsolute(input))
     throw new AppError(ERRORS.IPC_INVALID_ARGUMENT);
-  return withGameLock(async () => {
-    let root: string;
-    try {
-      root = await realpath(resolve(input));
-      if (!(await stat(join(root, "StarCraft II.exe"))).isFile())
-        throw new Error("Invalid client");
-    } catch (cause) {
-      throw new AppError(ERRORS.PROFILE_GAME_ROOT_INVALID, {}, { cause });
-    }
-    const old = sciiGameSettingRepository.getSnapshot();
-    const paths = gamePaths(root, old.documentRoot);
+  return withGameLock(() => configureUnlocked(input));
+}
+async function configureUnlocked(input: string) {
+  let root: string;
+  try {
+    root = await realpath(resolve(input));
+    if (!(await stat(join(root, "StarCraft II.exe"))).isFile())
+      throw new Error("Invalid client");
+  } catch (cause) {
+    throw new AppError(ERRORS.PROFILE_GAME_ROOT_INVALID, {}, { cause });
+  }
+  const old = sciiGameSettingRepository.getSnapshot();
+  const paths = gamePaths(root, old.documentRoot);
+  try {
     for (const dir of [
       paths.mapsRoot,
       paths.modsRoot,
@@ -66,14 +82,17 @@ export async function configureGame(input: unknown) {
       paths.ccmRoot,
     ])
       await mkdir(dir, { recursive: true });
-    sciiGameSettingRepository.update({
-      ...old,
-      gameRoot: root,
-      customizeDataRoot: paths.customizeDataRoot,
-      confirmedAt: Date.now(),
-    });
-    return getGameSnapshot();
+  } catch (cause) {
+    throw new AppError(ERRORS.GAME_DIRECTORY_PREPARATION_FAILED, {}, { cause });
+  }
+  sciiGameSettingRepository.update({
+    ...old,
+    gameRoot: root,
+    customizeDataRoot: paths.customizeDataRoot,
+    confirmedAt: Date.now(),
   });
+  await startDependents();
+  return getGameSnapshot();
 }
 export async function getGameSnapshot() {
   const setting = sciiGameSettingRepository.getSnapshot();
@@ -89,7 +108,13 @@ export async function getGameSnapshot() {
     }
     return { ...setting, paths, capabilities };
   } catch (error) {
-    if (error instanceof AppError)
+    if (
+      error instanceof AppError &&
+      [
+        ERRORS.PROFILE_NOT_READY.code,
+        ERRORS.PROFILE_GAME_ROOT_INVALID.code,
+      ].some((code) => code === error.code)
+    )
       return {
         ...setting,
         paths: null,
@@ -99,24 +124,33 @@ export async function getGameSnapshot() {
   }
 }
 export async function initializeGame() {
+  return withGameLock(discoverGame);
+}
+async function discoverGame() {
   const data = sciiGameSettingRepository.getSnapshot();
-  if (data.gameRoot) {
-    try {
-      await configureGame(data.gameRoot);
-      return;
-    } catch {
-      return;
-    }
+  if (data.gameRoot) return configureUnlocked(data.gameRoot);
+  if (process.platform !== "win32")
+    throw new AppError(ERRORS.PROFILE_NOT_READY);
+  let value: unknown;
+  try {
+    const { default: reg } = await import("../../utils/reg");
+    const key =
+      "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StarCraft II";
+    value = (await reg.list([key]))[key]?.values?.InstallLocation?.value;
+  } catch (cause) {
+    throw new AppError(ERRORS.GAME_DISCOVERY_FAILED, {}, { cause });
   }
-  if (process.platform === "win32") {
-    try {
-      const { default: reg } = await import("../../utils/reg");
-      const key =
-        "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StarCraft II";
-      const value = (await reg.list([key]))[key].values.InstallLocation.value;
-      await configureGame(value);
-    } catch {
-      return;
-    }
-  }
+  if (typeof value !== "string" || !value)
+    throw new AppError(ERRORS.PROFILE_NOT_READY);
+  return configureUnlocked(value);
+}
+export async function reinitializeGame(input?: unknown) {
+  if (input !== undefined && (typeof input !== "string" || !isAbsolute(input)))
+    throw new AppError(ERRORS.IPC_INVALID_ARGUMENT);
+  return withGameLock(async () => {
+    await initGameStore(true);
+    return input === undefined
+      ? discoverGame()
+      : configureUnlocked(input as string);
+  });
 }

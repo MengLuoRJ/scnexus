@@ -74,6 +74,8 @@ const api: DesktopApi = {
       invokeTyped("campaign:deactivate", id, decisions),
   },
   gameSetting: {
+    initialize: (path?: string) =>
+      invokeTyped("scii-game-setting:initialize", path),
     get: () => invokeTyped("scii-game-setting:get"),
     configure: (path) => invokeTyped("scii-game-setting:configure", path),
     refresh: () => invokeTyped("scii-game-setting:refresh"),

@@ -15,6 +15,7 @@ import type {
   PlannedFile,
   ContentRecord,
   GamePaths,
+  Package,
   PackageCampaignType,
   RemovalPreview,
   RemovalDecision,
@@ -221,25 +222,40 @@ export class ContentService {
       );
       const info = await existing(directory);
       if (info) {
+        const descriptorPath = join(directory, "metadata.txt");
+        let pkg: Package | null = null;
+        let diagnostic: ExistingInstallation["diagnostic"];
+        try {
+          pkg = parseCcm(decodeCcm(await readFile(descriptorPath)).text);
+        } catch (error) {
+          if (
+            !(error instanceof AppError) &&
+            (error as NodeJS.ErrnoException).code !== "ENOENT" &&
+            (error as NodeJS.ErrnoException).code !== "ENOTDIR" &&
+            !(error instanceof TypeError)
+          )
+            throw error;
+          diagnostic = {
+            code: ERRORS.ARCHIVE_METADATA_INVALID.code,
+            message: "已存在同名内容，但信息无法解析",
+          };
+        }
         const found = matches.find(
           (record) => keyPath(record.directory) === keyPath(directory),
         );
-        if (found) found.matchedBy.push("directory");
-        else {
-          const descriptorPath = join(directory, "metadata.txt");
-          let pkg = preview.package;
-          try {
-            pkg = parseCcm(decodeCcm(await readFile(descriptorPath)).text);
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-          }
+        if (found) {
+          found.matchedBy.push("directory");
+          found.package = pkg;
+          if (diagnostic) found.diagnostic = diagnostic;
+        } else {
           matches.push({
             localId: null,
             package: pkg,
+            ...(diagnostic ? { diagnostic } : {}),
             directory,
             descriptorPath,
             matchedBy:
-              pkg.name === preview.package.name
+              pkg?.name === preview.package.name
                 ? ["title", "directory"]
                 : ["directory"],
             record: null,

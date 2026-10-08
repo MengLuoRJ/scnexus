@@ -7,16 +7,11 @@ import {
 } from "@scnexus/app-shared/errors/app.error";
 import { assertIpcSource } from "./ipc-source";
 import { reportError } from "../modules/logging/logging";
-import { sciiGameSettingRepository } from "../stores/scii-game-setting";
+import { getGamePaths } from "../modules/scii-game-setting/scii-game-setting";
 
-function guard(channel: string, event: IpcMainInvokeEvent) {
+async function guard(channel: string, event: IpcMainInvokeEvent) {
   assertIpcSource(event);
-  if (
-    /^(campaign|customize):/.test(channel) &&
-    !sciiGameSettingRepository.getSnapshot().gameRoot
-  ) {
-    throw new AppError(ERRORS.PROFILE_NOT_READY);
-  }
+  if (/^(campaign|customize):/.test(channel)) await getGamePaths();
 }
 
 function register(
@@ -28,7 +23,7 @@ function register(
   ipcMain.removeHandler(channel);
   ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
-      guard(channel, event);
+      await guard(channel, event);
       const data = await (passEvent ? func(event, ...args) : func(...args));
       return typed ? { ok: true, data } : { data };
     } catch (value) {

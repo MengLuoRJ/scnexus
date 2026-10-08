@@ -44,6 +44,7 @@ export type GameSnapshot = SciiGameSetting & {
   capabilities: { client: boolean; switcher: boolean; editor: boolean };
 };
 export interface GameSettingApi {
+  initialize(path?: string): Promise<IpcResult<GameSnapshot>>;
   get(): Promise<IpcResult<GameSnapshot>>;
   configure(path: string): Promise<IpcResult<GameSnapshot>>;
   refresh(): Promise<IpcResult<GameSnapshot>>;

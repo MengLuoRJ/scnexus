@@ -50,7 +50,8 @@ export type InstallPreview = {
 };
 export type ExistingInstallation = {
   localId: string | null;
-  package: Package;
+  package: Package | null;
+  diagnostic?: { code: string; message: string };
   directory: string;
   descriptorPath: string;
   matchedBy: ("scnid" | "name" | "title" | "directory")[];

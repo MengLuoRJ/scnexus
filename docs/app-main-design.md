@@ -299,3 +299,29 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 
 - [electron-store v11 文档](https://github.com/sindresorhus/electron-store/blob/v11.0.0/readme.md)：ESM、Electron 版本、schema、单文件原子写入及 migrations 限制。
 - [日志与错误规范](./logging-and-errors.md)：错误码表、日志传输与等级更新流程。
+
+
+## 初始化恢复与更新收尾（2026-10-08）
+
+- Store 初始化按独立仓库收集错误；setting 仅在自己的仓库已初始化时装配。游戏配置 IPC 不依赖游戏目录已可用，启动失败后仍允许用户恢复。
+- `window.scnexus.gameSetting.initialize(path?)` 重新打开游戏配置 Store；无参数重新验证保存目录或进行 Windows 注册表发现，带路径时校验指定目录。`configure(path)` 同样经过 Store 重试和目录校验；`refresh()` 只读能力快照，不重载 Store。
+- 重试仅针对游戏配置及依赖它的游戏/内容模块，不重载全部 Store。打开新 Store 失败不替换可用旧实例；目录修改和重试与内容任务互斥。
+- 成功保存配置后尝试初始化 campaign、campaign-active、customize 仓库，全部成功后再注册内容模块；成功模块不重复注册，失败可以在下一次 initialize/configure 后重试。业务 IPC 每次验证游戏路径，不能仅凭旧 gameRoot 字符串继续文件操作。
+- 游戏自动发现失败使用 M056；管理目录创建失败使用 M057；内容依赖初始化失败使用 M058；保留 M011（未就绪）、M013（目录无效）和 Store 本身错误码。预期无游戏与无效目录可返回不可用能力；非预期错误不得被空 catch 隐藏。
+- 托盘保持未接入，不在本轮启用菜单动作。自动识别模式与游戏版本检测继续延期。
+
+### Windows 更新
+
+维护 unavailable/idle/checking/available/downloading/downloaded/installing/failed 状态；通过 `updater:status` 查询。检查、下载、安装分别归类 M027/M028/M029；下载和安装验证前置状态，检查不能与下载或安装并行。
+
+关闭 autoInstallOnAppQuit，避免普通退出隐式安装。明确安装请求先完成模块清理，再交给 electron-updater quitAndInstall；before-quit 在安装路径不再次 preventDefault，防止异步普通退出与安装重启流程竞争。真实 NSIS 更新仍需已打包应用验收。
+
+### macOS 自更新设计（本轮不实现）
+
+计划使用 electron-updater 的 MacUpdater；需已签名应用、适用的公证与发布流程，发布匹配版本和架构的 ZIP、latest-mac.yml 及安装 DMG。更新入口与状态/错误协议保持一致，但签名、权限、架构、重启流程必须在 macOS 上验收；当前非 Windows 环境明确返回不可用，不声明已支持 macOS 更新。
+
+### 异常回滚与崩溃恢复
+
+现行事务在普通异常或取消时使用磁盘备份回滚。强制结束、进程崩溃或断电无法执行 catch/finally；现有备份目录没有持久化操作清单，不能可靠自动恢复。
+
+后续崩溃恢复需在文件改动前持久化目标、备份、操作阶段和 Store 提交状态，启动时发现未完成事务，经核验恢复或提示用户；失败保留证据，不自动删除。该能力本轮未实现。

@@ -626,3 +626,21 @@ test("CCM existing directory is reported even without a stored record", async ()
     record: null,
   });
 });
+
+test("damaged CCM metadata reports occupied directory without failing analysis", async () => {
+  const f = await fixture();
+  const directory = join(f.paths.ccmRoot, "Damaged");
+  await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, "metadata.txt"), "broken");
+  const input = await source(f.root, {
+    "metadata.txt": "title=Damaged\ncampaign=WOL",
+    "M.SC2Map": "map",
+  });
+  const result = await f.service.analyze("campaign", input);
+  expect(result.existingInstallations.ccm[0]).toMatchObject({
+    directory,
+    package: null,
+    matchedBy: ["directory"],
+    diagnostic: { code: "M034", message: "已存在同名内容，但信息无法解析" },
+  });
+});

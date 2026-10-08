@@ -297,3 +297,14 @@ renderer 初始化前、关闭后或重新加载时读取有效授权状态，�
 
 - [electron-log 初始化文档](https://github.com/megahertz/electron-log/blob/master/docs/initialize.md)：v5 的 renderer 日志归集到 main，以及自动注入、手动 preload、直接 IPC 等不同方式。本文选择自有受控桥接，不依赖其内部 channel 名称作为应用契约。
 - electron-log 具体版本在实施期按 Electron 44 的兼容性选择并锁定；本文不同时要求升级未指定的主版本。
+
+
+新增主进程初始化错误码：
+
+| code | name | description |
+| --- | --- | --- |
+| M056 | GAME-DISCOVERY-FAILED | 游戏目录自动发现失败 |
+| M057 | GAME-DIRECTORY-PREPARATION-FAILED | 游戏管理目录创建失败 |
+| M058 | GAME-MODULE-INITIALIZATION-FAILED | 游戏或内容依赖模块初始化失败 |
+
+更新阶段沿用 M027/M028/M029（检查/下载/安装），不将所有错误都归为下载失败。

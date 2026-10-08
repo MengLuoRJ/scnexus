@@ -485,3 +485,10 @@ ZIP 文件名在未设置通用标志位 bit 11 时是代码页字节，含义�
 - [整体架构](./architecture.md)
 - [app-main 基础模块与存储](./app-main-design.md)
 - [错误与日志](./logging-and-errors.md)
+
+
+### 同名目录描述文件损坏
+
+CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store 有记录也验证磁盘描述文件。无法解析或缺失时，existingInstallations 项返回 package=null、已有目录和描述文件路径、diagnostic（M034：已存在同名内容，但信息无法解析），不拿本次输入信息冒充已有信息，不中断其他模式分析。权限或设备读写失败仍作为真实错误返回。安装继续拒绝占用目录，不自动覆盖。
+
+2026-10-08 收尾：标题目录、重复识别、customizeDataRoot v3 迁移、游戏初始化恢复及更新/窗口/设置/遥测模拟回归已补充。真实游戏、NSIS 更新、macOS 签名更新、ZIP 内部文件名代码页协商与崩溃恢复不在模拟验证结论内。

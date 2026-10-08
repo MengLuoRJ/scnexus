@@ -290,6 +290,21 @@ export const ERRORS = {
     name: "TELEMETRY-DISABLE-FAILED",
     description: "遥测 SDK 清理或关闭失败",
   },
+  GAME_DISCOVERY_FAILED: {
+    code: "M056",
+    name: "GAME-DISCOVERY-FAILED",
+    description: "游戏目录自动发现失败",
+  },
+  GAME_DIRECTORY_PREPARATION_FAILED: {
+    code: "M057",
+    name: "GAME-DIRECTORY-PREPARATION-FAILED",
+    description: "游戏管理目录创建失败",
+  },
+  GAME_MODULE_INITIALIZATION_FAILED: {
+    code: "M058",
+    name: "GAME-MODULE-INITIALIZATION-FAILED",
+    description: "游戏或内容依赖模块初始化失败",
+  },
 } as const;
 
 export type ErrorDefinition = (typeof ERRORS)[keyof typeof ERRORS];

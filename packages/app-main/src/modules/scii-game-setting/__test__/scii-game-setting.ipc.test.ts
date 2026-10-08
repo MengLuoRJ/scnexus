@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 const register = vi.hoisted(() => vi.fn());
 vi.mock("../../../utils/ipc-util", () => ({ ipcHandleTyped: register }));
 vi.mock("../scii-game-setting", () => ({
-  configureGame: vi.fn(),
+  reinitializeGame: vi.fn(),
   getGameSnapshot: vi.fn(),
 }));
 
@@ -14,6 +14,7 @@ test("registers only the current game-setting contract", () => {
   expect(register.mock.calls.map(([channel]) => channel)).toEqual([
     "scii-game-setting:get",
     "scii-game-setting:configure",
+    "scii-game-setting:initialize",
     "scii-game-setting:refresh",
   ]);
 });

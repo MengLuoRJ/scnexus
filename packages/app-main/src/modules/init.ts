@@ -1,10 +1,13 @@
-import { initAllStores } from "../stores";
+import { initAllStores, initContentStores } from "../stores";
+import { settingRepository } from "../stores/setting";
+import { onGameConfigured } from "./scii-game-setting";
 import { initAppModule } from "./app";
 import { initWindowModule, onWindowReady } from "./window";
 import { initDialogModule } from "./dialog";
 import { initShellModule } from "./shell";
 import { initDeepLinkModule } from "./deep-link";
 import { initTrayModule, destroyTray } from "./tray";
+import { setBeforeUpdateInstall } from "./updater";
 import { initUpdaterModule } from "./updater";
 import { initSettingModule, disposeSetting } from "./setting";
 import {
@@ -22,12 +25,27 @@ import { reportError } from "./logging";
 
 const cleanup: (() => void)[] = [];
 export async function initModules() {
+  setBeforeUpdateInstall(disposeModules);
+  let contentStarted = false;
+  onGameConfigured(async () => {
+    await initContentStores();
+    if (contentStarted) return;
+    initContentPackageModule();
+    initCampaignModule();
+    initCustomizeModule();
+    contentStarted = true;
+  });
   const failures = [];
   const initializers: [string, () => unknown][] = [
     ["stores", initAllStores],
     ["window", initWindowModule],
     ["telemetry", initTelemetryModule],
-    ["setting", initSettingModule],
+    [
+      "setting",
+      () => {
+        if (settingRepository.isInitialized()) initSettingModule();
+      },
+    ],
     ["app", initAppModule],
     ["dialog", initDialogModule],
     ["shell", initShellModule],
@@ -35,9 +53,6 @@ export async function initModules() {
     ["tray", initTrayModule],
     ["updater", initUpdaterModule],
     ["scii-game-setting", initSciiGameSettingModule],
-    ["content-package", initContentPackageModule],
-    ["campaign", initCampaignModule],
-    ["customize", initCustomizeModule],
     ["workshop", initWorkshopModule],
   ];
   for (const [scope, initialize] of initializers) {
@@ -61,6 +76,7 @@ export async function initModules() {
   return failures;
 }
 export async function disposeModules() {
+  onGameConfigured(undefined);
   cleanup.splice(0).forEach((dispose) => dispose());
   disposeSetting();
   destroyTray();

@@ -1,5 +1,6 @@
 import { exposeApis, invoke, subscribe, type ApiListener } from "./common.js";
 
+export const apiUpdaterGetStatus = () => invoke("updater:status");
 export const apiUpdaterCheckForUpdatesAndNotify = () =>
   invoke("updater:check-for-updates-and-notify");
 export const apiUpdaterCheckForUpdates = () =>
@@ -21,6 +22,7 @@ export const apiUpdaterOnError = (listener: ApiListener) =>
   subscribe("updater:error", listener);
 
 exposeApis({
+  "updater:status": apiUpdaterGetStatus,
   "updater:check-for-updates-and-notify": apiUpdaterCheckForUpdatesAndNotify,
   "updater:check-for-updates": apiUpdaterCheckForUpdates,
   "updater:download-update": apiUpdaterDownloadUpdate,

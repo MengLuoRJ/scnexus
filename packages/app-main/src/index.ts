@@ -1,3 +1,4 @@
+import { isInstallingUpdate } from "./modules/updater";
 import { app, dialog, Menu } from "electron";
 import { initLoggingModule, reportError } from "./modules/logging";
 import { initModules, disposeModules } from "./modules/init";
@@ -60,7 +61,7 @@ app.on("window-all-closed", () => {
 
 let exiting = false;
 app.on("before-quit", (event) => {
-  if (exiting) return;
+  if (exiting || isInstallingUpdate()) return;
   event.preventDefault();
   exiting = true;
   void disposeModules().finally(() => app.quit());

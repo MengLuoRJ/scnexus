@@ -22,6 +22,33 @@ export function initAllStores(): Promise<void> {
   return initialization;
 }
 
+export async function initGameStore(reload = false): Promise<void> {
+  const { app } = await import("electron");
+  if (!app.isReady()) throw new AppError(ERRORS.APP_INITIALIZATION_FAILED);
+  configureGameDefaults(app.getPath("documents"));
+  const directory = join(app.getPath("userData"), "SCNexusStorage");
+  const backend = await createElectronBackend(
+    "store-scii-game-setting",
+    directory,
+  );
+  if (reload) sciiGameSettingRepository.reload(backend);
+  else sciiGameSettingRepository.init(backend);
+}
+
+export async function initContentStores(): Promise<void> {
+  const { app } = await import("electron");
+  if (!app.isReady()) throw new AppError(ERRORS.APP_INITIALIZATION_FAILED);
+  const directory = join(app.getPath("userData"), "SCNexusStorage");
+  for (const [name, repository] of [
+    ["store-campaign", campaignRepository],
+    ["store-campaign-active", campaignActiveRepository],
+    ["store-customize", customizeRepository],
+  ] as const) {
+    if (!repository.isInitialized())
+      repository.init(await createElectronBackend(name, directory));
+  }
+}
+
 async function initialize(): Promise<void> {
   const { app } = await import("electron");
   if (!app.isReady())

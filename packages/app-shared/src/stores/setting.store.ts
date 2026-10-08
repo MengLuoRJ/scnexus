@@ -1,4 +1,4 @@
-export type DisplayLanguage = "system" | "zh-CN" | "en-US" | "zh-TW";
+export type DisplayLanguage = "system" | "zh" | "en" | "zh-Hant";
 export type LogLevel =
   | "error"
   | "warn"

@@ -46,6 +46,20 @@ export default defineConfig({
     vueJsx(),
     vueDevTools(),
     ui({
+      icon: {
+        clientBundle: {
+          icons: [
+            "tabler:home",
+            "tabler:settings",
+            "tabler:planet",
+            "tabler:layout-sidebar-left-expand",
+            "tabler:layout-sidebar-left-collapse",
+            "tabler:device-desktop",
+            "tabler:alert-circle",
+            "tabler:external-link",
+          ],
+        },
+      },
       autoImport: {
         imports: ["vue", "vue-router"],
         dirs: ["src/composables", "src/stores", "src/ipcs"],

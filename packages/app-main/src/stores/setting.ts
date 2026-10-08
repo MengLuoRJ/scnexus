@@ -13,7 +13,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 1,
+      _schemaVersion: 2,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
@@ -25,6 +25,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
     }),
     schema: {
       ...versionSchema,
+      _schemaVersion: { const: 2 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ["number", "null"], minimum: 0 },
       _lastConfirmedVersion: {
@@ -34,7 +35,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
       downloadDirectory: stringSchema,
       displayLanguage: {
         type: "string",
-        enum: ["system", "zh-CN", "en-US", "zh-TW"],
+        enum: ["system", "zh", "en", "zh-Hant"],
       },
       logLevel: {
         type: "string",
@@ -45,6 +46,19 @@ export function createSettingRepository(downloadDirectory: () => string) {
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy);
+      if (data._schemaVersion === 1) {
+        const languages: Record<string, string> = {
+          "zh-CN": "zh",
+          "en-US": "en",
+          "zh-TW": "zh-Hant",
+        };
+        return {
+          ...data,
+          _schemaVersion: defaults._schemaVersion,
+          displayLanguage:
+            languages[data.displayLanguage as string] ?? data.displayLanguage,
+        } as SettingData;
+      }
       keys(data, [
         "IS_INITIAL",
         "CLIENT_ID",

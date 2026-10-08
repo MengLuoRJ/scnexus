@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
     logLevel: "error",
     telemetryEnabled: false,
     clientId: "client",
-    displayLanguage: "zh-CN",
+    displayLanguage: "zh",
   },
   apply: vi.fn(),
   enable: vi.fn(),
@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   send: vi.fn(),
 }));
 vi.mock("electron", () => ({
-  app: { getPreferredSystemLanguages: () => ["zh-CN"] },
+  app: { getPreferredSystemLanguages: () => ["zh"] },
 }));
 vi.mock("../../../stores/setting", () => ({
   getSettingStore: () => ({ ...mocks.data }),

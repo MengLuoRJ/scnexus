@@ -10,7 +10,7 @@ export const LOG_LEVELS = [
   "silly",
 ] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
-export type DisplayLanguage = "system" | "zh-CN" | "en-US" | "zh-TW";
+export type DisplayLanguage = "system" | "zh" | "en" | "zh-Hant";
 export type SettingPreferences = Pick<
   SettingData,
   "downloadDirectory" | "displayLanguage" | "logLevel" | "telemetryEnabled"

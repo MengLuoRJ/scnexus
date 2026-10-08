@@ -267,3 +267,17 @@ const stop = apiSettingOnChanged(snapshot => {
 src/ipcs 根目录只保留业务接口文件与业务导出 index.ts；公共请求、订阅及桥接辅助放 src/ipcs/internal，辅助测试位于 internal/__tests__；Window 桥接声明放 src/types/desktop.d.ts。unwrap 不从业务 index.ts 再导出，需显式从内部辅助模块导入。
 
 后续自动导入扫描 src/ipcs/*.ts，排除 index.ts，不递归扫描 internal，不扫描 src/types。当前只整理结构，尚未启用自动导入；业务接口仍显式导入，名称和行为不变。文件路径获取 files.ts 保留为业务能力。
+
+
+### renderer-v2 基本界面（2026-10-08）
+
+Nuxt UI UApp 包裹根布局，左侧可折叠导航仅提供首页与设置，右侧内容独立滚动。使用 hash 路由兼容 Electron file 加载；没有复制旧 renderer 的布局或状态代码。首页为欢迎页。
+
+设置页通过 src/ipcs 连接语言、下载目录、日志等级、遥测授权、游戏目录手动选择/重新检测、派生管理路径、版本与 Windows 更新、帮助链接。请求期间禁用冲突操作，失败展示错误码和 errorId；偏好保存失败后重读快照，避免界面与已持久化状态不一致。订阅由 scope 自动清理。浏览器没有 preload 时给出不可用提示，禁用本地操作，不模拟保存成功。
+
+Vue I18n 显式接入，src/locales 提供中文、英文、繁体中文扁平资源；初始化及 setting 事件使用 main 返回的 effectiveLanguage。Nuxt UI 采用 Vue/Vite 插件，不引入 Nuxt 服务端，业务图标打包为本地资源。
+
+验证：v2 类型检查与构建通过；IPC/国际化定向测试 7 项通过；浏览器检查欢迎页、导航折叠、设置路由和无桥接禁用状态。真实 Electron 设置保存、目录选择及 NSIS 更新端到端尚未验收。构建有主包超过 500kB 提示，未擅自进行无关拆包优化。
+
+
+设置页分为三个 Tab：基本设置（语言、下载目录、版本更新和帮助）、游戏环境、日志与隐私。应用统一语言编码为 zh/en/zh-Hant，system 仍表示跟随系统；系统地区语言检测仍接受 en-GB、zh-TW、zh-Hant-HK 等系统标识并归一化。设置 Store 升至 v2，迁移旧 zh-CN/en-US/zh-TW，保留其他用户偏好与 revision；语言资源文件使用新编码命名。

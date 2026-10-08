@@ -48,8 +48,8 @@ test("settings accept only editable flat fields and valid values", () => {
   );
 });
 test("system display language uses supported preference then Chinese fallback", () => {
-  assert.equal(resolveDisplayLanguage("system", ["de-DE", "en-GB"]), "en-US");
-  assert.equal(resolveDisplayLanguage("system", ["zh-Hant-HK"]), "zh-TW");
-  assert.equal(resolveDisplayLanguage("system", ["de-DE"]), "zh-CN");
-  assert.equal(resolveDisplayLanguage("en-US", ["zh-CN"]), "en-US");
+  assert.equal(resolveDisplayLanguage("system", ["de-DE", "en-GB"]), "en");
+  assert.equal(resolveDisplayLanguage("system", ["zh-Hant-HK"]), "zh-Hant");
+  assert.equal(resolveDisplayLanguage("system", ["de-DE"]), "zh");
+  assert.equal(resolveDisplayLanguage("en", ["zh"]), "en");
 });

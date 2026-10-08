@@ -1,9 +1,18 @@
-<script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+<script lang="ts" setup>
+import { useI18n } from "vue-i18n";
+defineOptions({ name: "HomeView" });
+const { t } = useI18n();
 </script>
-
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <section class="flex min-h-[65vh] flex-col items-center justify-center text-center">
+    <div class="mb-8 rounded-3xl bg-primary/10 p-7">
+      <UIcon name="i-tabler-planet" class="size-16 text-primary" />
+    </div>
+    <UBadge label="SCNexus · 星际枢纽" variant="subtle" class="mb-4" />
+    <h2 class="text-3xl font-bold tracking-tight">{{ t("ui.welcome") }}</h2>
+    <p class="mt-4 max-w-lg text-base leading-7 text-muted">{{ t("ui.intro") }}</p>
+    <UButton to="/settings" icon="i-tabler-settings" size="lg" class="mt-8">{{
+      t("ui.start")
+    }}</UButton>
+  </section>
 </template>

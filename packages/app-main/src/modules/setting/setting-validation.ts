@@ -30,7 +30,7 @@ export function validatePreferencePatch(
       throw new AppError(ERRORS.SETTING_INVALID_VALUE);
     if (
       key === "displayLanguage" &&
-      !["system", "zh-CN", "en-US", "zh-TW"].includes(value as string)
+      !["system", "zh", "en", "zh-Hant"].includes(value as string)
     )
       throw new AppError(ERRORS.SETTING_INVALID_VALUE);
     if (key === "telemetryEnabled" && typeof value !== "boolean")
@@ -50,12 +50,12 @@ export function resolveDisplayLanguage(
   if (selection !== "system") return selection;
   for (const language of systemLanguages) {
     const value = language.toLowerCase();
-    if (/^en(?:-|$)/.test(value)) return "en-US";
+    if (/^en(?:-|$)/.test(value)) return "en";
     if (/^zh(?:-|$)/.test(value)) {
       if (value.includes("hant") || /-(tw|hk|mo)(?:-|$)/.test(value))
-        return "zh-TW";
-      return "zh-CN";
+        return "zh-Hant";
+      return "zh";
     }
   }
-  return "zh-CN";
+  return "zh";
 }

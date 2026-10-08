@@ -5,6 +5,14 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import vueDevTools from "vite-plugin-vue-devtools";
+
+import ui from "@nuxt/ui/vite";
+
+import AutoImport from "unplugin-auto-import/vite";
+import Components from "unplugin-vue-components/vite";
+
+import { visualizer } from "rollup-plugin-visualizer";
+
 import electronVendorsCache from "../app-main/.electron-vendors.cache.json" with { type: "json" };
 
 const PACKAGE_ROOT = fileURLToPath(new URL(".", import.meta.url));
@@ -33,7 +41,20 @@ export default defineConfig({
     emptyOutDir: true,
     reportCompressedSize: true,
   },
-  plugins: [vue(), vueJsx(), vueDevTools()],
+  plugins: [
+    vue(),
+    vueJsx(),
+    vueDevTools(),
+    ui({
+      autoImport: {
+        imports: ["vue", "vue-router"],
+        dirs: ["src/composables", "src/stores", "src/ipcs"],
+        resolvers: [],
+        vueTemplate: true,
+      },
+    }),
+    visualizer(),
+  ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

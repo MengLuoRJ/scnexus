@@ -163,18 +163,8 @@ export type Package = {
     description?: string;
   }[];
   /**
-   * Specify the manager of this Customize.
-   *
-   * `"SCNexus"` means this file should be treat by SCNexus Manager within SCNexus Standard.
-   *
-   * `"CCM"` meas this file is following CCM standard, which will be treat as CCM simulately.
-   *
-   * This default to `undefined` which means the manager is not specified,
-   * then will be determined by the package file,
-   * `package.json` will be `SCNexus`, and `metadata.txt` will be `CCM`.
-   *
-   * @value `SCNexus` | `CCM`
-   * @default undefined
+   * Author-recommended installation mode. The player may choose another available mode.
+   * No recommendation is supplied when this field is absent.
    */
   manager?: "SCNexus" | "CCM";
 } & PackageRichInfo;

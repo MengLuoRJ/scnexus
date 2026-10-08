@@ -25,6 +25,16 @@
         "types": "./dist/metadata/index.d.mts",
         "default": "./dist/metadata/index.mjs"
       }
+    },
+    "./package": {
+      "require": {
+        "types": "./dist/package/index.d.ts",
+        "default": "./dist/package/index.js"
+      },
+      "import": {
+        "types": "./dist/package/index.d.mts",
+        "default": "./dist/package/index.mjs"
+      }
     }
   },
   "typesVersions": {
@@ -34,6 +44,9 @@
       ],
       "metadata": [
         "./dist/metadata/index.d.ts"
+      ],
+      "package": [
+        "./dist/package/index.d.ts"
       ]
     }
   },

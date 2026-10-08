@@ -12,7 +12,6 @@ import {
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createElectronBackend } from "../store-electron-backend";
-import type { MetadataInformated } from "scnexus-standard/metadata";
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
 import {
   createSettingRepository,
@@ -22,28 +21,7 @@ import {
   getSettingStoreKey,
   updateSettingStore,
 } from "../setting";
-import {
-  createProfileRepository,
-  profileRepository,
-  configureProfileDefaults,
-  profileStore,
-} from "../profile";
-import {
-  campaignRepository,
-  insertStoreCampaign,
-  removeStoreCampaign,
-  getCampaignStore,
-} from "../campaign";
-import {
-  campaignActiveRepository,
-  insertStoreActiveCampaign,
-  removeStoreActiveCampaign,
-} from "../campaign-active";
-import {
-  customizeRepository,
-  insertStoreCustomize,
-  removeStoreCustomize,
-} from "../customize";
+import { createSciiGameSettingRepository } from "../scii-game-setting";
 import type {
   PersistenceBackend,
   RepositoryOptions,
@@ -123,24 +101,10 @@ const legacySetting = {
   LAST_UPDATED_TIME: 12345,
   PRESETS: "legacy-preset",
 };
-const campaign: MetadataInformated = {
-  name: "Test",
-  description: "test",
-  version: "1",
-  author: "Tester",
-  type: "Campaign",
-  campaign: "WOL",
-  localinfo: {},
-};
-
 test("imports do not initialize stores or load Electron", async () => {
   await import("../index");
   assert.throws(
     () => setting().getSnapshot(),
-    code(ERRORS.APP_INITIALIZATION_FAILED.code),
-  );
-  assert.throws(
-    () => campaignRepository.getSnapshot(),
     code(ERRORS.APP_INITIALIZATION_FAILED.code),
   );
 });
@@ -366,30 +330,18 @@ test("migration backup and commit failures preserve original bytes and remain re
   }
 });
 
-test("profile migration and legacy get/set/store keep old fields with validation", async () => {
-  const legacy = createProfileRepository(() => documents).init(
-    await fileBackend(),
-  );
-  const { _schemaVersion: _schema, _revision: _revision, ...old } = legacy;
-  const backend = await fileBackend(old);
-  configureProfileDefaults(documents);
-  profileRepository.init(backend);
-  assert.equal(
-    profileStore.get("PROFILE_GAME").GAME_VERSION,
-    old.PROFILE_GAME.GAME_VERSION,
-  );
-  profileStore.set("ERROR_MESSAGE", "GAME_ROOT_NOT_FOUND");
-  assert.equal(profileStore.store.ERROR_MESSAGE, "GAME_ROOT_NOT_FOUND");
-  profileStore.set("SUCCESS", true);
-  const snapshot = profileStore.store;
-  snapshot.PROFILE_GAME.GAME_ROOT = "altered";
-  snapshot.PATH_WHITE_LIST!.push("altered");
-  assert.equal(profileStore.get("PROFILE_GAME").GAME_ROOT, "");
-  assert.deepEqual(profileStore.get("PATH_WHITE_LIST"), []);
-  assert.throws(
-    () => profileStore.set("PROFILE_GAME", { GAME_ROOT: "bad" } as never),
-    code(ERRORS.STORE_DATA_INVALID.code),
-  );
+test("old profile migrates only confirmed root to game-setting and retains source backup", async () => {
+  const backend = await fileBackend({
+    _schemaVersion: 1,
+    _revision: 4,
+    SUCCESS: true,
+    PROFILE_GAME: { GAME_ROOT: "D:\\StarCraft II", GAME_VERSION: "old" },
+  });
+  const repository = createSciiGameSettingRepository(() => documents);
+  repository.init(backend);
+  assert.equal(repository.getKey("gameRoot"), "D:\\StarCraft II");
+  assert.equal(repository.getKey("_schemaVersion"), 3);
+  assert.equal("GAME_VERSION" in repository.getSnapshot(), false);
   assert.equal(backend.backups.length, 1);
 });
 
@@ -414,93 +366,27 @@ test("setting exports operate on canonical fields after legacy migration", async
     code(ERRORS.STORE_DATA_INVALID.code),
   );
 });
-
-test("campaign/customize/active v10 migration and insert/remove use single validated commits", async () => {
-  const backend = await fileBackend({
-    ININTIALIZED: true,
-    LAST_REFRESH_TIME: 10,
-    CAMPAIGN_LIST_SET: { WOL: [campaign], HOTS: [], LOTV: [], NCO: [] },
+test("game-setting v2 renames management root without losing saved configuration", async () => {
+  const original = {
+    _schemaVersion: 2,
+    _revision: 8,
+    gameRoot: "D:\\StarCraft II",
+    SCNEXUS_CUTOMIZE_DATA_ROOT: "D:\\StarCraft II\\SCNexusCustomizeData",
+    documentRoot: documents,
+    confirmedAt: 1234,
+  };
+  const backend = await fileBackend(original);
+  const repository = createSciiGameSettingRepository(() => "unused");
+  const migrated = repository.init(backend);
+  assert.deepEqual(migrated, {
+    _schemaVersion: 3,
+    _revision: 8,
+    gameRoot: original.gameRoot,
+    customizeDataRoot: original.SCNEXUS_CUTOMIZE_DATA_ROOT,
+    documentRoot: documents,
+    confirmedAt: 1234,
   });
-  campaignRepository.init(backend);
-  removeStoreCampaign(campaign);
-  assert.equal(getCampaignStore().CAMPAIGN_LIST_SET.WOL.length, 0);
-  assert.equal(getCampaignStore()._revision, 1);
-  removeStoreCampaign(campaign);
-  assert.equal(getCampaignStore()._revision, 1);
-  insertStoreCampaign(campaign);
-  const detached = getCampaignStore().CAMPAIGN_LIST_SET.WOL;
-  detached[0]!.name = "changed";
-  assert.equal(
-    campaignRepository.getKey("CAMPAIGN_LIST_SET").WOL[0]!.name,
-    "Test",
-  );
-  assert.throws(
-    () =>
-      campaignRepository.updateKey("CAMPAIGN_LIST_SET", {
-        WOL: [{ ...campaign, campaign: "HOTS" }],
-        HOTS: [],
-        LOTV: [],
-        NCO: [],
-      }),
-    code(ERRORS.STORE_DATA_INVALID.code),
-  );
-  assert.throws(
-    () =>
-      campaignRepository.update({
-        ...getCampaignStore(),
-        CAMPAIGN_LIST_SET: {},
-      } as never),
-    code(ERRORS.STORE_DATA_INVALID.code),
-  );
-  backend.failWrite = true;
-  const before = getCampaignStore();
-  assert.throws(
-    () => removeStoreCampaign(campaign),
-    code(ERRORS.STORE_WRITE_FAILED.code),
-  );
-  assert.deepEqual(getCampaignStore(), before);
-
-  campaignActiveRepository.init(
-    await fileBackend({
-      ININTIALIZED: false,
-      LAST_REFRESH_TIME: 10,
-      CAMPAIGN_SET: {},
-    }),
-  );
-  insertStoreActiveCampaign(campaign);
-  assert.equal(
-    campaignActiveRepository.getKey("CAMPAIGN_SET").WOL!.name,
-    "Test",
-  );
-  removeStoreActiveCampaign(campaign);
-  assert.equal(campaignActiveRepository.getKey("CAMPAIGN_SET").WOL, undefined);
-  assert.throws(
-    () =>
-      campaignActiveRepository.updateKey("CAMPAIGN_SET", {
-        WOL: "bad",
-      } as never),
-    code(ERRORS.STORE_DATA_INVALID.code),
-  );
-
-  customizeRepository.init(
-    await fileBackend({
-      ININTIALIZED: true,
-      LAST_REFRESH_TIME: 10,
-      CUSTOMIZE_LIST: [],
-    }),
-  );
-  insertStoreCustomize(campaign);
-  removeStoreCustomize(campaign);
-  assert.deepEqual(customizeRepository.getKey("CUSTOMIZE_LIST"), []);
-  assert.throws(
-    () => customizeRepository.updateKey("CUSTOMIZE_LIST", [null] as never),
-    code(ERRORS.STORE_DATA_INVALID.code),
-  );
-  assert.throws(
-    () =>
-      customizeRepository.updateKey("CUSTOMIZE_LIST", [
-        { ...campaign, localinfo: { unsupported: () => true } },
-      ] as never),
-    code(ERRORS.STORE_DATA_INVALID.code),
-  );
+  assert.equal(backend.backups.length, 1);
+  assert.equal(repository.init(backend)._schemaVersion, 3);
+  assert.equal(backend.backups.length, 1);
 });

@@ -5,7 +5,6 @@ import "./ipc/campaign.js";
 import "./ipc/customize.js";
 import "./ipc/deep-link.js";
 import "./ipc/dialog.js";
-import "./ipc/profile.js";
 import "./ipc/setting.js";
 import "./ipc/shell.js";
 import "./ipc/updater.js";

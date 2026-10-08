@@ -7,11 +7,14 @@ import {
 } from "@scnexus/app-shared/errors/app.error";
 import { assertIpcSource } from "./ipc-source";
 import { reportError } from "../modules/logging/logging";
-import { profileStore } from "../stores/profile";
+import { sciiGameSettingRepository } from "../stores/scii-game-setting";
 
 function guard(channel: string, event: IpcMainInvokeEvent) {
   assertIpcSource(event);
-  if (/^(campaign|customize):/.test(channel) && !profileStore.get("SUCCESS")) {
+  if (
+    /^(campaign|customize):/.test(channel) &&
+    !sciiGameSettingRepository.getSnapshot().gameRoot
+  ) {
     throw new AppError(ERRORS.PROFILE_NOT_READY);
   }
 }
@@ -30,7 +33,8 @@ function register(
       return typed ? { ok: true, data } : { data };
     } catch (value) {
       const error = normalizeError(value);
-      reportError(error, channel);
+      if (error.code !== ERRORS.TASK_CANCELLED.code)
+        reportError(error, channel);
       const dto = toErrorDto(error);
       return typed
         ? { ok: false, error: dto }

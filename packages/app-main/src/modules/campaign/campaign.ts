@@ -1,48 +1,28 @@
-import { join } from "node:path";
-
-import { mkdirIfNotExist } from "@/utils/fs-util";
-import { profileStore } from "@/stores/profile";
-
-export async function initCampaignDirectory(): Promise<void> {
-  const customizePaths = profileStore.get("PROFILE_CAMPAIGN");
-
-  type PathKey = keyof typeof customizePaths;
-  let pathKey: PathKey;
-  for (pathKey in customizePaths) {
-    if (customizePaths[pathKey]) {
-      await mkdirIfNotExist(customizePaths[pathKey]);
-    }
-  }
-
-  // if (customizePaths.MODS_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.MODS_ROOT);
-  // }
-  // if (customizePaths.MAPS_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.MAPS_ROOT);
-  // }
-  // if (customizePaths.WOL_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.WOL_ROOT);
-  // }
-  // if (customizePaths.HOTS_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.HOTS_ROOT);
-  // }
-  // if (customizePaths.HOTS_EVO_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.HOTS_EVO_ROOT);
-  // }
-  // if (customizePaths.LOTV_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.LOTV_ROOT);
-  // }
-  // if (customizePaths.LOTV_PRO_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.LOTV_PRO_ROOT);
-  // }
-  // if (customizePaths.NCO_ROOT) {
-  //   await mkdirIfNotExist(customizePaths.NCO_ROOT);
-  // }
-}
-
-export async function initCCMDirectory(): Promise<void> {
-  const customizePaths = profileStore.get("PROFILE_CAMPAIGN");
-  if (customizePaths.MAPS_ROOT) {
-    await mkdirIfNotExist(join(customizePaths.MAPS_ROOT, "CustomCampaigns"));
-  }
-}
+import { contentService } from "../content-package";
+export const analyze = (
+  source: import("@scnexus/app-shared/types/content.type").SourceInput,
+) => contentService.analyze("campaign", source);
+export const install = (
+  selection: import("@scnexus/app-shared/types/content.type").InstallSelection,
+) => contentService.install(selection, "campaign");
+export const list = () => contentService.list("campaign");
+export const scan = () => contentService.scan();
+export const prepareUninstall = (id: string) =>
+  contentService.prepareRemoval(id, "uninstall", "campaign");
+export const uninstall = (
+  id: string,
+  decisions: import("@scnexus/app-shared/types/content.type").RemovalDecision[],
+) => contentService.remove(id, decisions, "campaign");
+export const prepareActivation = (id: string) =>
+  contentService.prepareActivation(id);
+export const activate = (
+  id: string,
+  decisions: import("@scnexus/app-shared/types/content.type").ConflictDecision[],
+) => contentService.activate(id, decisions);
+export const getActive = () => contentService.getActive();
+export const prepareDeactivation = (id: string) =>
+  contentService.prepareRemoval(id, "deactivate");
+export const deactivate = (
+  id: string,
+  decisions: import("@scnexus/app-shared/types/content.type").RemovalDecision[],
+) => contentService.remove(id, decisions, "campaign");

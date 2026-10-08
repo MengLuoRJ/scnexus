@@ -1,70 +1,167 @@
-import type {
-  MetadataInformated,
-  MetadataInformatedList,
-} from "scnexus-standard/metadata";
-
-import type { CustomizeStore } from "@scnexus/app-shared/stores/customize.store";
-
-import { createRepository } from "./store-repository";
-import { migrateLegacy } from "./store-validation";
-import { contentSchema } from "./store-schema";
 import type { Schema } from "electron-store";
-
-const defaults = (): CustomizeStore => ({
-  _schemaVersion: 1,
-  _revision: 0,
-  ININTIALIZED: false,
-  LAST_REFRESH_TIME: 0,
-  CUSTOMIZE_LIST: [],
-});
-
-export const customizeRepository = createRepository<CustomizeStore>({
-  defaults,
-  schema: contentSchema("CUSTOMIZE_LIST") as Schema<CustomizeStore>,
-  validate() {},
-  migrate: migrateLegacy,
-});
-
-export function updateCustomizeStore(
-  newCustomizeList: MetadataInformatedList,
-): CustomizeStore {
-  return customizeRepository.update({
-    ...customizeRepository.getSnapshot(),
-    CUSTOMIZE_LIST: newCustomizeList,
-    LAST_REFRESH_TIME: Date.now(),
-    ININTIALIZED: true,
+import type {
+  ContentStore,
+  ContentRecord,
+} from "@scnexus/app-shared/types/content.type";
+import { isPackage } from "@scnexus/standard/package";
+import { createRepository, invalidData, isRecord } from "./store-repository";
+const string = (value: unknown) =>
+  typeof value === "string" && !value.includes("\0");
+function planned(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    string(value.source) &&
+    string(value.target) &&
+    ["map", "mod"].includes(value.type as string) &&
+    typeof value.official === "boolean" &&
+    typeof value.bytes === "number" &&
+    Number.isFinite(value.bytes) &&
+    value.bytes >= 0 &&
+    (value.modifiedAt === null ||
+      (typeof value.modifiedAt === "number" &&
+        Number.isFinite(value.modifiedAt)))
+  );
+}
+function installed(value: unknown): boolean {
+  return (
+    planned(value) &&
+    isRecord(value) &&
+    string(value.absolutePath) &&
+    string(value.hash) &&
+    ["copied", "replaced", "kept"].includes(value.result as string)
+  );
+}
+export function validateCustomizeRecord(
+  value: unknown,
+): asserts value is ContentRecord {
+  if (
+    !isRecord(value) ||
+    !isPackage(value.package) ||
+    value.package.type !== "customize" ||
+    !string(value.localId) ||
+    value.mode !== "scnexus" ||
+    !["package-json", "ccm-converted", "metadata-txt"].includes(
+      value.origin as string,
+    )
+  )
+    invalidData("Invalid content record");
+  for (const key of [
+    "managementDirectory",
+    "descriptorPath",
+    "gameRoot",
+    "rootRelativePath",
+  ])
+    if (!string(value[key])) invalidData("Missing content path");
+  if (value.payloadDirectory !== null && !string(value.payloadDirectory))
+    invalidData("Invalid payload path");
+  if (
+    !Array.isArray(value.files) ||
+    !value.files.every(planned) ||
+    !Array.isArray(value.installedFiles) ||
+    !value.installedFiles.every(installed)
+  )
+    invalidData("Invalid installed resources");
+  if (
+    !isRecord(value.targetTree) ||
+    (value.sourceTree !== null && !isRecord(value.sourceTree))
+  )
+    invalidData("Invalid file trees");
+  if (
+    value.ccmOriginal !== null &&
+    (!isRecord(value.ccmOriginal) ||
+      !string(value.ccmOriginal.text) ||
+      !string(value.ccmOriginal.encoding))
+  )
+    invalidData("Invalid CCM original");
+  for (const key of ["fileCount", "bytes", "importedAt"])
+    if (
+      typeof value[key] !== "number" ||
+      !Number.isFinite(value[key]) ||
+      (value[key] as number) < 0
+    )
+      invalidData("Invalid content statistics");
+}
+const recordSchema = {
+  type: "object",
+  required: [
+    "localId",
+    "package",
+    "mode",
+    "files",
+    "installedFiles",
+    "gameRoot",
+    "managementDirectory",
+  ],
+  properties: {
+    localId: { type: "string", minLength: 1 },
+    package: {
+      type: "object",
+      required: ["name", "type"],
+      properties: {
+        name: { type: "string" },
+        type: { enum: ["campaign", "customize"] },
+      },
+    },
+    mode: { enum: ["scnexus", "ccm"] },
+    files: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["source", "target", "type", "official", "bytes"],
+      },
+    },
+    installedFiles: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["absolutePath", "result", "hash", "target"],
+      },
+    },
+    gameRoot: { type: "string" },
+    managementDirectory: { type: "string" },
+  },
+} as const;
+export function createCustomizeRepository() {
+  return createRepository<ContentStore>({
+    defaults: () => ({
+      _schemaVersion: 2,
+      _revision: 0,
+      records: [],
+      legacyRecords: [],
+      scannedAt: null,
+    }),
+    schema: {
+      _schemaVersion: { const: 2 },
+      _revision: { type: "integer", minimum: 0 },
+      records: { type: "array", items: recordSchema },
+      legacyRecords: { type: "array", items: { type: "object" } },
+      scannedAt: { type: ["number", "null"] },
+    } as Schema<ContentStore>,
+    validate(data) {
+      if (!isRecord(data) || !Array.isArray(data.records))
+        invalidData("Invalid content store");
+      const ids = new Set<string>();
+      for (const record of data.records) {
+        validateCustomizeRecord(record);
+        if (ids.has(record.localId)) invalidData("Duplicate local content ID");
+        ids.add(record.localId);
+      }
+    },
+    migrate(data, defaults) {
+      if (!isRecord(data)) invalidData("Invalid old content index");
+      const old = data.CUSTOMIZE_LIST;
+      const values = Array.isArray(old)
+        ? old
+        : isRecord(old)
+          ? Object.values(old).flat().filter(Boolean)
+          : [];
+      return {
+        ...defaults,
+        legacyRecords: values as Record<string, unknown>[],
+      };
+    },
   });
 }
 
-export function getCustomizeStore(): CustomizeStore {
-  return customizeRepository.getSnapshot();
-}
-
-export function getCustomizeStoreKey<T extends keyof CustomizeStore>(
-  key: T,
-): CustomizeStore[T] {
-  return customizeRepository.getKey(key);
-}
-
-export function insertStoreCustomize(customize: MetadataInformated) {
-  const storeData: MetadataInformatedList = [];
-  const store = getCustomizeStore();
-  if (store.ININTIALIZED) storeData.push(...store.CUSTOMIZE_LIST);
-  storeData.push(customize);
-  updateCustomizeStore(storeData);
-}
-
-export function removeStoreCustomize(customize: MetadataInformated) {
-  const storeData: MetadataInformatedList = [];
-  const store = getCustomizeStore();
-  if (!store.ININTIALIZED) return;
-  storeData.push(...store.CUSTOMIZE_LIST);
-  const rIndex = storeData.findIndex((cst: MetadataInformated) => {
-    if (customize.snid)
-      return customize.snid === cst.snid && customize.name === cst.name;
-    else return customize.name === cst.name;
-  });
-  if (rIndex === -1) return;
-  storeData.splice(rIndex, 1);
-  updateCustomizeStore(storeData);
-}
+export const customizeRepository = createCustomizeRepository();
+export const getCustomizeStore = customizeRepository.getSnapshot;

@@ -36,6 +36,9 @@ export type SettingSnapshot = SettingData & {
 };
 
 export interface DesktopApi {
+  campaign: import('./content-api.type.js').CampaignApi;
+  customize: import('./content-api.type.js').ContentApi;
+  gameSetting: import('./content-api.type.js').GameSettingApi;
   app: { getVersion(): Promise<IpcResult<string>> };
   window: {
     getStatus(): Promise<IpcResult<WindowStatus>>;

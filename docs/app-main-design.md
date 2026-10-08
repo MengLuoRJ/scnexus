@@ -4,7 +4,7 @@
 
 本文细化 [目标架构](./architecture.md)。保留现有业务能力，调整能力边界、窗口生命周期和存储访问方式，不以此次设计为理由删除原功能。
 
-基础实现已落地到 main 与 preload：common 已拆分、window/logging/telemetry 已模块化，五类 Store 使用 electron-store v11 并显式初始化。renderer-v2 尚未接入，当前仍加载旧 renderer；旧业务的安装、激活及工坊具体流程未在本轮重写。日志和错误处理见 [日志与错误规范](./logging-and-errors.md)。
+main 与 preload 已完成基础模块及内容业务重构：common 已拆分，window/logging/telemetry 模块化，Store 使用 electron-store v11 并显式初始化。campaign/customize 新解析、安装、激活及扫描已实现，窗口当前加载 v2，v2 内容交互未在本轮开发；工坊业务未重写。日志和错误处理见 [日志与错误规范](./logging-and-errors.md)。
 
 ## 2. 模块划分
 
@@ -20,7 +20,8 @@
 | tray | 托盘创建、菜单、动作与销毁；保留原能力，是否启用单独控制 | window、应用退出协调 |
 | updater | 检查、下载、安装与状态事件；不承载普通内容包下载 | window 事件适配、更新工具 |
 | setting | 用户偏好与客户端设置，含统一日志等级 | setting repository |
-| profile | 游戏环境配置、检测、验证、派生路径、配置变更 | profile repository、游戏检测工具 |
+| scii-game-setting | 游戏环境配置、检测、验证、派生路径、配置变更 | scii-game-setting repository、游戏检测工具 |
+| content-package | 目录/归档读取、描述解析、冲突预览、文件操作与扫描 | 游戏路径服务、内容索引 |
 | campaign | 战役库、激活、取消激活、恢复和卸载 | profile、内容索引与文件工具 |
 | customize | 自定义地图/模组导入、安装、卸载及游戏启动 | profile、内容索引与归档工具 |
 | workshop | 内容元数据、摘要、上传及后续下载 | setting（下载目录）、网络与归档工具 |
@@ -58,9 +59,10 @@ src/
     logging/
     telemetry/
     setting/
-    profile/
+    scii-game-setting/
+    content-package/
   stores/
-    setting.ts / profile.ts / <content>.ts
+    setting.ts / scii-game-setting.ts / <content>.ts
     store-repository.ts             受限读取与完整提交，无额外状态快照
     store-electron-backend.ts        electron-store 与启动迁移、备份
     store-schema.ts                 JSON Schema 通用字段与内容结构
@@ -69,13 +71,13 @@ src/
 
 三个基础文件是所有模块的统一约定，其余文件仅按实际需要创建。“服务”表示业务职责，不要求对应 `.service.ts` 文件。原 campaign/customize/workshop 能力逐步迁移，不做无关重写。
 
-## 3. setting 与 profile：独立模块，不合并业务
+## 3. setting 与 scii-game-setting：独立模块，不合并业务
 
 ### 推荐结论
 
 **都作为 module；共享 electron-store 基础设施，但不合并为一个配置业务模块或一个可任意修改的 Store。**
 
-| 维度 | setting | profile |
+| 维度 | setting | scii-game-setting |
 | --- | --- | --- |
 | 内容 | 用户偏好、日志等级、下载目录、客户端标识 | 游戏安装目录、检测状态、派生执行路径与内容目录 |
 | 修改频率 | 用户可频繁修改 | 需要验证并影响整个本地业务环境 |
@@ -105,23 +107,27 @@ setting 业务字段全部采用顶层结构，不增加 preferences 包装层�
 ### 两种入口，共用业务服务
 
 ```text
-renderer → preload → setting/profile IPC → service → repository
+renderer → preload → setting/scii-game-setting IPC → service → repository
 其他 main 模块 ───────────────────────→ service → repository
 ```
 
 - main 模块直接调用服务，不绕 IPC，不访问 Store 实例。
 - IPC 不暴露任意 key 的 set/get、整包替换或磁盘文件路径；只提供允许的查询和修改。
 - setting 提供 getSnapshot、updatePreferences；clientId、lastUpdatedAt、_schemaVersion 等内部字段不可被 UI patch。logLevel 和 telemetryEnabled 修改必须走各自协调流程，通用偏好更新不能绕过该流程直接写这些字段。
-- profile 提供 getSnapshot、configureGame、refreshGameStatus；不允许 UI 直接写 SUCCESS、派生路径或路径授权列表。
+- scii-game-setting 提供 getGameSnapshot、configureGame；不允许 UI 直接写 SUCCESS、派生路径或路径授权列表。
 - main 内部写入也经过服务校验；内部维护动作提供明确方法，不给其他模块通用写权限。
 - 返回独立的只读快照 DTO，调用者修改对象不应改变存储。
 - 变更成功后发布带 _revision 的快照或失效事件，renderer 更新 Pinia；订阅必须支持取消。
 
-profile 的 configureGame 应串行化：检查任务互斥 → 验证候选目录 → 计算派生数据 → 提交配置 → 使旧缓存失效 → 发出变更。刷新失败独立报告，不伪装成配置写入失败；缓存标记为需要重建。
+scii-game-setting 的 configureGame 应串行化：检查任务互斥 → 验证候选目录 → 计算派生数据 → 提交配置 → 使旧缓存失效 → 发出变更。刷新失败独立报告，不伪装成配置写入失败；缓存标记为需要重建。
 
-安装/激活开始时固定使用一个 profile _revision 的配置快照，任务期间拒绝切换游戏根目录，防止中途混用新旧路径。
+安装/激活开始时固定使用一个 scii-game-setting _revision 的配置快照，任务期间拒绝切换游戏根目录，防止中途混用新旧路径。
 
 ## 4. electron-store v11 与 repository
+
+每个 Store 在自身文件中定义默认值、业务 schema、记录校验、迁移和 repository 创建。campaign.ts、customize.ts、campaign-active.ts 分别维护自己的规则，不使用统一内容 Store 工厂；扫描器按记录类型复用对应 Store 的校验。
+
+store-schema.ts 仅提供版本、字符串、时间戳等通用 schema 片段；store-validation.ts 仅提供对象、字段集合、基础类型及绝对路径等通用工具，不包含 Package、安装清单或活动战役业务规则。原 store-content-schema.ts、store-content-validation.ts 已删除。
 
 存储基础文件统一使用 `store-` 前缀：
 
@@ -143,7 +149,7 @@ profile 的 configureGame 应串行化：检查任务互斥 → 验证候选目�
 
 ### 数据组织
 
-setting、profile 和内容索引继续分开保存。默认沿用原文件名：store-setting、store-profile、store-campaign、store-campaign-active、store-customize，避免升级时意外失去旧数据。
+setting、scii-game-setting 和内容索引继续分开保存。默认沿用原文件名：store-setting、store-profile、store-campaign、store-campaign-active、store-customize，避免升级时意外失去旧数据。
 
 新模型采用明确字段，例如：
 
@@ -159,7 +165,7 @@ SettingData
   logLevel       默认 error
   telemetryEnabled 默认 false
 
-ProfileData
+SciiGameSetting
   _schemaVersion
   _revision
   gameRoot                   已验证并提交的游戏目录
@@ -229,7 +235,7 @@ absent → creating → loading → ready → closed
 
 ```text
 1. logging：无存储依赖的 error 启动日志
-2. stores：打开、校验和迁移 setting/profile
+2. stores：打开、校验和迁移 setting/scii-game-setting
 3. setting：读取日志偏好，装配器将等级应用到 logging
 4. profile：构建游戏环境快照
 5. window：注册生命周期与控制接口
@@ -241,12 +247,12 @@ absent → creating → loading → ready → closed
 
 setting 的普通变更由装配器分发；日志等级及遥测偏好在对应协调流程成功后发布。logging/telemetry 不反向读取或写入 setting。telemetry 在 setting 加载后按已保存授权状态启动，存储未恢复时保持关闭。模块内部服务用显式参数或轻量装配传入，不引入 DI 框架。
 
-profile 无有效游戏配置时，查询与配置接口仍可用；campaign/customize handler 也注册，但相关操作返回 M011（PROFILE-NOT-READY）。updater 不适用当前平台时返回明确能力状态。可选模块失败不导致窗口完全打不开。
+scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；campaign/customize handler 也注册，但相关操作返回 M011（PROFILE-NOT-READY）。updater 不适用当前平台时返回明确能力状态。可选模块失败不导致窗口完全打不开。
 
 ## 7. 实施与验收
 
 1. 建立共享错误码及日志门面，接入启动日志和统一等级。
-2. 升级 electron-store v11，提供旧数据迁移、setting/profile 服务与受限 IPC。
+2. 升级 electron-store v11，提供旧数据迁移、setting/scii-game-setting 服务与受限 IPC。
 3. 重构 window，验证并发创建、关闭重建、ready 握手及冷启动深链接。
 4. 将 common 能力迁到一级模块，保持现有 channel 兼容或同步迁移三个包。
 5. 逐步让 campaign/customize/workshop 通过服务读取配置，移除原始 Store 耦合。
@@ -261,11 +267,11 @@ profile 无有效游戏配置时，查询与配置接口仍可用；campaign/cus
 
 - 每个模块包含 index.ts、xxx.ipc.ts、xxx.ts；common 集合已移除。tray 只注册能力，默认不创建托盘，避免改变关闭行为。
 - 旧 mainWindows.ts、utils/logger.ts、utils/sentry.ts 已删除，调用直接使用 window/logging/telemetry 模块入口；空的 compress-compatible.ts 及未使用的 Store 兼容包装已删除。旧 renderer 所需 channel 兼容集中保留在 IPC 层。
-- Store repository 提供 init、getSnapshot、getKey、updateKey、update；五类旧文件名保留。每次写入验证并增加 _revision，迁移保留备份，损坏数据不静默重置。各 Store 独立尝试初始化，失败集中报告。schema 拒绝结构错误，日常数据读写由真实 electron-store 处理，不重复维护 snapshot。
+- Store repository 提供 init、getSnapshot、getKey、updateKey、update；内容索引和 setting 文件名保留；profile 原文件保留归档，运行存储迁为 store-scii-game-setting。每次写入验证并增加 _revision，迁移保留备份，损坏数据不静默重置。各 Store 独立尝试初始化，失败集中报告。schema 拒绝结构错误，日常数据读写由真实 electron-store 处理，不重复维护 snapshot。
 - 设置新数据类型为 SettingData；旧 SettingStore 类型与旧大写字段查询保留兼容。内部增加 _lastConfirmedVersion，打包运行时以首次成功启动建立基线，后续确认版本升级才记录 lastUpdatedAt。
 - preload 暴露 window.scnexus 的 app/window/setting/logging/telemetry/deepLink API，同时保留旧 channel 函数。备用 preload 不再暴露原始 ipcRenderer。
 - 用户设置只允许四个可编辑顶层字段。setting.replace 是完整替换用户偏好，不是覆写 clientId 或数据版本；main 内部完整 Store 更新通过 repository。
-- profile 当前仍保留旧业务字段与初始化流程；IPC 任意 key 写入被拒绝，配置走原 init-game-service。派生路径模型与业务对服务的全面解耦仍属后续工作。
+- profile 已迁到 scii-game-setting，保存规范化 gameRoot 和只读管理根，派生能力快照由模块返回；旧 Profile 配置转换及全部 profile:* IPC/preload 已移除，界面仅使用 window.scnexus.gameSetting。旧文件只用于一次迁移，不作为运行配置读取入口。
 - renderer 目前使用旧页面，preload 在页面加载后提供过渡性 ready 通知；v2 接入时改用订阅完成后的显式握手。不能将该过渡机制视为完整 v2 ready 生命周期。
 - Sentry 默认不启用；生产包且 DSN 有效时按用户授权开启。使用无离线积压的受控 transport 门控，关闭时使旧代 transport 失效；错误经自有桥接归集，不启用自动 renderer SDK 注入。真实服务发送和安装包场景尚未验证。
 
@@ -285,9 +291,9 @@ profile 无有效游戏配置时，查询与配置接口仍可用；campaign/cus
 
 ## 9. 后续内容业务重构边界
 
-[战役包与自制作品设计](./campaign-customize-design.md) 已定义新 Package 标准、分析模式、地图/模组映射、管理标记及扫描重建。后续 profile Store 迁为 scii-game-setting，customize/campaign/campaign-active Store 迁为 Package 与本地安装记录；当前旧字段属于仍在运行的兼容实现，不是后续数据模型要求。
+[战役包与自制作品设计](./campaign-customize-design.md) 已定义新 Package 标准、分析模式、地图/模组映射、管理标记及扫描重建。profile Store 已迁为 scii-game-setting，customize/campaign/campaign-active Store 已改为 Package 与本地安装记录；旧字段仅作为迁移历史或旧界面查询适配保留。
 
-描述读取和格式解析从 campaign/customize 分离，自动识别只预留位置。两种描述文件独立深入定位最外层有效包根，CCM 来源可选择原 CCM 或转换为 SCNexus。持久化按用户选择：CCM 用 metadata.txt，SCNexus/未来自动模式用 SCNexusCustomizeData 和 package.json。新增可为空的推荐模式与按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突对，冲突选择覆盖/保留/取消；scii-game-setting 当前聚焦路径，版本检测暂不实现。文档方案不在本轮直接修改模块、Store 或 IPC。
+描述读取和格式解析从 campaign/customize 分离，自动识别只预留位置。两种描述文件独立深入定位最外层有效包根，CCM 来源可选择原 CCM 或转换为 SCNexus。持久化按用户选择：CCM 用 metadata.txt，SCNexus/未来自动模式用 SCNexusCustomizeData 和 package.json。新增可为空的推荐模式与按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突对，冲突选择覆盖/保留/取消；scii-game-setting 当前聚焦路径，版本检测暂不实现。对应 main、Store、共享类型及 preload 已实现，具体流程与最新验证记录以内容设计文档为准。
 
 ## 10. 依据
 

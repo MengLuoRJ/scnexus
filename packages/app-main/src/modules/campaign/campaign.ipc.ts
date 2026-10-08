@@ -1,44 +1,61 @@
-import { ipcHandle, ipcHandleRemove } from "@/utils/ipc-util";
-import {
-  unzipCompressFile7zSimulateCCM,
-  unzipCompressFileCCM,
-  unzipCompressFileSimulateCCM,
-} from "./ccm-process";
-import {
-  getCampaignLists,
-  uninstallCampiagnFiles,
-  updateCampaignLists,
-} from "./campaign-manage";
-import {
-  activeCampaign,
-  getActivedCampaignList,
-  getActivedCampaignTyped,
-  recoverCampaignType,
-  unactiveCampaign,
-  updateActivedCampaignSet,
-} from "./campaign-active";
-
+import { ipcHandleTyped, ipcHandle } from "../../utils/ipc-util";
+import * as service from "./campaign";
+import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
 export function initCampaignIpc() {
-  ipcHandle("campaign:unzip-compress-file-ccm", unzipCompressFileCCM);
+  ipcHandle("campaign:get-campaign-lists", () => ({
+    CAMPAIGN_LIST_SET: Object.fromEntries(
+      ["WOL", "HOTS", "LOTV", "NCO"].map((c) => [
+        c,
+        service
+          .list()
+          .records.filter((r) => r.package.campaign === c)
+          .map((r) => ({
+            ...r.package,
+            localId: r.localId,
+            type: "Campaign",
+            localinfo: {
+              metadata_path: r.descriptorPath,
+              files_size: r.bytes,
+              files_count: r.fileCount,
+            },
+          })),
+      ]),
+    ),
+  }));
+  ipcHandle("campaign:update-campaign-lists", service.scan);
+  ipcHandle("campaign:get-actived-campaign-list", () => ({
+    CAMPAIGN_SET: service.getActive().active,
+  }));
   ipcHandle(
-    "campaign:unzip-compress-file-simulate-ccm",
-    unzipCompressFileSimulateCCM
+    "campaign:get-actived-campaign-typed",
+    (type: string) => service.getActive().active[type as "WOL"],
   );
+  ipcHandle("campaign:update-actived-campaign-set", service.scan);
 
-  ipcHandle(
-    "campaign:unzip-compress-file-7z-simulate-ccm",
-    unzipCompressFile7zSimulateCCM
-  );
+  for (const action of [
+    "unzip-compress-file-ccm",
+    "unzip-compress-file-simulate-ccm",
+    "unzip-compress-file-7z-simulate-ccm",
+    "uninstall-campaign-files",
+    "active-campaign",
+    "unactive-campaign",
+    "recover-campaign-type",
+  ])
+    ipcHandle("campaign:" + action, () => {
+      throw new AppError(ERRORS.IPC_INVALID_ARGUMENT, {
+        message: "Use the analyzed install/activation/removal workflow",
+      });
+    });
 
-  ipcHandle("campaign:get-campaign-lists", getCampaignLists);
-  ipcHandle("campaign:update-campaign-lists", updateCampaignLists);
-  ipcHandle("campaign:uninstall-campaign-files", uninstallCampiagnFiles);
-
-  ipcHandle("campaign:get-actived-campaign-list", getActivedCampaignList);
-  ipcHandle("campaign:get-actived-campaign-typed", getActivedCampaignTyped);
-  ipcHandle("campaign:update-actived-campaign-set", updateActivedCampaignSet);
-
-  ipcHandle("campaign:active-campaign", activeCampaign);
-  ipcHandle("campaign:unactive-campaign", unactiveCampaign);
-  ipcHandle("campaign:recover-campaign-type", recoverCampaignType);
+  ipcHandleTyped("campaign:prepare-activation", service.prepareActivation);
+  ipcHandleTyped("campaign:activate", service.activate);
+  ipcHandleTyped("campaign:active", service.getActive);
+  ipcHandleTyped("campaign:prepare-deactivation", service.prepareDeactivation);
+  ipcHandleTyped("campaign:deactivate", service.deactivate);
+  ipcHandleTyped("campaign:analyze", service.analyze);
+  ipcHandleTyped("campaign:install", service.install);
+  ipcHandleTyped("campaign:list", service.list);
+  ipcHandleTyped("campaign:scan", service.scan);
+  ipcHandleTyped("campaign:prepare-uninstall", service.prepareUninstall);
+  ipcHandleTyped("campaign:uninstall", service.uninstall);
 }

@@ -1,20 +1,15 @@
-import { join } from "node:path";
-
-import { mkdirIfNotExist } from "@/utils/fs-util";
-import { profileStore } from "@/stores/profile";
-
-export async function initSCNexusCustomizeDirectory(): Promise<void> {
-  const customizePaths = profileStore.get("PROFILE_CUSTOMIZE");
-  const scnexusRoot = join(customizePaths.LIBRARY_ROOT);
-  if (scnexusRoot) {
-    await mkdirIfNotExist(scnexusRoot, { recursive: true });
-  }
-}
-
-export async function initSCNexusCampaignDirectory(): Promise<void> {
-  const customizePaths = profileStore.get("PROFILE_CAMPAIGN");
-  const scnexusRoot = join(customizePaths.LIBRARY_ROOT);
-  if (scnexusRoot) {
-    await mkdirIfNotExist(scnexusRoot, { recursive: true });
-  }
-}
+import { contentService } from "../content-package";
+export const analyze = (
+  source: import("@scnexus/app-shared/types/content.type").SourceInput,
+) => contentService.analyze("customize", source);
+export const install = (
+  selection: import("@scnexus/app-shared/types/content.type").InstallSelection,
+) => contentService.install(selection, "customize");
+export const list = () => contentService.list("customize");
+export const scan = () => contentService.scan();
+export const prepareUninstall = (id: string) =>
+  contentService.prepareRemoval(id, "uninstall", "customize");
+export const uninstall = (
+  id: string,
+  decisions: import("@scnexus/app-shared/types/content.type").RemovalDecision[],
+) => contentService.remove(id, decisions, "customize");

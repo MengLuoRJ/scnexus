@@ -83,7 +83,7 @@ src/
 规则：
 
 - 保留现有业务能力；common 中的 app、deep-link、dialog、shell、tray、updater 分别迁为一级模块，window 也作为独立模块。
-- setting 与 profile 保留独立业务模块，共享存储基础设施；main 内部与 IPC 修改都走各自服务，不直接暴露 Store。
+- setting 与 scii-game-setting（原 profile）保留独立业务模块，共享存储基础设施；main 内部与 IPC 修改都走各自服务，不直接暴露 Store。
 - 模块划分、窗口握手、存储迁移及装配顺序见 [app-main 设计](./app-main-design.md)。
 - 入口负责装配，不承载安装、扫描等业务逻辑。
 - IPC handler 是适配层，不直接堆叠长流程。
@@ -215,9 +215,9 @@ src/
 
 campaign 战役包与 customize 自制作品保持独立。后续统一压缩包/文件夹分析，campaign 提供 SCNexus、CCM、自动识别预留三种模式，customize 提供 SCNexus、自动识别预留两种模式。自动识别当前不实现。
 
-战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/未来自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 后续迁为 scii-game-setting，先完善路径信息、暂不实现游戏版本检测；这些业务改动尚未落地。
+战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/未来自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 已迁为 scii-game-setting，路径信息与内容业务已在 main/preload 实现；游戏版本检测与 auto 模式仍未实现。
 
-完整规则、现有代码依据和待决策项见 [campaign/customize 设计](./campaign-customize-design.md)。本文的基础存储和已实现 profile 说明不表示该后续方案已经完成。
+完整规则、现有代码依据和待决策项见 [campaign/customize 设计](./campaign-customize-design.md)。具体实现边界与验证结果见该文档的实施记录。
 
 ## 11. 相关文档
 

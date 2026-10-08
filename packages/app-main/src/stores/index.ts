@@ -2,7 +2,11 @@ import { join } from "node:path";
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
 import { createElectronBackend } from "./store-electron-backend";
 import { settingRepository, configureSettingDefaults } from "./setting";
-import { profileRepository, configureProfileDefaults } from "./profile";
+import {
+  sciiGameSettingRepository,
+  configureGameDefaults,
+} from "./scii-game-setting";
+import { existsSync, copyFileSync, constants } from "node:fs";
 import { campaignRepository } from "./campaign";
 import { campaignActiveRepository } from "./campaign-active";
 import { customizeRepository } from "./customize";
@@ -26,11 +30,15 @@ async function initialize(): Promise<void> {
     });
   const directory = join(app.getPath("userData"), "SCNexusStorage");
   configureSettingDefaults(app.getPath("downloads"));
-  configureProfileDefaults(app.getPath("documents"));
+  configureGameDefaults(app.getPath("documents"));
+  const oldProfile = join(directory, "store-profile.json");
+  const gameFile = join(directory, "store-scii-game-setting.json");
+  if (!existsSync(gameFile) && existsSync(oldProfile))
+    copyFileSync(oldProfile, gameFile, constants.COPYFILE_EXCL);
   const failures: unknown[] = [];
   for (const [name, repository] of [
     ["store-setting", settingRepository],
-    ["store-profile", profileRepository],
+    ["store-scii-game-setting", sciiGameSettingRepository],
     ["store-campaign", campaignRepository],
     ["store-campaign-active", campaignActiveRepository],
     ["store-customize", customizeRepository],

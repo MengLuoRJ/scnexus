@@ -187,7 +187,18 @@ export function extractToStream(
   options: SevenZipCommonOptions = {},
 ): Readable {
   const child = runner.spawn(
-    ["x", archive, file, "-so", ...commonSwitches(options)],
+    [
+      "x",
+      archive,
+      file,
+      "-so",
+      "-spd",
+      "-sccUTF-8",
+      "-bso2",
+      "-bsp2",
+      "-bse2",
+      ...(options.password ? [`-p${options.password}`] : []),
+    ],
     options,
   );
   const output = new PassThrough();
@@ -274,7 +285,7 @@ export async function readTextFile(
 }
 
 function commonSwitches(options: SevenZipCommonOptions): string[] {
-  const switches = ["-bsp1"];
+  const switches = ["-bsp1", "-sccUTF-8"];
   if (options.password) switches.push(`-p${options.password}`);
   return switches;
 }

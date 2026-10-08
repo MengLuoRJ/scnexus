@@ -65,7 +65,7 @@ export async function createElectronBackend(
           if (typeof version === "number" && version > defaults._schemaVersion)
             throw new AppError(ERRORS.STORE_VERSION_UNSUPPORTED);
         }
-        if (raw !== undefined && data?._schemaVersion === undefined) {
+        if (raw !== undefined && (data?._schemaVersion === undefined || data._schemaVersion !== defaults._schemaVersion)) {
           let candidate: T;
           if (data?.schemaVersion !== undefined) {
             const { schemaVersion, revision, lastConfirmedVersion, ...fields } =
@@ -83,6 +83,7 @@ export async function createElectronBackend(
           } else {
             candidate = options.migrate(data, defaults);
           }
+          if (candidate._schemaVersion !== defaults._schemaVersion) candidate = options.migrate(candidate, defaults);
           options.validate(candidate);
           const stagedName = `${name}.migration-${randomUUID()}`;
           stagedPath = join(directory, `${stagedName}.json`);

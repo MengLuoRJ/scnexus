@@ -1,86 +1,167 @@
-import type {
-  MetadataInformated,
-  MetadataInformatedCampaignListSet,
-  CampaignType,
-  MetadataInformatedList,
-} from "scnexus-standard/metadata";
-
-import type { CampaignStore } from "@scnexus/app-shared/stores/campaign.store";
-
-import { createRepository } from "./store-repository";
-import { migrateLegacy } from "./store-validation";
-import { contentSchema } from "./store-schema";
 import type { Schema } from "electron-store";
-
-const defaults = (): CampaignStore => ({
-  _schemaVersion: 1,
-  _revision: 0,
-  ININTIALIZED: false,
-  LAST_REFRESH_TIME: 0,
-  CAMPAIGN_LIST_SET: {
-    WOL: [],
-    HOTS: [],
-    LOTV: [],
-    NCO: [],
+import type {
+  ContentStore,
+  ContentRecord,
+} from "@scnexus/app-shared/types/content.type";
+import { isPackage } from "@scnexus/standard/package";
+import { createRepository, invalidData, isRecord } from "./store-repository";
+const string = (value: unknown) =>
+  typeof value === "string" && !value.includes("\0");
+function planned(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    string(value.source) &&
+    string(value.target) &&
+    ["map", "mod"].includes(value.type as string) &&
+    typeof value.official === "boolean" &&
+    typeof value.bytes === "number" &&
+    Number.isFinite(value.bytes) &&
+    value.bytes >= 0 &&
+    (value.modifiedAt === null ||
+      (typeof value.modifiedAt === "number" &&
+        Number.isFinite(value.modifiedAt)))
+  );
+}
+function installed(value: unknown): boolean {
+  return (
+    planned(value) &&
+    isRecord(value) &&
+    string(value.absolutePath) &&
+    string(value.hash) &&
+    ["copied", "replaced", "kept"].includes(value.result as string)
+  );
+}
+export function validateCampaignRecord(
+  value: unknown,
+): asserts value is ContentRecord {
+  if (
+    !isRecord(value) ||
+    !isPackage(value.package) ||
+    value.package.type !== "campaign" ||
+    !string(value.localId) ||
+    !["scnexus", "ccm"].includes(value.mode as string) ||
+    !["package-json", "ccm-converted", "metadata-txt"].includes(
+      value.origin as string,
+    )
+  )
+    invalidData("Invalid content record");
+  for (const key of [
+    "managementDirectory",
+    "descriptorPath",
+    "gameRoot",
+    "rootRelativePath",
+  ])
+    if (!string(value[key])) invalidData("Missing content path");
+  if (value.payloadDirectory !== null && !string(value.payloadDirectory))
+    invalidData("Invalid payload path");
+  if (
+    !Array.isArray(value.files) ||
+    !value.files.every(planned) ||
+    !Array.isArray(value.installedFiles) ||
+    !value.installedFiles.every(installed)
+  )
+    invalidData("Invalid installed resources");
+  if (
+    !isRecord(value.targetTree) ||
+    (value.sourceTree !== null && !isRecord(value.sourceTree))
+  )
+    invalidData("Invalid file trees");
+  if (
+    value.ccmOriginal !== null &&
+    (!isRecord(value.ccmOriginal) ||
+      !string(value.ccmOriginal.text) ||
+      !string(value.ccmOriginal.encoding))
+  )
+    invalidData("Invalid CCM original");
+  for (const key of ["fileCount", "bytes", "importedAt"])
+    if (
+      typeof value[key] !== "number" ||
+      !Number.isFinite(value[key]) ||
+      (value[key] as number) < 0
+    )
+      invalidData("Invalid content statistics");
+}
+const recordSchema = {
+  type: "object",
+  required: [
+    "localId",
+    "package",
+    "mode",
+    "files",
+    "installedFiles",
+    "gameRoot",
+    "managementDirectory",
+  ],
+  properties: {
+    localId: { type: "string", minLength: 1 },
+    package: {
+      type: "object",
+      required: ["name", "type"],
+      properties: {
+        name: { type: "string" },
+        type: { enum: ["campaign", "customize"] },
+      },
+    },
+    mode: { enum: ["scnexus", "ccm"] },
+    files: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["source", "target", "type", "official", "bytes"],
+      },
+    },
+    installedFiles: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["absolutePath", "result", "hash", "target"],
+      },
+    },
+    gameRoot: { type: "string" },
+    managementDirectory: { type: "string" },
   },
-});
-
-export const campaignRepository = createRepository<CampaignStore>({
-  defaults,
-  schema: contentSchema("CAMPAIGN_LIST_SET") as Schema<CampaignStore>,
-  validate() {},
-  migrate: migrateLegacy,
-});
-
-export function updateCampaignStore(
-  newCampaignListSet: MetadataInformatedCampaignListSet,
-): CampaignStore {
-  return campaignRepository.update({
-    ...campaignRepository.getSnapshot(),
-    CAMPAIGN_LIST_SET: newCampaignListSet,
-    LAST_REFRESH_TIME: Date.now(),
-    ININTIALIZED: true,
+} as const;
+export function createCampaignRepository() {
+  return createRepository<ContentStore>({
+    defaults: () => ({
+      _schemaVersion: 2,
+      _revision: 0,
+      records: [],
+      legacyRecords: [],
+      scannedAt: null,
+    }),
+    schema: {
+      _schemaVersion: { const: 2 },
+      _revision: { type: "integer", minimum: 0 },
+      records: { type: "array", items: recordSchema },
+      legacyRecords: { type: "array", items: { type: "object" } },
+      scannedAt: { type: ["number", "null"] },
+    } as Schema<ContentStore>,
+    validate(data) {
+      if (!isRecord(data) || !Array.isArray(data.records))
+        invalidData("Invalid content store");
+      const ids = new Set<string>();
+      for (const record of data.records) {
+        validateCampaignRecord(record);
+        if (ids.has(record.localId)) invalidData("Duplicate local content ID");
+        ids.add(record.localId);
+      }
+    },
+    migrate(data, defaults) {
+      if (!isRecord(data)) invalidData("Invalid old content index");
+      const old = data.CAMPAIGN_LIST_SET;
+      const values = Array.isArray(old)
+        ? old
+        : isRecord(old)
+          ? Object.values(old).flat().filter(Boolean)
+          : [];
+      return {
+        ...defaults,
+        legacyRecords: values as Record<string, unknown>[],
+      };
+    },
   });
 }
 
-export function getCampaignStore(): CampaignStore {
-  return campaignRepository.getSnapshot();
-}
-
-export function getCampaignStoreKey<T extends keyof CampaignStore>(
-  key: T,
-): CampaignStore[T] {
-  return campaignRepository.getKey(key);
-}
-
-export function insertStoreCampaign(campaign: MetadataInformated) {
-  const storeData: MetadataInformatedList = [];
-  const store = getCampaignStore();
-  if (store.ININTIALIZED) {
-    const oldList = store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType];
-    if (oldList) storeData.push(...oldList);
-  }
-  storeData.push(campaign);
-  store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType] = storeData;
-  updateCampaignStore(store.CAMPAIGN_LIST_SET);
-}
-
-export function removeStoreCampaign(campaign: MetadataInformated) {
-  const storeData: MetadataInformatedList = [];
-  const store = getCampaignStore();
-  if (store.ININTIALIZED) {
-    const oldList = store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType];
-    if (oldList) storeData.push(...oldList);
-  }
-
-  const rIndex = storeData.findIndex((cpn: MetadataInformated) => {
-    if (campaign.snid)
-      return campaign.snid === cpn.snid && campaign.name === cpn.name;
-    else return campaign.name === cpn.name;
-  });
-  if (rIndex === -1) return;
-  storeData.splice(rIndex, 1);
-  store.CAMPAIGN_LIST_SET[campaign.campaign as CampaignType] = storeData;
-
-  updateCampaignStore(store.CAMPAIGN_LIST_SET);
-}
+export const campaignRepository = createCampaignRepository();
+export const getCampaignStore = campaignRepository.getSnapshot;

@@ -2,11 +2,11 @@
 
 ## 1. 范围、状态与已确认决策
 
-本文件提取现有 campaign/customize 代码中的能力，定义后续重构目标。本轮仅建设 docs，不修改类型、依赖、Store、IPC 或业务代码。新标准类型文件目前存在，但 package 公共导出尚未配置；不能把目标能力写为已完成。
+本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现，renderer-v2 交互未在本轮开发；自动识别仍预留 null。实现与验证见第 12 节，不代表所有后续方向已落地。
 
 - campaign 与 customize 保持独立：前者管理战役包，后者管理自制作品。
 - campaign 提供 SCNexus、CCM、自动识别三种分析模式；customize 提供 SCNexus、自动识别两种。自动识别先保留接口位置，本阶段不实现。
-- 战役的安装（导入）与激活分开；导入不得修改活动地图或游戏 Mods。renderer 可在导入成功后按用户选择发起自动激活，也可只导入供以后手动激活。
+- 战役的安装（导入）与激活分开；SCNexus 导入不得修改活动地图或游戏 Mods；CCM 为兼容旧行为，在导入时直接安装 Mods。renderer 可在导入成功后按用户选择发起自动激活，也可只导入供以后手动激活。
 - SCNexus 模式优先读取有效 package.json；campaign 输入仅有有效 metadata.txt 时，也可转换为 SCNexus 安装计划。CCM 模式独立读取 metadata.txt。新标准结构以 [package.type.ts](../packages/standard/src/package/package.type.ts) 为准，不继续以旧 metadata.json 为新标准。
 - 自动深入输入层级并定位最外层有效包根；源路径相对定位后的逻辑包根，目标路径相对游戏根目录。SCNexus 资源路径必须以 /Maps/ 或 /Mods/ 开头，target_path 缺省时使用 source_path。原归档/输入根与逻辑包根分开记录，不改写用户输入地址。
 - manager 仅表示作者推荐安装方式，不强制选择或禁用其他模式；AnalysisResult 返回可为空的 recommendedMode。manager_mode 已从新类型移除，不继续设计 default/strict 分支。
@@ -15,7 +15,7 @@
 - CCM 根部模组安装到 Mods 根目录；Mods 下模组保留相对层级。不按任意父目录猜测模组位置。
 - **CCM 模式不生成 package.json**：保留 metadata.txt，激活时写入该战役主地图目录；管理、扫描与删除以 metadata.txt 为格式依据。
 - **SCNexus 与未来自动识别模式采用 SCNexus 管理方式**：在游戏根目录 SCNexusCustomizeData 下每个包一个子目录，保存 package.json、安装文件清单，以及存在时的 CCM 原文副本。
-- customize、campaign、campaign-active Store 改为基于新 Package 类型的本地记录；profile Store 后续改为 scii-game-setting Store。
+- customize、campaign、campaign-active Store 改为基于新 Package 类型的本地记录；profile Store 已改为 scii-game-setting Store。
 
 最新 CCM 决策替代早期“所有安装都生成 package.json”的设想。Package 可以作为内部统一信息模型，但内部转换不意味着向 CCM 安装目录写入 SCNexus 清单。
 
@@ -23,22 +23,22 @@
 
 | 现有源码 | 已有行为 | 重构时的变化 |
 | --- | --- | --- |
-| [compress-process.ts](../packages/app-main/src/modules/customize/compress-process.ts) | ZIP/7z 读取 metadata.json、metadata.txt，计算大小和文件树；SCNexus 包解压到本地库 | 读取器独立，新增文件夹输入；新标准读 package.json；分析不直接安装 |
-| [ccmMetadataParser](../packages/app-main/src/modules/customize/customize-util.ts) | title、desc、author、campaign、version 转换成旧元数据 | 提取独立 CCM 解析器；CCM 模式保留原文，SCNexus 模式生成 Package 与标准管理清单 |
-| [ccm-process.ts](../packages/app-main/src/modules/campaign/ccm-process.ts) | CCM 解压到 CustomCampaigns，模拟路径会把模组按 basename 移到 Mods | 导入不改活动 Mods；保留受规则约束的模组层级，不再扁平化嵌套模组 |
-| [campaign-util.ts](../packages/app-main/src/modules/campaign/campaign-util.ts) | 四类战役目录、HOTS evolution、LOTV voidprologue 的复制和清理 | 将布局提取为共享规则，预览与实际提交使用同一计划；不复制无关战役目录 |
-| [campaign-active.ts](../packages/app-main/src/modules/campaign/campaign-active.ts) | 激活、取消激活、恢复，活动目录读取 metadata.json/txt | 新包读取 package.json/txt；按实际安装清单更新状态，不泛化为整目录删除 |
-| [campaign-manage.ts](../packages/app-main/src/modules/campaign/campaign-manage.ts) | 按四类扫描 SCNexusCampaign 和 Maps/CustomCampaigns | 一次发现再分类，坏包隔离；保留导入库与活动记录的区别 |
-| [customize-manage.ts](../packages/app-main/src/modules/customize/customize-manage.ts) | 从库复制 Maps/Mods，安装后删除来源子目录；扫描库中 metadata.json | 明确安装计划和所有权，保留可管理清单，不删除用户拖入的源内容 |
-| [profile-store.ts](../packages/app-main/src/modules/profile/profile-store.ts) | Windows 注册表/手动路径、执行文件路径、游戏目录与文档目录 | scii-game-setting 重新检测，不硬编码版本；派生路径只读 |
+| 原 compress-process.ts（已删除） | ZIP/7z 读取 metadata.json、metadata.txt，计算大小和文件树；SCNexus 包解压到本地库 | 读取器独立，新增文件夹输入；新标准读 package.json；分析不直接安装 |
+| 原 ccmMetadataParser（已迁移） | title、desc、author、campaign、version 转换成旧元数据 | 提取独立 CCM 解析器；CCM 模式保留原文，SCNexus 模式生成 Package 与标准管理清单 |
+| 原 ccm-process.ts（已删除） | CCM 解压到 CustomCampaigns，模拟路径会把模组按 basename 移到 Mods | CCM 导入直接安装 Mods；保留受规则约束的模组层级，不再扁平化嵌套模组 |
+| 原 campaign-util.ts（已删除） | 四类战役目录、HOTS evolution、LOTV voidprologue 的复制和清理 | 将布局提取为共享规则，预览与实际提交使用同一计划；不复制无关战役目录 |
+| 原 campaign-active.ts（已删除） | 激活、取消激活、恢复，活动目录读取 metadata.json/txt | 新包读取 package.json/txt；按实际安装清单更新状态，不泛化为整目录删除 |
+| 原 campaign-manage.ts（已删除） | 按四类扫描 SCNexusCampaign 和 Maps/CustomCampaigns | 一次发现再分类，坏包隔离；保留导入库与活动记录的区别 |
+| 原 customize-manage.ts（已删除） | 从库复制 Maps/Mods，安装后删除来源子目录；扫描库中 metadata.json | 明确安装计划和所有权，保留可管理清单，不删除用户拖入的源内容 |
+| 原 profile-store.ts（已删除） | Windows 注册表/手动路径、执行文件路径、游戏目录与文档目录 | scii-game-setting 重新检测，不硬编码版本；派生路径只读 |
 
-当前内容 Store 的主体仍是旧 MetadataInformated，加 localinfo、大小与数量；已具有 _schemaVersion/_revision，但新 Package 模型与本文件方案尚未实现。
+内容 Store 已改为 Package 与本地安装信息，数据版本为 2，旧索引备份并保留到 legacyRecords。无法可靠恢复文件归属的旧缓存不直接转为可删除的安装记录。
 
 ## 3. 战役定义与地图目录
 
 战役包通过额外地图覆盖官方战役文件所在路径，让玩家从官方战役系统进入自定义体验。本设计管理的是磁盘额外覆盖内容，不直接修改游戏 CASC 数据，也不宣称复制文件会自动启动游戏。
 
-以下均相对 GameRoot，依据现有 campaign-util 与 Profile 路径：
+以下均相对 GameRoot，依据重构前 campaign-util 与 Profile 路径提取的规则：
 
 | 类型 | 主地图目录 | 关联地图目录 | 隔离要求 |
 | --- | --- | --- | --- |
@@ -65,7 +65,7 @@ SCNexus 隐式覆盖地图的源布局与上述目录一一对应：/Maps/Campai
 - 保留目前类型实际拼写 luancher、offcial。纠正拼写属于后续标准契约变更，本次文档不擅自改名。
 - dependencies 是声明，不代表已经实现下载或依赖解析；预览须报告未满足依赖，不悄悄联网或安装。
 - manager 只表示作者推荐：SCNexus 映射 scnexus，CCM 映射 ccm。推荐不替代用户选择，不决定持久化格式，也不阻止读取另一描述文件。推荐对应模式不可用或 manager 未提供时 recommendedMode=null，并可报告不可用原因；不自动改荐另一模式。
-- 新类型已删除 manager_mode，不保留 default/strict 安装分支。当前 manager 注释仍含自动决定管理器的旧表述，后续实现时需要同步为作者推荐语义；本轮不修改类型文件。
+- 新类型已删除 manager_mode，不保留 default/strict 安装分支。manager 类型注释已同步为作者推荐语义。
 
 ### 路径规则
 
@@ -145,9 +145,17 @@ CCM 例：
 
 ### 导入、激活与标记
 
-导入可沿用 GameRoot\\Maps\\CustomCampaigns 的 CCM 库位置，以独立目录保留内容和原 metadata.txt；具体目录命名必须稳定且避免同名覆盖，不能只清洗 title 后直接删除旧包。
+CCM 导入到 GameRoot\\Maps\\CustomCampaigns\\<清洗后的 metadata.title>，保留地图、模组源副本和原 metadata.txt，并立即按已确认冲突决策安装 Mods；激活只复制地图及 metadata.txt。后续取消激活和卸载均不删除、不恢复这些 Mods。
 
 用户选择 CCM 模式时，激活复制计划中的资源，并把 metadata.txt 原样放入该战役主目录，不生成 package.json。库里的原文不因为激活而移动/消耗。
+
+### CCM 库目录命名与重复识别
+
+库目录来自 metadata.txt 的 title，不来自归档文件名：去除 `<>:"/\\|?*` 与控制字符，清理首尾空白，内部空白逐个替换为下划线，去除尾随点；结果为空、Windows 保留设备名或超出通用 255 字节/字符限制则拒绝。保留中文与正常 Unicode 字符。目录名与内部 localId 分离，同名目录不能静默覆盖或追加 UUID。
+
+分析返回 existingInstallations，按 scnexus/ccm/auto 分开列出已有记录的包信息、目录、描述文件路径和匹配依据：SCNexus 在同一游戏、同一业务类型、同一模式下按 scnid 相同**或**name 相同匹配；CCM 按 title 匹配，并检查清洗后的库目录，即使 Store 缺少记录也返回磁盘已有信息。auto 不检查，恒为 []。可返回多个匹配，不以其中一个覆盖其他记录。
+
+安装前再次检查，已有相同包时明确拒绝并要求新分析，不自动升级或覆盖。CCM 扫描按管理目录保留已有内部 localId；没有旧记录时生成稳定路径标识，不把中文目录名当成内部 ID。已有 UUID 目录仍可扫描，不自动改动历史磁盘目录。
 
 ### CCM 输入采用 SCNexus 模式
 
@@ -176,7 +184,7 @@ CCM 模式管理、重建和取消激活以 metadata.txt 及战役地图布局�
 
 content-source 与格式解析不依赖 campaign/customize Store，不直接操作窗口、安装目标或用户源文件。归档/目录提供一致条目，格式解析器只解释内容；campaign/customize 保留各自安装规则与生命周期。
 
-建议为本地调用的独立文件能力设置 content-package 模块（index.ts、content-package.ipc.ts、content-package.ts，额外 source/parser 文件按需），格式纯契约可放 standard，桥接 DTO 放 app-shared；不在 preload 放解压或解析业务。自动识别单独预留，当前一律返回 null，不实现伪识别、不临时指定 campaign。
+已为本地调用的独立文件能力设置 content-package 模块（index.ts、content-package.ipc.ts、content-package.ts，额外 source/parser 文件按需），格式纯契约可放 standard，桥接 DTO 放 app-shared；不在 preload 放解压或解析业务。自动识别单独预留，当前一律返回 null，不实现伪识别、不临时指定 campaign。
 
 ### 最外层有效描述文件与默认包根
 
@@ -236,12 +244,17 @@ type AnalysisResult = {
     auto: InstallPreview | null;
   };
   recommendedMode: InstallMode | null;
+  existingInstallations: {
+    scnexus: ExistingInstallation[];
+    ccm: ExistingInstallation[];
+    auto: ExistingInstallation[];
+  };
   conflicts: ModeConflicts[];
   diagnostics: ModeDiagnostic[];
 };
 ```
 
-这些均为目标契约，不代表已存在。FileTree、InstallPreview、ModeDiagnostic 待实施细化：每种可用预览含内部 Package、安装方式、rootRelativePath、descriptorPath、描述来源（package-json/ccm-converted/metadata-txt）、资源映射清单、目标树、数量/大小、依赖及警告。conflicts 按 mode 区分，推荐为空时不替用户自动选择。SCNexus 与自动模式的持久化格式为 SCNexus；CCM 保留 CCM 格式。
+这些契约已在 app-shared 定义。FileTree、InstallPreview、ModeDiagnostic 当前返回：每种可用预览含内部 Package、安装方式、rootRelativePath、descriptorPath、描述来源（package-json/ccm-converted/metadata-txt）、资源映射清单、目标树、数量/大小、依赖及警告。conflicts 按 mode 区分，推荐为空时不替用户自动选择。SCNexus 与自动模式的持久化格式为 SCNexus；CCM 保留 CCM 格式。
 
 - renderer 通过 IPC 传入**作品类型、输入形式和路径**；主进程核实存在性、目录/归档类型和允许访问范围。
 - campaign 独立读取 package.json、metadata.txt：返回标准或 CCM 转换的 scnexus 预览、原 CCM 的 ccm 预览以及 auto 预留；customize 只支持自制作品 package.json 和 auto，ccm 恒为 null，不能把 CCM 战役转换伪装为 customize。
@@ -286,11 +299,11 @@ modifiedAt 为 Unix 毫秒时间戳，归档未提供时用 null；不得用分�
 | cancel（取消） | 不开始目标写入，或停止并回滚已经进入提交的本次操作；不将操作写为成功 |
 
 - 未决冲突禁止开始修改。用户不能提交其他模式的 conflictId，未知、重复或过期决策需重新确认。
-- 导入 campaign 本身不修改活动 Maps/Mods；分析中 conflicts 展示预计激活的地图与模组冲突。实际自动/手动激活都重新核对现场，不能把导入时的授权无限期复用。customize 在实际安装前同样复核。
+- SCNexus campaign 导入不修改活动 Maps/Mods；其分析返回预计激活冲突，实际激活重新确认。CCM 导入只提示本次直接安装的 Mod 冲突，激活阶段另提示 Map 冲突。实际自动/手动激活都重新核对现场，不能把导入时的授权无限期复用。customize 在实际安装前同样复核。
 - 源和目标在预览后变化时，刷新相关冲突并要求重新决定；不按旧时间、大小直接覆盖。任务期间使用互斥锁防止应用内并行写入，但仍检查外部变化。
 - components 的目录级合并可能出现逐文件冲突；conflicts 列出实际内部冲突文件而不是以目录 mtime/size 冒充每个文件信息。同一分析计划内部两个源映射到同一目标属于计划冲突，不能当“新文件/本地文件”让用户随意解决。
-- targetTree 与本次操作结果标识实际决策（copied/replaced/kept）。SCNexus 安装清单及 Store 保存这些结果；CCM 可保留当前 Store 中已有操作信息，但不增加持久化 Mod 恢复清单，不承诺扫描重建该信息。keep 的字节不计为本次复制量，不能据此遗漏目标整体大小。
-- 覆盖/保留只解决本次内容选择；SCNexus 后续卸载不能无条件删除共享模组或覆盖其新改动，跨包所有权与恢复仍需另行完善。CCM 的 Mod 管理恢复不纳入此设计目标。
+- targetTree 与本次操作结果标识实际决策（copied/replaced/kept）。SCNexus 安装清单及 Store 保存这些结果；CCM 导入可在当前 Store 记录本次安装 Mods 信息，但不增加持久化 Mod 恢复清单，不承诺扫描重建该信息。keep 的字节不计为本次复制量，不能据此遗漏目标整体大小。
+- SCNexus 卸载/取消激活时按目标文件遍历其他已激活战役与已安装 customize 维护表；官方战役覆盖地图不做引用确认，其余文件只有被其他内容引用时才返回逐项保留/删除选择，未被引用的文件直接移除。该流程不自动恢复安装前文件。CCM 的 Mod 管理恢复不纳入此设计目标。
 
 ### 文件数和大小口径
 
@@ -343,7 +356,7 @@ payload 仅用于需要留存内容以供激活/重装的场景，不要求 cust
 
 ## 9. Store 重构与重建扫描
 
-建议四类 Store 持续使用 electron-store schema、自定义迁移、_schemaVersion/_revision，实际模型后续实现：
+四类 Store 使用 electron-store schema、自定义迁移、_schemaVersion/_revision，新模型已实现：
 
 | Store | 内容 |
 | --- | --- |
@@ -358,7 +371,8 @@ payload 仅用于需要留存内容以供激活/重装的场景，不要求 cust
 localId
 package                  新 Package 内容，不混入本机地址
 format / selectedMode    最终格式与用户选择的解析模式
-sourceInfo               输入形式/位置，可选CCM原文及编码副本
+source / rootRelativePath 输入形式/位置与逻辑根
+ccmOriginal              可选CCM原文及编码副本
 localInfo
   managementDirectory / packageFile / ccmMetadataFile
   libraryDirectory       campaign 导入库
@@ -384,13 +398,13 @@ localInfo
 
 ## 10. scii-game-setting 获取方式
 
-profile Store 后续更名为 scii-game-setting；是否同时改 module/channel 名称需要在实施时同步契约，本文不把旧 profile 接口直接删除。
+profile Store/模块已更名为 scii-game-setting，新 IPC 与 preload 已同步；legacyProfile 转换及全部 profile:* IPC/preload 接口已删除，只使用 window.scnexus.gameSetting。原 store-profile.json 的一次迁移仍保留，不提供旧配置运行接口：首次迁移复制为 store-scii-game-setting.json 后转换，不继续写回旧文件。customizeDataRoot 是由 gameRoot 推导的 Store 只读字段，实际目录名仍为 SCNexusCustomizeData。游戏配置数据版本已升至 3，将 v2 的 SCNEXUS_CUTOMIZE_DATA_ROOT 迁为 customizeDataRoot；迁移前备份并保留 gameRoot、documentRoot、confirmedAt 与 _revision。
 
 - 保存用户确认的 gameRoot，检测候选顺序为手动输入、已保存路径、Windows 注册表发现。每次实际使用前确认环境有效，失败不把已保存好配置清空。
 - 注册表发现仍参考 HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\StarCraft II 的 InstallLocation。
 - 派生 Maps/Mods、四类 Campaign 根与关联目录、SCNexusCustomizeData、CCM库；不允许用户任意修改派生目标或安全白名单。
 - 文档目录从 Electron documents 路径派生 StarCraft II、Banks、ArcadeBanks，不与游戏根混用。
-- 当前优先明确客户端、Switcher、编辑器及所有安装相关路径，以实际文件检测输出能力。游戏版本获取方式尚未确定，不实现猜测检测、不沿用硬编码 5.0.11.90136，也不让版本缺失阻断路径配置与分析；模型若保留 gameVersion，用 null/unknown 表示未知。版本检测留待独立设计。
+- 当前优先明确客户端、Switcher、编辑器及所有安装相关路径，以实际文件检测输出能力。游戏版本获取方式尚未确定，不实现猜测检测、不沿用硬编码 5.0.11.90136，也不让版本缺失阻断路径配置与分析；模型若保留 gameVersion，用 null/unknown 表示未知（当前快照不增加该字段）。版本检测留待独立设计。
 - 路径来源、规范化路径、检测时间、可用能力是读取快照；环境状态不等同持久化历史 SUCCESS=true。
 - 游戏目录切换验证后整体提交，递增配置修订，使分析和内容缓存失效；互斥任务执行中拒绝切换。
 - store-profile.json 更名/迁移方案须备份并防止双文件事实来源，不能新建空 Store 后遗失已有游戏目录。
@@ -406,15 +420,67 @@ profile Store 后续更名为 scii-game-setting；是否同时改 module/channel
 
 Vitest 用例位于所属模块 __test__：两种输入形式、三/两种模式及null、双描述独立解析、外层有效优先/外层无效深入、包根重定位、CCM转SCNexus及原文保留、推荐为空/不可用、冲突字段与覆盖/保留/取消/现场变化、components逐文件冲突、路径缺省/越界、WOL隔离、HOTS evolution、LOTV双目录、CCM嵌套Mods、导入不触碰游戏活动文件、用户源不删除、安装与Store失败、扫描副本去重与权限失败、旧字段迁移。
 
-## 12. 尚待实施前明确的细节
+## 12. 当前实现、验证与限制
 
-- 同深度多个独立有效包候选时的选择交互；单包的最外层有效发现及嵌套包根默认定位已确定。
-- SCNexus 共享Mods覆盖后的跨包所有权、后续取消激活/卸载恢复及本地再次修改策略；本次冲突的覆盖/保留/取消已确定。
-- 非Windows路径发现及能力支持范围。游戏版本检测本轮不设计，后续单独明确可靠来源。
+- [content-package](../packages/app-main/src/modules/content-package/index.ts)：目录/ZIP/7z 输入、包根定位、SCNexus/CCM 解析与转换、按模式冲突分析、可取消预览和任务、复制回滚、扫描重建。
+- [campaign](../packages/app-main/src/modules/campaign/index.ts) 与 [customize](../packages/app-main/src/modules/customize/index.ts)：业务入口独立；调用统一文件能力。campaign 支持导入、准备激活、激活、准备取消激活、取消激活、准备卸载、卸载；customize 无激活步骤。
+- [scii-game-setting](../packages/app-main/src/modules/scii-game-setting/index.ts)：手动/保存路径/Windows 注册表、执行能力和路径派生；不硬编码游戏版本。
+- [共享契约](../packages/app-shared/src/types/content.type.ts)：Package、AnalysisResult、安装记录、活动记录、移除预览及选择；[preload](../packages/app-preload/src/desktop.ts) 暴露完整受控 API，不含本地文件业务。
+- 分析 ID、激活 ID、移除 ID 在 main 保存，30 分钟有效；修改游戏路径、源内容/目标内容、维护表修订变化时拒绝过期操作。不同业务入口不能混用 ID。
+- 同类型已有活动战役时需先取消激活再激活新包，不静默移除共享文件。renderer 可串联操作但要处理两阶段失败。
+- 文件提交使用磁盘备份及原子替换，异常/取消回滚；卸载管理目录先暂存移动，Store 提交失败恢复。回滚失败保留恢复文件。尚未实现进程骤停后的自动事务恢复，不将正常异常回滚描述为崩溃事务保证。
+- 扫描管理清单、CCM 库、四类活动标记及 Maps/Mods 中的外部描述；损坏项隔离并保留可关联旧记录，权限错误不当作目录为空。CCM 扫描不重建 Mods；外部内容无完整来源时不能自动重新激活。
+- 旧安装/激活写入 channel 明确拒绝并要求新预览确认，避免绕过冲突选择；查询保留适配。renderer-v2 安装界面尚未实现，旧 UI 的直接安装动作不能继续绕过新规则。
+- 自动识别与依赖自动下载仍未实现；auto=null。多同层有效包返回不可用诊断；尚未增加交互选包根接口。
+- 未传出 `-mcp`，无 UTF-8 标志的 ZIP 名称按系统代码页解码；该兼容缺口见第 13 节，已决定本轮不实现。现有中文 ZIP 测试只覆盖 GBK 归档在 936 系统上的情况。
+- 本轮测试使用独立临时游戏目录和假的启动文件，不操作真实游戏、不发遥测。
 
-这些不确定点不阻止本轮建立文档，但不能在代码重构时默认为已经决策。
+验证记录：
 
-## 13. 相关文档
+| 命令/检查 | 结果 |
+| --- | --- |
+| `pnpm run typecheck:main` | 通过 |
+| `pnpm run typecheck:preload` | 通过 |
+| `pnpm run test:main` | 11 个文件、49 项 Vitest 通过；含真实 ZIP/7z、Store 迁移、文件回滚、扫描、两阶段与共享引用 |
+| `pnpm run build:main` | 通过；原 __dirname 配置提示仍存在 |
+| `pnpm run build:preload` | 通过 |
+| `pnpm --filter @scnexus/standard build` | 通过；初次因遗留失效 tsup shim 失败，清理生成的无效 shim 后正常入口通过，生成 package/metadata 的 ESM/CJS/类型产物 |
+| Electron 44 隔离页面真实 IPC 冒烟 | 路径迁移、分析、导入、激活、扫描、取消激活、卸载全部通过；未验证 v2 UI |
+
+后续范围：真实 SC2 内容验证、大型 ZIP 读取的事件循环性能、打包后外部二进制路径验证、进程中断恢复，以及非 Windows 发现能力。CCM Mod 不恢复是已确认行为，不列为待解决问题。
+
+## 13. 归档读取统一与历史编码逻辑
+
+归档统一使用 7z 完成 ZIP/7z 等格式的列举与条目读取；已删除 AdmZip 分支、工具及直接依赖。工坊原 metadata.json 写入行为保持不变，但改用暂存副本上的 7z 删除/添加，成功后替换原归档，不顺带修改工坊协议。
+
+历史 chardet 的主要用途是 ZIP 文件名编码兼容：旧 readCompressFileInfo 对 AdmZip 的 rawEntryName 调用 analyse，匹配 GB18030 或中文 lang 且 confidence>=10 时，把整包 fn_encoding 设为 gb18030；compressing 解压时使用 zipFileNameEncoding。它也用描述条目的原始名字重算 CCM 根位置，但并非检测 metadata.txt 的文本内容。旧 7z 分支对 Buffer.from(data.file) 检测的是已经解码后的字符串重新编码，不保留原始名字字节，不能可靠推断归档编码。
+
+新方案不恢复上述检测方式：7z 自行解析归档文件名，列表文本显式使用 -sccUTF-8；流读取将消息/进度与文件数据分流，且禁用条目通配匹配。CCM 描述正文仍独立采用严格 UTF-8，失败后 GB18030 解码。
+
+### 已确认的缺口：无 UTF-8 标志的 ZIP 名称
+
+ZIP 文件名在未设置通用标志位 bit 11 时是代码页字节，含义取决于打包环境；7z 不做检测，按当前系统代码页解码。统一到 7z 只解决了“列举与解压口径一致”，不解决代码页推断。
+
+使用随包 7z 24.08 (x64) 在 ACP=936 机器上以同一中文名实测：
+
+| 归档 | 默认（936） | `-mcp=65001` | `-mcp=936` |
+| --- | --- | --- | --- |
+| UTF-8 字节 + 标志位 | 正确 | 正确 | 正确 |
+| GBK 字节、无标志 | 正确 | 乱码（含 U+EFB5 一类私用区字符） | 正确 |
+| UTF-8 字节、无标志 | 乱码（如 U+9366） | 正确 | 乱码 |
+
+同时确认：`-mcp` 虽未出现在 `7z -h`，但对 `l`、`x` 与 `x -so` 均生效；ZIP 的 UTF-8 标志优先于 `-mcp`，因此可以无条件传入而不破坏规范归档；解压与流读取必须传同一 `-mcp` 才能保持一致。
+
+由此得出：
+
+- 在启用「使用 Unicode UTF-8 提供全球语言支持」的 Windows（ACP=65001）上，上表第二行会反转，GBK 归档乱码。两种系统配置都会遇到不匹配的归档。
+- 失败表现分为两类。SCNexus 的 source_path 来自 UTF-8 的 package.json，解码不一致时匹配不到资源，会明确报错；CCM 与自动识别依赖列表名称，会静默安装成乱码文件名。
+- 当前实现未传 `-mcp`，因此该缺口真实存在。现有中文 ZIP 测试只覆盖“GBK 归档 + 936 机器”，属于测试盲区，不能视为已兼容。
+
+**决定：本轮不实现编码协商**，仅记录结论。若后续实现，方向是“每归档选定一个代码页，并对其全部 7z 调用传入同一 `-mcp`”，而不是恢复 chardet：优先自行读取 ZIP 中央目录的原始名字节做确定性判定（有标志用 UTF-8，否则严格 UTF-8 尝试，再否则 GB18030），备选方案是默认列名后按私用区/替换字符与声明路径命中情况在 65001 与 936 之间重试选优。两种方案都需保留 -sccUTF-8，并补双向测试（可在任意 ACP 机器上用显式 `-mcp` 模拟另一种系统）。
+
+新增真实测试覆盖无 UTF-8 标记、无 Unicode 扩展字段的 GBK 中文 ZIP 名称（当前 Windows 环境正确列举并读回），中文工坊资源和描述替换，以及 CCM 正文编码。这不保证所有平台/所有历史编码都能自动判断；ZIP 未声明编码时依赖 7z 的默认解码策略，跨平台或其他代码页需补实际样本后决定显式 -mcp 配置，而不是检测已解码字符串。
+## 14. 相关文档
 
 - [整体架构](./architecture.md)
 - [app-main 基础模块与存储](./app-main-design.md)

@@ -1,0 +1,50 @@
+import type { IpcResult } from "../errors/app.error.js";
+import type {
+  AnalysisResult,
+  SourceInput,
+  ContentRecord,
+  ContentStore,
+  CampaignActiveStoreData,
+  RemovalPreview,
+  RemovalDecision,
+  InstallSelection,
+  ActivationPreview,
+  ConflictDecision,
+  ActiveCampaign,
+  SciiGameSetting,
+  GamePaths,
+} from "./content.type.js";
+export interface ContentApi {
+  cancel(previewId: string): Promise<IpcResult<void>>;
+  analyze(input: SourceInput): Promise<IpcResult<AnalysisResult>>;
+  install(selection: InstallSelection): Promise<IpcResult<ContentRecord>>;
+  list(): Promise<IpcResult<ContentStore>>;
+  scan(): Promise<IpcResult<unknown>>;
+  prepareUninstall(localId: string): Promise<IpcResult<RemovalPreview>>;
+  uninstall(
+    removalId: string,
+    decisions: RemovalDecision[],
+  ): Promise<IpcResult<unknown>>;
+}
+export interface CampaignApi extends ContentApi {
+  prepareActivation(localId: string): Promise<IpcResult<ActivationPreview>>;
+  activate(
+    activationId: string,
+    decisions: ConflictDecision[],
+  ): Promise<IpcResult<ActiveCampaign>>;
+  active(): Promise<IpcResult<CampaignActiveStoreData>>;
+  prepareDeactivation(localId: string): Promise<IpcResult<RemovalPreview>>;
+  deactivate(
+    removalId: string,
+    decisions: RemovalDecision[],
+  ): Promise<IpcResult<unknown>>;
+}
+export type GameSnapshot = SciiGameSetting & {
+  paths: GamePaths | null;
+  capabilities: { client: boolean; switcher: boolean; editor: boolean };
+};
+export interface GameSettingApi {
+  get(): Promise<IpcResult<GameSnapshot>>;
+  configure(path: string): Promise<IpcResult<GameSnapshot>>;
+  refresh(): Promise<IpcResult<GameSnapshot>>;
+}

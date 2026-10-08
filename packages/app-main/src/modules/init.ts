@@ -12,7 +12,8 @@ import {
   disableTelemetry,
   getTelemetryStatus,
 } from "./telemetry";
-import { initProfileModule } from "./profile";
+import { initSciiGameSettingModule } from "./scii-game-setting";
+import { initContentPackageModule } from "./content-package";
 import { initCampaignModule } from "./campaign";
 import { initCustomizeModule } from "./customize";
 import { initWorkshopModule } from "./workshop";
@@ -33,7 +34,8 @@ export async function initModules() {
     ["deep-link", initDeepLinkModule],
     ["tray", initTrayModule],
     ["updater", initUpdaterModule],
-    ["profile", initProfileModule],
+    ["scii-game-setting", initSciiGameSettingModule],
+    ["content-package", initContentPackageModule],
     ["campaign", initCampaignModule],
     ["customize", initCustomizeModule],
     ["workshop", initWorkshopModule],

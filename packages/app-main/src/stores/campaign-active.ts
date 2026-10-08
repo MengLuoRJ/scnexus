@@ -1,84 +1,110 @@
-import type {
-  MetadataInformated,
-  MetadataInformatedCampaignSet,
-  CampaignType,
-} from "scnexus-standard/metadata";
-
-import { type CampaignActiveStore } from "@scnexus/app-shared/stores/campaign-active.store";
-export { type CampaignActiveStore } from "@scnexus/app-shared/stores/campaign-active.store";
-
-import { createRepository } from "./store-repository";
-import { migrateLegacy } from "./store-validation";
-import { contentSchema } from "./store-schema";
 import type { Schema } from "electron-store";
-
-const defaults = (): CampaignActiveStore => ({
-  _schemaVersion: 1,
-  _revision: 0,
-  ININTIALIZED: false,
-  LAST_REFRESH_TIME: 0,
-  CAMPAIGN_SET: {
-    WOL: undefined,
-    HOTS: undefined,
-    LOTV: undefined,
-    NCO: undefined,
-  },
-});
-
-export const campaignActiveRepository = createRepository<CampaignActiveStore>({
-  defaults,
-  schema: contentSchema("CAMPAIGN_SET") as Schema<CampaignActiveStore>,
-  validate() {},
-  migrate: migrateLegacy,
-});
-
-export function updateCampaignActiveStore(
-  newCampaignActiveSet: MetadataInformatedCampaignSet,
-): CampaignActiveStore {
-  return campaignActiveRepository.update({
-    ...campaignActiveRepository.getSnapshot(),
-    CAMPAIGN_SET: newCampaignActiveSet,
-    LAST_REFRESH_TIME: Date.now(),
-    ININTIALIZED: true,
+import type {
+  ActiveCampaign,
+  CampaignActiveStoreData,
+} from "@scnexus/app-shared/types/content.type";
+import { createRepository, invalidData, isRecord } from "./store-repository";
+const string = (value: unknown) =>
+  typeof value === "string" && !value.includes("\0");
+function planned(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return (
+    string(value.source) &&
+    string(value.target) &&
+    ["map", "mod"].includes(value.type as string) &&
+    typeof value.official === "boolean" &&
+    typeof value.bytes === "number" &&
+    Number.isFinite(value.bytes) &&
+    value.bytes >= 0 &&
+    (value.modifiedAt === null ||
+      (typeof value.modifiedAt === "number" &&
+        Number.isFinite(value.modifiedAt)))
+  );
+}
+function installed(value: unknown): boolean {
+  return (
+    planned(value) &&
+    isRecord(value) &&
+    string(value.absolutePath) &&
+    string(value.hash) &&
+    ["copied", "replaced", "kept"].includes(value.result as string)
+  );
+}
+export function validateActive(
+  value: unknown,
+): asserts value is ActiveCampaign {
+  if (
+    !isRecord(value) ||
+    !string(value.localId) ||
+    !["WOL", "HOTS", "LOTV", "NCO"].includes(value.campaign as string) ||
+    !["ccm", "scnexus"].includes(value.mode as string) ||
+    !string(value.descriptorPath) ||
+    !string(value.gameRoot) ||
+    !Array.isArray(value.installedFiles) ||
+    !value.installedFiles.every(installed) ||
+    typeof value.activatedAt !== "number"
+  )
+    invalidData("Invalid active campaign");
+}
+export function createActiveRepository() {
+  return createRepository<CampaignActiveStoreData>({
+    defaults: () => ({
+      _schemaVersion: 2,
+      _revision: 0,
+      active: {},
+      legacyRecords: [],
+      scannedAt: null,
+    }),
+    schema: {
+      _schemaVersion: { const: 2 },
+      _revision: { type: "integer", minimum: 0 },
+      active: {
+        type: "object",
+        additionalProperties: false,
+        properties: Object.fromEntries(
+          ["WOL", "HOTS", "LOTV", "NCO"].map((c) => [
+            c,
+            {
+              type: "object",
+              required: [
+                "localId",
+                "campaign",
+                "mode",
+                "descriptorPath",
+                "installedFiles",
+                "activatedAt",
+                "gameRoot",
+              ],
+            },
+          ]),
+        ),
+      },
+      legacyRecords: { type: "array", items: { type: "object" } },
+      scannedAt: { type: ["number", "null"] },
+    } as Schema<CampaignActiveStoreData>,
+    validate(data) {
+      if (!isRecord(data) || !isRecord(data.active))
+        invalidData("Invalid active store");
+      for (const [campaign, value] of Object.entries(data.active)) {
+        validateActive(value);
+        if (value.campaign !== campaign)
+          invalidData("Active campaign slot mismatch");
+      }
+    },
+    migrate(data, defaults) {
+      if (!isRecord(data)) invalidData("Invalid old active index");
+      return {
+        ...defaults,
+        legacyRecords: isRecord(data.CAMPAIGN_SET)
+          ? (Object.values(data.CAMPAIGN_SET).filter(Boolean) as Record<
+              string,
+              unknown
+            >[])
+          : [],
+      };
+    },
   });
 }
 
-export function getCampaignActiveStore(): CampaignActiveStore {
-  return campaignActiveRepository.getSnapshot();
-}
-
-export function getCampaignActiveStoreKey<T extends keyof CampaignActiveStore>(
-  key: T,
-): CampaignActiveStore[T] {
-  return campaignActiveRepository.getKey(key);
-}
-
-export function insertStoreActiveCampaign(campaign: MetadataInformated) {
-  let storeData: MetadataInformatedCampaignSet = {
-    WOL: undefined,
-    HOTS: undefined,
-    LOTV: undefined,
-    NCO: undefined,
-  };
-  const store = getCampaignActiveStore();
-  if (store.ININTIALIZED) {
-    storeData = store.CAMPAIGN_SET;
-  }
-  storeData[campaign.campaign as CampaignType] = campaign;
-  updateCampaignActiveStore(storeData);
-}
-
-export function removeStoreActiveCampaign(campaign: MetadataInformated) {
-  let storeData: MetadataInformatedCampaignSet = {
-    WOL: undefined,
-    HOTS: undefined,
-    LOTV: undefined,
-    NCO: undefined,
-  };
-  const store = getCampaignActiveStore();
-  if (store.ININTIALIZED) {
-    storeData = store.CAMPAIGN_SET;
-  }
-  storeData[campaign.campaign as CampaignType] = undefined;
-  updateCampaignActiveStore(storeData);
-}
+export const campaignActiveRepository = createActiveRepository();
+export const getCampaignActiveStore = campaignActiveRepository.getSnapshot;

@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/metadata/index.ts"],"sourcesContent":["export * from \"./metadata.type\";\n"],"mappings":"+WAAA,IAAAA,EAAA,kBAAAC,EAAAD","names":["metadata_exports","__toCommonJS"]}

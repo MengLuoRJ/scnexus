@@ -3,7 +3,9 @@ import { pipeline } from "node:stream";
 import { createReadStream, createWriteStream, statSync } from "node:fs";
 import { promisify } from "node:util";
 import { MetadataStandard } from "scnexus-standard/metadata";
-import { getZip } from "@/utils/admzip";
+import { sevenZip } from "@/utils/7zip-wrapper";
+import { mkdtemp, writeFile, copyFile, rename, rm } from "node:fs/promises";
+import { dirname, join, basename } from "node:path";
 
 import axios from "axios";
 
@@ -16,29 +18,39 @@ import axios from "axios";
  * @param file_path path to the compressed file
  * @param metadata Metadata to write
  */
-export function writeMetadataToCompressedFile(
+export async function writeMetadataToCompressedFile(
   file_path: string,
-  metadata: MetadataStandard
+  metadata: MetadataStandard,
 ) {
-  const zip = getZip(file_path);
-  const metadataFile = zip.getEntries().find((entry) => {
-    return entry.name === "metadata.json";
-  });
-
-  if (!metadataFile) {
-    zip.addFile(
-      "metadata.json",
-      Buffer.from(JSON.stringify(metadata, null, "\t"), "utf-8")
+  const temporary = await mkdtemp(
+    join(dirname(file_path), ".scnexus-metadata-"),
+  );
+  const stagedArchive = join(temporary, basename(file_path));
+  try {
+    await copyFile(file_path, stagedArchive);
+    const { entries } = await sevenZip.list(stagedArchive);
+    const old = entries.filter(
+      (entry) =>
+        entry.path.replaceAll("\\", "/").split("/").at(-1) === "metadata.json",
     );
-  } else {
-    zip.deleteFile(metadataFile);
-    zip.addFile(
-      "metadata.json",
-      Buffer.from(JSON.stringify(metadata, null, "\t"), "utf-8")
+    if (old.length)
+      await sevenZip.delete(
+        stagedArchive,
+        old.map((entry) => entry.path),
+      );
+    await writeFile(
+      join(temporary, "metadata.json"),
+      JSON.stringify(metadata, null, "\t"),
+      "utf8",
     );
+    await sevenZip.add(stagedArchive, ["metadata.json"], {
+      cwd: temporary,
+      recursive: false,
+    });
+    await rename(stagedArchive, file_path);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
   }
-
-  zip.writeZip();
 }
 
 /**
@@ -49,7 +61,7 @@ export function writeMetadataToCompressedFile(
 export async function uploadCompressedFile(
   file_path: string,
   target_url: string,
-  file_md5: string
+  file_md5: string,
 ) {
   const fileStream = createReadStream(file_path);
   const fileStat = statSync(file_path);
@@ -67,7 +79,7 @@ export async function uploadCompressedFile(
       onUploadProgress: (progressEvent) => {
         getMainWindow()?.webContents.send(
           "workshop::upload-progress",
-          progressEvent
+          progressEvent,
         );
       },
     });
@@ -95,7 +107,7 @@ export async function downloadCompressedFile(url: string) {
       onDownloadProgress: (progressEvent) => {
         getMainWindow()?.webContents.send(
           "workshop::download-progress",
-          progressEvent
+          progressEvent,
         );
       },
     });

@@ -1,0 +1,19 @@
+import { expect, test, vi } from "vitest";
+
+const register = vi.hoisted(() => vi.fn());
+vi.mock("../../../utils/ipc-util", () => ({ ipcHandleTyped: register }));
+vi.mock("../scii-game-setting", () => ({
+  configureGame: vi.fn(),
+  getGameSnapshot: vi.fn(),
+}));
+
+import { initGameSettingIpc } from "../scii-game-setting.ipc";
+
+test("registers only the current game-setting contract", () => {
+  initGameSettingIpc();
+  expect(register.mock.calls.map(([channel]) => channel)).toEqual([
+    "scii-game-setting:get",
+    "scii-game-setting:configure",
+    "scii-game-setting:refresh",
+  ]);
+});

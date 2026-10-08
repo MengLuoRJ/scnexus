@@ -3,7 +3,7 @@ import { UserConfig } from "vite";
 
 import electronVendorsCache from "./.electron-vendors.cache.json" with { type: "json" };
 
-const PACKAGE_ROOT = __dirname;
+const PACKAGE_ROOT = import.meta.dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
 
 /**

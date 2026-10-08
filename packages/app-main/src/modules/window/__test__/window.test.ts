@@ -90,3 +90,28 @@ test("load failure includes underlying Electron reason and permits later recreat
   await service.restoreOrCreateWindow();
   service.destroyMainWindow();
 });
+
+test("early readiness waits for load completion and pending readiness does not survive navigation", async () => {
+  await service.restoreOrCreateWindow();
+  const window = instances.at(-1)!;
+  const loading = vi
+    .spyOn(window.webContents, "isLoadingMainFrame")
+    .mockReturnValue(true);
+  service.sendWhenReady("test:early", 1);
+  expect(service.markWindowReady().state).toBe("loading");
+  expect(window.webContents.send).not.toHaveBeenCalledWith("test:early", 1);
+  loading.mockReturnValue(false);
+  window.webContents.emit("did-finish-load");
+  expect(service.getWindowStatus().state).toBe("ready");
+  expect(window.webContents.send).toHaveBeenCalledWith("test:early", 1);
+  window.webContents.emit("did-start-navigation", {}, "", false, true);
+  loading.mockReturnValue(true);
+  service.markWindowReady();
+  window.webContents.emit("did-start-navigation", {}, "", false, true);
+  loading.mockReturnValue(false);
+  window.webContents.emit("did-finish-load");
+  expect(service.getWindowStatus().state).toBe("loading");
+  service.markWindowReady();
+  expect(service.getWindowStatus().state).toBe("ready");
+  service.destroyMainWindow();
+});

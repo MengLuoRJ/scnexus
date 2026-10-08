@@ -70,12 +70,3 @@ const api: DesktopApi = {
   },
 };
 contextBridge.exposeInMainWorld("scnexus", api);
-
-// The old renderer has no explicit readiness handshake yet.
-const notifyReady = () => {
-  setTimeout(() => {
-    void api.window.ready();
-  }, 0);
-};
-if (document.readyState === "complete") notifyReady();
-else window.addEventListener("load", notifyReady, { once: true });

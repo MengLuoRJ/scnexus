@@ -346,3 +346,6 @@ M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；�
 
 
 2026-10-08 IPC 返回契约统一：main 的 ipcHandle/ipcHandleRegister 均返回 IpcResult，删除 ipcHandleTyped 和内部旧格式分支；preload 的 invoke 统一执行返回校验及 P001/R001 转换；renderer-v2 删除 legacyRequest 与 legacy.ts，bridge.ts 仅负责尚处于顶层桥接的白名单访问，不转换旧返回格式。旧 renderer v1 不再兼容。工坊上传失败抛出规范错误，不作为成功 data 返回 Error；工坊其他业务重构仍延期。事件和单向日志发送不适用请求结果信封。
+
+
+窗口就绪由 renderer-v2 主动握手，不再由 preload 的旧 renderer 兼容逻辑自动通知。握手早于主页面加载完成时，main 暂存请求，did-finish-load 后才投递队列和通知监听者；导航、关闭和 renderer 崩溃清除待完成握手，避免把新页面误标为已就绪。没有窗口仍返回 M018。加载期握手与跨导航清理测试通过。

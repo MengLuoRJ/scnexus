@@ -9,7 +9,7 @@ import { openExternalWebsite } from "../shell";
 let mainWindow: BrowserWindow | null = null;
 let creation: Promise<BrowserWindow> | undefined;
 let state: WindowStatus["state"] = "absent";
-let ready = false;
+let readyRequested = false;
 const queue: { channel: string; args: unknown[] }[] = [];
 const readyListeners = new Set<() => void>();
 
@@ -33,10 +33,13 @@ export function onWindowReady(listener: () => void) {
 }
 export function markWindowReady() {
   const window = getMainWindow();
-  if (!window || window.webContents.isLoadingMainFrame())
-    throw new AppError(ERRORS.WINDOW_NOT_READY);
-  if (ready) return getWindowStatus();
-  ready = true;
+  if (!window) throw new AppError(ERRORS.WINDOW_NOT_READY);
+  if (window.webContents.isLoadingMainFrame()) {
+    readyRequested = true;
+    return getWindowStatus();
+  }
+  if (state === "ready") return getWindowStatus();
+  readyRequested = false;
   state = "ready";
   for (const item of queue.splice(0))
     window.webContents.send(item.channel, ...item.args);
@@ -46,7 +49,7 @@ export function markWindowReady() {
 }
 export function sendWhenReady(channel: string, ...args: unknown[]) {
   const window = getMainWindow();
-  if (ready && window) {
+  if (state === "ready" && window) {
     window.webContents.send(channel, ...args);
     return;
   }
@@ -63,7 +66,7 @@ export function sendWhenReady(channel: string, ...args: unknown[]) {
 export function destroyMainWindow() {
   getMainWindow()?.destroy();
   mainWindow = null;
-  ready = false;
+  readyRequested = false;
   state = "absent";
 }
 
@@ -97,11 +100,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
   }
   mainWindow = window;
   state = "loading";
-  ready = false;
+  readyRequested = false;
   window.once("closed", () => {
     if (mainWindow === window) {
       mainWindow = null;
-      ready = false;
+      readyRequested = false;
       state = "absent";
     }
   });
@@ -119,13 +122,16 @@ async function createMainWindow(): Promise<BrowserWindow> {
     "did-start-navigation",
     (_event, _url, _inPlace, isMainFrame) => {
       if (isMainFrame) {
-        ready = false;
+        readyRequested = false;
         state = "loading";
       }
     },
   );
+  window.webContents.on("did-finish-load", () => {
+    if (mainWindow === window && readyRequested) markWindowReady();
+  });
   window.webContents.on("render-process-gone", () => {
-    ready = false;
+    readyRequested = false;
     state = "failed";
     reportError(new AppError(ERRORS.WINDOW_RENDERER_FAILED), "window");
   });

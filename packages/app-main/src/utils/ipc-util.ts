@@ -18,22 +18,19 @@ function register(
   channel: string,
   func: (...args: any[]) => any,
   passEvent: boolean,
-  typed: boolean,
 ) {
   ipcMain.removeHandler(channel);
   ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
       await guard(channel, event);
       const data = await (passEvent ? func(event, ...args) : func(...args));
-      return typed ? { ok: true, data } : { data };
+      return { ok: true, data };
     } catch (value) {
       const error = normalizeError(value);
       if (error.code !== ERRORS.TASK_CANCELLED.code)
         reportError(error, channel);
       const dto = toErrorDto(error);
-      return typed
-        ? { ok: false, error: dto }
-        : { error: error.message || error.name, errorDetail: dto };
+      return { ok: false, error: dto };
     }
   });
 }
@@ -42,7 +39,7 @@ export function ipcHandleRegister(
   func: (...args: any[]) => any,
   passEvent = false,
 ) {
-  register(channel, func, passEvent, false);
+  register(channel, func, passEvent);
 }
 export function ipcHandleRemove(channel: string) {
   ipcMain.removeHandler(channel);
@@ -52,14 +49,7 @@ export function ipcHandle(
   func: (...args: any[]) => any,
   passEvent = false,
 ) {
-  register(channel, func, passEvent, false);
-}
-export function ipcHandleTyped(
-  channel: string,
-  func: (...args: any[]) => any,
-  passEvent = false,
-) {
-  register(channel, func, passEvent, true);
+  register(channel, func, passEvent);
 }
 export type ipcHandleConfig = {
   channel: string;

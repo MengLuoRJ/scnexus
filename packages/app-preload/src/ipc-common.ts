@@ -8,12 +8,9 @@ import {
   type IpcResult,
 } from "@scnexus/app-shared/errors/app.error";
 
-export type ApiResult<T = unknown> = { data?: T; error?: string };
+export type ApiResult<T = unknown> = IpcResult<T>;
 export type ApiListener = (event: object, ...args: any[]) => void;
 export type ExposedApi = (...args: any[]) => Promise<unknown> | (() => void);
-
-export const invoke = (channel: string, ...args: any[]): Promise<ApiResult> =>
-  ipcRenderer.invoke(channel, ...args);
 
 export const subscribe = (channel: string, listener: ApiListener) => {
   const wrapped = (_event: Electron.IpcRendererEvent, ...args: any[]) =>
@@ -28,7 +25,7 @@ export function exposeApis(apis: Record<string, ExposedApi>) {
   });
 }
 
-export async function invokeTyped<T>(
+export async function invoke<T>(
   channel: string,
   ...args: unknown[]
 ): Promise<IpcResult<T>> {

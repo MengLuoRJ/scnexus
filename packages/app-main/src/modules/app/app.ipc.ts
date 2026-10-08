@@ -1,8 +1,8 @@
-import { ipcHandle, ipcHandleTyped } from "@/utils/ipc-util";
+import { ipcHandle } from "@/utils/ipc-util";
 import * as application from "./app";
 
 export function initAppIpc() {
-  ipcHandleTyped("app:get-version-v2", application.getVersion);
+  ipcHandle("app:get-version-v2", application.getVersion);
   ipcHandle("app:get-version", application.getVersion);
   ipcHandle("app:is-packaged", application.isPackaged);
   ipcHandle("app:get-locale", application.getLocale);

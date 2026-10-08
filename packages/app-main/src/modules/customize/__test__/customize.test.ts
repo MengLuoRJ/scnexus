@@ -2,7 +2,7 @@ import { test, expect, vi } from "vitest";
 const register = vi.hoisted(() => vi.fn());
 vi.mock("../../../utils/ipc-util", () => ({
   ipcHandle: register,
-  ipcHandleTyped: register,
+  ipcHandle: register,
 }));
 vi.mock("../../content-package", () => ({
   contentService: {

@@ -1,4 +1,4 @@
-import { ipcHandle, ipcHandleTyped } from "../../utils/ipc-util";
+import { ipcHandle } from "../../utils/ipc-util";
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
 import {
   getSettingSnapshot,
@@ -13,11 +13,11 @@ const legacyKeys: Record<string, string> = {
   LAST_UPDATED_TIME: "lastUpdatedAt",
 };
 export function initSettingIpc() {
-  ipcHandleTyped("setting:get-snapshot", getSettingSnapshot);
-  ipcHandleTyped("setting:get-key", getSettingKey);
-  ipcHandleTyped("setting:update-key", updateSettingKey);
-  ipcHandleTyped("setting:update", updateSetting);
-  ipcHandleTyped("setting:replace", (data: unknown) =>
+  ipcHandle("setting:get-snapshot", getSettingSnapshot);
+  ipcHandle("setting:get-key", getSettingKey);
+  ipcHandle("setting:update-key", updateSettingKey);
+  ipcHandle("setting:update", updateSetting);
+  ipcHandle("setting:replace", (data: unknown) =>
     updateSetting(data, true),
   );
   ipcHandle("setting:get-setting", () => {

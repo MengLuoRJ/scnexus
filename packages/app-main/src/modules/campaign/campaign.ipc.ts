@@ -1,4 +1,4 @@
-import { ipcHandleTyped, ipcHandle } from "../../utils/ipc-util";
+import { ipcHandle } from "../../utils/ipc-util";
 import * as service from "./campaign";
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
 export function initCampaignIpc() {
@@ -47,15 +47,15 @@ export function initCampaignIpc() {
       });
     });
 
-  ipcHandleTyped("campaign:prepare-activation", service.prepareActivation);
-  ipcHandleTyped("campaign:activate", service.activate);
-  ipcHandleTyped("campaign:active", service.getActive);
-  ipcHandleTyped("campaign:prepare-deactivation", service.prepareDeactivation);
-  ipcHandleTyped("campaign:deactivate", service.deactivate);
-  ipcHandleTyped("campaign:analyze", service.analyze);
-  ipcHandleTyped("campaign:install", service.install);
-  ipcHandleTyped("campaign:list", service.list);
-  ipcHandleTyped("campaign:scan", service.scan);
-  ipcHandleTyped("campaign:prepare-uninstall", service.prepareUninstall);
-  ipcHandleTyped("campaign:uninstall", service.uninstall);
+  ipcHandle("campaign:prepare-activation", service.prepareActivation);
+  ipcHandle("campaign:activate", service.activate);
+  ipcHandle("campaign:active", service.getActive);
+  ipcHandle("campaign:prepare-deactivation", service.prepareDeactivation);
+  ipcHandle("campaign:deactivate", service.deactivate);
+  ipcHandle("campaign:analyze", service.analyze);
+  ipcHandle("campaign:install", service.install);
+  ipcHandle("campaign:list", service.list);
+  ipcHandle("campaign:scan", service.scan);
+  ipcHandle("campaign:prepare-uninstall", service.prepareUninstall);
+  ipcHandle("campaign:uninstall", service.uninstall);
 }

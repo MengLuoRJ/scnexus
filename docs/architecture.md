@@ -229,3 +229,41 @@ campaign 战役包与 customize 自制作品保持独立。后续统一压缩包
 - [开发规范](../AGENTS.md)
 - [v2 包说明](../packages/app-renderer-v2/README.md)
 - [原生归档包维护](./native-packages.md)
+
+
+## renderer-v2 IPC 适配层
+
+renderer-v2 的 src/ipcs 按业务提供 apiXXX 方法，通过 index.ts 汇总；组件不直接访问 Electron 或任意 IPC channel。现代接口从 window.scnexus 获取，旧的 app 补充能力、dialog、shell、updater、workshop 经内部 internal/bridge.ts 白名单访问现行 preload，不引入已废弃的 profile 与旧 campaign/customize 操作。
+
+src/ipcs/internal/ipc-common.ts 统一 IpcResult 校验，保留主进程错误 code/name/errorId/taskId；格式异常返回 R001，桥接不可用或调用失败返回 P001。所有调用都使用 IpcResult；旧 data/error/errorDetail 返回格式不再兼容。默认不绑定 UI toast，也不悄悄吞错；调用者检查 result.ok，或显式从 src/ipcs/internal/ipc-common 导入 unwrap（失败抛出原始错误 DTO）。logging.write 是现有单向发送方法，不伪造确认返回值。
+
+事件适配只传业务数据并返回取消函数；Vue scope 中自动清理，scope 外调用者手动清理，取消函数幂等。文件拖放路径通过 getPathForFile 使用 Electron webUtils，不读取 File.path。
+
+示例：
+
+```ts
+import { apiGameSettingInitialize, apiSettingOnChanged } from '@/ipcs'
+
+const result = await apiGameSettingInitialize()
+if (!result.ok) {
+  // 将 result.error 交给界面统一错误展示。
+}
+const stop = apiSettingOnChanged(snapshot => {
+  // 更新界面投影。
+})
+// Vue scope 会自动清理；非 scope 使用时手动调用 stop()。
+```
+
+工坊尚未重构，上传返回 unknown，不把旧主进程的响应宣称为完善的成功契约；shell.openPath 的字符串错误仍按 Electron 原始返回值交给调用者判断。当前接口层不实现自动重试、Store 持久化或 UI 错误弹窗。
+
+验证：renderer-v2 IPC 定向测试 5 项通过；pnpm --filter @scnexus/app-renderer-v2 type-check 通过；pnpm exec vite build --config packages/app-renderer-v2/vite.config.ts 通过。包级 oxfmt/build-only 曾因本地 bin 指向不存在的包文件失败，改用已有根目录工具验证，没有新增工具。main/preload 类型检查通过。
+
+
+2026-10-08 IPC 返回契约统一：main 的 ipcHandle/ipcHandleRegister 均返回 IpcResult，删除 ipcHandleTyped 和内部旧格式分支；preload 的 invoke 统一执行返回校验及 P001/R001 转换；renderer-v2 删除 legacyRequest 与 legacy.ts，bridge.ts 仅负责尚处于顶层桥接的白名单访问，不转换旧返回格式。旧 renderer v1 不再兼容。工坊上传失败抛出规范错误，不作为成功 data 返回 Error；工坊其他业务重构仍延期。事件和单向日志发送不适用请求结果信封。
+
+
+### renderer-v2 IPC 目录组织
+
+src/ipcs 根目录只保留业务接口文件与业务导出 index.ts；公共请求、订阅及桥接辅助放 src/ipcs/internal，辅助测试位于 internal/__tests__；Window 桥接声明放 src/types/desktop.d.ts。unwrap 不从业务 index.ts 再导出，需显式从内部辅助模块导入。
+
+后续自动导入扫描 src/ipcs/*.ts，排除 index.ts，不递归扫描 internal，不扫描 src/types。当前只整理结构，尚未启用自动导入；业务接口仍显式导入，名称和行为不变。文件路径获取 files.ts 保留为业务能力。

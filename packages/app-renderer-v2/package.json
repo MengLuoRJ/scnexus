@@ -16,6 +16,7 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
+    "@scnexus/app-shared": "workspace:*",
     "@nuxt/ui": "^4.11.3",
     "@vueuse/core": "^15.0.0",
     "axios": "^1.20.0",

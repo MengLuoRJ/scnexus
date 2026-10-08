@@ -1,6 +1,6 @@
 import { ipcMain } from "electron";
 import { assertIpcSource } from "../../utils/ipc-source";
-import { ipcHandleTyped } from "../../utils/ipc-util";
+import { ipcHandle } from "../../utils/ipc-util";
 import { isErrorDto } from "@scnexus/app-shared/errors/app.error";
 import {
   LOG_LEVELS,
@@ -11,8 +11,8 @@ import { reportRendererError } from "../telemetry/telemetry";
 import { updateSetting } from "../setting/setting";
 
 export function initLoggingIpc() {
-  ipcHandleTyped("logging:get-config", getLogConfig);
-  ipcHandleTyped("logging:set-level", (level: unknown) =>
+  ipcHandle("logging:get-config", getLogConfig);
+  ipcHandle("logging:set-level", (level: unknown) =>
     updateSetting({ logLevel: level }),
   );
   ipcMain.removeAllListeners("logging:write");

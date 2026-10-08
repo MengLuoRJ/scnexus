@@ -1,7 +1,7 @@
 import { expect, test, vi } from "vitest";
 
 const register = vi.hoisted(() => vi.fn());
-vi.mock("../../../utils/ipc-util", () => ({ ipcHandleTyped: register }));
+vi.mock("../../../utils/ipc-util", () => ({ ipcHandle: register }));
 vi.mock("../scii-game-setting", () => ({
   reinitializeGame: vi.fn(),
   getGameSnapshot: vi.fn(),

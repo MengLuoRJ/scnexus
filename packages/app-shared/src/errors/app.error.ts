@@ -56,8 +56,9 @@ export function normalizeError(
       : typeof error === "string"
         ? error
         : "";
-  if (Object.hasOwn(legacy, message))
-    return new AppError(legacy[message], { message }, { cause: error });
+  const legacyDefinition = Object.hasOwn(legacy, message) ? legacy[message] : undefined;
+  if (legacyDefinition)
+    return new AppError(legacyDefinition, { message }, { cause: error });
   return new AppError(definition, {}, { cause: error });
 }
 

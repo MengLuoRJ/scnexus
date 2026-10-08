@@ -1,3 +1,4 @@
+import { normalizeError, ERRORS, toErrorDto } from "@scnexus/app-shared/errors/app.error";
 import { getMainWindow } from "@/modules/window";
 import { pipeline } from "node:stream";
 import { createReadStream, createWriteStream, statSync } from "node:fs";
@@ -85,9 +86,9 @@ export async function uploadCompressedFile(
     });
     return response.data;
   } catch (error) {
-    console.log((error as any).response!.data);
-    getMainWindow()?.webContents.send("workshop::upload-error", error);
-    return error;
+    const normalized = normalizeError(error, ERRORS.NETWORK_REQUEST_FAILED);
+    getMainWindow()?.webContents.send("workshop::upload-error", toErrorDto(normalized));
+    throw normalized;
   }
 }
 

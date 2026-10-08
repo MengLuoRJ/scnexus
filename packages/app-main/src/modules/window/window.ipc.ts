@@ -1,4 +1,4 @@
-import { ipcHandleTyped } from "../../utils/ipc-util";
+import { ipcHandle } from "../../utils/ipc-util";
 import {
   closeMainWindow,
   getWindowStatus,
@@ -9,15 +9,15 @@ import {
 } from "./window";
 
 export function initWindowIpc() {
-  ipcHandleTyped("window:get-status", getWindowStatus);
-  ipcHandleTyped("window:show", async () => {
+  ipcHandle("window:get-status", getWindowStatus);
+  ipcHandle("window:show", async () => {
     await restoreOrCreateWindow();
     return getWindowStatus();
   });
-  ipcHandleTyped("window:minimize", minimizeMainWindow);
-  ipcHandleTyped("window:set-maximized", setMainWindowMaximized);
-  ipcHandleTyped("window:close", () => {
+  ipcHandle("window:minimize", minimizeMainWindow);
+  ipcHandle("window:set-maximized", setMainWindowMaximized);
+  ipcHandle("window:close", () => {
     setImmediate(closeMainWindow);
   });
-  ipcHandleTyped("window:ready", markWindowReady);
+  ipcHandle("window:ready", markWindowReady);
 }

@@ -1,4 +1,4 @@
-import { ipcHandleTyped, ipcHandle } from "../../utils/ipc-util";
+import { ipcHandle } from "../../utils/ipc-util";
 import * as service from "./customize";
 import {
   runGameClient,
@@ -39,10 +39,10 @@ export function initCustomizeIpc() {
   ipcHandle("customize:run-game-client", runGameClient);
   ipcHandle("customize:run-game-executable", runGameExecutable);
   ipcHandle("customize:run-editor-executable", runEditorExecutable);
-  ipcHandleTyped("customize:analyze", service.analyze);
-  ipcHandleTyped("customize:install", service.install);
-  ipcHandleTyped("customize:list", service.list);
-  ipcHandleTyped("customize:scan", service.scan);
-  ipcHandleTyped("customize:prepare-uninstall", service.prepareUninstall);
-  ipcHandleTyped("customize:uninstall", service.uninstall);
+  ipcHandle("customize:analyze", service.analyze);
+  ipcHandle("customize:install", service.install);
+  ipcHandle("customize:list", service.list);
+  ipcHandle("customize:scan", service.scan);
+  ipcHandle("customize:prepare-uninstall", service.prepareUninstall);
+  ipcHandle("customize:uninstall", service.uninstall);
 }

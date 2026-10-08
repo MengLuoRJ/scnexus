@@ -330,7 +330,7 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 ### preload 文件职责
 
 - src/index.ts：唯一构建入口，加载 ipc/index.ts，并暴露受控 webUtils。
-- src/ipc-common.ts：内部共享的 invoke、invokeTyped、subscribe、subscribeTyped 与 exposeApis；不向页面暴露任意 channel 调用。
+- src/ipc-common.ts：内部共享的 invoke、invoke、subscribe、subscribeTyped 与 exposeApis；不向页面暴露任意 channel 调用。
 - src/ipc/index.ts：集中加载业务桥接，保持原有初始化顺序。
 - src/ipc/desktop.ts：组装并暴露 window.scnexus 受控 API；其他 ipc/*.ts 暂保留旧 renderer 兼容桥接。
 - safety-index.ts 原先仅导入 index.ts，没有独立安全策略或行为，已移除源码与构建入口。仅产出 dist/index.mjs；不改变 IPC channel、页面方法或取消订阅方式。
@@ -343,3 +343,6 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 pnpm dev 必须等待 preload 首次 writeBundle 后才启动 main watcher，首次 preload 构建不广播 full-reload；后续更新仍刷新页面。主进程重构建先等待旧 Electron 退出再启动新进程，超过 10 秒报错，避免新旧实例竞争。
 
 M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；不将所有加载失败归为构建竞态，也不通过无条件重试隐藏错误。窗口加载失败的原因输出与后续重建已有单元测试（2 项通过）。实际用户开发会话中的偶发失败仍需用增强日志确认。
+
+
+2026-10-08 IPC 返回契约统一：main 的 ipcHandle/ipcHandleRegister 均返回 IpcResult，删除 ipcHandleTyped 和内部旧格式分支；preload 的 invoke 统一执行返回校验及 P001/R001 转换；renderer-v2 删除 legacyRequest 与 legacy.ts，bridge.ts 仅负责尚处于顶层桥接的白名单访问，不转换旧返回格式。旧 renderer v1 不再兼容。工坊上传失败抛出规范错误，不作为成功 data 返回 Error；工坊其他业务重构仍延期。事件和单向日志发送不适用请求结果信封。

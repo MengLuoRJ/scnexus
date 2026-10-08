@@ -1,9 +1,9 @@
-import { ipcHandleTyped } from "../../utils/ipc-util";
+import { ipcHandle } from "../../utils/ipc-util";
 import { reinitializeGame, getGameSnapshot } from "./scii-game-setting";
 
 export function initGameSettingIpc() {
-  ipcHandleTyped("scii-game-setting:get", getGameSnapshot);
-  ipcHandleTyped("scii-game-setting:configure", reinitializeGame);
-  ipcHandleTyped("scii-game-setting:initialize", reinitializeGame);
-  ipcHandleTyped("scii-game-setting:refresh", getGameSnapshot);
+  ipcHandle("scii-game-setting:get", getGameSnapshot);
+  ipcHandle("scii-game-setting:configure", reinitializeGame);
+  ipcHandle("scii-game-setting:initialize", reinitializeGame);
+  ipcHandle("scii-game-setting:refresh", getGameSnapshot);
 }

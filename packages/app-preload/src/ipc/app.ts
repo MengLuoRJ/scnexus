@@ -1,4 +1,4 @@
-import { exposeApis, invoke } from "./common.js";
+import { exposeApis, invoke } from "../ipc-common.js";
 
 export const apiAppGetVersion = () => invoke("app:get-version");
 export const apiAppIsPackaged = () => invoke("app:is-packaged");

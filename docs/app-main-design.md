@@ -325,3 +325,14 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 现行事务在普通异常或取消时使用磁盘备份回滚。强制结束、进程崩溃或断电无法执行 catch/finally；现有备份目录没有持久化操作清单，不能可靠自动恢复。
 
 后续崩溃恢复需在文件改动前持久化目标、备份、操作阶段和 Store 提交状态，启动时发现未完成事务，经核验恢复或提示用户；失败保留证据，不自动删除。该能力本轮未实现。
+
+
+### preload 文件职责
+
+- src/index.ts：唯一构建入口，加载 ipc/index.ts，并暴露受控 webUtils。
+- src/ipc-common.ts：内部共享的 invoke、invokeTyped、subscribe、subscribeTyped 与 exposeApis；不向页面暴露任意 channel 调用。
+- src/ipc/index.ts：集中加载业务桥接，保持原有初始化顺序。
+- src/ipc/desktop.ts：组装并暴露 window.scnexus 受控 API；其他 ipc/*.ts 暂保留旧 renderer 兼容桥接。
+- safety-index.ts 原先仅导入 index.ts，没有独立安全策略或行为，已移除源码与构建入口。仅产出 dist/index.mjs；不改变 IPC channel、页面方法或取消订阅方式。
+
+验证：pnpm run typecheck:preload、pnpm run build:preload 均通过；模拟执行构建产物检查 59 个暴露入口、游戏初始化 invoke 和旧事件取消订阅通过。构建仍有既有 __dirname 配置警告，本轮不改无关工具链配置。

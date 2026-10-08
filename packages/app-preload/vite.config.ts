@@ -27,7 +27,7 @@ const config: UserConfig = {
     assetsDir: ".",
     minify: process.env.MODE !== "development",
     lib: {
-      entry: ["src/index.ts", "src/safety-index.ts"],
+      entry: "src/index.ts",
       formats: ["es"],
     },
     rollupOptions: {

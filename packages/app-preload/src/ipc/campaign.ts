@@ -1,4 +1,4 @@
-import { exposeApis, invoke } from "./common.js";
+import { exposeApis, invoke } from "../ipc-common.js";
 
 export const apiCampaignUnzipCompressFileCCM = (path: string) =>
   invoke("campaign:unzip-compress-file-ccm", path);

@@ -1,4 +1,4 @@
-import { exposeApis, invoke } from "./common.js";
+import { exposeApis, invoke } from "../ipc-common.js";
 
 export const apiShellOpenExternalWebsite = (link: string) =>
   invoke("shell:open-external-website", link);

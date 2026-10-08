@@ -1,4 +1,4 @@
-import { exposeApis, invoke } from "./common.js";
+import { exposeApis, invoke } from "../ipc-common.js";
 
 export const apiWorkshopGetFileMd5 = (path: string) =>
   invoke("workshop:get-file-md5", path);

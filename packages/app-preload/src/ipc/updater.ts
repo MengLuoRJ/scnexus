@@ -1,4 +1,9 @@
-import { exposeApis, invoke, subscribe, type ApiListener } from "./common.js";
+import {
+  exposeApis,
+  invoke,
+  subscribe,
+  type ApiListener,
+} from "../ipc-common.js";
 
 export const apiUpdaterGetStatus = () => invoke("updater:status");
 export const apiUpdaterCheckForUpdatesAndNotify = () =>

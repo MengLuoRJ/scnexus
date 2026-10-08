@@ -1,4 +1,4 @@
-import { exposeApis, invoke } from "./common.js";
+import { exposeApis, invoke } from "../ipc-common.js";
 
 export const apiSettingGetSetting = () => invoke("setting:get-setting");
 export const apiSettingGetSettingKey = (key: string) =>

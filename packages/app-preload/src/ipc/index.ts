@@ -1,0 +1,10 @@
+import "./desktop.js";
+import "./app.js";
+import "./campaign.js";
+import "./customize.js";
+import "./deep-link.js";
+import "./dialog.js";
+import "./setting.js";
+import "./shell.js";
+import "./updater.js";
+import "./workshop.js";

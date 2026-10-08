@@ -1,4 +1,4 @@
-import { exposeApis, invoke } from "./common.js";
+import { exposeApis, invoke } from "../ipc-common.js";
 
 export const apiDialogShowOpenDialogSync = (options: unknown) =>
   invoke("dialog:show-open-dialog-sync", options);

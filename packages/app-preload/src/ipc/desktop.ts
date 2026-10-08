@@ -1,51 +1,10 @@
 import { contextBridge, ipcRenderer } from "electron";
-import {
-  AppError,
-  ERRORS,
-  isErrorDto,
-  toErrorDto,
-  type IpcResult,
-} from "@scnexus/app-shared/errors/app.error";
+import { invokeTyped, subscribeTyped } from "../ipc-common.js";
 import type {
   DesktopApi,
   LogInput,
 } from "@scnexus/app-shared/types/desktop.type";
 
-export async function invokeTyped<T>(
-  channel: string,
-  ...args: unknown[]
-): Promise<IpcResult<T>> {
-  try {
-    const response = await ipcRenderer.invoke(channel, ...args);
-    if (response && response.ok === true && Object.hasOwn(response, "data"))
-      return response;
-    if (response && response.ok === false && isErrorDto(response.error))
-      return response;
-    return {
-      ok: false,
-      error: toErrorDto(new AppError(ERRORS.IPC_RESULT_INVALID)),
-    };
-  } catch {
-    const error = toErrorDto(new AppError(ERRORS.IPC_TRANSPORT_FAILED));
-    ipcRenderer.send(
-      "logging:write",
-      {
-        level: "error",
-        scope: "preload",
-        message: "IPC transport failed",
-        error,
-      },
-      "preload",
-    );
-    return { ok: false, error };
-  }
-}
-function subscribe<T>(channel: string, listener: (data: T) => void) {
-  const wrapped = (_event: Electron.IpcRendererEvent, data: T) =>
-    listener(data);
-  ipcRenderer.on(channel, wrapped);
-  return () => ipcRenderer.removeListener(channel, wrapped);
-}
 function contentApi(
   domain: "campaign" | "customize",
 ): import("@scnexus/app-shared/types/content-api.type").ContentApi {
@@ -88,7 +47,7 @@ const api: DesktopApi = {
     setMaximized: (value) => invokeTyped("window:set-maximized", value),
     close: () => invokeTyped("window:close"),
     ready: () => invokeTyped("window:ready"),
-    onStatus: (listener) => subscribe("window:status", listener),
+    onStatus: (listener) => subscribeTyped("window:status", listener),
   },
   setting: {
     getSnapshot: () => invokeTyped("setting:get-snapshot"),
@@ -96,7 +55,7 @@ const api: DesktopApi = {
     updateKey: (key, value) => invokeTyped("setting:update-key", key, value),
     update: (patch) => invokeTyped("setting:update", patch),
     replace: (data) => invokeTyped("setting:replace", data),
-    onChanged: (listener) => subscribe("setting:changed", listener),
+    onChanged: (listener) => subscribeTyped("setting:changed", listener),
   },
   logging: {
     getConfig: () => invokeTyped("logging:get-config"),
@@ -107,12 +66,12 @@ const api: DesktopApi = {
   telemetry: {
     getStatus: () => invokeTyped("telemetry:get-status"),
     setEnabled: (enabled) => invokeTyped("telemetry:set-enabled", enabled),
-    onStatus: (listener) => subscribe("telemetry:status", listener),
+    onStatus: (listener) => subscribeTyped("telemetry:status", listener),
   },
   deepLink: {
     onAuthentication: (listener) =>
-      subscribe("deeplink:authentication", listener),
-    onWorkshop: (listener) => subscribe("deeplink:workshop", listener),
+      subscribeTyped("deeplink:authentication", listener),
+    onWorkshop: (listener) => subscribeTyped("deeplink:workshop", listener),
   },
 };
 contextBridge.exposeInMainWorld("scnexus", api);

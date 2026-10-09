@@ -26,3 +26,5 @@ export const apiCampaignPrepareDeactivation = (id: string) =>
   request(() => desktop().campaign.prepareDeactivation(id));
 export const apiCampaignDeactivate = (id: string, decisions: RemovalDecision[]) =>
   request(() => desktop().campaign.deactivate(id, ipcSnapshot(decisions)));
+
+export const apiCampaignLaunch = () => request(() => desktop().campaign.launch());

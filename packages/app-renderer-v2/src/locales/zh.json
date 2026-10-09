@@ -81,5 +81,19 @@
   "campaign.removeConfirm": "请确认移除操作；CCM 模组不受此操作管理。",
   "campaign.cancel": "取消",
   "campaign.confirm": "确认执行",
-  "campaign.oneSource": "每次只能分析一个压缩包或文件夹。"
+  "campaign.oneSource": "每次只能分析一个压缩包或文件夹。",
+  "campaign.overview": "战役总览",
+  "campaign.detailMode": "详细管理",
+  "campaign.official": "官方战役",
+  "campaign.overviewHint": "选择已安装的战役包，管理当前战役体验。",
+  "campaign.manage": "选择 / 管理",
+  "campaign.packages": "个战役包",
+  "campaign.restore": "恢复",
+  "campaign.start": "开始游戏",
+  "campaign.version": "版本",
+  "campaign.author": "作者",
+  "campaign.uninstallActiveHint": "卸载前先确认恢复官方战役，成功后再确认移除战役库。",
+  "campaign.switch": "切换",
+  "campaign.dropClick": "点击选择，或拖入压缩包 / 文件夹安装",
+  "campaign.folder": "文件夹"
 }

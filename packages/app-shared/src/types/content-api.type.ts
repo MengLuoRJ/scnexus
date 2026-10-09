@@ -34,6 +34,7 @@ export interface ContentApi {
   ): Promise<IpcResult<unknown>>;
 }
 export interface CampaignApi extends ContentApi {
+  launch(): Promise<IpcResult<void>>;
   prepareActivation(localId: string): Promise<IpcResult<ActivationPreview>>;
   activate(
     activationId: string,

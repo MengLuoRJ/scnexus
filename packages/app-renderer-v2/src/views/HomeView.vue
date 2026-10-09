@@ -7,7 +7,7 @@ const { t } = useI18n();
 <template>
   <section class="flex min-h-[65vh] flex-col items-center justify-center text-center">
     <div class="mb-8 rounded-3xl bg-primary/10 p-7">
-      <img :src="logo" alt="SCNexus" class="size-24 object-contain" />
+      <img draggable="false" :src="logo" alt="SCNexus" class="size-24 object-contain" />
     </div>
     <UBadge label="SCNexus · 星际枢纽" variant="subtle" class="mb-4" />
     <h2 class="text-3xl font-bold tracking-tight">{{ t("ui.welcome") }}</h2>

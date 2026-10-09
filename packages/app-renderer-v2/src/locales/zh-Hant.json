@@ -81,5 +81,19 @@
   "campaign.removeConfirm": "請確認移除操作；CCM 模組不受此操作管理。",
   "campaign.cancel": "取消",
   "campaign.confirm": "確認執行",
-  "campaign.oneSource": "每次只能分析一個壓縮檔或資料夾。"
+  "campaign.oneSource": "每次只能分析一個壓縮檔或資料夾。",
+  "campaign.overview": "戰役總覽",
+  "campaign.detailMode": "詳細管理",
+  "campaign.official": "官方戰役",
+  "campaign.overviewHint": "選擇已安裝的戰役包，管理目前戰役體驗。",
+  "campaign.manage": "選擇 / 管理",
+  "campaign.packages": "個戰役包",
+  "campaign.restore": "還原",
+  "campaign.start": "開始遊戲",
+  "campaign.version": "版本",
+  "campaign.author": "作者",
+  "campaign.uninstallActiveHint": "先確認還原官方戰役，再確認移除戰役庫。",
+  "campaign.switch": "切換",
+  "campaign.dropClick": "點擊選擇，或拖入壓縮檔 / 資料夾安裝",
+  "campaign.folder": "資料夾"
 }

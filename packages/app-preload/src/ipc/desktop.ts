@@ -21,6 +21,7 @@ function contentApi(
 const api: DesktopApi = {
   customize: contentApi("customize"),
   campaign: {
+    launch: () => invoke("campaign:launch"),
     ...contentApi("campaign"),
     prepareActivation: (id) => invoke("campaign:prepare-activation", id),
     activate: (id, decisions) => invoke("campaign:activate", id, decisions),

@@ -21,7 +21,7 @@ const items = computed(() => [
     class="flex shrink-0 flex-col border-r border-default bg-elevated/50 transition-[width]"
   >
     <div class="flex h-16 items-center justify-center gap-2 border-b border-default px-2">
-      <img :src="logo" alt="SCNexus" class="size-8 shrink-0 object-contain" />
+      <img draggable="false" :src="logo" alt="SCNexus" class="size-8 shrink-0 object-contain" />
       <span v-if="!collapsed" class="truncate font-semibold">星际枢纽</span>
     </div>
     <UNavigationMenu
@@ -32,7 +32,7 @@ const items = computed(() => [
       :ui="{ link: collapsed ? 'justify-center' : '' }"
     >
       <template #item-leading="{ item }">
-        <img :src="item.image" alt="" class="size-8 shrink-0 object-contain" />
+        <img draggable="false" :src="item.image" alt="" class="size-8 shrink-0 object-contain" />
       </template>
     </UNavigationMenu>
     <div class="flex justify-center border-t border-default p-2">

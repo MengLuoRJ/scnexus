@@ -1,7 +1,9 @@
+import { runGameClient } from "../customize/client-launcher";
 import { ipcHandle } from "../../utils/ipc-util";
 import * as service from "./campaign";
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
 export function initCampaignIpc() {
+  ipcHandle("campaign:launch", runGameClient);
   ipcHandle("campaign:get-campaign-lists", () => ({
     CAMPAIGN_LIST_SET: Object.fromEntries(
       ["WOL", "HOTS", "LOTV", "NCO"].map((c) => [

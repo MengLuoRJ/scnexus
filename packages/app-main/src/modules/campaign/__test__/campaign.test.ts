@@ -2,7 +2,6 @@ import { test, expect, vi } from "vitest";
 const register = vi.hoisted(() => vi.fn());
 vi.mock("../../../utils/ipc-util", () => ({
   ipcHandle: register,
-  ipcHandle: register,
 }));
 vi.mock("../../content-package", () => ({
   contentService: {
@@ -22,6 +21,7 @@ test("campaign registers analysis, import, activation and removal as distinct IP
   initCampaignIpc();
   const names = register.mock.calls.map((call) => call[0]);
   for (const channel of [
+    "campaign:launch",
     "campaign:analyze",
     "campaign:install",
     "campaign:prepare-activation",

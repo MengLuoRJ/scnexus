@@ -81,5 +81,19 @@
   "campaign.removeConfirm": "Confirm removal. CCM Mods are not managed by this operation.",
   "campaign.cancel": "Cancel",
   "campaign.confirm": "Confirm",
-  "campaign.oneSource": "Analyze one archive or folder at a time."
+  "campaign.oneSource": "Analyze one archive or folder at a time.",
+  "campaign.overview": "Overview",
+  "campaign.detailMode": "Detailed management",
+  "campaign.official": "Official campaign",
+  "campaign.overviewHint": "Choose an installed package to manage your campaign experience.",
+  "campaign.manage": "Choose / manage",
+  "campaign.packages": "packages",
+  "campaign.restore": "Restore",
+  "campaign.start": "Start game",
+  "campaign.version": "Version",
+  "campaign.author": "Author",
+  "campaign.uninstallActiveHint": "Confirm deactivation first, then confirm library removal.",
+  "campaign.switch": "Switch",
+  "campaign.dropClick": "Click to choose, or drop an archive / folder to install",
+  "campaign.folder": "Folder"
 }

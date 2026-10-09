@@ -37,7 +37,7 @@ onMounted(async () => {
             )
           }}
         </h1>
-        <UBadge label="SCNexus" variant="subtle" color="neutral" class="ml-auto" />
+        <div id="page-actions" class="ml-auto flex items-center gap-1" />
       </header>
       <main class="min-h-0 flex-1 overflow-y-auto p-2">
         <div class="mx-auto max-w-4xl"><RouterView /></div>

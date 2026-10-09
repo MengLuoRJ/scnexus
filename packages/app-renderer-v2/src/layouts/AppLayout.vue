@@ -27,7 +27,15 @@ onMounted(async () => {
     <div class="flex min-w-0 flex-1 flex-col">
       <header class="flex h-16 shrink-0 items-center border-b border-default px-4">
         <h1 class="font-semibold">
-          {{ t(route.name === "settings" ? "ui.settings" : "ui.home") }}
+          {{
+            t(
+              route.name === "campaign"
+                ? "campaign.title"
+                : route.name === "settings"
+                  ? "ui.settings"
+                  : "ui.home",
+            )
+          }}
         </h1>
         <UBadge label="SCNexus" variant="subtle" color="neutral" class="ml-auto" />
       </header>

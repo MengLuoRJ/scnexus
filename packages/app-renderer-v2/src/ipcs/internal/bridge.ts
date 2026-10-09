@@ -1,5 +1,5 @@
 import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
-import { request, subscription } from "./ipc-common";
+import { request, subscription, ipcSnapshot } from "./ipc-common";
 
 type Channel =
   | "app:is-packaged"
@@ -41,7 +41,9 @@ function bridge(name: Channel | Event): (...args: unknown[]) => unknown {
 export const bridgeRequest = <T>(name: Channel, ...args: unknown[]) =>
   request<T>(
     async () =>
-      (await bridge(name)(...args)) as import("@scnexus/app-shared/errors/app.error").IpcResult<T>,
+      (await bridge(name)(
+        ...args.map((value) => ipcSnapshot(value)),
+      )) as import("@scnexus/app-shared/errors/app.error").IpcResult<T>,
   );
 export function bridgeSubscription<T>(name: Event, listener: (data: T) => void) {
   return subscription<T>((callback) => {

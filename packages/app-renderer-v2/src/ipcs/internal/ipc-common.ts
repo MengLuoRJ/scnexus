@@ -48,3 +48,9 @@ export function subscription<T>(
   if (getCurrentScope()) onScopeDispose(stop);
   return stop;
 }
+
+// Business DTOs contain JSON values; snapshot nested Vue proxies before contextBridge.
+export function ipcSnapshot<T>(value: T): T {
+  if (value === undefined) return value;
+  return JSON.parse(JSON.stringify(value)) as T;
+}

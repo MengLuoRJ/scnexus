@@ -19,7 +19,14 @@ export interface ContentApi {
   analyze(input: SourceInput): Promise<IpcResult<AnalysisResult>>;
   install(selection: InstallSelection): Promise<IpcResult<ContentRecord>>;
   list(): Promise<IpcResult<ContentStore>>;
-  scan(): Promise<IpcResult<unknown>>;
+  scan(): Promise<
+    IpcResult<{
+      records: ContentRecord[];
+      active: CampaignActiveStoreData["active"];
+      diagnostics: { path: string; message: string }[];
+      scannedAt: number;
+    }>
+  >;
   prepareUninstall(localId: string): Promise<IpcResult<RemovalPreview>>;
   uninstall(
     removalId: string,

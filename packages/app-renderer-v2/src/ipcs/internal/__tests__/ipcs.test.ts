@@ -95,3 +95,34 @@ test("bridge events discard the Electron event and retain typed error details", 
   stop();
   expect(dispose).toHaveBeenCalledOnce();
 });
+
+test("campaign reactive decisions are snapshotted before crossing contextBridge", async () => {
+  const { reactive, isProxy } = await import("vue");
+  const { apiCampaignInstall, apiCampaignActivate, apiCampaignUninstall, apiCampaignDeactivate } =
+    await import("../../index");
+  const received: unknown[] = [];
+  const capture = async (...args: unknown[]) => {
+    received.push(args);
+    return { ok: true, data: undefined };
+  };
+  vi.stubGlobal("window", {
+    scnexus: {
+      campaign: { install: capture, activate: capture, uninstall: capture, deactivate: capture },
+    },
+  });
+  const decisions = reactive([{ conflictId: "c", action: "keep" as const }]);
+  await apiCampaignInstall({ analysisId: "a", mode: "ccm", decisions });
+  await apiCampaignActivate("a", decisions);
+  await apiCampaignUninstall("r", decisions);
+  await apiCampaignDeactivate("r", decisions);
+  function assertPlain(value: unknown) {
+    expect(isProxy(value)).toBe(false);
+    if (value && typeof value === "object")
+      for (const child of Object.values(value)) assertPlain(child);
+  }
+  received.forEach(assertPlain);
+  expect(isProxy(decisions)).toBe(true);
+  expect(received[0]).toEqual([
+    { analysisId: "a", mode: "ccm", decisions: [{ conflictId: "c", action: "keep" }] },
+  ]);
+});

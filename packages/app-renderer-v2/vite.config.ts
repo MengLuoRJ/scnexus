@@ -50,6 +50,7 @@ export default defineConfig({
         clientBundle: {
           icons: [
             "tabler:home",
+            "tabler:map",
             "tabler:settings",
             "tabler:planet",
             "tabler:layout-sidebar-left-expand",

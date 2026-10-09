@@ -8,6 +8,7 @@ const { t } = useI18n();
 const collapsed = ref(false);
 const items = computed(() => [
   { label: t("ui.home"), icon: "i-tabler-home", to: "/", exact: true },
+  { label: t("campaign.title"), icon: "i-tabler-map", to: "/campaign" },
   { label: t("ui.settings"), icon: "i-tabler-settings", to: "/settings" },
 ]);
 </script>

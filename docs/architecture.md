@@ -287,3 +287,6 @@ Vue I18n 显式接入，src/locales 提供中文、英文、繁体中文扁平�
 
 
 侧栏独立于 src/layouts/components/AppSidebar.vue，自持展开状态与菜单；展开宽度 160px（约六个中文菜单字及图标留白），折叠宽度 64px。底部切换按钮仅图标，保留可访问名称；折叠导航通过 Nuxt UI link 插槽样式居中。侧栏和欢迎页使用 src/assets/logo.png，不使用示例 planet 图标作为品牌标识。
+
+
+renderer IPC 参数必须是普通可序列化 DTO：安装、激活、移除的冲突选择以及设置/日志对象在调用 contextBridge 前使用 ipcSnapshot 快照，避免 Vue 嵌套 Proxy 无法跨隔离上下文传输产生 P001。该快照仅用于 JSON 业务 DTO，不用于 File、函数或订阅回调。响应式数组跨边界回归测试已覆盖。

@@ -44,7 +44,13 @@
     "build:native": "node scripts/prepare-native.mjs && node-gyp rebuild",
     "build:ts": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/node-casclib && pnpm -w exec eslint packages/node-casclib",
+    "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/node-casclib",
+    "lint:eslint": "pnpm -w exec eslint packages/node-casclib",
+    "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/node-casclib --fix && pnpm -w exec eslint packages/node-casclib --fix",
+    "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/node-casclib",
+    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/node-casclib"
   },
   "dependencies": {
     "node-addon-api": "8.9.2"

@@ -296,3 +296,22 @@ renderer-v2 图标统一使用 Tabler。Vite 配置中的 ui.icons 覆盖 Nuxt U
 
 
 图标打包仅开启 clientBundle.scan，不维护手动业务列表。当前 Nuxt UI 插件会自动将 ui.icons 映射加入本地 bundle，因此默认映射也无需重复传入 clientBundle.icons。
+
+
+## 全仓库检查与格式化
+
+根目录集中维护 .oxfmtrc.json、.oxlintrc.json 与 eslint.config.js（ESM，无需 TypeScript 配置加载器）。工具依赖集中到根 devDependencies，各包不维护独立版本/配置。Oxfmt 使用单引号、无分号、LF；Oxlint 负责通用 correctness，ESLint 补充 TypeScript/Vue/Vitest 规则，并通过 eslint-plugin-oxlint 禁用重叠规则，eslint-config-prettier 禁用格式规则。
+
+环境按路径分层：main/preload/本地绑定包/scripts/构建配置启用 Node，renderer 源码启用浏览器，preload 源码兼具桥接环境，shared/standard 不默认启用 Node/浏览器。测试通用启用 Node；Vitest 推荐规则仅针对使用 Vitest 的包，不强制 node:test 原生绑定测试迁移。构建产物、vendor、缓存、自动生成声明和工具元数据排除。生成目录即使被 Git 跟踪也不检查。
+
+命令：
+- pnpm lint：只检查 Oxlint 与 ESLint，不修改代码（前一工具失败会停止串行命令，完整诊断可分别运行两项）。
+- pnpm lint:oxlint / pnpm lint:eslint：分别检查。
+- pnpm lint:fix：显式修复，两工具串行执行。
+- pnpm format：格式化全仓库，禁用嵌套配置。
+- pnpm format:check：只检查格式。
+- pnpm --filter <包名> lint / lint:fix / format / format:check：限定包目录，调用根工具/配置。
+
+删除 v1/v2 独立配置和重复工具依赖。根 pnpm-lock.yaml 不再被 gitignore 忽略，应随 manifest 变更一起维护（本轮不自动暂存/提交）。工具安装禁用生命周期脚本，未执行业务代码自动修复或全量格式化。
+
+本轮验证：根配置与根 manifest 的 Oxfmt 检查通过；根 ESLint/Oxlint 配置可加载，包级 preload lint 委托生效；main/preload/v2 类型检查通过，git diff --check 通过。全仓库只读检查发现存量：Oxlint 137 项错误，ESLint 106 项错误，格式 320 个文件不符合规范，均退出 1；这是尚待第二阶段处理的真实问题，不声明全仓库 lint 通过。典型问题包括未使用导入、any 类型、重复键、测试 mock 类型、历史 Vue 代码规范。没有通过放宽所有规则使检查假通过。

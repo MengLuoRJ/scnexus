@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "endOfLine": "lf",
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/dist-ssr/**",
+    "**/build/**",
+    "**/vendor/**",
+    "**/coverage/**",
+    "**/release/**",
+    "**/.cache/**",
+    "**/.nuxt-ui/**",
+    "**/stats.html",
+    "**/auto-imports.d.ts",
+    "**/components.d.ts",
+    "**/.electron-vendors.cache.json",
+    "pnpm-lock.yaml",
+    ".agents/**",
+    ".github/skills/**"
+  ]
+}

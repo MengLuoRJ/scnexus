@@ -44,7 +44,13 @@
     "build:native": "node scripts/prepare-native.mjs && node-gyp rebuild",
     "build:ts": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/node-stormlib && pnpm -w exec eslint packages/node-stormlib",
+    "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/node-stormlib",
+    "lint:eslint": "pnpm -w exec eslint packages/node-stormlib",
+    "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/node-stormlib --fix && pnpm -w exec eslint packages/node-stormlib --fix",
+    "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/node-stormlib",
+    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/node-stormlib"
   },
   "dependencies": {
     "node-addon-api": "8.9.2"

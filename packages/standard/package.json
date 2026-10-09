@@ -53,7 +53,13 @@
   "scripts": {
     "build": "tsup",
     "watch": "npm run build -- --watch src",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard && pnpm -w exec eslint packages/standard",
+    "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard",
+    "lint:eslint": "pnpm -w exec eslint packages/standard",
+    "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard --fix && pnpm -w exec eslint packages/standard --fix",
+    "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/standard",
+    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/standard"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

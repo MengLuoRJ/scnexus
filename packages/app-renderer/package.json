@@ -21,20 +21,12 @@
     "@unocss/transformer-directives": "^0.65.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
-    "@vitest/eslint-plugin": "1.1.14",
-    "@vue/eslint-config-prettier": "^10.1.0",
-    "@vue/eslint-config-typescript": "^14.1.4",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",
-    "eslint": "^9.16.0",
-    "eslint-plugin-oxlint": "^0.14.1",
-    "eslint-plugin-vue": "^9.32.0",
     "jsdom": "^25.0.1",
     "mitt": "^3.0.1",
     "naive-ui": "^2.40.3",
     "npm-run-all2": "^7.0.1",
-    "oxlint": "^0.14.1",
-    "prettier": "^3.4.2",
     "rollup-plugin-visualizer": "^5.12.0",
     "typescript": "^5.7.2",
     "unocss": "^0.65.1",
@@ -65,5 +57,13 @@
     "vue": "^3.5.13",
     "vue-i18n": "10.0.5",
     "vue-router": "^4.5.0"
+  },
+  "scripts": {
+    "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-renderer && pnpm -w exec eslint packages/app-renderer",
+    "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-renderer",
+    "lint:eslint": "pnpm -w exec eslint packages/app-renderer",
+    "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-renderer --fix && pnpm -w exec eslint packages/app-renderer --fix",
+    "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/app-renderer",
+    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-renderer"
   }
 }

@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "vue", "vitest"],
+  "categories": { "correctness": "error" },
+  "env": { "builtin": true, "browser": false, "node": false },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/dist-ssr/**",
+    "**/build/**",
+    "**/vendor/**",
+    "**/coverage/**",
+    "**/release/**",
+    "**/.cache/**",
+    "**/.nuxt-ui/**",
+    "**/auto-imports.d.ts",
+    "**/components.d.ts",
+    ".agents/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "packages/app-main/**",
+        "packages/app-preload/**",
+        "packages/node-casclib/**",
+        "packages/node-stormlib/**",
+        "scripts/**",
+        "**/*.config.*"
+      ],
+      "env": { "node": true }
+    },
+    {
+      "files": [
+        "packages/app-preload/src/**",
+        "packages/app-renderer/src/**",
+        "packages/app-renderer-v2/src/**"
+      ],
+      "env": { "browser": true }
+    },
+    {
+      "files": ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/__test__/**", "**/__tests__/**"],
+      "env": { "node": true, "vitest": true }
+    }
+  ]
+}

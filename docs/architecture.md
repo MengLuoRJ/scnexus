@@ -290,3 +290,9 @@ Vue I18n 显式接入，src/locales 提供中文、英文、繁体中文扁平�
 
 
 renderer IPC 参数必须是普通可序列化 DTO：安装、激活、移除的冲突选择以及设置/日志对象在调用 contextBridge 前使用 ipcSnapshot 快照，避免 Vue 嵌套 Proxy 无法跨隔离上下文传输产生 P001。该快照仅用于 JSON 业务 DTO，不用于 File、函数或订阅回调。响应式数组跨边界回归测试已覆盖。
+
+
+renderer-v2 图标统一使用 Tabler。Vite 配置中的 ui.icons 覆盖 Nuxt UI 全部默认图标角色；Vite clientBundle 扫描业务图标并打包本地已声明的 @iconify-json/tabler，不运行时拉取。src/icons.ts 在挂载前关闭 Iconify 网络 fetch 回退（未打包图标返回本地 404，不发网络请求）；File/品牌图片不属于字体图标。新增动态图标需在 clientBundle.icons 显式声明。Vue、Vue Router 与 Iconify 采用 dedupe，保证应用和组件库共享运行时。生产预览设置页验证 11 个 SVG 图标显示，远程请求为 0；默认图标存在性与禁用网络测试 2 项通过。
+
+
+图标打包仅开启 clientBundle.scan，不维护手动业务列表。当前 Nuxt UI 插件会自动将 ui.icons 映射加入本地 bundle，因此默认映射也无需重复传入 clientBundle.icons。

@@ -16,6 +16,7 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.3",
     "@scnexus/app-shared": "workspace:*",
     "@nuxt/ui": "^4.11.3",
     "@vueuse/core": "^15.0.0",

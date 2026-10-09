@@ -1,3 +1,4 @@
+import { disableIconRequests } from "./icons";
 import "./assets/main.css";
 
 import { createApp, type Plugin } from "vue";
@@ -9,6 +10,7 @@ import { i18n } from "./locales";
 import App from "./App.vue";
 import router from "./router";
 
+disableIconRequests();
 const app = createApp(App);
 
 app.use(createPinia());

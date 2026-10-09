@@ -2,14 +2,16 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import logo from "../../assets/logo.png";
+import campaignIcon from "../../assets/menu/Menu_GamePlay.png";
+import settingsIcon from "../../assets/menu/Menu_Setting.png";
 
 defineOptions({ name: "AppSidebar" });
 const { t } = useI18n();
 const collapsed = ref(false);
 const items = computed(() => [
-  { label: t("ui.home"), icon: "i-tabler-home", to: "/", exact: true },
-  { label: t("campaign.title"), icon: "i-tabler-map", to: "/campaign" },
-  { label: t("ui.settings"), icon: "i-tabler-settings", to: "/settings" },
+  { label: t("ui.home"), image: logo, to: "/", exact: true },
+  { label: t("campaign.title"), image: campaignIcon, to: "/campaign" },
+  { label: t("ui.settings"), image: settingsIcon, to: "/settings" },
 ]);
 </script>
 
@@ -27,8 +29,12 @@ const items = computed(() => [
       :collapsed="collapsed"
       orientation="vertical"
       class="flex-1 p-2"
-      :ui="{ link: collapsed ? 'justify-center' : '', linkLeadingIcon: 'shrink-0' }"
-    />
+      :ui="{ link: collapsed ? 'justify-center' : '' }"
+    >
+      <template #item-leading="{ item }">
+        <img :src="item.image" alt="" class="size-8 shrink-0 object-contain" />
+      </template>
+    </UNavigationMenu>
     <div class="flex justify-center border-t border-default p-2">
       <UButton
         :icon="

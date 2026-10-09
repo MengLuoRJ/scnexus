@@ -1,14 +1,14 @@
-import { test } from "vitest";
-import assert from "node:assert/strict";
-import { redact } from "../redact";
-test("logger redacts tokens, bearer authorization and authentication URLs", () => {
+import { test } from 'vitest'
+import assert from 'node:assert/strict'
+import { redact } from '../redact'
+test('logger redacts tokens, bearer authorization and authentication URLs', () => {
   for (const input of [
-    "authorization: Bearer secret-value",
-    "access_token=secret-value",
-    "refresh_token: secret-value",
-    "password=secret-value",
-    "scnexus://authentication?access_token=secret-value",
+    'authorization: Bearer secret-value',
+    'access_token=secret-value',
+    'refresh_token: secret-value',
+    'password=secret-value',
+    'scnexus://authentication?access_token=secret-value',
   ]) {
-    assert.equal(redact(input).includes("secret-value"), false);
+    assert.equal(redact(input).includes('secret-value'), false)
   }
-});
+})

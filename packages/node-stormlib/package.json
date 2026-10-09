@@ -3,8 +3,17 @@
   "version": "0.0.21",
   "description": "Worker-backed Node-API bindings for StormLib",
   "license": "MIT",
+  "files": [
+    "dist",
+    "build/Release/*.node",
+    "src",
+    "test",
+    "tsconfig.json",
+    "binding.gyp",
+    "scripts",
+    "README.md"
+  ],
   "type": "module",
-  "gypfile": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -24,19 +33,6 @@
       "types": "./dist/compat/constants.d.ts",
       "import": "./dist/compat/constants.js"
     }
-  },
-  "files": [
-    "dist",
-    "build/Release/*.node",
-    "src",
-    "test",
-    "tsconfig.json",
-    "binding.gyp",
-    "scripts",
-    "README.md"
-  ],
-  "engines": {
-    "node": ">=20"
   },
   "scripts": {
     "install": "node -e \"console.log('Native build skipped; run pnpm run build explicitly')\"",
@@ -59,5 +55,9 @@
     "@types/node": "22.10.2",
     "node-gyp": "13.1.0",
     "typescript": "5.7.2"
-  }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "gypfile": false
 }

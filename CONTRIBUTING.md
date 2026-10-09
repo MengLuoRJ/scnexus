@@ -30,4 +30,3 @@
 相关翻译文件位于项目 `/src/locales` 目录下，请选择对应的语言文件夹进行翻译并提交 Pull Request。
 
 - 对于新增翻译和内容更新，请对 `locales` 分支提交 Pull Request。
-

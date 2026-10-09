@@ -1,5 +1,5 @@
-import regedit from 'regedit';
+import regedit from 'regedit'
 
-regedit.setExternalVBSLocation('resources/regedit/vbs');
+regedit.setExternalVBSLocation('resources/regedit/vbs')
 
-export default regedit.promisified;
+export default regedit.promisified

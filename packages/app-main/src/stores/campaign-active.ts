@@ -1,25 +1,23 @@
-import type { Schema } from "electron-store";
+import type { Schema } from 'electron-store'
 import type {
   ActiveCampaign,
   CampaignActiveStoreData,
-} from "@scnexus/app-shared/types/content.type";
-import { createRepository, invalidData, isRecord } from "./store-repository";
-const string = (value: unknown) =>
-  typeof value === "string" && !value.includes("\0");
+} from '@scnexus/app-shared/types/content.type'
+import { createRepository, invalidData, isRecord } from './store-repository'
+const string = (value: unknown) => typeof value === 'string' && !value.includes('\0')
 function planned(value: unknown): boolean {
-  if (!isRecord(value)) return false;
+  if (!isRecord(value)) return false
   return (
     string(value.source) &&
     string(value.target) &&
-    ["map", "mod"].includes(value.type as string) &&
-    typeof value.official === "boolean" &&
-    typeof value.bytes === "number" &&
+    ['map', 'mod'].includes(value.type as string) &&
+    typeof value.official === 'boolean' &&
+    typeof value.bytes === 'number' &&
     Number.isFinite(value.bytes) &&
     value.bytes >= 0 &&
     (value.modifiedAt === null ||
-      (typeof value.modifiedAt === "number" &&
-        Number.isFinite(value.modifiedAt)))
-  );
+      (typeof value.modifiedAt === 'number' && Number.isFinite(value.modifiedAt)))
+  )
 }
 function installed(value: unknown): boolean {
   return (
@@ -27,24 +25,22 @@ function installed(value: unknown): boolean {
     isRecord(value) &&
     string(value.absolutePath) &&
     string(value.hash) &&
-    ["copied", "replaced", "kept"].includes(value.result as string)
-  );
+    ['copied', 'replaced', 'kept'].includes(value.result as string)
+  )
 }
-export function validateActive(
-  value: unknown,
-): asserts value is ActiveCampaign {
+export function validateActive(value: unknown): asserts value is ActiveCampaign {
   if (
     !isRecord(value) ||
     !string(value.localId) ||
-    !["WOL", "HOTS", "LOTV", "NCO"].includes(value.campaign as string) ||
-    !["ccm", "scnexus"].includes(value.mode as string) ||
+    !['WOL', 'HOTS', 'LOTV', 'NCO'].includes(value.campaign as string) ||
+    !['ccm', 'scnexus'].includes(value.mode as string) ||
     !string(value.descriptorPath) ||
     !string(value.gameRoot) ||
     !Array.isArray(value.installedFiles) ||
     !value.installedFiles.every(installed) ||
-    typeof value.activatedAt !== "number"
+    typeof value.activatedAt !== 'number'
   )
-    invalidData("Invalid active campaign");
+    invalidData('Invalid active campaign')
 }
 export function createActiveRepository() {
   return createRepository<CampaignActiveStoreData>({
@@ -57,54 +53,49 @@ export function createActiveRepository() {
     }),
     schema: {
       _schemaVersion: { const: 2 },
-      _revision: { type: "integer", minimum: 0 },
+      _revision: { type: 'integer', minimum: 0 },
       active: {
-        type: "object",
+        type: 'object',
         additionalProperties: false,
         properties: Object.fromEntries(
-          ["WOL", "HOTS", "LOTV", "NCO"].map((c) => [
+          ['WOL', 'HOTS', 'LOTV', 'NCO'].map((c) => [
             c,
             {
-              type: "object",
+              type: 'object',
               required: [
-                "localId",
-                "campaign",
-                "mode",
-                "descriptorPath",
-                "installedFiles",
-                "activatedAt",
-                "gameRoot",
+                'localId',
+                'campaign',
+                'mode',
+                'descriptorPath',
+                'installedFiles',
+                'activatedAt',
+                'gameRoot',
               ],
             },
           ]),
         ),
       },
-      legacyRecords: { type: "array", items: { type: "object" } },
-      scannedAt: { type: ["number", "null"] },
+      legacyRecords: { type: 'array', items: { type: 'object' } },
+      scannedAt: { type: ['number', 'null'] },
     } as Schema<CampaignActiveStoreData>,
     validate(data) {
-      if (!isRecord(data) || !isRecord(data.active))
-        invalidData("Invalid active store");
+      if (!isRecord(data) || !isRecord(data.active)) invalidData('Invalid active store')
       for (const [campaign, value] of Object.entries(data.active)) {
-        validateActive(value);
-        if (value.campaign !== campaign)
-          invalidData("Active campaign slot mismatch");
+        validateActive(value)
+        if (value.campaign !== campaign) invalidData('Active campaign slot mismatch')
       }
     },
     migrate(data, defaults) {
-      if (!isRecord(data)) invalidData("Invalid old active index");
+      if (!isRecord(data)) invalidData('Invalid old active index')
       return {
         ...defaults,
         legacyRecords: isRecord(data.CAMPAIGN_SET)
-          ? (Object.values(data.CAMPAIGN_SET).filter(Boolean) as Record<
-              string,
-              unknown
-            >[])
+          ? (Object.values(data.CAMPAIGN_SET).filter(Boolean) as Record<string, unknown>[])
           : [],
-      };
+      }
     },
-  });
+  })
 }
 
-export const campaignActiveRepository = createActiveRepository();
-export const getCampaignActiveStore = campaignActiveRepository.getSnapshot;
+export const campaignActiveRepository = createActiveRepository()
+export const getCampaignActiveStore = campaignActiveRepository.getSnapshot

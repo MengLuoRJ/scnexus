@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted } from 'vue'
 
-const props = defineProps<{ snid: string }>();
+const props = defineProps<{ snid: string }>()
 
 onMounted(() => {
-  console.log(props.snid);
-});
+  console.log(props.snid)
+})
 </script>
 <template>
   <div class="page-workshop-item">

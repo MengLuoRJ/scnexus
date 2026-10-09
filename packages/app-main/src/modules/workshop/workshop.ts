@@ -1,2 +1,2 @@
-export * from "./workshop-service";
-export * from "./workshop-util";
+export * from './workshop-service'
+export * from './workshop-util'

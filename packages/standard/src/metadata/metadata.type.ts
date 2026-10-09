@@ -1,43 +1,43 @@
-export type MetadataType = "Campaign" | "Customize" | string;
+export type MetadataType = 'Campaign' | 'Customize' | string
 
-export type CampaignType = "WOL" | "HOTS" | "LOTV" | "NCO";
+export type CampaignType = 'WOL' | 'HOTS' | 'LOTV' | 'NCO'
 
 export type Metadata = {
-  snid?: number;
-  name: string;
-  description: string;
-  tags?: string[];
-  version: string;
-  author: string;
+  snid?: number
+  name: string
+  description: string
+  tags?: string[]
+  version: string
+  author: string
   localization?: {
     /**
      * The locale name, should be one of the supported locales.
      * @example `zn-CN`
      */
-    locale: string;
+    locale: string
     /**
      * The name of the Customize in this locale.
      * @example `Wings of Liberty`
      */
-    name?: string;
+    name?: string
     /**
      * The description of the Customize in this locale.
      */
-    description?: string;
+    description?: string
     /**
      * The name of the author in this locale
      */
-    author?: string;
+    author?: string
     /**
      * The semver version of the Customize in this locale.
      * @example `0.0.1`
      */
-    version?: string;
+    version?: string
     /**
      * The translaors of this localization.
      */
-    translators?: string[];
-  }[];
+    translators?: string[]
+  }[]
   /**
    * Type of the metadata.
    *
@@ -48,13 +48,13 @@ export type Metadata = {
    *
    * @value `Campaign` | `Customize`
    */
-  type: MetadataType;
+  type: MetadataType
   /**
    * The campaign type of the Customize if the type is `Campaign`.
    * @value `WOL` | `HOTS` | `LOTV` | `NCO`
    * @default undefined
    */
-  campaign?: CampaignType;
+  campaign?: CampaignType
   /**
    * Relative path to the Maps folder from the map file.
    * Not used as default when the map files are in the root of the Maps folder.
@@ -64,7 +64,7 @@ export type Metadata = {
    * Default set to `undefined` which means `<GameRoot>/Maps/*`
    * @default undefined
    */
-  maps_directory?: string;
+  maps_directory?: string
   /**
    * Informations about *.SC2Map files.
    *
@@ -75,21 +75,21 @@ export type Metadata = {
      * Name of the map file, should with `.SC2Map` extension.
      * @example `Level1.SC2Map`
      */
-    name: string;
-    description?: string;
-    version?: string;
+    name: string
+    description?: string
+    version?: string
     /**
      * If the file is saved as Components files
      * @default undefined
      */
-    components?: boolean;
+    components?: boolean
     /**
      * Relative path to the `maps_directory` from the map file.
      * Not used as default when the map files are in the `maps_directory` folder.
      * @default undefined
      */
-    relative_path?: string;
-  }[];
+    relative_path?: string
+  }[]
   /**
    * Relative path to the Mods folder from the mod file.
    * Not used as default when the mod files are in the root of the Mods folder.
@@ -99,27 +99,27 @@ export type Metadata = {
    * Default set to `undefined` which means `<GameRoot>/Mods/*`
    * @default undefined
    */
-  mods_directory?: string;
+  mods_directory?: string
   /**
    * Informations about *.SC2Mod files.
    *
    * **File Path:** `<GameRoot>/Mods/<mods_directory>/<mods.relative_path>/<mods.name>`
    */
   mods?: {
-    name: string;
-    description?: string;
-    version?: string;
+    name: string
+    description?: string
+    version?: string
     /**
      * If the file is saved as Components files
      * @default undefined
      */
-    components?: boolean;
+    components?: boolean
     /**
      * Relative path to the `mods_directory` folder from the mod file.
      * Not used as default when the mod files are in the `mods_directory` folder.
      * @default undefined
      */
-    relative_path?: string;
+    relative_path?: string
     /**
      * **[Experimental Functional]** This would be replaced with other function
      *
@@ -132,8 +132,8 @@ export type Metadata = {
      *
      * @default false
      */
-    upstream?: boolean;
-  }[];
+    upstream?: boolean
+  }[]
   /**
    * Declear the dependencis will that be used, these usually to include mods files that not been delivered within this package.
    *
@@ -142,11 +142,11 @@ export type Metadata = {
    * @experimental
    */
   dependencies?: {
-    snid?: number;
-    name: string;
-    description?: string;
-    version?: string;
-  }[];
+    snid?: number
+    name: string
+    description?: string
+    version?: string
+  }[]
   /**
    * The luancher map file which will be run when player play this customize.
    */
@@ -155,21 +155,21 @@ export type Metadata = {
      * Name of the map file, should with `.SC2Map` extension.
      * @example `Luancher.SC2Map`
      */
-    name: string;
-    description?: string;
-    version?: string;
+    name: string
+    description?: string
+    version?: string
     /**
      * If the file is saved as Components files
      * @default undefined
      */
-    components?: boolean;
+    components?: boolean
     /**
      * Relative path to the `maps_directory` from the map file.
      * Not used as default when the map files are in the `maps_directory` folder.
      * @default undefined
      */
-    relative_path?: string;
-  };
+    relative_path?: string
+  }
   /**
    * Declear the bank type that be used when `type` set to `"Campaign"`
    *
@@ -178,12 +178,12 @@ export type Metadata = {
    * `"custom"` means using customed bank that set by content creator,
    * which should be set in `banks` field with their names.
    */
-  bank_enable?: "offcial" | "custom";
+  bank_enable?: 'offcial' | 'custom'
   banks?: {
-    name: string;
-    description?: string;
-    version?: string;
-  }[];
+    name: string
+    description?: string
+    version?: string
+  }[]
   /**
    * Specify the manager of this Customize.
    *
@@ -198,7 +198,7 @@ export type Metadata = {
    * @value `SCNexus` | `CCM`
    * @default undefined
    */
-  manager?: "SCNexus" | "CCM";
+  manager?: 'SCNexus' | 'CCM'
   /**
    * The mode that how should the manager treat this package.
    *
@@ -216,26 +216,26 @@ export type Metadata = {
    *
    * @default `default`
    */
-  manager_mode?: "default" | "strict";
-};
+  manager_mode?: 'default' | 'strict'
+}
 
 export type MetadataRichinfo = {
-  website?: string;
+  website?: string
   social?: {
-    twitter?: string;
-    discord?: string;
-    youtube?: string;
-    weibo?: string;
-    bilibili?: string;
-    qq_group?: string;
-  };
+    twitter?: string
+    discord?: string
+    youtube?: string
+    weibo?: string
+    bilibili?: string
+    qq_group?: string
+  }
   sponsor?: {
-    paypal?: string;
-    patreon?: string;
-    buymeacoffee?: string;
-    afdian?: string;
-  };
-};
+    paypal?: string
+    patreon?: string
+    buymeacoffee?: string
+    afdian?: string
+  }
+}
 
 export type MetadataLocalinfo = {
   /**
@@ -248,28 +248,22 @@ export type MetadataLocalinfo = {
    * @example `C:/StarCraft II/SCNexusLibrary/Customize/<custmoze>/metadata.json`
    * @default undefined
    */
-  metadata_path?: string;
+  metadata_path?: string
   /**
    * Size of the files in bytes (Byte).
    */
-  files_size?: number;
-  files_count?: number;
-};
+  files_size?: number
+  files_count?: number
+}
 
-export type MetadataStandard = Metadata & MetadataRichinfo;
+export type MetadataStandard = Metadata & MetadataRichinfo
 
 export type MetadataInformated = MetadataStandard & {
-  localinfo: MetadataLocalinfo;
-};
+  localinfo: MetadataLocalinfo
+}
 
-export type MetadataInformatedList = MetadataInformated[];
+export type MetadataInformatedList = MetadataInformated[]
 
-export type MetadataInformatedCampaignSet = Record<
-  CampaignType,
-  MetadataInformated | undefined
->;
+export type MetadataInformatedCampaignSet = Record<CampaignType, MetadataInformated | undefined>
 
-export type MetadataInformatedCampaignListSet = Record<
-  CampaignType,
-  MetadataInformatedList
->;
+export type MetadataInformatedCampaignListSet = Record<CampaignType, MetadataInformatedList>

@@ -3,25 +3,25 @@ import {
   createWebHashHistory,
   createWebHistory,
   type RouteRecordRaw,
-} from "vue-router";
-import type { App } from "vue";
+} from 'vue-router'
+import type { App } from 'vue'
 
-const routes = import.meta.glob("./routes/*.ts", {
+const routes = import.meta.glob('./routes/*.ts', {
   eager: true,
-  import: "default",
-});
+  import: 'default',
+})
 
-const routeList: RouteRecordRaw[] = [];
+const routeList: RouteRecordRaw[] = []
 
 Object.keys(routes).forEach((key) => {
-  const route = routes[key] || {};
-  const routeArray = Array.isArray(route) ? [...route] : [route];
-  routeList.push(...routeArray);
-});
+  const route = routes[key] || {}
+  const routeArray = Array.isArray(route) ? [...route] : [route]
+  routeList.push(...routeArray)
+})
 
 routeList.sort((a, b) => {
-  return ((a.meta?.order as number) || 0) - ((b.meta?.order as number) || 0);
-});
+  return ((a.meta?.order as number) || 0) - ((b.meta?.order as number) || 0)
+})
 
 const router = createRouter({
   // history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,11 +29,11 @@ const router = createRouter({
   routes: routeList,
   strict: true,
   scrollBehavior: () => ({ left: 0, top: 0 }),
-});
+})
 
 export function setupRouter(app: App) {
-  app.use(router);
+  app.use(router)
   // createRouterGuards(router);
 }
 
-export default router;
+export default router

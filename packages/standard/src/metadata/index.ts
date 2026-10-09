@@ -1,1 +1,1 @@
-export * from "./metadata.type";
+export * from './metadata.type'

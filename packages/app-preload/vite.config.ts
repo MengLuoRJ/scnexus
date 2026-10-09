@@ -1,10 +1,10 @@
-import { join } from "node:path";
-import { UserConfig } from "vite";
+import { join } from 'node:path'
+import { UserConfig } from 'vite'
 
-import electronVendorsCache from "../app-main/.electron-vendors.cache.json" with { type: "json" };
+import electronVendorsCache from '../app-main/.electron-vendors.cache.json' with { type: 'json' }
 
-const PACKAGE_ROOT = import.meta.dirname;
-const PROJECT_ROOT = join(PACKAGE_ROOT, "../..");
+const PACKAGE_ROOT = import.meta.dirname
+const PROJECT_ROOT = join(PACKAGE_ROOT, '../..')
 
 /**
  * @type {import('vite').UserConfig}
@@ -16,31 +16,31 @@ const config: UserConfig = {
   envDir: PROJECT_ROOT,
   resolve: {
     alias: {
-      "@/": join(PACKAGE_ROOT, "src") + "/",
+      '@/': join(PACKAGE_ROOT, 'src') + '/',
     },
   },
   build: {
     ssr: true,
-    sourcemap: "inline",
+    sourcemap: 'inline',
     target: `chrome${electronVendorsCache.chrome}`,
-    outDir: "dist",
-    assetsDir: ".",
-    minify: process.env.MODE !== "development",
+    outDir: 'dist',
+    assetsDir: '.',
+    minify: process.env.MODE !== 'development',
     lib: {
-      entry: "src/index.ts",
-      formats: ["es"],
+      entry: 'src/index.ts',
+      formats: ['es'],
     },
     rollupOptions: {
-      external: ["electron"],
+      external: ['electron'],
       output: {
         // ESM preload scripts must have the .mjs extension
         // https://www.electronjs.org/docs/latest/tutorial/esm#esm-preload-scripts-must-have-the-mjs-extension
-        entryFileNames: "[name].mjs",
+        entryFileNames: '[name].mjs',
       },
     },
     emptyOutDir: true,
     reportCompressedSize: false,
   },
-};
+}
 
-export default config;
+export default config

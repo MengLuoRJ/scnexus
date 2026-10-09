@@ -1,20 +1,20 @@
-import { expect, test, vi } from "vitest";
+import { expect, test, vi } from 'vitest'
 
-const register = vi.hoisted(() => vi.fn());
-vi.mock("../../../utils/ipc-util", () => ({ ipcHandle: register }));
-vi.mock("../scii-game-setting", () => ({
+const register = vi.hoisted(() => vi.fn())
+vi.mock('../../../utils/ipc-util', () => ({ ipcHandle: register }))
+vi.mock('../scii-game-setting', () => ({
   reinitializeGame: vi.fn(),
   getGameSnapshot: vi.fn(),
-}));
+}))
 
-import { initGameSettingIpc } from "../scii-game-setting.ipc";
+import { initGameSettingIpc } from '../scii-game-setting.ipc'
 
-test("registers only the current game-setting contract", () => {
-  initGameSettingIpc();
+test('registers only the current game-setting contract', () => {
+  initGameSettingIpc()
   expect(register.mock.calls.map(([channel]) => channel)).toEqual([
-    "scii-game-setting:get",
-    "scii-game-setting:configure",
-    "scii-game-setting:initialize",
-    "scii-game-setting:refresh",
-  ]);
-});
+    'scii-game-setting:get',
+    'scii-game-setting:configure',
+    'scii-game-setting:initialize',
+    'scii-game-setting:refresh',
+  ])
+})

@@ -48,25 +48,25 @@ Build and package separately for each operating system and CPU architecture.
 ## Usage
 
 ```typescript
-import { Archive, Compression } from "@scnexus/node-stormlib";
+import { Archive, Compression } from '@scnexus/node-stormlib'
 
-const archive = await Archive.open("example.SC2Map", { writable: true });
+const archive = await Archive.open('example.SC2Map', { writable: true })
 try {
-  const count = await archive.fileCount;
-  const entries = await archive.list();
-  const tree = await archive.listTree();
-  const script = await archive.readFile("MapScript.galaxy");
-  await archive.add(Buffer.from("text"), {
-    archivePath: "example.txt",
+  const count = await archive.fileCount
+  const entries = await archive.list()
+  const tree = await archive.listTree()
+  const script = await archive.readFile('MapScript.galaxy')
+  await archive.add(Buffer.from('text'), {
+    archivePath: 'example.txt',
     compression: Compression.ZLIB,
     encrypt: true,
-  });
-  await archive.rename("example.txt", "renamed.txt");
-  await archive.extract("renamed.txt", "output/renamed.txt");
-  await archive.delete("renamed.txt");
-  await archive.save();
+  })
+  await archive.rename('example.txt', 'renamed.txt')
+  await archive.extract('renamed.txt', 'output/renamed.txt')
+  await archive.delete('renamed.txt')
+  await archive.save()
 } finally {
-  await archive.close();
+  await archive.close()
 }
 ```
 
@@ -110,20 +110,20 @@ retain the exact `SFile...` names. Constants are also available from
 `@scnexus/node-stormlib/constants`.
 
 ```typescript
-import { Archive, MPQ_OPEN_READ_ONLY } from "@scnexus/node-stormlib/compat";
+import { Archive, MPQ_OPEN_READ_ONLY } from '@scnexus/node-stormlib/compat'
 
-const archive = await Archive.openAsync("example.SC2Map", {
+const archive = await Archive.openAsync('example.SC2Map', {
   flags: MPQ_OPEN_READ_ONLY,
-});
+})
 try {
-  const file = archive.openFile("MapScript.galaxy");
+  const file = archive.openFile('MapScript.galaxy')
   try {
-    const bytes = await file.readAllAsync();
+    const bytes = await file.readAllAsync()
   } finally {
-    file.close();
+    file.close()
   }
 } finally {
-  archive.close();
+  archive.close()
 }
 ```
 

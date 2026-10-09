@@ -1,20 +1,20 @@
 <script lang="ts" setup>
-import { useUserStore } from "@/stores/user";
+import { useUserStore } from '@/stores/user'
 
-import UserLoginPanel from "./components/UserLoginPanel.vue";
-import UserSafeguardPanel from "./components/UserSafeguardPanel.vue";
-import UserCreatorPanel from "./components/UserCreatorPanel.vue";
-import UserStarcraftProfilePanel from "./components/UserStarcraftProfilePanel.vue";
+import UserLoginPanel from './components/UserLoginPanel.vue'
+import UserSafeguardPanel from './components/UserSafeguardPanel.vue'
+import UserCreatorPanel from './components/UserCreatorPanel.vue'
+import UserStarcraftProfilePanel from './components/UserStarcraftProfilePanel.vue'
 
-const userStore = useUserStore();
+const userStore = useUserStore()
 </script>
 <template>
   <div class="user-page">
     <div class="flex flex-row justify-between items-center">
       <div class="header text-lg">
-        <span>{{ "欢迎您，" }}</span>
+        <span>{{ '欢迎您，' }}</span>
         <span v-if="userStore.logined">{{ userStore.username }}</span>
-        <span v-else>{{ "指挥官" }}</span>
+        <span v-else>{{ '指挥官' }}</span>
       </div>
     </div>
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
@@ -26,7 +26,7 @@ const userStore = useUserStore();
       <UserStarcraftProfilePanel />
       <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
       <n-button type="warning" @click="userStore.logoutUser">
-        {{ "退出登录" }}
+        {{ '退出登录' }}
       </n-button>
     </div>
     <UserLoginPanel v-else />

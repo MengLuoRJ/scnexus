@@ -1,61 +1,61 @@
-export type PackageType = "campaign" | "customize" | string;
+export type PackageType = 'campaign' | 'customize' | string
 
-export type PackageCampaignType = "WOL" | "HOTS" | "LOTV" | "NCO";
+export type PackageCampaignType = 'WOL' | 'HOTS' | 'LOTV' | 'NCO'
 
 export type PackageRichInfo = {
-  website?: string;
+  website?: string
   social?: {
-    twitter?: string;
-    discord?: string;
-    youtube?: string;
-    weibo?: string;
-    bilibili?: string;
-    qq_group?: string;
-  };
+    twitter?: string
+    discord?: string
+    youtube?: string
+    weibo?: string
+    bilibili?: string
+    qq_group?: string
+  }
   sponsor?: {
-    paypal?: string;
-    patreon?: string;
-    buymeacoffee?: string;
-    afdian?: string;
-  };
-};
+    paypal?: string
+    patreon?: string
+    buymeacoffee?: string
+    afdian?: string
+  }
+}
 
 export type Package = {
-  scnid?: number;
-  name: string;
-  description: string;
-  tags?: string[];
-  version: string;
-  author: string;
+  scnid?: number
+  name: string
+  description: string
+  tags?: string[]
+  version: string
+  author: string
   localization?: {
     /**
      * The locale name, should be one of the supported locales.
      * @example `zn-CN`
      */
-    locale: string;
+    locale: string
     /**
      * The name of the Customize in this locale.
      * @example `Wings of Liberty`
      */
-    name?: string;
+    name?: string
     /**
      * The description of the Customize in this locale.
      */
-    description?: string;
+    description?: string
     /**
      * The name of the author in this locale
      */
-    author?: string;
+    author?: string
     /**
      * The semver version of the Customize in this locale.
      * @example `0.0.1`
      */
-    version?: string;
+    version?: string
     /**
      * The translaors of this localization.
      */
-    translators?: string[];
-  }[];
+    translators?: string[]
+  }[]
   /**
    * Type of the metadata.
    *
@@ -66,13 +66,13 @@ export type Package = {
    *
    * @value `campaign` | `customize`
    */
-  type: PackageType;
+  type: PackageType
   /**
    * The campaign type of the Package if the type is `campaign`.
    * @value `WOL` | `HOTS` | `LOTV` | `NCO`
    * @default undefined
    */
-  campaign?: PackageCampaignType;
+  campaign?: PackageCampaignType
   /**
    * Informations about *.SC2Map files.
    */
@@ -81,25 +81,25 @@ export type Package = {
      * Name of the map file, should with `.SC2Map` extension.
      * @example `Level1.SC2Map`
      */
-    name: string;
-    description?: string;
-    version?: string;
+    name: string
+    description?: string
+    version?: string
     /**
      * Source path to the map file in the compress file or develop directory.
      * @example '/Mods/Level1.SC2Map'
      */
-    source_path: string;
+    source_path: string
     /**
      * Taget path for the map file after decompress or install
      * @example '/Mods/Level1.SC2Map'
      */
-    target_path?: string;
+    target_path?: string
     /**
      * If the file is saved as Components files
      * @default undefined
      */
-    components?: boolean;
-  }[];
+    components?: boolean
+  }[]
   /**
    * Informations about *.SC2Mod files.
    */
@@ -108,25 +108,25 @@ export type Package = {
      * Name of the mod file, should with `.SC2Mod` extension.
      * @example `CoreFeatures.SC2Mod`
      */
-    name: string;
-    description?: string;
-    version?: string;
+    name: string
+    description?: string
+    version?: string
     /**
      * Source path to the mod file in the compress file or develop directory.
      * @example '/Mods/CoreFeatures.SC2Mod'
      */
-    source_path: string;
+    source_path: string
     /**
      * Taget path for the mod file after decompress or install
      * @example '/Mods/CoreFeatures.SC2Mod'
      */
-    target_path?: string;
+    target_path?: string
     /**
      * If the file is saved as Components files
      * @default undefined
      */
-    components?: boolean;
-  }[];
+    components?: boolean
+  }[]
   /**
    * Declear the dependencis will that be used, these usually to include mods files that not been delivered within this package.
    *
@@ -135,9 +135,9 @@ export type Package = {
    * @experimental
    */
   dependencies?: {
-    scnid?: number;
-    version?: string;
-  }[];
+    scnid?: number
+    version?: string
+  }[]
   /**
    * The luancher map file which will be run when player play this customize.
    */
@@ -146,9 +146,9 @@ export type Package = {
      * Name of the map file, should with `.SC2Map` extension, and match one of the `maps`.
      * @example `Luancher.SC2Map`
      */
-    name: string;
-    description?: string;
-  };
+    name: string
+    description?: string
+  }
   /**
    * Declear the bank type that be used when `type` set to `"Campaign"`
    *
@@ -157,14 +157,14 @@ export type Package = {
    * `"custom"` means using customed bank that set by content creator,
    * which should be set in `banks` field with their names.
    */
-  bank_enable?: "offcial" | "custom";
+  bank_enable?: 'offcial' | 'custom'
   banks?: {
-    name: string;
-    description?: string;
-  }[];
+    name: string
+    description?: string
+  }[]
   /**
    * Author-recommended installation mode. The player may choose another available mode.
    * No recommendation is supplied when this field is absent.
    */
-  manager?: "SCNexus" | "CCM";
-} & PackageRichInfo;
+  manager?: 'SCNexus' | 'CCM'
+} & PackageRichInfo

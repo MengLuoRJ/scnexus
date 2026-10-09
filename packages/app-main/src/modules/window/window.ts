@@ -1,80 +1,79 @@
-import { app, BrowserWindow } from "electron";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { AppError, ERRORS } from "@scnexus/app-shared/errors/app.error";
-import type { WindowStatus } from "@scnexus/app-shared/types/desktop.type";
-import { reportError } from "../logging/logging";
-import { openExternalWebsite } from "../shell";
+import { app, BrowserWindow } from 'electron'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+import type { WindowStatus } from '@scnexus/app-shared/types/desktop.type'
+import { reportError } from '../logging/logging'
+import { openExternalWebsite } from '../shell'
 
-let mainWindow: BrowserWindow | null = null;
-let creation: Promise<BrowserWindow> | undefined;
-let state: WindowStatus["state"] = "absent";
-let readyRequested = false;
-const queue: { channel: string; args: unknown[] }[] = [];
-const readyListeners = new Set<() => void>();
+let mainWindow: BrowserWindow | null = null
+let creation: Promise<BrowserWindow> | undefined
+let state: WindowStatus['state'] = 'absent'
+let readyRequested = false
+const queue: { channel: string; args: unknown[] }[] = []
+const readyListeners = new Set<() => void>()
 
 export function getMainWindow() {
-  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null
 }
 export function getWindowStatus(): WindowStatus {
-  const window = getMainWindow();
+  const window = getMainWindow()
   return {
     state,
     minimized: window?.isMinimized() ?? false,
     maximized: window?.isMaximized() ?? false,
-  };
+  }
 }
 function publishStatus() {
-  getMainWindow()?.webContents.send("window:status", getWindowStatus());
+  getMainWindow()?.webContents.send('window:status', getWindowStatus())
 }
 export function onWindowReady(listener: () => void) {
-  readyListeners.add(listener);
-  return () => readyListeners.delete(listener);
+  readyListeners.add(listener)
+  return () => readyListeners.delete(listener)
 }
 export function markWindowReady() {
-  const window = getMainWindow();
-  if (!window) throw new AppError(ERRORS.WINDOW_NOT_READY);
+  const window = getMainWindow()
+  if (!window) throw new AppError(ERRORS.WINDOW_NOT_READY)
   if (window.webContents.isLoadingMainFrame()) {
-    readyRequested = true;
-    return getWindowStatus();
+    readyRequested = true
+    return getWindowStatus()
   }
-  if (state === "ready") return getWindowStatus();
-  readyRequested = false;
-  state = "ready";
-  for (const item of queue.splice(0))
-    window.webContents.send(item.channel, ...item.args);
-  for (const listener of readyListeners) listener();
-  publishStatus();
-  return getWindowStatus();
+  if (state === 'ready') return getWindowStatus()
+  readyRequested = false
+  state = 'ready'
+  for (const item of queue.splice(0)) window.webContents.send(item.channel, ...item.args)
+  for (const listener of readyListeners) listener()
+  publishStatus()
+  return getWindowStatus()
 }
 export function sendWhenReady(channel: string, ...args: unknown[]) {
-  const window = getMainWindow();
-  if (state === "ready" && window) {
-    window.webContents.send(channel, ...args);
-    return;
+  const window = getMainWindow()
+  if (state === 'ready' && window) {
+    window.webContents.send(channel, ...args)
+    return
   }
-  if (!channel.startsWith("deeplink:")) {
-    const previous = queue.findIndex((item) => item.channel === channel);
+  if (!channel.startsWith('deeplink:')) {
+    const previous = queue.findIndex((item) => item.channel === channel)
     if (previous >= 0) {
-      queue[previous] = { channel, args };
-      return;
+      queue[previous] = { channel, args }
+      return
     }
   }
-  if (queue.length >= 32) throw new AppError(ERRORS.DEEP_LINK_QUEUE_FULL);
-  queue.push({ channel, args });
+  if (queue.length >= 32) throw new AppError(ERRORS.DEEP_LINK_QUEUE_FULL)
+  queue.push({ channel, args })
 }
 export function destroyMainWindow() {
-  getMainWindow()?.destroy();
-  mainWindow = null;
-  readyRequested = false;
-  state = "absent";
+  getMainWindow()?.destroy()
+  mainWindow = null
+  readyRequested = false
+  state = 'absent'
 }
 
 async function createMainWindow(): Promise<BrowserWindow> {
-  let window: BrowserWindow;
+  let window: BrowserWindow
   try {
     window = new BrowserWindow({
-      title: "SCNexus Client",
+      title: 'SCNexus Client',
       show: false,
       width: 800,
       height: 600,
@@ -82,127 +81,109 @@ async function createMainWindow(): Promise<BrowserWindow> {
       minHeight: 600,
       autoHideMenuBar: true,
       webPreferences: {
-        preload: join(
-          app.getAppPath(),
-          "packages",
-          "app-preload",
-          "dist",
-          "index.mjs",
-        ),
+        preload: join(app.getAppPath(), 'packages', 'app-preload', 'dist', 'index.mjs'),
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: false,
       },
-    });
+    })
   } catch (cause) {
-    state = "failed";
-    throw new AppError(ERRORS.WINDOW_CREATE_FAILED, {}, { cause });
+    state = 'failed'
+    throw new AppError(ERRORS.WINDOW_CREATE_FAILED, {}, { cause })
   }
-  mainWindow = window;
-  state = "loading";
-  readyRequested = false;
-  window.once("closed", () => {
+  mainWindow = window
+  state = 'loading'
+  readyRequested = false
+  window.once('closed', () => {
     if (mainWindow === window) {
-      mainWindow = null;
-      readyRequested = false;
-      state = "absent";
+      mainWindow = null
+      readyRequested = false
+      state = 'absent'
     }
-  });
-  window.once("ready-to-show", () => {
+  })
+  window.once('ready-to-show', () => {
     if (!window.isDestroyed()) {
-      window.show();
-      if (import.meta.env.DEV) window.webContents.openDevTools();
+      window.show()
+      if (import.meta.env.DEV) window.webContents.openDevTools()
     }
-  });
-  window.on("minimize", publishStatus);
-  window.on("restore", publishStatus);
-  window.on("maximize", publishStatus);
-  window.on("unmaximize", publishStatus);
-  window.webContents.on(
-    "did-start-navigation",
-    (_event, _url, _inPlace, isMainFrame) => {
-      if (isMainFrame) {
-        readyRequested = false;
-        state = "loading";
-      }
-    },
-  );
-  window.webContents.on("did-finish-load", () => {
-    if (mainWindow === window && readyRequested) markWindowReady();
-  });
-  window.webContents.on("render-process-gone", () => {
-    readyRequested = false;
-    state = "failed";
-    reportError(new AppError(ERRORS.WINDOW_RENDERER_FAILED), "window");
-  });
-  const file = join(
-    app.getAppPath(),
-    "packages",
-    "app-renderer-v2",
-    "dist",
-    "index.html",
-  );
+  })
+  window.on('minimize', publishStatus)
+  window.on('restore', publishStatus)
+  window.on('maximize', publishStatus)
+  window.on('unmaximize', publishStatus)
+  window.webContents.on('did-start-navigation', (_event, _url, _inPlace, isMainFrame) => {
+    if (isMainFrame) {
+      readyRequested = false
+      state = 'loading'
+    }
+  })
+  window.webContents.on('did-finish-load', () => {
+    if (mainWindow === window && readyRequested) markWindowReady()
+  })
+  window.webContents.on('render-process-gone', () => {
+    readyRequested = false
+    state = 'failed'
+    reportError(new AppError(ERRORS.WINDOW_RENDERER_FAILED), 'window')
+  })
+  const file = join(app.getAppPath(), 'packages', 'app-renderer-v2', 'dist', 'index.html')
   const target =
     import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL
       ? import.meta.env.VITE_DEV_SERVER_URL
-      : pathToFileURL(file).href;
-  window.webContents.on("will-navigate", (event, url) => {
-    if (url.split("#")[0] !== target.split("#")[0]) event.preventDefault();
-  });
+      : pathToFileURL(file).href
+  window.webContents.on('will-navigate', (event, url) => {
+    if (url.split('#')[0] !== target.split('#')[0]) event.preventDefault()
+  })
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) {
-      void openExternalWebsite(url).catch((error) =>
-        reportError(error, "shell"),
-      );
+      void openExternalWebsite(url).catch((error) => reportError(error, 'shell'))
     }
-    return { action: "deny" };
-  });
+    return { action: 'deny' }
+  })
   try {
-    if (target.startsWith("file:")) await window.loadFile(file);
-    else await window.loadURL(target);
-    return window;
+    if (target.startsWith('file:')) await window.loadFile(file)
+    else await window.loadURL(target)
+    return window
   } catch (cause) {
-    window.destroy();
-    state = "failed";
+    window.destroy()
+    state = 'failed'
     throw new AppError(
       ERRORS.WINDOW_LOAD_FAILED,
       {
         message: `Failed to load ${target}: ${cause instanceof Error ? cause.message : String(cause)}`,
       },
       { cause },
-    );
+    )
   }
 }
 
 export async function restoreOrCreateWindow(): Promise<BrowserWindow> {
-  const current = getMainWindow();
+  const current = getMainWindow()
   if (!creation && !current) {
-    creation = createMainWindow();
+    creation = createMainWindow()
     try {
-      await creation;
+      await creation
     } finally {
-      creation = undefined;
+      creation = undefined
     }
-  } else if (creation) await creation;
-  const window = getMainWindow();
-  if (!window) throw new AppError(ERRORS.WINDOW_NOT_READY);
-  if (window.isMinimized()) window.restore();
-  window.show();
-  window.focus();
-  return window;
+  } else if (creation) await creation
+  const window = getMainWindow()
+  if (!window) throw new AppError(ERRORS.WINDOW_NOT_READY)
+  if (window.isMinimized()) window.restore()
+  window.show()
+  window.focus()
+  return window
 }
 
 export function minimizeMainWindow() {
-  getMainWindow()?.minimize();
-  return getWindowStatus();
+  getMainWindow()?.minimize()
+  return getWindowStatus()
 }
 export function setMainWindowMaximized(value: boolean) {
-  if (typeof value !== "boolean")
-    throw new AppError(ERRORS.IPC_INVALID_ARGUMENT);
-  if (value) getMainWindow()?.maximize();
-  else getMainWindow()?.unmaximize();
-  return getWindowStatus();
+  if (typeof value !== 'boolean') throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+  if (value) getMainWindow()?.maximize()
+  else getMainWindow()?.unmaximize()
+  return getWindowStatus()
 }
 export function closeMainWindow() {
-  getMainWindow()?.close();
+  getMainWindow()?.close()
 }

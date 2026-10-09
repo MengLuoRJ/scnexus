@@ -1,22 +1,22 @@
 <script lang="ts" setup>
-import { useRouter } from "vue-router";
-import { MenuList } from "../composables/useMenuData";
+import { useRouter } from 'vue-router'
+import { MenuList } from '../composables/useMenuData'
 
 const props = defineProps({
   collapsed: {
     type: Boolean,
     default: false,
   },
-});
+})
 
-const router = useRouter();
+const router = useRouter()
 
 function clickMenuItem(key: string) {
   if (/http(s)?:/.test(key)) {
     // window.open(key);
-    return;
+    return
   } else {
-    router.push({ name: key });
+    router.push({ name: key })
   }
 }
 </script>

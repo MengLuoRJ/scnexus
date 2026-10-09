@@ -94,23 +94,23 @@ Pinia 管理界面状态和主进程数据的界面投影；本地游戏配置�
 Pinia Store 示例：
 
 ```ts
-import { ref } from "vue";
-import { defineStore } from "pinia";
+import { ref } from 'vue'
+import { defineStore } from 'pinia'
 
-export const useAppStore = defineStore("app", () => {
-  const appReady = ref(false);
+export const useAppStore = defineStore('app', () => {
+  const appReady = ref(false)
   function setAppReady(ready: boolean) {
-    appReady.value = ready;
+    appReady.value = ready
   }
-  return { appReady, setAppReady };
-});
+  return { appReady, setAppReady }
+})
 ```
 
 使用时，可以通过调用对应的 `useXXXStore` 方法获取 store 实例，例如：
 
 ```ts
-const appStore = useAppStore();
-appStore.setAppReady(true);
+const appStore = useAppStore()
+appStore.setAppReady(true)
 ```
 
 本文的 `src` 路径均相对于所属包。使用 store 时显式导入；仅在当前包已配置相应自动导入时省略。

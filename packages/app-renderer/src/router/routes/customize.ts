@@ -1,22 +1,22 @@
-import { type RouteRecordRaw } from "vue-router";
+import { type RouteRecordRaw } from 'vue-router'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/customize",
+    path: '/customize',
     name: `customize_root`,
-    component: () => import("@/layouts/BasicLayout.vue"),
+    component: () => import('@/layouts/BasicLayout.vue'),
     children: [
       {
-        path: "",
-        name: "customize",
+        path: '',
+        name: 'customize',
         meta: {
-          title: "Customize",
+          title: 'Customize',
           public: true,
         },
-        component: () => import("@/views/Customize/CustomizeView.vue"),
+        component: () => import('@/views/Customize/CustomizeView.vue'),
       },
     ],
   },
-];
+]
 
-export default routes;
+export default routes

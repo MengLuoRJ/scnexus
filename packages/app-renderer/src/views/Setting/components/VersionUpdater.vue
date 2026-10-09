@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import {
-  checkUpdates,
-  downloadUpdates,
-  installUpdates,
-} from "@/composables/useUpdater";
-import { useUpdaterStore } from "@/stores/updater";
-import { storeToRefs } from "pinia";
+import { checkUpdates, downloadUpdates, installUpdates } from '@/composables/useUpdater'
+import { useUpdaterStore } from '@/stores/updater'
+import { storeToRefs } from 'pinia'
 
-const updaterStore = useUpdaterStore();
+const updaterStore = useUpdaterStore()
 
 const {
   CURRENT_VERSION,
@@ -17,7 +13,7 @@ const {
   UPDATE_DOWNLOADED,
   updateInfo,
   downloadProgress,
-} = storeToRefs(updaterStore);
+} = storeToRefs(updaterStore)
 </script>
 
 <template>
@@ -25,7 +21,7 @@ const {
     <n-form-item size="small" label-placement="left" :show-feedback="false">
       <template #label>
         <div class="flex flex-row justify-start items-center gap-1">
-          <div class="text-sm">{{ "星际枢纽版本" }}</div>
+          <div class="text-sm">{{ '星际枢纽版本' }}</div>
           <IconTooltip :tooltip="'星际枢纽版本'" />
         </div>
       </template>
@@ -42,7 +38,7 @@ const {
       @click="checkUpdates()"
       :loading="UPDATE_CHECKING"
     >
-      {{ "检查更新" }}
+      {{ '检查更新' }}
     </n-button>
     <n-button
       v-if="UPDATE_AVAILABLE && !UPDATE_DOWNLOADED"
@@ -51,27 +47,16 @@ const {
       @click="downloadUpdates()"
       :loading="UPDATE_DOWNLOADING"
     >
-      {{ "更新" }}
+      {{ '更新' }}
     </n-button>
-    <n-button
-      v-if="UPDATE_DOWNLOADED"
-      size="small"
-      type="primary"
-      @click="installUpdates()"
-    >
-      {{ "安装" }}
+    <n-button v-if="UPDATE_DOWNLOADED" size="small" type="primary" @click="installUpdates()">
+      {{ '安装' }}
     </n-button>
     <div class="flex flex-col gap-1">
-      <div
-        v-if="UPDATE_AVAILABLE && !UPDATE_DOWNLOADED"
-        class="ml-2 text-sm text-blue-500"
-      >
-        {{ "新版本可用：" + updateInfo?.version }}
+      <div v-if="UPDATE_AVAILABLE && !UPDATE_DOWNLOADED" class="ml-2 text-sm text-blue-500">
+        {{ '新版本可用：' + updateInfo?.version }}
       </div>
-      <div
-        v-if="UPDATE_AVAILABLE && UPDATE_DOWNLOADING"
-        class="ml-2 text-sm text-blue-500"
-      >
+      <div v-if="UPDATE_AVAILABLE && UPDATE_DOWNLOADING" class="ml-2 text-sm text-blue-500">
         {{
           `正在下载：${downloadProgress.percent.toFixed(2)}% (${(
             downloadProgress.bytesPerSecond / 1024

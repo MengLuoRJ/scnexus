@@ -1,22 +1,22 @@
-import { type RouteRecordRaw } from "vue-router";
+import { type RouteRecordRaw } from 'vue-router'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/pa",
+    path: '/pa',
     name: `pa_root`,
-    component: () => import("@/layouts/BasicLayout.vue"),
+    component: () => import('@/layouts/BasicLayout.vue'),
     children: [
       {
-        path: "",
-        name: "pa",
+        path: '',
+        name: 'pa',
         meta: {
-          title: "ProjectArcade",
+          title: 'ProjectArcade',
           public: true,
         },
-        component: () => import("@/views/ProjectArcade/ProjectArcadeView.vue"),
+        component: () => import('@/views/ProjectArcade/ProjectArcadeView.vue'),
       },
     ],
   },
-];
+]
 
-export default routes;
+export default routes

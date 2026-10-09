@@ -1,30 +1,30 @@
 <script lang="ts" setup>
-import { useGet } from "@/composables/useDataPA";
-import { get, set } from "@vueuse/core";
-import { reactive } from "vue";
-import { onMounted, ref } from "vue";
+import { useGet } from '@/composables/useDataPA'
+import { get, set } from '@vueuse/core'
+import { reactive } from 'vue'
+import { onMounted, ref } from 'vue'
 
 const serverRegions = reactive({
   US: {
-    key: "US",
-    name: "美服",
+    key: 'US',
+    name: '美服',
   },
   EU: {
-    key: "EU",
-    name: "欧服",
+    key: 'EU',
+    name: '欧服',
   },
   KR: {
-    key: "KR",
-    name: "亚服",
+    key: 'KR',
+    name: '亚服',
   },
   CN: {
-    key: "CN",
-    name: "国服",
+    key: 'CN',
+    name: '国服',
   },
-});
+})
 
 const lastDayData = ref({
-  date: "",
+  date: '',
   lobbiesHostedUS: 0,
   lobbiesHostedEU: 0,
   lobbiesHostedKR: 0,
@@ -33,33 +33,31 @@ const lastDayData = ref({
   participantsTotalEU: 0,
   participantsTotalKR: 0,
   participantsTotalCN: 0,
-});
+})
 
 async function getGameStat(
-  kind: "daily" | "weekly" | "monthly" = "daily",
-  single: boolean = false
+  kind: 'daily' | 'weekly' | 'monthly' = 'daily',
+  single: boolean = false,
 ) {
-  const { data, error } = await useGet(
-    "/game-stats/" + kind + (single ? "/single" : "")
-  );
+  const { data, error } = await useGet('/game-stats/' + kind + (single ? '/single' : ''))
   if (get(error)) {
-    console.log(error);
-    return null;
+    console.log(error)
+    return null
   }
   if (get(data)) {
-    return get(data).data;
+    return get(data).data
   }
 }
 
 onMounted(async () => {
-  set(lastDayData, await getGameStat("daily", true));
-});
+  set(lastDayData, await getGameStat('daily', true))
+})
 </script>
 
 <template>
   <div class="flex flex-row justify-center items-center gap-2">
     <div class="w-[150px] flex flex-col justify-center items-center">
-      <div class="text-gray">{{ "亚服" }}</div>
+      <div class="text-gray">{{ '亚服' }}</div>
       <div class="text-base">
         <n-number-animation
           ref="lobbiesHostedRef_Asia"
@@ -75,7 +73,7 @@ onMounted(async () => {
       </div>
     </div>
     <div class="w-[150px] flex flex-col justify-center items-center">
-      <div class="text-gray">{{ "美服" }}</div>
+      <div class="text-gray">{{ '美服' }}</div>
       <div class="text-base">
         <n-number-animation
           ref="lobbiesHostedRef_US"
@@ -93,7 +91,7 @@ onMounted(async () => {
   </div>
   <div class="mt-2 flex flex-row justify-center items-center gap-2">
     <div class="w-[150px] flex flex-col justify-center items-center">
-      <div class="text-gray">{{ "欧服" }}</div>
+      <div class="text-gray">{{ '欧服' }}</div>
       <div class="text-base">
         <n-number-animation
           ref="lobbiesHostedRef_EU"
@@ -109,7 +107,7 @@ onMounted(async () => {
       </div>
     </div>
     <div class="w-[150px] flex flex-col justify-center items-center">
-      <div class="text-gray">{{ "国服" }}</div>
+      <div class="text-gray">{{ '国服' }}</div>
       <div class="text-base">
         <n-number-animation
           ref="lobbiesHostedRef_CN"
@@ -125,8 +123,8 @@ onMounted(async () => {
       </div>
     </div>
   </div>
-  <div class="mt-2 text-gray">{{ "大厅总数 / 游玩人次" }}</div>
+  <div class="mt-2 text-gray">{{ '大厅总数 / 游玩人次' }}</div>
   <div class="text-gray">
-    {{ "最后更新时间：" + new Date(lastDayData.date).toLocaleString() }}
+    {{ '最后更新时间：' + new Date(lastDayData.date).toLocaleString() }}
   </div>
 </template>

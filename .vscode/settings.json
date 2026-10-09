@@ -20,5 +20,8 @@
   ],
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.localesPaths": ["./packages/**/src/locales"],
-  "i18n-ally.keystyle": "nested"
+  "i18n-ally.keystyle": "nested",
+  "[vue]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  }
 }

@@ -4,93 +4,89 @@ import {
   createDraft,
   filedDraft,
   uploadDraft,
-} from "@/views/Creator/composables/useWorkshopUploaderService";
-import { useUploadCustomizeStore } from "@/stores/upload-customize";
-import { get, set } from "@vueuse/core";
-import { StepsProps } from "naive-ui";
-import { storeToRefs } from "pinia";
-import { computed } from "vue";
-import { onMounted, ref } from "vue";
+} from '@/views/Creator/composables/useWorkshopUploaderService'
+import { useUploadCustomizeStore } from '@/stores/upload-customize'
+import { get, set } from '@vueuse/core'
+import { StepsProps } from 'naive-ui'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+import { onMounted, ref } from 'vue'
 
-const uploadCustomizeStore = useUploadCustomizeStore();
+const uploadCustomizeStore = useUploadCustomizeStore()
 
 const { uploader_step, uploader_type, upload_data, upload_progress } =
-  storeToRefs(uploadCustomizeStore);
+  storeToRefs(uploadCustomizeStore)
 
-const step_status = ref<StepsProps["status"]>("process");
+const step_status = ref<StepsProps['status']>('process')
 
 const process_step = ref<
-  | "pending"
-  | "customize-creating"
-  | "draft-creating"
-  | "draft-uploading"
-  | "draft-filing"
->("pending");
+  'pending' | 'customize-creating' | 'draft-creating' | 'draft-uploading' | 'draft-filing'
+>('pending')
 
 const step = computed((): number => {
   switch (get(process_step)) {
-    case "pending":
-      return 0;
-    case "customize-creating":
-      return 1;
-    case "draft-creating":
-      return 2;
-    case "draft-uploading":
-      return 3;
-    case "draft-filing":
-      return 4;
+    case 'pending':
+      return 0
+    case 'customize-creating':
+      return 1
+    case 'draft-creating':
+      return 2
+    case 'draft-uploading':
+      return 3
+    case 'draft-filing':
+      return 4
     default:
-      return 0;
+      return 0
   }
-});
+})
 
 async function initFilingProcess() {
-  if (get(uploader_type) === "create") {
-    await processCreate();
-  } else if (get(uploader_type) === "update") {
-    await processUpdate();
+  if (get(uploader_type) === 'create') {
+    await processCreate()
+  } else if (get(uploader_type) === 'update') {
+    await processUpdate()
   }
 }
 
 async function processCreate() {
-  set(process_step, "customize-creating");
-  await createCustomize();
+  set(process_step, 'customize-creating')
+  await createCustomize()
 
-  set(process_step, "draft-creating");
-  const draft = await createDraft();
+  set(process_step, 'draft-creating')
+  const draft = await createDraft()
 
-  set(process_step, "draft-uploading");
-  await uploadDraft(draft.id);
+  set(process_step, 'draft-uploading')
+  await uploadDraft(draft.id)
 
-  set(process_step, "draft-filing");
-  await filedDraft(draft.id);
+  set(process_step, 'draft-filing')
+  await filedDraft(draft.id)
 
-  uploadCustomizeStore.updateStep("finished");
+  uploadCustomizeStore.updateStep('finished')
 }
 
 async function processUpdate() {
-  set(process_step, "draft-creating");
-  const draft = await createDraft();
-  set(step_status, "finish");
+  set(process_step, 'draft-creating')
+  const draft = await createDraft()
+  set(step_status, 'finish')
 
-  set(process_step, "draft-uploading");
-  await uploadDraft(draft.id);
-  set(step_status, "finish");
+  set(process_step, 'draft-uploading')
+  await uploadDraft(draft.id)
+  set(step_status, 'finish')
 
-  set(process_step, "draft-filing");
-  await filedDraft(draft.id);
-  set(step_status, "finish");
+  set(process_step, 'draft-filing')
+  await filedDraft(draft.id)
+  set(step_status, 'finish')
 
-  uploadCustomizeStore.updateStep("finished");
+  uploadCustomizeStore.updateStep('finished')
 }
 
 onMounted(async () => {
-  if (get(uploader_step) === "filing") {
-    await initFilingProcess();
+  if (get(uploader_step) === 'filing') {
+    await initFilingProcess()
   } else {
-    console.warn("uploader_step is not filing");
+    console.warn('uploader_step is not filing')
   }
-});
+})
 </script>
 <template>
   <div class="cell-normal py-2">
@@ -102,12 +98,7 @@ onMounted(async () => {
     </n-steps>
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />
     <div v-if="process_step === 'pending'">
-      <n-result
-        class="mt-6"
-        status="404"
-        title="上传准备中"
-        description="正在准备上传，请稍候……"
-      >
+      <n-result class="mt-6" status="404" title="上传准备中" description="正在准备上传，请稍候……">
       </n-result>
     </div>
     <div v-if="process_step === 'customize-creating'">
@@ -145,10 +136,10 @@ onMounted(async () => {
             <div>
               {{
                 upload_progress.bytes +
-                  " / " +
-                  upload_progress.total +
-                  " @ " +
-                  (upload_progress.rate ?? 0).toFixed(2)
+                ' / ' +
+                upload_progress.total +
+                ' @ ' +
+                (upload_progress.rate ?? 0).toFixed(2)
               }}
             </div>
           </div>

@@ -1,6 +1,6 @@
-import { CascFile, CascFileInfoResult } from "./bindings.js";
-import { invoke, invokeAsync } from "./errors.js";
-import { kDispose } from "./dispose.js";
+import { CascFile, CascFileInfoResult } from './bindings.js'
+import { invoke, invokeAsync } from './errors.js'
+import { kDispose } from './dispose.js'
 
 /**
  * CascLib File wrapper class
@@ -10,11 +10,11 @@ import { kDispose } from "./dispose.js";
  * when done (or use a `using` block / `withStorage`-style helper).
  */
 export class File {
-  private file: CascFile;
+  private file: CascFile
 
   /** @internal — use `Storage.openFile()` */
   constructor(file: CascFile) {
-    this.file = file;
+    this.file = file
   }
 
   /**
@@ -23,7 +23,7 @@ export class File {
    * @returns Buffer containing the read data
    */
   read(bytesToRead?: number): Buffer {
-    return invoke(() => this.file.CascReadFile(bytesToRead ?? 4096));
+    return invoke(() => this.file.CascReadFile(bytesToRead ?? 4096))
   }
 
   /**
@@ -31,7 +31,7 @@ export class File {
    * @returns Buffer containing the remaining file data
    */
   readAll(): Buffer {
-    return invoke(() => this.file.readFileAll());
+    return invoke(() => this.file.readFileAll())
   }
 
   /**
@@ -42,7 +42,7 @@ export class File {
    * Do not perform other operations on this file while the read is pending.
    */
   readAllAsync(): Promise<Buffer> {
-    return invokeAsync(this.file.readAllAsync());
+    return invokeAsync(this.file.readAllAsync())
   }
 
   /**
@@ -50,7 +50,7 @@ export class File {
    * @returns File size in bytes
    */
   getSize(): number {
-    return invoke(() => this.file.CascGetFileSize());
+    return invoke(() => this.file.CascGetFileSize())
   }
 
   /**
@@ -58,7 +58,7 @@ export class File {
    * @returns File size in bytes
    */
   getSize64(): number | bigint {
-    return invoke(() => this.file.CascGetFileSize64());
+    return invoke(() => this.file.CascGetFileSize64())
   }
 
   /**
@@ -66,7 +66,7 @@ export class File {
    * @returns Current position in bytes
    */
   getPosition(): number {
-    return invoke(() => this.file.CascGetFilePointer());
+    return invoke(() => this.file.CascGetFilePointer())
   }
 
   /**
@@ -74,7 +74,7 @@ export class File {
    * @returns Current position in bytes
    */
   getPosition64(): number | bigint {
-    return invoke(() => this.file.CascGetFilePointer64());
+    return invoke(() => this.file.CascGetFilePointer64())
   }
 
   /**
@@ -83,7 +83,7 @@ export class File {
    * @returns The new position
    */
   setPosition(position: number): number {
-    return invoke(() => this.file.CascSetFilePointer(position));
+    return invoke(() => this.file.CascSetFilePointer(position))
   }
 
   /**
@@ -92,11 +92,8 @@ export class File {
    * @param moveMethod - Move method (FILE_BEGIN, FILE_CURRENT, FILE_END)
    * @returns The new position
    */
-  setPosition64(
-    position: number | bigint,
-    moveMethod?: number,
-  ): number | bigint {
-    return invoke(() => this.file.CascSetFilePointer64(position, moveMethod));
+  setPosition64(position: number | bigint, moveMethod?: number): number | bigint {
+    return invoke(() => this.file.CascSetFilePointer64(position, moveMethod))
   }
 
   /**
@@ -105,7 +102,7 @@ export class File {
    * @returns File information object
    */
   getFileInfo(infoClass: number): CascFileInfoResult {
-    return invoke(() => this.file.CascGetFileInfo(infoClass));
+    return invoke(() => this.file.CascGetFileInfo(infoClass))
   }
 
   /**
@@ -114,7 +111,7 @@ export class File {
    * @returns true if set successfully
    */
   setFileFlags(flags: number): boolean {
-    return invoke(() => this.file.CascSetFileFlags(flags));
+    return invoke(() => this.file.CascSetFileFlags(flags))
   }
 
   /**
@@ -122,13 +119,13 @@ export class File {
    * @returns true if closed successfully
    */
   close(): boolean {
-    return this.file.CascCloseFile();
+    return this.file.CascCloseFile()
   }
 
   /**
    * Symbol.dispose support for `using` blocks (TS 5.2+).
    */
   [kDispose](): void {
-    this.close();
+    this.close()
   }
 }

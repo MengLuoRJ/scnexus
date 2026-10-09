@@ -1,40 +1,40 @@
 <script setup lang="ts">
-import { onMounted, ref, provide } from "vue";
-import { useEmitter } from "@/composables/useMitt";
-import { usePresetStore } from "@/stores/preset";
-import { useRouterGo } from "@/composables/useRouterGo";
+import { onMounted, ref, provide } from 'vue'
+import { useEmitter } from '@/composables/useMitt'
+import { usePresetStore } from '@/stores/preset'
+import { useRouterGo } from '@/composables/useRouterGo'
 
 import {
   updateActivedCampaignSet,
   updateCampaignLists,
-} from "@/views/campaign/composables/useCampaign";
+} from '@/views/campaign/composables/useCampaign'
 
-import CampaignDisplayBriefMode from "./components/CampaignDisplayBriefMode.vue";
-import CampaignDisplayDetailMode from "./components/CampaignDisplayDetailMode.vue";
-import CampaignSwitchDrawer from "./components/CampaignSwitchDrawer.vue";
+import CampaignDisplayBriefMode from './components/CampaignDisplayBriefMode.vue'
+import CampaignDisplayDetailMode from './components/CampaignDisplayDetailMode.vue'
+import CampaignSwitchDrawer from './components/CampaignSwitchDrawer.vue'
 
-const preset = usePresetStore();
+const preset = usePresetStore()
 
-const refDrawer = ref<InstanceType<typeof CampaignSwitchDrawer> | null>(null);
+const refDrawer = ref<InstanceType<typeof CampaignSwitchDrawer> | null>(null)
 
 onMounted(async () => {
-  useEmitter("profile-initialized-success", async () => {
-    await updateActivedCampaignSet();
-    await updateCampaignLists();
-  });
+  useEmitter('profile-initialized-success', async () => {
+    await updateActivedCampaignSet()
+    await updateCampaignLists()
+  })
 
-  useEmitter("customize-file-unzipped", async () => {
-    await updateCampaignLists();
-  });
-});
+  useEmitter('customize-file-unzipped', async () => {
+    await updateCampaignLists()
+  })
+})
 
-provide("refDrawer", refDrawer);
+provide('refDrawer', refDrawer)
 </script>
 <template>
   <div class="campaign">
     <div class="flex flex-row justify-between items-center">
       <div class="header text-lg">
-        {{ $t("campaign.campaign-manager-title") }}
+        {{ $t('campaign.campaign-manager-title') }}
       </div>
       <div class="operation flex flex-row justify-end items-center gap-1">
         <div class="mr-2 flex flex-row justify-end gap-1">
@@ -47,13 +47,13 @@ provide("refDrawer", refDrawer);
               <div class="i-tabler:float-left"></div>
             </template>
             <template #checked>
-              {{ $t("campaign.display-mode.details") }}
+              {{ $t('campaign.display-mode.details') }}
             </template>
             <template #unchecked-icon>
               <div class="i-tabler:layout-grid"></div>
             </template>
             <template #unchecked>
-              {{ $t("campaign.display-mode.brief") }}
+              {{ $t('campaign.display-mode.brief') }}
             </template>
           </n-switch>
         </div>
@@ -61,13 +61,13 @@ provide("refDrawer", refDrawer);
           <template #icon>
             <div class="i-tabler:folder-cog"></div>
           </template>
-          {{ $t("campaign.list-manage") }}
+          {{ $t('campaign.list-manage') }}
         </n-button>
         <n-button size="small" @click="updateCampaignLists()">
           <template #icon>
             <div class="i-tabler:refresh"></div>
           </template>
-          {{ $t("campaign.list-refresh") }}
+          {{ $t('campaign.list-refresh') }}
         </n-button>
       </div>
     </div>

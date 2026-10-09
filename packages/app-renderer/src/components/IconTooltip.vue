@@ -1,14 +1,14 @@
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
-    tooltip?: string;
-    icon?: string;
+    tooltip?: string
+    icon?: string
   }>(),
   {
-    tooltip: "提示",
-    icon: "i-tabler:info-circle",
-  }
-);
+    tooltip: '提示',
+    icon: 'i-tabler:info-circle',
+  },
+)
 </script>
 
 <template>

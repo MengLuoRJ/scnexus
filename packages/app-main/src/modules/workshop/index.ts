@@ -1,9 +1,9 @@
-import { initWorkshopIpc } from "./workshop.ipc";
-export * from "./workshop";
+import { initWorkshopIpc } from './workshop.ipc'
+export * from './workshop'
 
-let registered = false;
+let registered = false
 export async function initWorkshopModule() {
-  if (registered) return;
-  initWorkshopIpc();
-  registered = true;
+  if (registered) return
+  initWorkshopIpc()
+  registered = true
 }

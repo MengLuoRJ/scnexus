@@ -1,11 +1,7 @@
-import { basename } from "node:path";
-import { PassThrough, type Readable } from "node:stream";
-import {
-  createSevenZipError,
-  SevenZipError,
-  SevenZipTimeoutError,
-} from "./errors";
-import { assertPathExists, parseTechnicalList, SevenZipRunner } from "./runner";
+import { basename } from 'node:path'
+import { PassThrough, type Readable } from 'node:stream'
+import { createSevenZipError, SevenZipError, SevenZipTimeoutError } from './errors'
+import { assertPathExists, parseTechnicalList, SevenZipRunner } from './runner'
 import type {
   SevenZipAddOptions,
   SevenZipCommonOptions,
@@ -16,60 +12,40 @@ import type {
   SevenZipRenamePair,
   SevenZipResult,
   SevenZipTreeNode,
-} from "./types";
+} from './types'
 
 export function createCommands(runner: SevenZipRunner) {
   return {
-    add: (
-      archive: string,
-      files: string | string[],
-      options?: SevenZipAddOptions,
-    ) => add(runner, archive, files, options),
+    add: (archive: string, files: string | string[], options?: SevenZipAddOptions) =>
+      add(runner, archive, files, options),
     extract: (archive: string, options?: SevenZipExtractOptions) =>
       extract(runner, archive, options),
-    list: (archive: string, options?: SevenZipListOptions) =>
-      list(runner, archive, options),
+    list: (archive: string, options?: SevenZipListOptions) => list(runner, archive, options),
     listTree: (archive: string, options?: SevenZipListOptions) =>
       listTree(runner, archive, options),
-    test: (archive: string, options?: SevenZipCommonOptions) =>
-      test(runner, archive, options),
-    delete: (
-      archive: string,
-      files: string | string[],
-      options?: SevenZipCommonOptions,
-    ) => deleteFiles(runner, archive, files, options),
+    test: (archive: string, options?: SevenZipCommonOptions) => test(runner, archive, options),
+    delete: (archive: string, files: string | string[], options?: SevenZipCommonOptions) =>
+      deleteFiles(runner, archive, files, options),
     rename: (
       archive: string,
       pairs: ReadonlyArray<SevenZipRenamePair>,
       options?: SevenZipCommonOptions,
     ) => rename(runner, archive, pairs, options),
-    hash: (
-      files: string | string[],
-      algorithm?: string,
-      options?: SevenZipCommonOptions,
-    ) => hash(runner, files, algorithm, options),
-    extractToStream: (
-      archive: string,
-      file: string,
-      options?: SevenZipCommonOptions,
-    ) => extractToStream(runner, archive, file, options),
-    extractToBuffer: (
-      archive: string,
-      file: string,
-      options?: SevenZipCommonOptions,
-    ) => extractToBuffer(runner, archive, file, options),
-    readFile: (
-      archive: string,
-      file: string,
-      options?: SevenZipReadFileOptions,
-    ) => readFile(runner, archive, file, options),
+    hash: (files: string | string[], algorithm?: string, options?: SevenZipCommonOptions) =>
+      hash(runner, files, algorithm, options),
+    extractToStream: (archive: string, file: string, options?: SevenZipCommonOptions) =>
+      extractToStream(runner, archive, file, options),
+    extractToBuffer: (archive: string, file: string, options?: SevenZipCommonOptions) =>
+      extractToBuffer(runner, archive, file, options),
+    readFile: (archive: string, file: string, options?: SevenZipReadFileOptions) =>
+      readFile(runner, archive, file, options),
     readTextFile: (
       archive: string,
       file: string,
       encoding?: BufferEncoding,
       options?: SevenZipReadFileOptions,
     ) => readTextFile(runner, archive, file, encoding, options),
-  };
+  }
 }
 
 export async function add(
@@ -78,18 +54,16 @@ export async function add(
   files: string | string[],
   options: SevenZipAddOptions = {},
 ): Promise<SevenZipResult> {
-  const args = ["a", archive, ...toArray(files), ...commonSwitches(options)];
-  if (options.archiveType) args.push(`-t${options.archiveType}`);
-  if (options.compressionLevel !== undefined)
-    args.push(`-mx=${options.compressionLevel}`);
-  if (options.compressionMethod) args.push(`-m0=${options.compressionMethod}`);
-  if (options.encryptFileNames) args.push("-mhe=on");
-  if (options.recursive !== false) args.push("-r");
-  if (options.solid !== undefined)
-    args.push(`-ms=${options.solid ? "on" : "off"}`);
-  if (options.threads !== undefined) args.push(`-mmt=${options.threads}`);
-  appendPatterns(args, "-x!", options.exclude);
-  return runner.run(args, options);
+  const args = ['a', archive, ...toArray(files), ...commonSwitches(options)]
+  if (options.archiveType) args.push(`-t${options.archiveType}`)
+  if (options.compressionLevel !== undefined) args.push(`-mx=${options.compressionLevel}`)
+  if (options.compressionMethod) args.push(`-m0=${options.compressionMethod}`)
+  if (options.encryptFileNames) args.push('-mhe=on')
+  if (options.recursive !== false) args.push('-r')
+  if (options.solid !== undefined) args.push(`-ms=${options.solid ? 'on' : 'off'}`)
+  if (options.threads !== undefined) args.push(`-mmt=${options.threads}`)
+  appendPatterns(args, '-x!', options.exclude)
+  return runner.run(args, options)
 }
 
 export async function extract(
@@ -97,18 +71,18 @@ export async function extract(
   archive: string,
   options: SevenZipExtractOptions = {},
 ): Promise<SevenZipResult> {
-  await assertPathExists(archive);
+  await assertPathExists(archive)
   const args = [
-    options.preservePaths === false ? "e" : "x",
+    options.preservePaths === false ? 'e' : 'x',
     archive,
     ...commonSwitches(options),
-    "-y",
-  ];
-  if (options.outputDir) args.push(`-o${options.outputDir}`);
-  args.push(overwriteSwitch(options.overwrite));
-  appendPatterns(args, "-i!", options.files);
-  appendPatterns(args, "-x!", options.exclude);
-  return runner.run(args, options);
+    '-y',
+  ]
+  if (options.outputDir) args.push(`-o${options.outputDir}`)
+  args.push(overwriteSwitch(options.overwrite))
+  appendPatterns(args, '-i!', options.files)
+  appendPatterns(args, '-x!', options.exclude)
+  return runner.run(args, options)
 }
 
 export async function list(
@@ -116,11 +90,11 @@ export async function list(
   archive: string,
   options: SevenZipListOptions = {},
 ): Promise<SevenZipListResult> {
-  await assertPathExists(archive);
-  const args = ["l", archive, "-slt", ...commonSwitches(options)];
-  appendPatterns(args, "-i!", options.files);
-  const result = await runner.run(args, options);
-  return { ...result, entries: parseTechnicalList(result.stdout, archive) };
+  await assertPathExists(archive)
+  const args = ['l', archive, '-slt', ...commonSwitches(options)]
+  appendPatterns(args, '-i!', options.files)
+  const result = await runner.run(args, options)
+  return { ...result, entries: parseTechnicalList(result.stdout, archive) }
 }
 
 export async function listTree(
@@ -128,8 +102,8 @@ export async function listTree(
   archive: string,
   options: SevenZipListOptions = {},
 ): Promise<SevenZipTreeNode> {
-  const { entries } = await list(runner, archive, options);
-  return buildTree(archive, entries);
+  const { entries } = await list(runner, archive, options)
+  return buildTree(archive, entries)
 }
 
 export async function test(
@@ -137,8 +111,8 @@ export async function test(
   archive: string,
   options: SevenZipCommonOptions = {},
 ): Promise<SevenZipResult> {
-  await assertPathExists(archive);
-  return runner.run(["t", archive, ...commonSwitches(options)], options);
+  await assertPathExists(archive)
+  return runner.run(['t', archive, ...commonSwitches(options)], options)
 }
 
 export async function deleteFiles(
@@ -147,11 +121,8 @@ export async function deleteFiles(
   files: string | string[],
   options: SevenZipCommonOptions = {},
 ): Promise<SevenZipResult> {
-  await assertPathExists(archive);
-  return runner.run(
-    ["d", archive, ...toArray(files), ...commonSwitches(options)],
-    options,
-  );
+  await assertPathExists(archive)
+  return runner.run(['d', archive, ...toArray(files), ...commonSwitches(options)], options)
 }
 
 export async function rename(
@@ -160,24 +131,21 @@ export async function rename(
   pairs: ReadonlyArray<SevenZipRenamePair>,
   options: SevenZipCommonOptions = {},
 ): Promise<SevenZipResult> {
-  await assertPathExists(archive);
-  const names = pairs.flatMap(([source, destination]) => [source, destination]);
-  return runner.run(
-    ["rn", archive, ...names, ...commonSwitches(options)],
-    options,
-  );
+  await assertPathExists(archive)
+  const names = pairs.flatMap(([source, destination]) => [source, destination])
+  return runner.run(['rn', archive, ...names, ...commonSwitches(options)], options)
 }
 
 export function hash(
   runner: SevenZipRunner,
   files: string | string[],
-  algorithm = "SHA256",
+  algorithm = 'SHA256',
   options: SevenZipCommonOptions = {},
 ): Promise<SevenZipResult> {
   return runner.run(
-    ["h", ...toArray(files), `-scrc${algorithm}`, ...commonSwitches(options)],
+    ['h', ...toArray(files), `-scrc${algorithm}`, ...commonSwitches(options)],
     options,
-  );
+  )
 }
 
 export function extractToStream(
@@ -188,59 +156,57 @@ export function extractToStream(
 ): Readable {
   const child = runner.spawn(
     [
-      "x",
+      'x',
       archive,
       file,
-      "-so",
-      "-spd",
-      "-sccUTF-8",
-      "-bso2",
-      "-bsp2",
-      "-bse2",
+      '-so',
+      '-spd',
+      '-sccUTF-8',
+      '-bso2',
+      '-bsp2',
+      '-bse2',
       ...(options.password ? [`-p${options.password}`] : []),
     ],
     options,
-  );
-  const output = new PassThrough();
-  const stderr: Buffer[] = [];
-  let timedOut = false;
+  )
+  const output = new PassThrough()
+  const stderr: Buffer[] = []
+  let timedOut = false
   const timeout = options.timeout
     ? setTimeout(() => {
-        timedOut = true;
-        child.kill();
+        timedOut = true
+        child.kill()
       }, options.timeout)
-    : undefined;
+    : undefined
 
-  child.stdout.pipe(output, { end: false });
-  child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
-  child.on("error", (error) => {
-    if (timeout) clearTimeout(timeout);
-    output.destroy(
-      new SevenZipError(`Failed to start 7-Zip: ${error.message}`),
-    );
-  });
-  child.on("close", (exitCode) => {
-    if (timeout) clearTimeout(timeout);
+  child.stdout.pipe(output, { end: false })
+  child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk))
+  child.on('error', (error) => {
+    if (timeout) clearTimeout(timeout)
+    output.destroy(new SevenZipError(`Failed to start 7-Zip: ${error.message}`))
+  })
+  child.on('close', (exitCode) => {
+    if (timeout) clearTimeout(timeout)
     if (timedOut) {
-      output.destroy(new SevenZipTimeoutError(options.timeout ?? 0));
+      output.destroy(new SevenZipTimeoutError(options.timeout ?? 0))
     } else if (exitCode === 0 || exitCode === 1) {
-      output.end();
+      output.end()
     } else {
       output.destroy(
         createSevenZipError({
           command: runner.binaryPath,
-          args: ["x", archive, file, "-so"],
+          args: ['x', archive, file, '-so'],
           exitCode: exitCode ?? -1,
-          stdout: "",
-          stderr: Buffer.concat(stderr).toString("utf8"),
+          stdout: '',
+          stderr: Buffer.concat(stderr).toString('utf8'),
         }),
-      );
+      )
     }
-  });
-  output.on("close", () => {
-    if (child.exitCode === null && !child.killed) child.kill();
-  });
-  return output;
+  })
+  output.on('close', () => {
+    if (child.exitCode === null && !child.killed) child.kill()
+  })
+  return output
 }
 
 export async function extractToBuffer(
@@ -249,7 +215,7 @@ export async function extractToBuffer(
   file: string,
   options: SevenZipCommonOptions = {},
 ): Promise<Buffer> {
-  return readFile(runner, archive, file, options);
+  return readFile(runner, archive, file, options)
 }
 
 export async function readFile(
@@ -258,130 +224,123 @@ export async function readFile(
   file: string,
   options: SevenZipReadFileOptions = {},
 ): Promise<Buffer> {
-  await assertPathExists(archive);
-  const chunks: Buffer[] = [];
-  let size = 0;
+  await assertPathExists(archive)
+  const chunks: Buffer[] = []
+  let size = 0
   for await (const chunk of extractToStream(runner, archive, file, options)) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    size += buffer.length;
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    size += buffer.length
     if (options.maxBytes !== undefined && size > options.maxBytes) {
       throw new SevenZipError(
         `Archive file exceeds the ${options.maxBytes} byte read limit: ${file}`,
-      );
+      )
     }
-    chunks.push(buffer);
+    chunks.push(buffer)
   }
-  return Buffer.concat(chunks);
+  return Buffer.concat(chunks)
 }
 
 export async function readTextFile(
   runner: SevenZipRunner,
   archive: string,
   file: string,
-  encoding: BufferEncoding = "utf8",
+  encoding: BufferEncoding = 'utf8',
   options: SevenZipReadFileOptions = {},
 ): Promise<string> {
-  return (await readFile(runner, archive, file, options)).toString(encoding);
+  return (await readFile(runner, archive, file, options)).toString(encoding)
 }
 
 function commonSwitches(options: SevenZipCommonOptions): string[] {
-  const switches = ["-bsp1", "-sccUTF-8"];
-  if (options.password) switches.push(`-p${options.password}`);
-  return switches;
+  const switches = ['-bsp1', '-sccUTF-8']
+  if (options.password) switches.push(`-p${options.password}`)
+  return switches
 }
 
-function appendPatterns(
-  args: string[],
-  prefix: "-i!" | "-x!",
-  patterns?: string[],
-) {
-  for (const pattern of patterns ?? []) args.push(`${prefix}${pattern}`);
+function appendPatterns(args: string[], prefix: '-i!' | '-x!', patterns?: string[]) {
+  for (const pattern of patterns ?? []) args.push(`${prefix}${pattern}`)
 }
 
-function overwriteSwitch(mode: SevenZipExtractOptions["overwrite"]): string {
+function overwriteSwitch(mode: SevenZipExtractOptions['overwrite']): string {
   switch (mode) {
-    case "skip":
-      return "-aos";
-    case "rename":
-      return "-aou";
-    case "rename-existing":
-      return "-aot";
+    case 'skip':
+      return '-aos'
+    case 'rename':
+      return '-aou'
+    case 'rename-existing':
+      return '-aot'
     default:
-      return "-aoa";
+      return '-aoa'
   }
 }
 
 function toArray(value: string | string[]): string[] {
-  return Array.isArray(value) ? value : [value];
+  return Array.isArray(value) ? value : [value]
 }
 
-function buildTree(
-  archive: string,
-  entries: SevenZipListResult["entries"],
-): SevenZipTreeNode {
+function buildTree(archive: string, entries: SevenZipListResult['entries']): SevenZipTreeNode {
   const root: SevenZipTreeNode = {
     name: basename(archive),
-    path: "",
-    type: "directory",
+    path: '',
+    type: 'directory',
     children: [],
-  };
-  const directories = new Map<string, SevenZipTreeNode>([["", root]]);
+  }
+  const directories = new Map<string, SevenZipTreeNode>([['', root]])
 
   for (const entry of entries) {
-    const path = entry.path.replaceAll("\\", "/").replace(/^\.\//, "");
-    const parts = path.split("/").filter(Boolean);
-    if (!parts.length) continue;
-    let parent = root;
-    let parentPath = "";
+    const path = entry.path.replaceAll('\\', '/').replace(/^\.\//, '')
+    const parts = path.split('/').filter(Boolean)
+    if (!parts.length) continue
+    let parent = root
+    let parentPath = ''
 
     for (let index = 0; index < parts.length - 1; index += 1) {
-      parentPath = parentPath ? `${parentPath}/${parts[index]}` : parts[index];
-      let directory = directories.get(parentPath);
+      parentPath = parentPath ? `${parentPath}/${parts[index]}` : parts[index]
+      let directory = directories.get(parentPath)
       if (!directory) {
         directory = {
           name: parts[index],
           path: parentPath,
-          type: "directory",
+          type: 'directory',
           children: [],
-        };
-        parent.children?.push(directory);
-        directories.set(parentPath, directory);
+        }
+        parent.children?.push(directory)
+        directories.set(parentPath, directory)
       }
-      parent = directory;
+      parent = directory
     }
 
     if (entry.isDirectory) {
-      const existingDirectory = directories.get(path);
+      const existingDirectory = directories.get(path)
       if (existingDirectory) {
-        existingDirectory.size = entry.size;
-        existingDirectory.packedSize = entry.packedSize;
-        existingDirectory.modified = entry.modified;
-        continue;
+        existingDirectory.size = entry.size
+        existingDirectory.packedSize = entry.packedSize
+        existingDirectory.modified = entry.modified
+        continue
       }
     }
 
     const node: SevenZipTreeNode = {
       name: parts.at(-1)!,
       path,
-      type: entry.isDirectory ? "directory" : "file",
+      type: entry.isDirectory ? 'directory' : 'file',
       size: entry.size,
       packedSize: entry.packedSize,
       modified: entry.modified,
       children: entry.isDirectory ? [] : undefined,
-    };
-    parent.children?.push(node);
-    if (entry.isDirectory) directories.set(path, node);
+    }
+    parent.children?.push(node)
+    if (entry.isDirectory) directories.set(path, node)
   }
 
-  sortTree(root);
-  return root;
+  sortTree(root)
+  return root
 }
 
 function sortTree(node: SevenZipTreeNode) {
   node.children?.sort(
     (left, right) =>
-      Number(right.type === "directory") - Number(left.type === "directory") ||
+      Number(right.type === 'directory') - Number(left.type === 'directory') ||
       left.name.localeCompare(right.name),
-  );
-  node.children?.forEach(sortTree);
+  )
+  node.children?.forEach(sortTree)
 }

@@ -21,16 +21,16 @@
 
 ## 2. 现有实现提取
 
-| 现有源码 | 已有行为 | 重构时的变化 |
-| --- | --- | --- |
-| 原 compress-process.ts（已删除） | ZIP/7z 读取 metadata.json、metadata.txt，计算大小和文件树；SCNexus 包解压到本地库 | 读取器独立，新增文件夹输入；新标准读 package.json；分析不直接安装 |
-| 原 ccmMetadataParser（已迁移） | title、desc、author、campaign、version 转换成旧元数据 | 提取独立 CCM 解析器；CCM 模式保留原文，SCNexus 模式生成 Package 与标准管理清单 |
-| 原 ccm-process.ts（已删除） | CCM 解压到 CustomCampaigns，模拟路径会把模组按 basename 移到 Mods | CCM 导入直接安装 Mods；保留受规则约束的模组层级，不再扁平化嵌套模组 |
-| 原 campaign-util.ts（已删除） | 四类战役目录、HOTS evolution、LOTV voidprologue 的复制和清理 | 将布局提取为共享规则，预览与实际提交使用同一计划；不复制无关战役目录 |
-| 原 campaign-active.ts（已删除） | 激活、取消激活、恢复，活动目录读取 metadata.json/txt | 新包读取 package.json/txt；按实际安装清单更新状态，不泛化为整目录删除 |
-| 原 campaign-manage.ts（已删除） | 按四类扫描 SCNexusCampaign 和 Maps/CustomCampaigns | 一次发现再分类，坏包隔离；保留导入库与活动记录的区别 |
-| 原 customize-manage.ts（已删除） | 从库复制 Maps/Mods，安装后删除来源子目录；扫描库中 metadata.json | 明确安装计划和所有权，保留可管理清单，不删除用户拖入的源内容 |
-| 原 profile-store.ts（已删除） | Windows 注册表/手动路径、执行文件路径、游戏目录与文档目录 | scii-game-setting 重新检测，不硬编码版本；派生路径只读 |
+| 现有源码                         | 已有行为                                                                          | 重构时的变化                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 原 compress-process.ts（已删除） | ZIP/7z 读取 metadata.json、metadata.txt，计算大小和文件树；SCNexus 包解压到本地库 | 读取器独立，新增文件夹输入；新标准读 package.json；分析不直接安装              |
+| 原 ccmMetadataParser（已迁移）   | title、desc、author、campaign、version 转换成旧元数据                             | 提取独立 CCM 解析器；CCM 模式保留原文，SCNexus 模式生成 Package 与标准管理清单 |
+| 原 ccm-process.ts（已删除）      | CCM 解压到 CustomCampaigns，模拟路径会把模组按 basename 移到 Mods                 | CCM 导入直接安装 Mods；保留受规则约束的模组层级，不再扁平化嵌套模组            |
+| 原 campaign-util.ts（已删除）    | 四类战役目录、HOTS evolution、LOTV voidprologue 的复制和清理                      | 将布局提取为共享规则，预览与实际提交使用同一计划；不复制无关战役目录           |
+| 原 campaign-active.ts（已删除）  | 激活、取消激活、恢复，活动目录读取 metadata.json/txt                              | 新包读取 package.json/txt；按实际安装清单更新状态，不泛化为整目录删除          |
+| 原 campaign-manage.ts（已删除）  | 按四类扫描 SCNexusCampaign 和 Maps/CustomCampaigns                                | 一次发现再分类，坏包隔离；保留导入库与活动记录的区别                           |
+| 原 customize-manage.ts（已删除） | 从库复制 Maps/Mods，安装后删除来源子目录；扫描库中 metadata.json                  | 明确安装计划和所有权，保留可管理清单，不删除用户拖入的源内容                   |
+| 原 profile-store.ts（已删除）    | Windows 注册表/手动路径、执行文件路径、游戏目录与文档目录                         | scii-game-setting 重新检测，不硬编码版本；派生路径只读                         |
 
 内容 Store 已改为 Package 与本地安装信息，数据版本为 2，旧索引备份并保留到 legacyRecords。无法可靠恢复文件归属的旧缓存不直接转为可删除的安装记录。
 
@@ -40,12 +40,12 @@
 
 以下均相对 GameRoot，依据重构前 campaign-util 与 Profile 路径提取的规则：
 
-| 类型 | 主地图目录 | 关联地图目录 | 隔离要求 |
-| --- | --- | --- | --- |
-| WOL | Maps\\Campaign | 无 | 不遍历/清理 swarm、void、voidprologue、nova 子树 |
-| HOTS | Maps\\Campaign\\swarm | Maps\\Campaign\\swarm\\evolution | evolution 属于 HOTS，不能漏装或单独误删 |
-| LOTV | Maps\\Campaign\\void | Maps\\Campaign\\voidprologue | 两个并列目录共同参与计划和统计 |
-| NCO | Maps\\Campaign\\nova | 无 | 不影响其他三个类型 |
+| 类型 | 主地图目录            | 关联地图目录                     | 隔离要求                                         |
+| ---- | --------------------- | -------------------------------- | ------------------------------------------------ |
+| WOL  | Maps\\Campaign        | 无                               | 不遍历/清理 swarm、void、voidprologue、nova 子树 |
+| HOTS | Maps\\Campaign\\swarm | Maps\\Campaign\\swarm\\evolution | evolution 属于 HOTS，不能漏装或单独误删          |
+| LOTV | Maps\\Campaign\\void  | Maps\\Campaign\\voidprologue     | 两个并列目录共同参与计划和统计                   |
+| NCO  | Maps\\Campaign\\nova  | 无                               | 不影响其他三个类型                               |
 
 package.json 或 metadata.txt 的**活动标记**放到主地图目录：WOL 的 Campaign、HOTS 的 swarm、LOTV 的 void、NCO 的 nova。LOTV 不把标记重复写到 voidprologue。
 
@@ -95,7 +95,13 @@ SCNexus customize 示例：
   "author": "创作者",
   "type": "customize",
   "maps": [{ "name": "Entry.SC2Map", "source_path": "/Maps/Demo/Entry.SC2Map" }],
-  "mods": [{ "name": "Core.SC2Mod", "source_path": "/Mods/Demo/Core.SC2Mod", "target_path": "/Mods/Demo/Core.SC2Mod" }],
+  "mods": [
+    {
+      "name": "Core.SC2Mod",
+      "source_path": "/Mods/Demo/Core.SC2Mod",
+      "target_path": "/Mods/Demo/Core.SC2Mod"
+    }
+  ],
   "luancher": { "name": "Entry.SC2Map" }
 }
 ```
@@ -108,13 +114,13 @@ SCNexus customize 示例：
 
 以旧 ccmMetadataParser 的五个字段为起点：
 
-| metadata.txt | 内部 Package 字段 |
-| --- | --- |
-| title | name |
-| desc | description |
-| author | author |
-| campaign | campaign，转大写并验证四类 |
-| version | version |
+| metadata.txt | 内部 Package 字段          |
+| ------------ | -------------------------- |
+| title        | name                       |
+| desc         | description                |
+| author       | author                     |
+| campaign     | campaign，转大写并验证四类 |
+| version      | version                    |
 
 内部固定 type=campaign、manager=CCM，bank_enable 暂沿用 offcial。不能凭空补造 scnid、依赖、入口地图和丰富信息。读取保留原始字节、编码和文件位置，转换后的 Package 与原文分开。
 
@@ -211,47 +217,47 @@ rootRelativePath = ""      rootRelativePath = "Project"
 ### 分析返回（目标 DTO 示意）
 
 ```ts
-type InstallMode = "scnexus" | "ccm" | "auto";
+type InstallMode = 'scnexus' | 'ccm' | 'auto'
 
 type ConflictFile = {
-  name: string;
-  path: string;
-  modifiedAt: number | null;
-  bytes: number;
-};
+  name: string
+  path: string
+  modifiedAt: number | null
+  bytes: number
+}
 
 type ConflictEntry = {
-  conflictId: string;
-  type: "map" | "mod";
-  incoming: ConflictFile;
-  local: ConflictFile;
-};
+  conflictId: string
+  type: 'map' | 'mod'
+  incoming: ConflictFile
+  local: ConflictFile
+}
 
 type ModeConflicts = {
-  mode: InstallMode;
-  files: ConflictEntry[];
-};
+  mode: InstallMode
+  files: ConflictEntry[]
+}
 
 type AnalysisResult = {
-  analysisId: string;
-  contentType: "campaign" | "customize";
-  source: { kind: "archive" | "directory"; path: string };
-  sourceTree: FileTree;
-  sourceStats: { fileCount: number; bytes: number; compressedBytes?: number };
+  analysisId: string
+  contentType: 'campaign' | 'customize'
+  source: { kind: 'archive' | 'directory'; path: string }
+  sourceTree: FileTree
+  sourceStats: { fileCount: number; bytes: number; compressedBytes?: number }
   modes: {
-    scnexus: InstallPreview | null;
-    ccm: InstallPreview | null;
-    auto: InstallPreview | null;
-  };
-  recommendedMode: InstallMode | null;
+    scnexus: InstallPreview | null
+    ccm: InstallPreview | null
+    auto: InstallPreview | null
+  }
+  recommendedMode: InstallMode | null
   existingInstallations: {
-    scnexus: ExistingInstallation[];
-    ccm: ExistingInstallation[];
-    auto: ExistingInstallation[];
-  };
-  conflicts: ModeConflicts[];
-  diagnostics: ModeDiagnostic[];
-};
+    scnexus: ExistingInstallation[]
+    ccm: ExistingInstallation[]
+    auto: ExistingInstallation[]
+  }
+  conflicts: ModeConflicts[]
+  diagnostics: ModeDiagnostic[]
+}
 ```
 
 这些契约已在 app-shared 定义。FileTree、InstallPreview、ModeDiagnostic 当前返回：每种可用预览含内部 Package、安装方式、rootRelativePath、descriptorPath、描述来源（package-json/ccm-converted/metadata-txt）、资源映射清单、目标树、数量/大小、依赖及警告。conflicts 按 mode 区分，推荐为空时不替用户自动选择。SCNexus 与自动模式的持久化格式为 SCNexus；CCM 保留 CCM 格式。
@@ -274,16 +280,16 @@ conflictId 在一次 analysisId 内跨所有模式的 files 项唯一，绑定�
 
 ```ts
 type ConflictDecision = {
-  conflictId: string;
-  action: "overwrite" | "keep";
-};
+  conflictId: string
+  action: 'overwrite' | 'keep'
+}
 
 // 用户取消时不提交安装，或发起本次操作的取消请求。
 type InstallSelection = {
-  analysisId: string;
-  mode: InstallMode;
-  decisions: ConflictDecision[];
-};
+  analysisId: string
+  mode: InstallMode
+  decisions: ConflictDecision[]
+}
 ```
 
 同一组可以对一个文件覆盖、另一个文件保留。cancel 终止本次操作，不是某个文件的“跳过”决策。
@@ -292,11 +298,11 @@ modifiedAt 为 Unix 毫秒时间戳，归档未提供时用 null；不得用分�
 
 用户选择针对选定模式的每个冲突，主进程保存最终决策：
 
-| 决策 | 行为 |
-| --- | --- |
-| overwrite（覆盖） | 使用新文件，先备份本地旧文件再提交；保留恢复和原所有权信息 |
-| keep（保留） | 保留本地文件，不复制相冲突的新文件；记录为复用/保留，不宣称拥有本地文件的独占删除权 |
-| cancel（取消） | 不开始目标写入，或停止并回滚已经进入提交的本次操作；不将操作写为成功 |
+| 决策              | 行为                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| overwrite（覆盖） | 使用新文件，先备份本地旧文件再提交；保留恢复和原所有权信息                          |
+| keep（保留）      | 保留本地文件，不复制相冲突的新文件；记录为复用/保留，不宣称拥有本地文件的独占删除权 |
+| cancel（取消）    | 不开始目标写入，或停止并回滚已经进入提交的本次操作；不将操作写为成功                |
 
 - 未决冲突禁止开始修改。用户不能提交其他模式的 conflictId，未知、重复或过期决策需重新确认。
 - SCNexus campaign 导入不修改活动 Maps/Mods；其分析返回预计激活冲突，实际激活重新确认。CCM 导入只提示本次直接安装的 Mod 冲突，激活阶段另提示 Map 冲突。实际自动/手动激活都重新核对现场，不能把导入时的授权无限期复用。customize 在实际安装前同样复核。
@@ -358,12 +364,12 @@ payload 仅用于需要留存内容以供激活/重装的场景，不要求 cust
 
 四类 Store 使用 electron-store schema、自定义迁移、_schemaVersion/_revision，新模型已实现：
 
-| Store | 内容 |
-| --- | --- |
-| customize | 新 Package 与本地自制作品安装记录 |
-| campaign | 按四类组织的导入包记录，格式为 SCNexus/CCM，不能代表已激活 |
-| campaign-active | 四类活动槽位，关联本地包或扫描发现的外部记录及当前文件/标记 |
-| scii-game-setting | 游戏根、实际检测/派生目录能力及配置修订，替代旧 profile |
+| Store             | 内容                                                        |
+| ----------------- | ----------------------------------------------------------- |
+| customize         | 新 Package 与本地自制作品安装记录                           |
+| campaign          | 按四类组织的导入包记录，格式为 SCNexus/CCM，不能代表已激活  |
+| campaign-active   | 四类活动槽位，关联本地包或扫描发现的外部记录及当前文件/标记 |
+| scii-game-setting | 游戏根、实际检测/派生目录能力及配置修订，替代旧 profile     |
 
 每个内容记录分离：
 
@@ -418,7 +424,7 @@ profile Store/模块已更名为 scii-game-setting，新 IPC 与 preload 已同�
 5. SCNexus/CCM 战役导入与独立激活、自制作品安装；持久化格式跟随选定模式。
 6. 扫描、取消激活、卸载和失败恢复，共用解析/计划规则但不合并业务模块。
 
-Vitest 用例位于所属模块 __test__：两种输入形式、三/两种模式及null、双描述独立解析、外层有效优先/外层无效深入、包根重定位、CCM转SCNexus及原文保留、推荐为空/不可用、冲突字段与覆盖/保留/取消/现场变化、components逐文件冲突、路径缺省/越界、WOL隔离、HOTS evolution、LOTV双目录、CCM嵌套Mods、导入不触碰游戏活动文件、用户源不删除、安装与Store失败、扫描副本去重与权限失败、旧字段迁移。
+Vitest 用例位于所属模块 **test**：两种输入形式、三/两种模式及null、双描述独立解析、外层有效优先/外层无效深入、包根重定位、CCM转SCNexus及原文保留、推荐为空/不可用、冲突字段与覆盖/保留/取消/现场变化、components逐文件冲突、路径缺省/越界、WOL隔离、HOTS evolution、LOTV双目录、CCM嵌套Mods、导入不触碰游戏活动文件、用户源不删除、安装与Store失败、扫描副本去重与权限失败、旧字段迁移。
 
 ## 12. 当前实现、验证与限制
 
@@ -437,15 +443,15 @@ Vitest 用例位于所属模块 __test__：两种输入形式、三/两种模式
 
 验证记录：
 
-| 命令/检查 | 结果 |
-| --- | --- |
-| `pnpm run typecheck:main` | 通过 |
-| `pnpm run typecheck:preload` | 通过 |
-| `pnpm run test:main` | 11 个文件、49 项 Vitest 通过；含真实 ZIP/7z、Store 迁移、文件回滚、扫描、两阶段与共享引用 |
-| `pnpm run build:main` | 通过；原 __dirname 配置提示仍存在 |
-| `pnpm run build:preload` | 通过 |
+| 命令/检查                               | 结果                                                                                                               |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `pnpm run typecheck:main`               | 通过                                                                                                               |
+| `pnpm run typecheck:preload`            | 通过                                                                                                               |
+| `pnpm run test:main`                    | 11 个文件、49 项 Vitest 通过；含真实 ZIP/7z、Store 迁移、文件回滚、扫描、两阶段与共享引用                          |
+| `pnpm run build:main`                   | 通过；原 __dirname 配置提示仍存在                                                                                  |
+| `pnpm run build:preload`                | 通过                                                                                                               |
 | `pnpm --filter @scnexus/standard build` | 通过；初次因遗留失效 tsup shim 失败，清理生成的无效 shim 后正常入口通过，生成 package/metadata 的 ESM/CJS/类型产物 |
-| Electron 44 隔离页面真实 IPC 冒烟 | 路径迁移、分析、导入、激活、扫描、取消激活、卸载全部通过；未验证 v2 UI |
+| Electron 44 隔离页面真实 IPC 冒烟       | 路径迁移、分析、导入、激活、扫描、取消激活、卸载全部通过；未验证 v2 UI                                             |
 
 后续范围：真实 SC2 内容验证、大型 ZIP 读取的事件循环性能、打包后外部二进制路径验证、进程中断恢复，以及非 Windows 发现能力。CCM Mod 不恢复是已确认行为，不列为待解决问题。
 
@@ -463,11 +469,11 @@ ZIP 文件名在未设置通用标志位 bit 11 时是代码页字节，含义�
 
 使用随包 7z 24.08 (x64) 在 ACP=936 机器上以同一中文名实测：
 
-| 归档 | 默认（936） | `-mcp=65001` | `-mcp=936` |
-| --- | --- | --- | --- |
-| UTF-8 字节 + 标志位 | 正确 | 正确 | 正确 |
-| GBK 字节、无标志 | 正确 | 乱码（含 U+EFB5 一类私用区字符） | 正确 |
-| UTF-8 字节、无标志 | 乱码（如 U+9366） | 正确 | 乱码 |
+| 归档                | 默认（936）       | `-mcp=65001`                     | `-mcp=936` |
+| ------------------- | ----------------- | -------------------------------- | ---------- |
+| UTF-8 字节 + 标志位 | 正确              | 正确                             | 正确       |
+| GBK 字节、无标志    | 正确              | 乱码（含 U+EFB5 一类私用区字符） | 正确       |
+| UTF-8 字节、无标志  | 乱码（如 U+9366） | 正确                             | 乱码       |
 
 同时确认：`-mcp` 虽未出现在 `7z -h`，但对 `l`、`x` 与 `x -so` 均生效；ZIP 的 UTF-8 标志优先于 `-mcp`，因此可以无条件传入而不破坏规范归档；解压与流读取必须传同一 `-mcp` 才能保持一致。
 
@@ -480,19 +486,18 @@ ZIP 文件名在未设置通用标志位 bit 11 时是代码页字节，含义�
 **决定：本轮不实现编码协商**，仅记录结论。若后续实现，方向是“每归档选定一个代码页，并对其全部 7z 调用传入同一 `-mcp`”，而不是恢复 chardet：优先自行读取 ZIP 中央目录的原始名字节做确定性判定（有标志用 UTF-8，否则严格 UTF-8 尝试，再否则 GB18030），备选方案是默认列名后按私用区/替换字符与声明路径命中情况在 65001 与 936 之间重试选优。两种方案都需保留 -sccUTF-8，并补双向测试（可在任意 ACP 机器上用显式 `-mcp` 模拟另一种系统）。
 
 新增真实测试覆盖无 UTF-8 标记、无 Unicode 扩展字段的 GBK 中文 ZIP 名称（当前 Windows 环境正确列举并读回），中文工坊资源和描述替换，以及 CCM 正文编码。这不保证所有平台/所有历史编码都能自动判断；ZIP 未声明编码时依赖 7z 的默认解码策略，跨平台或其他代码页需补实际样本后决定显式 -mcp 配置，而不是检测已解码字符串。
+
 ## 14. 相关文档
 
 - [整体架构](./architecture.md)
 - [app-main 基础模块与存储](./app-main-design.md)
 - [错误与日志](./logging-and-errors.md)
 
-
 ### 同名目录描述文件损坏
 
 CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store 有记录也验证磁盘描述文件。无法解析或缺失时，existingInstallations 项返回 package=null、已有目录和描述文件路径、diagnostic（M034：已存在同名内容，但信息无法解析），不拿本次输入信息冒充已有信息，不中断其他模式分析。权限或设备读写失败仍作为真实错误返回。安装继续拒绝占用目录，不自动覆盖。
 
 2026-10-08 收尾：标题目录、重复识别、customizeDataRoot v3 迁移、游戏初始化恢复及更新/窗口/设置/遥测模拟回归已补充。真实游戏、NSIS 更新、macOS 签名更新、ZIP 内部文件名代码页协商与崩溃恢复不在模拟验证结论内。
-
 
 ## renderer-v2 战役管理界面（2026-10-09）
 
@@ -506,9 +511,7 @@ CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store �
 
 验证：v2 与 main/preload 类型检查通过；v2 构建通过；战役/IPC/语言与主进程内容定向测试 27 项通过。临时浏览器服务验证分类、无桥接状态、模拟包列表与激活冲突弹窗（未选择冲突时确认禁用）。浏览器模拟不代替真实 Electron 文件拖放、目录对话框及真实 SC2 包安装验收。临时服务验证后关闭。不包含工坊下载或游戏启动。
 
-
 战役管理提供两种可切换布局：默认四大战役总览（本地横幅、当前活动包、作者版本/模式、库数量及选择管理/取消激活）；详细管理按分类显示当前包描述和完整库操作。总览选择管理自动切换到对应分类，两种布局共享同一个业务状态与分析/冲突/移除交互，不引入独立安装逻辑或持久化偏好。浏览器已验证总览四类显示与选择 LOTV 后进入详细管理，7 项业务/语言回归通过，v2 类型与构建通过。
-
 
 ### v1 操作组织对齐（2026-10-09）
 
@@ -520,8 +523,6 @@ CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store �
 
 验证：三个包类型检查与 v2 构建通过；启动/战役/国际化定向测试 10 项通过；生产预览确认标题操作位置、两栏详细布局、四个 Tab 图标加载以及底部开始/安装区。临时预览服务结束后关闭。
 
-
 界面交互纠正：简略卡片激活/切换直接打开对应类别包选择弹窗，不跳转详情；活动包显示名称版本作者及恢复/卸载，官方状态仅标签，不虚构版本作者。详情左栏居中，Tabs 小 Logo 24px、左栏大 Logo 128px，开始按钮在左栏；简略开始位于底部。底部主体为整块可点击/可拖入的安装区域，目录选择保留辅助小按钮；标题模式切换 size=xs。浏览器模拟活动包确认操作可见、详情启动位置正确，类型/构建和7项回归通过。
-
 
 拖放与视觉修正：安装 drop 仅绑定安装区，非 Files 类型拖放与空路径忽略，所有界面图片禁止原生拖动；卡片横幅固定96px高，使用object-cover/object-top调整显示区域，不扩大卡片；详情Tabs使用缩略图，左侧面板单独使用大Logo。简略开始按钮独立居中高40px，不被安装区拉伸。安装区本地压缩包图标与两行文字，整体点击后选择压缩包或目录，删除旁边额外目录按钮。切换文案简化，恢复采用中性描边提高对比度，操作均带Tabler图标。生产浏览器确认四幅横幅未裁切、拖动标志false，内部图片/URI拖放没有P001；类型构建与9项回归通过。

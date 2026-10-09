@@ -1,21 +1,17 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import {
-  MPQArchiveBinding,
-  MPQArchive,
-  FileInfo
-} from './bindings.js';
-import { invoke, invokeAsync } from './errors.js';
-import { kDispose } from './dispose.js';
-import { File } from './file.js';
-import { MPQ_FILE_COMPRESS, MPQ_FILE_REPLACEEXISTING, MPQ_COMPRESSION_ZLIB } from './constants.js';
+import * as fs from 'fs'
+import * as path from 'path'
+import { MPQArchiveBinding, MPQArchive, FileInfo } from './bindings.js'
+import { invoke, invokeAsync } from './errors.js'
+import { kDispose } from './dispose.js'
+import { File } from './file.js'
+import { MPQ_FILE_COMPRESS, MPQ_FILE_REPLACEEXISTING, MPQ_COMPRESSION_ZLIB } from './constants.js'
 
 /**
  * Options for opening an MPQ archive
  */
 export interface ArchiveOpenOptions {
   /** Flags for opening the archive */
-  flags?: number;
+  flags?: number
 }
 
 /**
@@ -23,9 +19,9 @@ export interface ArchiveOpenOptions {
  */
 export interface ArchiveCreateOptions {
   /** Maximum number of files the archive can contain */
-  maxFileCount?: number;
+  maxFileCount?: number
   /** Creation flags */
-  flags?: number;
+  flags?: number
 }
 
 /**
@@ -33,7 +29,7 @@ export interface ArchiveCreateOptions {
  */
 export interface FileOpenOptions {
   /** Open flags */
-  flags?: number;
+  flags?: number
 }
 
 /**
@@ -41,9 +37,9 @@ export interface FileOpenOptions {
  */
 export interface FileArchiveOpenOptions {
   /** Archive priority (used when the nested archive participates in a patch chain) */
-  priority?: number;
+  priority?: number
   /** Open flags */
-  flags?: number;
+  flags?: number
 }
 
 /**
@@ -51,11 +47,11 @@ export interface FileArchiveOpenOptions {
  */
 export interface AddFileOptions {
   /** File flags (compression, encryption, etc.) */
-  flags?: number;
+  flags?: number
   /** Compression method for first sector */
-  compression?: number;
+  compression?: number
   /** Compression method for subsequent sectors */
-  compressionNext?: number;
+  compressionNext?: number
 }
 
 /**
@@ -63,13 +59,13 @@ export interface AddFileOptions {
  */
 export interface AddBufferOptions {
   /** File flags (default: MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING) */
-  flags?: number;
+  flags?: number
   /** Compression method (default: MPQ_COMPRESSION_ZLIB) */
-  compression?: number;
+  compression?: number
   /** File timestamp (default: 0) */
-  fileTime?: number;
+  fileTime?: number
   /** Locale ID (default: 0) */
-  locale?: number;
+  locale?: number
 }
 
 /**
@@ -83,8 +79,8 @@ export interface AddBufferOptions {
  * ```
  */
 export class Archive {
-  private archive: MPQArchive;
-  private opened = false;
+  private archive: MPQArchive
+  private opened = false
 
   /**
    * @param archive - @internal — wraps an already-open native archive (used
@@ -92,8 +88,8 @@ export class Archive {
    * fresh, unopened Archive via the usual `open()`/`create()` calls.
    */
   constructor(archive?: MPQArchive) {
-    this.archive = archive ?? new MPQArchiveBinding();
-    this.opened = archive !== undefined;
+    this.archive = archive ?? new MPQArchiveBinding()
+    this.opened = archive !== undefined
   }
 
   // ---------------------------------------------------------------------------
@@ -106,9 +102,9 @@ export class Archive {
    * @param options - Optional opening options
    */
   static open(archivePath: string, options?: ArchiveOpenOptions): Archive {
-    const archive = new Archive();
-    archive.open(archivePath, options);
-    return archive;
+    const archive = new Archive()
+    archive.open(archivePath, options)
+    return archive
   }
 
   /**
@@ -117,9 +113,9 @@ export class Archive {
    * @param options - Optional opening options
    */
   static async openAsync(archivePath: string, options?: ArchiveOpenOptions): Promise<Archive> {
-    const archive = new Archive();
-    await archive.openAsync(archivePath, options);
-    return archive;
+    const archive = new Archive()
+    await archive.openAsync(archivePath, options)
+    return archive
   }
 
   /**
@@ -128,9 +124,9 @@ export class Archive {
    * @param options - Optional creation options
    */
   static create(archivePath: string, options?: ArchiveCreateOptions): Archive {
-    const archive = new Archive();
-    archive.create(archivePath, options);
-    return archive;
+    const archive = new Archive()
+    archive.create(archivePath, options)
+    return archive
   }
 
   /**
@@ -138,7 +134,7 @@ export class Archive {
    * This is a static method that affects all archive operations
    */
   static getLocale(): number {
-    return MPQArchiveBinding.SFileGetLocale();
+    return MPQArchiveBinding.SFileGetLocale()
   }
 
   /**
@@ -148,7 +144,7 @@ export class Archive {
    * @returns The locale ID that is now in effect
    */
   static setLocale(locale: number): number {
-    return MPQArchiveBinding.SFileSetLocale(locale);
+    return MPQArchiveBinding.SFileSetLocale(locale)
   }
 
   // ---------------------------------------------------------------------------
@@ -157,7 +153,7 @@ export class Archive {
 
   /** Whether the archive is currently open. */
   get isOpen(): boolean {
-    return this.opened;
+    return this.opened
   }
 
   /**
@@ -166,8 +162,8 @@ export class Archive {
    * @param options - Optional opening options
    */
   open(archivePath: string, options?: ArchiveOpenOptions): void {
-    invoke(() => this.archive.SFileOpenArchive(archivePath, options?.flags || 0));
-    this.opened = true;
+    invoke(() => this.archive.SFileOpenArchive(archivePath, options?.flags || 0))
+    this.opened = true
   }
 
   /**
@@ -176,8 +172,8 @@ export class Archive {
    * @param options - Optional opening options
    */
   async openAsync(archivePath: string, options?: ArchiveOpenOptions): Promise<void> {
-    await invokeAsync(this.archive.openAsync(archivePath, options?.flags || 0));
-    this.opened = true;
+    await invokeAsync(this.archive.openAsync(archivePath, options?.flags || 0))
+    this.opened = true
   }
 
   /**
@@ -186,16 +182,22 @@ export class Archive {
    * @param options - Optional creation options
    */
   create(archivePath: string, options?: ArchiveCreateOptions): void {
-    invoke(() => this.archive.SFileCreateArchive(archivePath, options?.maxFileCount || 1000, options?.flags || 0));
-    this.opened = true;
+    invoke(() =>
+      this.archive.SFileCreateArchive(
+        archivePath,
+        options?.maxFileCount || 1000,
+        options?.flags || 0,
+      ),
+    )
+    this.opened = true
   }
 
   /**
    * Close the MPQ archive
    */
   close(): boolean {
-    this.opened = false;
-    return this.archive.SFileCloseArchive();
+    this.opened = false
+    return this.archive.SFileCloseArchive()
   }
 
   /**
@@ -203,7 +205,7 @@ export class Archive {
    * @returns true if successful
    */
   flush(): boolean {
-    return invoke(() => this.archive.SFileFlushArchive());
+    return invoke(() => this.archive.SFileFlushArchive())
   }
 
   /**
@@ -211,7 +213,7 @@ export class Archive {
    * @returns true if successful
    */
   compact(): boolean {
-    return invoke(() => this.archive.SFileCompactArchive());
+    return invoke(() => this.archive.SFileCompactArchive())
   }
 
   // ---------------------------------------------------------------------------
@@ -225,8 +227,8 @@ export class Archive {
    * @returns A File object
    */
   openFile(filename: string, options?: FileOpenOptions): File {
-    const file = invoke(() => this.archive.SFileOpenFileEx(filename, options?.flags || 0));
-    return new File(file);
+    const file = invoke(() => this.archive.SFileOpenFileEx(filename, options?.flags || 0))
+    return new File(file)
   }
 
   /**
@@ -238,10 +240,10 @@ export class Archive {
    * @returns A new, independently-owned Archive for the nested MPQ
    */
   openFileArchive(fileName: string, options?: FileArchiveOpenOptions): Archive {
-    const nested = invoke(() => this.archive.SFileOpenFileArchive(
-      fileName, options?.priority || 0, options?.flags || 0
-    ));
-    return new Archive(nested);
+    const nested = invoke(() =>
+      this.archive.SFileOpenFileArchive(fileName, options?.priority || 0, options?.flags || 0),
+    )
+    return new Archive(nested)
   }
 
   /**
@@ -251,10 +253,10 @@ export class Archive {
    * @returns A new, independently-owned Archive for the nested MPQ
    */
   async openFileArchiveAsync(fileName: string, options?: FileArchiveOpenOptions): Promise<Archive> {
-    const nested = await invokeAsync(this.archive.openFileArchiveAsync(
-      fileName, options?.priority || 0, options?.flags || 0
-    ));
-    return new Archive(nested);
+    const nested = await invokeAsync(
+      this.archive.openFileArchiveAsync(fileName, options?.priority || 0, options?.flags || 0),
+    )
+    return new Archive(nested)
   }
 
   /**
@@ -263,14 +265,14 @@ export class Archive {
    * @returns true if file exists, false otherwise
    */
   hasFile(filename: string): boolean {
-    return invoke(() => this.archive.SFileHasFile(filename));
+    return invoke(() => this.archive.SFileHasFile(filename))
   }
 
   /**
    * Alias for hasFile — symmetry with casclib's Storage.fileExists().
    */
   fileExists(filename: string): boolean {
-    return this.hasFile(filename);
+    return this.hasFile(filename)
   }
 
   /**
@@ -280,7 +282,7 @@ export class Archive {
    * @returns true if successful
    */
   extractFile(source: string, destination: string): boolean {
-    return invoke(() => this.archive.SFileExtractFile(source, destination));
+    return invoke(() => this.archive.SFileExtractFile(source, destination))
   }
 
   /**
@@ -291,7 +293,7 @@ export class Archive {
    * @returns true if successful
    */
   extractFileAsync(source: string, destination: string): Promise<boolean> {
-    return invokeAsync(this.archive.extractFileAsync(source, destination));
+    return invokeAsync(this.archive.extractFileAsync(source, destination))
   }
 
   /**
@@ -303,15 +305,17 @@ export class Archive {
    */
   addFile(sourcePath: string, archiveName: string, options?: AddFileOptions): boolean {
     if (options?.compression !== undefined || options?.compressionNext !== undefined) {
-      return invoke(() => this.archive.SFileAddFileEx(
-        sourcePath,
-        archiveName,
-        options.flags || 0,
-        options.compression || 0,
-        options.compressionNext || 0
-      ));
+      return invoke(() =>
+        this.archive.SFileAddFileEx(
+          sourcePath,
+          archiveName,
+          options.flags || 0,
+          options.compression || 0,
+          options.compressionNext || 0,
+        ),
+      )
     }
-    return invoke(() => this.archive.SFileAddFile(sourcePath, archiveName, options?.flags));
+    return invoke(() => this.archive.SFileAddFile(sourcePath, archiveName, options?.flags))
   }
 
   /**
@@ -328,9 +332,11 @@ export class Archive {
     archiveName: string,
     flags: number,
     compression: number,
-    compressionNext: number
+    compressionNext: number,
   ): boolean {
-    return invoke(() => this.archive.SFileAddFileEx(sourcePath, archiveName, flags, compression, compressionNext));
+    return invoke(() =>
+      this.archive.SFileAddFileEx(sourcePath, archiveName, flags, compression, compressionNext),
+    )
   }
 
   /**
@@ -339,7 +345,7 @@ export class Archive {
    * @returns true if successful
    */
   removeFile(filename: string): boolean {
-    return invoke(() => this.archive.SFileRemoveFile(filename));
+    return invoke(() => this.archive.SFileRemoveFile(filename))
   }
 
   /**
@@ -349,7 +355,7 @@ export class Archive {
    * @returns true if successful
    */
   renameFile(oldName: string, newName: string): boolean {
-    return invoke(() => this.archive.SFileRenameFile(oldName, newName));
+    return invoke(() => this.archive.SFileRenameFile(oldName, newName))
   }
 
   /**
@@ -361,9 +367,17 @@ export class Archive {
    * @param flags - File flags (default: compressed and encrypted)
    * @returns File object for writing
    */
-  createFile(filename: string, fileTime: number, fileSize: number, locale: number = 0, flags?: number): File {
-    const file = invoke(() => this.archive.SFileCreateFile(filename, fileTime, fileSize, locale, flags || 0));
-    return new File(file);
+  createFile(
+    filename: string,
+    fileTime: number,
+    fileSize: number,
+    locale: number = 0,
+    flags?: number,
+  ): File {
+    const file = invoke(() =>
+      this.archive.SFileCreateFile(filename, fileTime, fileSize, locale, flags || 0),
+    )
+    return new File(file)
   }
 
   /**
@@ -375,7 +389,7 @@ export class Archive {
    * @returns true if successful
    */
   addWave(sourcePath: string, archiveName: string, flags?: number, quality: number = 1): boolean {
-    return invoke(() => this.archive.SFileAddWave(sourcePath, archiveName, flags || 0, quality));
+    return invoke(() => this.archive.SFileAddWave(sourcePath, archiveName, flags || 0, quality))
   }
 
   // ---------------------------------------------------------------------------
@@ -387,7 +401,7 @@ export class Archive {
    * @returns Maximum file count
    */
   getMaxFileCount(): number {
-    return invoke(() => this.archive.SFileGetMaxFileCount());
+    return invoke(() => this.archive.SFileGetMaxFileCount())
   }
 
   /**
@@ -396,7 +410,7 @@ export class Archive {
    * @returns true if successful
    */
   setMaxFileCount(maxFileCount: number): boolean {
-    return invoke(() => this.archive.SFileSetMaxFileCount(maxFileCount));
+    return invoke(() => this.archive.SFileSetMaxFileCount(maxFileCount))
   }
 
   /**
@@ -404,7 +418,7 @@ export class Archive {
    * @returns Attributes flags
    */
   getAttributes(): number {
-    return invoke(() => this.archive.SFileGetAttributes());
+    return invoke(() => this.archive.SFileGetAttributes())
   }
 
   /**
@@ -413,7 +427,7 @@ export class Archive {
    * @returns true if successful
    */
   setAttributes(attributes: number): boolean {
-    return invoke(() => this.archive.SFileSetAttributes(attributes));
+    return invoke(() => this.archive.SFileSetAttributes(attributes))
   }
 
   /**
@@ -422,7 +436,7 @@ export class Archive {
    * @returns true if successful
    */
   updateFileAttributes(filename: string): boolean {
-    return invoke(() => this.archive.SFileUpdateFileAttributes(filename));
+    return invoke(() => this.archive.SFileUpdateFileAttributes(filename))
   }
 
   /**
@@ -431,7 +445,7 @@ export class Archive {
    * @returns Buffer containing the info data or null
    */
   getFileInfo(infoClass: number): Buffer | null {
-    return invoke(() => this.archive.SFileGetFileInfo(infoClass));
+    return invoke(() => this.archive.SFileGetFileInfo(infoClass))
   }
 
   // ---------------------------------------------------------------------------
@@ -445,7 +459,7 @@ export class Archive {
    * @returns Verification result flags
    */
   verifyFile(filename: string, flags: number): number {
-    return invoke(() => this.archive.SFileVerifyFile(filename, flags));
+    return invoke(() => this.archive.SFileVerifyFile(filename, flags))
   }
 
   /**
@@ -453,7 +467,7 @@ export class Archive {
    * @returns Verification result code (ERROR_NO_SIGNATURE, ERROR_WEAK_SIGNATURE_OK, etc.)
    */
   verifyArchive(): number {
-    return invoke(() => this.archive.SFileVerifyArchive());
+    return invoke(() => this.archive.SFileVerifyArchive())
   }
 
   /**
@@ -462,7 +476,7 @@ export class Archive {
    * @returns true if successful
    */
   signArchive(signatureType: number = 0): boolean {
-    return invoke(() => this.archive.SFileSignArchive(signatureType));
+    return invoke(() => this.archive.SFileSignArchive(signatureType))
   }
 
   /**
@@ -471,7 +485,7 @@ export class Archive {
    * @returns Object containing crc32 and md5
    */
   getFileChecksums(filename: string): { crc32: number; md5: string } {
-    return invoke(() => this.archive.SFileGetFileChecksums(filename));
+    return invoke(() => this.archive.SFileGetFileChecksums(filename))
   }
 
   // ---------------------------------------------------------------------------
@@ -484,7 +498,7 @@ export class Archive {
    * @returns Number of entries added
    */
   addListFile(listfilePath: string): number {
-    return invoke(() => this.archive.SFileAddListFile(listfilePath));
+    return invoke(() => this.archive.SFileAddListFile(listfilePath))
   }
 
   /**
@@ -495,7 +509,7 @@ export class Archive {
    * @returns true if successful
    */
   openPatchArchive(patchPath: string, patchPrefix?: string, flags: number = 0): boolean {
-    return invoke(() => this.archive.SFileOpenPatchArchive(patchPath, patchPrefix || null, flags));
+    return invoke(() => this.archive.SFileOpenPatchArchive(patchPath, patchPrefix || null, flags))
   }
 
   /**
@@ -503,7 +517,7 @@ export class Archive {
    * @returns true if patched
    */
   isPatchedArchive(): boolean {
-    return invoke(() => this.archive.SFileIsPatchedArchive());
+    return invoke(() => this.archive.SFileIsPatchedArchive())
   }
 
   /**
@@ -513,7 +527,7 @@ export class Archive {
    * @returns Array of locale IDs
    */
   enumLocales(filename: string, searchScope: number = 0): number[] {
-    return invoke(() => this.archive.SFileEnumLocales(filename, searchScope));
+    return invoke(() => this.archive.SFileEnumLocales(filename, searchScope))
   }
 
   // ---------------------------------------------------------------------------
@@ -525,8 +539,8 @@ export class Archive {
    * @param mask - File mask (wildcards supported), default is "*"
    * @returns Array of file information or null if no files found
    */
-  findFiles(mask: string = "*"): FileInfo[] | null {
-    return invoke(() => this.archive.SFileFindFirstFile(mask));
+  findFiles(mask: string = '*'): FileInfo[] | null {
+    return invoke(() => this.archive.SFileFindFirstFile(mask))
   }
 
   /**
@@ -534,7 +548,7 @@ export class Archive {
    * @returns Array of file information
    */
   listFiles(): FileInfo[] {
-    return this.findFiles("*") || [];
+    return this.findFiles('*') || []
   }
 
   /**
@@ -548,14 +562,14 @@ export class Archive {
    * ```
    */
   *files(mask: string = '*'): IterableIterator<FileInfo> {
-    yield* this.findFiles(mask) || [];
+    yield* this.findFiles(mask) || []
   }
 
   /**
    * Iterating an Archive yields every file in it (mask "*").
    */
   [Symbol.iterator](): IterableIterator<FileInfo> {
-    return this.files();
+    return this.files()
   }
 
   /**
@@ -563,9 +577,9 @@ export class Archive {
    * @param mask - File mask to filter (default: "*")
    * @returns Array of file names
    */
-  getFileNames(mask: string = "*"): string[] {
-    const files = this.findFiles(mask);
-    return files ? files.map(f => f.name) : [];
+  getFileNames(mask: string = '*'): string[] {
+    const files = this.findFiles(mask)
+    return files ? files.map((f) => f.name) : []
   }
 
   /**
@@ -580,7 +594,7 @@ export class Archive {
    * ```
    */
   findFilesMatching(pattern: RegExp): FileInfo[] {
-    return (this.findFiles('*') || []).filter(f => pattern.test(f.name));
+    return (this.findFiles('*') || []).filter((f) => pattern.test(f.name))
   }
 
   // ---------------------------------------------------------------------------
@@ -592,11 +606,11 @@ export class Archive {
    * Opens and closes the file internally.
    */
   readFile(filename: string, options?: FileOpenOptions): Buffer {
-    const file = this.openFile(filename, options);
+    const file = this.openFile(filename, options)
     try {
-      return file.readAll();
+      return file.readAll()
     } finally {
-      file.close();
+      file.close()
     }
   }
 
@@ -605,11 +619,11 @@ export class Archive {
    * event loop). Opens and closes the file internally.
    */
   async readFileAsync(filename: string, options?: FileOpenOptions): Promise<Buffer> {
-    const file = this.openFile(filename, options);
+    const file = this.openFile(filename, options)
     try {
-      return await file.readAllAsync();
+      return await file.readAllAsync()
     } finally {
-      file.close();
+      file.close()
     }
   }
 
@@ -620,7 +634,7 @@ export class Archive {
    * @returns The file content as string
    */
   readFileAsString(filename: string, encoding: BufferEncoding = 'utf-8'): string {
-    return this.readFile(filename).toString(encoding);
+    return this.readFile(filename).toString(encoding)
   }
 
   /**
@@ -629,7 +643,7 @@ export class Archive {
    * @returns Parsed JSON object
    */
   readFileAsJson<T = any>(filename: string): T {
-    return JSON.parse(this.readFileAsString(filename, 'utf-8')) as T;
+    return JSON.parse(this.readFileAsString(filename, 'utf-8')) as T
   }
 
   /**
@@ -639,8 +653,11 @@ export class Archive {
    * @param encoding - Text encoding (default: 'utf-8')
    * @returns The file content as string
    */
-  async readFileAsStringAsync(filename: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
-    return (await this.readFileAsync(filename)).toString(encoding);
+  async readFileAsStringAsync(
+    filename: string,
+    encoding: BufferEncoding = 'utf-8',
+  ): Promise<string> {
+    return (await this.readFileAsync(filename)).toString(encoding)
   }
 
   /**
@@ -657,22 +674,26 @@ export class Archive {
    * ```
    */
   addBuffer(archiveName: string, data: Buffer, options?: AddBufferOptions): boolean {
-    const flags = options?.flags ?? (MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING);
+    const flags = options?.flags ?? MPQ_FILE_COMPRESS | MPQ_FILE_REPLACEEXISTING
     const file = this.createFile(
       archiveName,
       options?.fileTime ?? 0,
       data.length,
       options?.locale ?? 0,
-      flags
-    );
+      flags,
+    )
     try {
       if (data.length > 0) {
-        file.write(data, options?.compression ?? MPQ_COMPRESSION_ZLIB);
+        file.write(data, options?.compression ?? MPQ_COMPRESSION_ZLIB)
       }
-      return file.finish();
+      return file.finish()
     } catch (err) {
-      try { file.close(); } catch { /* finish/close best effort on failure */ }
-      throw err;
+      try {
+        file.close()
+      } catch {
+        /* finish/close best effort on failure */
+      }
+      throw err
     }
   }
 
@@ -686,9 +707,9 @@ export class Archive {
   addString(
     archiveName: string,
     text: string,
-    options?: AddBufferOptions & { encoding?: BufferEncoding }
+    options?: AddBufferOptions & { encoding?: BufferEncoding },
   ): boolean {
-    return this.addBuffer(archiveName, Buffer.from(text, options?.encoding ?? 'utf-8'), options);
+    return this.addBuffer(archiveName, Buffer.from(text, options?.encoding ?? 'utf-8'), options)
   }
 
   /**
@@ -706,27 +727,29 @@ export class Archive {
    * console.log(`Extracted ${extracted.length} files (${failed.length} failed)`);
    * ```
    */
-  extractFiles(outputDir: string, pattern: string | RegExp = "*"): { extracted: string[]; failed: string[] } {
-    const entries = typeof pattern === 'string'
-      ? this.findFiles(pattern) || []
-      : this.findFilesMatching(pattern);
-    const extracted: string[] = [];
-    const failed: string[] = [];
+  extractFiles(
+    outputDir: string,
+    pattern: string | RegExp = '*',
+  ): { extracted: string[]; failed: string[] } {
+    const entries =
+      typeof pattern === 'string' ? this.findFiles(pattern) || [] : this.findFilesMatching(pattern)
+    const extracted: string[] = []
+    const failed: string[] = []
     for (const fileInfo of entries) {
-      const destination = Archive.safeDestination(outputDir, fileInfo.name);
+      const destination = Archive.safeDestination(outputDir, fileInfo.name)
       if (!destination) {
-        failed.push(fileInfo.name);
-        continue;
+        failed.push(fileInfo.name)
+        continue
       }
       try {
-        fs.mkdirSync(path.dirname(destination), { recursive: true });
-        this.extractFile(fileInfo.name, destination);
-        extracted.push(fileInfo.name);
+        fs.mkdirSync(path.dirname(destination), { recursive: true })
+        this.extractFile(fileInfo.name, destination)
+        extracted.push(fileInfo.name)
       } catch {
-        failed.push(fileInfo.name);
+        failed.push(fileInfo.name)
       }
     }
-    return { extracted, failed };
+    return { extracted, failed }
   }
 
   /**
@@ -734,27 +757,29 @@ export class Archive {
    * blocking the event loop. Files are extracted sequentially —
    * MPQ handles must not run concurrent operations.
    */
-  async extractFilesAsync(outputDir: string, pattern: string | RegExp = "*"): Promise<{ extracted: string[]; failed: string[] }> {
-    const entries = typeof pattern === 'string'
-      ? this.findFiles(pattern) || []
-      : this.findFilesMatching(pattern);
-    const extracted: string[] = [];
-    const failed: string[] = [];
+  async extractFilesAsync(
+    outputDir: string,
+    pattern: string | RegExp = '*',
+  ): Promise<{ extracted: string[]; failed: string[] }> {
+    const entries =
+      typeof pattern === 'string' ? this.findFiles(pattern) || [] : this.findFilesMatching(pattern)
+    const extracted: string[] = []
+    const failed: string[] = []
     for (const fileInfo of entries) {
-      const destination = Archive.safeDestination(outputDir, fileInfo.name);
+      const destination = Archive.safeDestination(outputDir, fileInfo.name)
       if (!destination) {
-        failed.push(fileInfo.name);
-        continue;
+        failed.push(fileInfo.name)
+        continue
       }
       try {
-        await fs.promises.mkdir(path.dirname(destination), { recursive: true });
-        await this.extractFileAsync(fileInfo.name, destination);
-        extracted.push(fileInfo.name);
+        await fs.promises.mkdir(path.dirname(destination), { recursive: true })
+        await this.extractFileAsync(fileInfo.name, destination)
+        extracted.push(fileInfo.name)
       } catch {
-        failed.push(fileInfo.name);
+        failed.push(fileInfo.name)
       }
     }
-    return { extracted, failed };
+    return { extracted, failed }
   }
 
   /**
@@ -765,12 +790,12 @@ export class Archive {
    * guard).
    */
   private static safeDestination(outputDir: string, fileName: string): string | null {
-    const parts = fileName.split(/[\\/]+/).filter(p => p && p !== '.');
-    if (parts.length === 0 || parts.some(p => p === '..' || /^[a-zA-Z]:$/.test(p))) return null;
-    const destination = path.resolve(outputDir, ...parts);
-    const root = path.resolve(outputDir) + path.sep;
-    if (!destination.startsWith(root)) return null;
-    return destination;
+    const parts = fileName.split(/[\\/]+/).filter((p) => p && p !== '.')
+    if (parts.length === 0 || parts.some((p) => p === '..' || /^[a-zA-Z]:$/.test(p))) return null
+    const destination = path.resolve(outputDir, ...parts)
+    const root = path.resolve(outputDir) + path.sep
+    if (!destination.startsWith(root)) return null
+    return destination
   }
 
   /**
@@ -778,8 +803,8 @@ export class Archive {
    * @param mask - File mask to filter (default: "*")
    * @returns Number of matching files
    */
-  getFileCount(mask: string = "*"): number {
-    return this.findFiles(mask)?.length ?? 0;
+  getFileCount(mask: string = '*'): number {
+    return this.findFiles(mask)?.length ?? 0
   }
 
   /**
@@ -789,9 +814,9 @@ export class Archive {
    */
   canOpenFile(filename: string): boolean {
     try {
-      return this.hasFile(filename);
+      return this.hasFile(filename)
     } catch {
-      return false;
+      return false
     }
   }
 
@@ -800,9 +825,9 @@ export class Archive {
    * @returns Total size in bytes
    */
   getTotalSize(): number {
-    const files = this.findFiles("*");
-    if (!files) return 0;
-    return files.reduce((total, file) => total + file.fileSize, 0);
+    const files = this.findFiles('*')
+    if (!files) return 0
+    return files.reduce((total, file) => total + file.fileSize, 0)
   }
 
   /**
@@ -810,9 +835,9 @@ export class Archive {
    * @returns Total compressed size in bytes
    */
   getTotalCompressedSize(): number {
-    const files = this.findFiles("*");
-    if (!files) return 0;
-    return files.reduce((total, file) => total + file.compSize, 0);
+    const files = this.findFiles('*')
+    if (!files) return 0
+    return files.reduce((total, file) => total + file.compSize, 0)
   }
 
   /**
@@ -820,17 +845,17 @@ export class Archive {
    * @returns Compression ratio (0.0 to 1.0, where 0.5 means 50% compressed)
    */
   getCompressionRatio(): number {
-    const totalSize = this.getTotalSize();
-    if (totalSize === 0) return 0;
-    const compressedSize = this.getTotalCompressedSize();
-    return compressedSize / totalSize;
+    const totalSize = this.getTotalSize()
+    if (totalSize === 0) return 0
+    const compressedSize = this.getTotalCompressedSize()
+    return compressedSize / totalSize
   }
 
   /**
    * Symbol.dispose support for `using` blocks (TS 5.2+).
    */
   [kDispose](): void {
-    this.close();
+    this.close()
   }
 }
 
@@ -844,14 +869,16 @@ export class Archive {
  *     return a.readFileAsString('readme.txt');
  *   });
  */
-export function withArchive<T>(
-  fn: (archive: Archive) => T
-): T {
-  const archive = new Archive();
+export function withArchive<T>(fn: (archive: Archive) => T): T {
+  const archive = new Archive()
   try {
-    return fn(archive);
+    return fn(archive)
   } finally {
-    try { archive.close(); } catch { /* already closed */ }
+    try {
+      archive.close()
+    } catch {
+      /* already closed */
+    }
   }
 }
 
@@ -864,13 +891,15 @@ export function withArchive<T>(
  *     return (await a.readFileAsync('readme.txt')).toString();
  *   });
  */
-export async function withArchiveAsync<T>(
-  fn: (archive: Archive) => Promise<T>
-): Promise<T> {
-  const archive = new Archive();
+export async function withArchiveAsync<T>(fn: (archive: Archive) => Promise<T>): Promise<T> {
+  const archive = new Archive()
   try {
-    return await fn(archive);
+    return await fn(archive)
   } finally {
-    try { archive.close(); } catch { /* already closed */ }
+    try {
+      archive.close()
+    } catch {
+      /* already closed */
+    }
   }
 }

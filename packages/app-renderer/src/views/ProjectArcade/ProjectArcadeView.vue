@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Banner from "@/assets/images/project-arcade-banner.png";
-import LobbiesCounter from "./components/LobbiesCounter.vue";
-import LastDayShortDataDisplay from "./components/LastDayShortDataDisplay.vue";
+import Banner from '@/assets/images/project-arcade-banner.png'
+import LobbiesCounter from './components/LobbiesCounter.vue'
+import LastDayShortDataDisplay from './components/LastDayShortDataDisplay.vue'
 </script>
 
 <template>
@@ -10,9 +10,9 @@ import LastDayShortDataDisplay from "./components/LastDayShortDataDisplay.vue";
       <n-image :src="Banner" width="150" preview-disabled class="hero-logo" />
       <n-divider vertical :style="{ width: '2px', height: '35px' }" />
       <div class="flex flex-col justify-center items-center">
-        <div class="hero-title text-2xl">{{ "大厅计划" }}</div>
+        <div class="hero-title text-2xl">{{ '大厅计划' }}</div>
         <div class="hero-title text-base">
-          {{ "PROJECT ARCADE" }}
+          {{ 'PROJECT ARCADE' }}
         </div>
       </div>
     </div>
@@ -24,16 +24,16 @@ import LastDayShortDataDisplay from "./components/LastDayShortDataDisplay.vue";
     </div>
     <n-divider :style="{ margin: '0px', width: '75px' }" /> -->
     <div class="mt-10 flex flex-col justify-center items-center">
-      <div>{{ "游戏大厅实时房间" }}</div>
+      <div>{{ '游戏大厅实时房间' }}</div>
       <LobbiesCounter />
     </div>
     <n-divider :style="{ margin: '0px', width: '75px' }" />
     <div class="mt-2 flex flex-col justify-center items-center">
-      <div>{{ "游戏大厅活跃数据" }}</div>
+      <div>{{ '游戏大厅活跃数据' }}</div>
       <LastDayShortDataDisplay />
     </div>
     <div class="mt-16 flex flex-col justify-center items-center">
-      <div class="text-sm text-gray-400">{{ "数据来源：SC2ARCADE" }}</div>
+      <div class="text-sm text-gray-400">{{ '数据来源：SC2ARCADE' }}</div>
     </div>
   </div>
 </template>
@@ -41,21 +41,10 @@ import LastDayShortDataDisplay from "./components/LastDayShortDataDisplay.vue";
 <style scoped>
 .hero-title {
   font-weight: bolder;
-  background: linear-gradient(
-      217deg,
-      rgba(40, 0, 241, 0.8),
-      rgba(255, 0, 0, 0) 70.71%
-    ),
-    linear-gradient(
-      127deg,
-      rgba(180, 0, 245, 0.8),
-      rgba(241, 82, 146, 0.947) 70.71%
-    ),
-    linear-gradient(
-      336deg,
-      rgba(17, 171, 222, 0.823),
-      rgba(0, 0, 255, 0) 70.71%
-    );
+  background:
+    linear-gradient(217deg, rgba(40, 0, 241, 0.8), rgba(255, 0, 0, 0) 70.71%),
+    linear-gradient(127deg, rgba(180, 0, 245, 0.8), rgba(241, 82, 146, 0.947) 70.71%),
+    linear-gradient(336deg, rgba(17, 171, 222, 0.823), rgba(0, 0, 255, 0) 70.71%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

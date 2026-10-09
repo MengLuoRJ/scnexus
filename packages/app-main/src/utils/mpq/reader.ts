@@ -1,6 +1,6 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
-import { decompressMpqSector } from "./compression";
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
+import { decompressMpqSector } from './compression'
 import {
   calculateFileKey,
   decryptBlock,
@@ -9,20 +9,16 @@ import {
   MPQ_HASH_ENTRY_DELETED,
   MPQ_HASH_ENTRY_FREE,
   normalizeMpqPath,
-} from "./crypto";
-import {
-  MpqEncryptedFileError,
-  MpqFileNotFoundError,
-  MpqFormatError,
-} from "./errors";
+} from './crypto'
+import { MpqEncryptedFileError, MpqFileNotFoundError, MpqFormatError } from './errors'
 import {
   readClassicTables,
   readMpqHeader,
   type MpqBlockEntry,
   type MpqHashEntry,
   type MpqHeader,
-} from "./format";
-import type { MpqSource } from "./source";
+} from './format'
+import type { MpqSource } from './source'
 import {
   MPQ_FILE_FLAGS,
   type MpqArchiveInfo,
@@ -31,17 +27,17 @@ import {
   type MpqOpenOptions,
   type MpqReadOptions,
   type MpqTreeNode,
-} from "./types";
+} from './types'
 
-const INTERNAL_NAMES = ["(listfile)", "(attributes)", "(signature)"];
+const INTERNAL_NAMES = ['(listfile)', '(attributes)', '(signature)']
 
 export class MpqReader {
-  readonly info: MpqArchiveInfo;
-  readonly header: MpqHeader;
-  private readonly source: MpqSource;
-  private readonly hashTable: MpqHashEntry[];
-  private readonly blockTable: MpqBlockEntry[];
-  private readonly namesByBlock = new Map<number, string>();
+  readonly info: MpqArchiveInfo
+  readonly header: MpqHeader
+  private readonly source: MpqSource
+  private readonly hashTable: MpqHashEntry[]
+  private readonly blockTable: MpqBlockEntry[]
+  private readonly namesByBlock = new Map<number, string>()
 
   private constructor(
     source: MpqSource,
@@ -49,10 +45,10 @@ export class MpqReader {
     hashTable: MpqHashEntry[],
     blockTable: MpqBlockEntry[],
   ) {
-    this.source = source;
-    this.header = header;
-    this.hashTable = hashTable;
-    this.blockTable = blockTable;
+    this.source = source
+    this.header = header
+    this.hashTable = hashTable
+    this.blockTable = blockTable
     this.info = {
       sourcePath: source.path,
       headerOffset: header.offset,
@@ -63,153 +59,135 @@ export class MpqReader {
       hashTableSize: hashTable.length,
       blockTableSize: blockTable.length,
       hasUserData: header.userData !== undefined,
-    };
+    }
   }
 
-  static async open(
-    source: MpqSource,
-    options: MpqOpenOptions = {},
-  ): Promise<MpqReader> {
-    const header = await readMpqHeader(source, options.maxHeaderSearchBytes);
-    const { hashTable, blockTable } = await readClassicTables(source, header);
-    const reader = new MpqReader(source, header, hashTable, blockTable);
-    await reader.loadNames(options.listfile);
-    return reader;
+  static async open(source: MpqSource, options: MpqOpenOptions = {}): Promise<MpqReader> {
+    const header = await readMpqHeader(source, options.maxHeaderSearchBytes)
+    const { hashTable, blockTable } = await readClassicTables(source, header)
+    const reader = new MpqReader(source, header, hashTable, blockTable)
+    await reader.loadNames(options.listfile)
+    return reader
   }
 
   get fileCount(): number {
-    return this.info.fileCount;
+    return this.info.fileCount
   }
 
   async list(): Promise<MpqFileEntry[]> {
-    const entries: MpqFileEntry[] = [];
+    const entries: MpqFileEntry[] = []
     for (let hashIndex = 0; hashIndex < this.hashTable.length; hashIndex += 1) {
-      const hash = this.hashTable[hashIndex];
-      if (!isActiveHash(hash) || hash.blockIndex >= this.blockTable.length)
-        continue;
-      entries.push(
-        this.toFileEntry(hashIndex, hash, this.blockTable[hash.blockIndex]),
-      );
+      const hash = this.hashTable[hashIndex]
+      if (!isActiveHash(hash) || hash.blockIndex >= this.blockTable.length) continue
+      entries.push(this.toFileEntry(hashIndex, hash, this.blockTable[hash.blockIndex]))
     }
-    return entries;
+    return entries
   }
 
   async listTree(): Promise<MpqTreeNode> {
     const root: MpqTreeNode = {
-      name: this.source.path?.split(/[\\/]/).at(-1) ?? "archive.mpq",
-      path: "",
-      type: "directory",
+      name: this.source.path?.split(/[\\/]/).at(-1) ?? 'archive.mpq',
+      path: '',
+      type: 'directory',
       children: [],
-    };
-    const directories = new Map<string, MpqTreeNode>([["", root]]);
+    }
+    const directories = new Map<string, MpqTreeNode>([['', root]])
 
     for (const entry of await this.list()) {
-      if (!entry.name) continue;
-      const path = entry.name.replaceAll("\\", "/");
-      const parts = path.split("/").filter(Boolean);
-      let parent = root;
-      let parentPath = "";
+      if (!entry.name) continue
+      const path = entry.name.replaceAll('\\', '/')
+      const parts = path.split('/').filter(Boolean)
+      let parent = root
+      let parentPath = ''
       for (let index = 0; index < parts.length - 1; index += 1) {
-        parentPath = parentPath
-          ? `${parentPath}/${parts[index]}`
-          : parts[index];
-        let node = directories.get(parentPath);
+        parentPath = parentPath ? `${parentPath}/${parts[index]}` : parts[index]
+        let node = directories.get(parentPath)
         if (!node) {
           node = {
             name: parts[index],
             path: parentPath,
-            type: "directory",
+            type: 'directory',
             children: [],
-          };
-          parent.children?.push(node);
-          directories.set(parentPath, node);
+          }
+          parent.children?.push(node)
+          directories.set(parentPath, node)
         }
-        parent = node;
+        parent = node
       }
       parent.children?.push({
         name: parts.at(-1)!,
         path,
-        type: "file",
+        type: 'file',
         entry,
-      });
+      })
     }
 
-    sortTree(root);
-    return root;
+    sortTree(root)
+    return root
   }
 
   async hasFile(path: string): Promise<boolean> {
-    return this.findHashEntry(path) !== undefined;
+    return this.findHashEntry(path) !== undefined
   }
 
   async readUserData(): Promise<Buffer | undefined> {
-    const userData = this.header.userData;
-    if (!userData) return undefined;
-    const payloadOffset = userData.offset + BigInt(userData.headerSize);
-    const payloadLength = userData.headerOffset - userData.headerSize;
-    const payload = await this.source.read(payloadOffset, payloadLength);
+    const userData = this.header.userData
+    if (!userData) return undefined
+    const payloadOffset = userData.offset + BigInt(userData.headerSize)
+    const payloadLength = userData.headerOffset - userData.headerSize
+    const payload = await this.source.read(payloadOffset, payloadLength)
     if (payload.length !== payloadLength) {
-      throw new MpqFormatError("Unexpected end of MPQ user data");
+      throw new MpqFormatError('Unexpected end of MPQ user data')
     }
-    return payload;
+    return payload
   }
 
   async readFile(path: string, options: MpqReadOptions = {}): Promise<Buffer> {
-    const found = this.findHashEntry(path);
-    if (!found) throw new MpqFileNotFoundError(path);
-    const block = this.blockTable[found.hash.blockIndex];
+    const found = this.findHashEntry(path)
+    if (!found) throw new MpqFileNotFoundError(path)
+    const block = this.blockTable[found.hash.blockIndex]
     if (options.maxBytes !== undefined && block.size > options.maxBytes) {
-      throw new RangeError(
-        `MPQ file exceeds the ${options.maxBytes} byte read limit: ${path}`,
-      );
+      throw new RangeError(`MPQ file exceeds the ${options.maxBytes} byte read limit: ${path}`)
     }
-    return this.readBlock(block, path);
+    return this.readBlock(block, path)
   }
 
   async readTextFile(
     path: string,
-    encoding: BufferEncoding = "utf8",
+    encoding: BufferEncoding = 'utf8',
     options: MpqReadOptions = {},
   ): Promise<string> {
-    return (await this.readFile(path, options)).toString(encoding);
+    return (await this.readFile(path, options)).toString(encoding)
   }
 
-  async extract(
-    path: string,
-    destination: string,
-    options: MpqExtractOptions = {},
-  ): Promise<void> {
+  async extract(path: string, destination: string, options: MpqExtractOptions = {}): Promise<void> {
     if (!options.overwrite) {
-      const { access } = await import("node:fs/promises");
+      const { access } = await import('node:fs/promises')
       try {
-        await access(destination);
-        throw new Error(`Destination already exists: ${destination}`);
+        await access(destination)
+        throw new Error(`Destination already exists: ${destination}`)
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
       }
     }
-    await mkdir(dirname(destination), { recursive: true });
-    await writeFile(destination, await this.readFile(path));
+    await mkdir(dirname(destination), { recursive: true })
+    await writeFile(destination, await this.readFile(path))
   }
 
   async close(): Promise<void> {
-    await this.source.close();
+    await this.source.close()
   }
 
   private async loadNames(externalNames: string[] = []): Promise<void> {
-    for (const name of [...INTERNAL_NAMES, ...externalNames])
-      this.rememberName(name);
-    const listfile = this.findHashEntry("(listfile)");
-    if (!listfile) return;
+    for (const name of [...INTERNAL_NAMES, ...externalNames]) this.rememberName(name)
+    const listfile = this.findHashEntry('(listfile)')
+    if (!listfile) return
     try {
       const content = (
-        await this.readBlock(
-          this.blockTable[listfile.hash.blockIndex],
-          "(listfile)",
-        )
-      ).toString("utf8");
+        await this.readBlock(this.blockTable[listfile.hash.blockIndex], '(listfile)')
+      ).toString('utf8')
       for (const name of content.split(/\r?\n/)) {
-        if (name.trim()) this.rememberName(name.trim());
+        if (name.trim()) this.rememberName(name.trim())
       }
     } catch {
       // An invalid optional listfile must not prevent opening the archive.
@@ -217,39 +195,34 @@ export class MpqReader {
   }
 
   private rememberName(path: string) {
-    const found = this.findHashEntry(path);
-    if (found) this.namesByBlock.set(found.hash.blockIndex, path);
+    const found = this.findHashEntry(path)
+    if (found) this.namesByBlock.set(found.hash.blockIndex, path)
   }
 
   private findHashEntry(path: string) {
-    const normalized = normalizeMpqPath(path);
-    const start =
-      hashString(normalized, MPQ_HASH.TABLE_INDEX) % this.hashTable.length;
-    const hashA = hashString(normalized, MPQ_HASH.NAME_A);
-    const hashB = hashString(normalized, MPQ_HASH.NAME_B);
-    let fallback: { hashIndex: number; hash: MpqHashEntry } | undefined;
+    const normalized = normalizeMpqPath(path)
+    const start = hashString(normalized, MPQ_HASH.TABLE_INDEX) % this.hashTable.length
+    const hashA = hashString(normalized, MPQ_HASH.NAME_A)
+    const hashB = hashString(normalized, MPQ_HASH.NAME_B)
+    let fallback: { hashIndex: number; hash: MpqHashEntry } | undefined
 
     for (let probe = 0; probe < this.hashTable.length; probe += 1) {
-      const hashIndex = (start + probe) % this.hashTable.length;
-      const hash = this.hashTable[hashIndex];
-      if (hash.blockIndex === MPQ_HASH_ENTRY_FREE) break;
+      const hashIndex = (start + probe) % this.hashTable.length
+      const hash = this.hashTable[hashIndex]
+      if (hash.blockIndex === MPQ_HASH_ENTRY_FREE) break
       if (
         hash.blockIndex !== MPQ_HASH_ENTRY_DELETED &&
         hash.nameHashA === hashA &&
         hash.nameHashB === hashB
       ) {
-        if (hash.locale === 0) return { hashIndex, hash };
-        fallback ??= { hashIndex, hash };
+        if (hash.locale === 0) return { hashIndex, hash }
+        fallback ??= { hashIndex, hash }
       }
     }
-    return fallback;
+    return fallback
   }
 
-  private toFileEntry(
-    hashIndex: number,
-    hash: MpqHashEntry,
-    block: MpqBlockEntry,
-  ): MpqFileEntry {
+  private toFileEntry(hashIndex: number, hash: MpqHashEntry, block: MpqBlockEntry): MpqFileEntry {
     return {
       name: this.namesByBlock.get(hash.blockIndex),
       hashIndex,
@@ -261,30 +234,22 @@ export class MpqReader {
       size: block.size,
       flags: block.flags,
       isFile: Boolean(block.flags & MPQ_FILE_FLAGS.EXISTS),
-      isCompressed: Boolean(
-        block.flags & (MPQ_FILE_FLAGS.COMPRESS | MPQ_FILE_FLAGS.IMPLODE),
-      ),
+      isCompressed: Boolean(block.flags & (MPQ_FILE_FLAGS.COMPRESS | MPQ_FILE_FLAGS.IMPLODE)),
       isEncrypted: Boolean(block.flags & MPQ_FILE_FLAGS.ENCRYPTED),
       isSingleUnit: Boolean(block.flags & MPQ_FILE_FLAGS.SINGLE_UNIT),
-    };
+    }
   }
 
-  private async readBlock(
-    block: MpqBlockEntry,
-    path?: string,
-  ): Promise<Buffer> {
+  private async readBlock(block: MpqBlockEntry, path?: string): Promise<Buffer> {
     if (!(block.flags & MPQ_FILE_FLAGS.EXISTS)) {
-      throw new MpqFileNotFoundError(path ?? "<unknown>");
+      throw new MpqFileNotFoundError(path ?? '<unknown>')
     }
-    const raw = await this.source.read(
-      this.header.offset + block.offset,
-      block.compressedSize,
-    );
+    const raw = await this.source.read(this.header.offset + block.offset, block.compressedSize)
     if (raw.length !== block.compressedSize) {
-      throw new MpqFormatError("Unexpected end of MPQ file data");
+      throw new MpqFormatError('Unexpected end of MPQ file data')
     }
-    const encrypted = Boolean(block.flags & MPQ_FILE_FLAGS.ENCRYPTED);
-    if (encrypted && !path) throw new MpqEncryptedFileError();
+    const encrypted = Boolean(block.flags & MPQ_FILE_FLAGS.ENCRYPTED)
+    if (encrypted && !path) throw new MpqEncryptedFileError()
     const key = encrypted
       ? calculateFileKey(
           path!,
@@ -292,111 +257,86 @@ export class MpqReader {
           block.size,
           Boolean(block.flags & MPQ_FILE_FLAGS.FIX_KEY),
         )
-      : 0;
+      : 0
 
     if (block.flags & MPQ_FILE_FLAGS.SINGLE_UNIT) {
-      const data = encrypted ? decryptBlock(raw, key) : raw;
+      const data = encrypted ? decryptBlock(raw, key) : raw
       return block.flags & (MPQ_FILE_FLAGS.COMPRESS | MPQ_FILE_FLAGS.IMPLODE)
         ? decompressMpqSector(data, block.size)
-        : data.subarray(0, block.size);
+        : data.subarray(0, block.size)
     }
 
     if (!(block.flags & (MPQ_FILE_FLAGS.COMPRESS | MPQ_FILE_FLAGS.IMPLODE))) {
-      return this.readUncompressedSectors(raw, block, key);
+      return this.readUncompressedSectors(raw, block, key)
     }
-    return this.readCompressedSectors(raw, block, key);
+    return this.readCompressedSectors(raw, block, key)
   }
 
-  private readUncompressedSectors(
-    raw: Buffer,
-    block: MpqBlockEntry,
-    key: number,
-  ): Buffer {
-    if (!(block.flags & MPQ_FILE_FLAGS.ENCRYPTED))
-      return raw.subarray(0, block.size);
-    const sectors: Buffer[] = [];
+  private readUncompressedSectors(raw: Buffer, block: MpqBlockEntry, key: number): Buffer {
+    if (!(block.flags & MPQ_FILE_FLAGS.ENCRYPTED)) return raw.subarray(0, block.size)
+    const sectors: Buffer[] = []
     for (let offset = 0, index = 0; offset < block.size; index += 1) {
-      const length = Math.min(this.info.sectorSize, block.size - offset);
-      sectors.push(
-        decryptBlock(raw.subarray(offset, offset + length), key + index),
-      );
-      offset += length;
+      const length = Math.min(this.info.sectorSize, block.size - offset)
+      sectors.push(decryptBlock(raw.subarray(offset, offset + length), key + index))
+      offset += length
     }
-    return Buffer.concat(sectors, block.size);
+    return Buffer.concat(sectors, block.size)
   }
 
-  private readCompressedSectors(
-    raw: Buffer,
-    block: MpqBlockEntry,
-    key: number,
-  ): Buffer {
+  private readCompressedSectors(raw: Buffer, block: MpqBlockEntry, key: number): Buffer {
     if (block.flags & MPQ_FILE_FLAGS.IMPLODE) {
-      throw new MpqFormatError("PKWARE implode compression is not supported");
+      throw new MpqFormatError('PKWARE implode compression is not supported')
     }
-    const sectorCount = Math.ceil(block.size / this.info.sectorSize);
-    const tableLength = (sectorCount + 1) * 4;
-    if (raw.length < tableLength)
-      throw new MpqFormatError("Invalid MPQ sector table");
+    const sectorCount = Math.ceil(block.size / this.info.sectorSize)
+    const tableLength = (sectorCount + 1) * 4
+    if (raw.length < tableLength) throw new MpqFormatError('Invalid MPQ sector table')
     const table =
       block.flags & MPQ_FILE_FLAGS.ENCRYPTED
         ? decryptBlock(raw.subarray(0, tableLength), (key - 1) >>> 0)
-        : raw.subarray(0, tableLength);
+        : raw.subarray(0, tableLength)
     const offsets = Array.from({ length: sectorCount + 1 }, (_, index) =>
       table.readUInt32LE(index * 4),
-    );
-    validateSectorOffsets(offsets, raw.length, tableLength);
-    const sectors: Buffer[] = [];
+    )
+    validateSectorOffsets(offsets, raw.length, tableLength)
+    const sectors: Buffer[] = []
 
     for (let index = 0; index < sectorCount; index += 1) {
-      const expected = Math.min(
-        this.info.sectorSize,
-        block.size - index * this.info.sectorSize,
-      );
-      let data = raw.subarray(offsets[index], offsets[index + 1]);
+      const expected = Math.min(this.info.sectorSize, block.size - index * this.info.sectorSize)
+      let data = raw.subarray(offsets[index], offsets[index + 1])
       if (block.flags & MPQ_FILE_FLAGS.ENCRYPTED) {
-        data = decryptBlock(data, (key + index) >>> 0);
+        data = decryptBlock(data, (key + index) >>> 0)
       }
-      sectors.push(decompressMpqSector(data, expected));
+      sectors.push(decompressMpqSector(data, expected))
     }
-    return Buffer.concat(sectors, block.size);
+    return Buffer.concat(sectors, block.size)
   }
 }
 
 function isActiveHash(hash: MpqHashEntry): boolean {
-  return (
-    hash.blockIndex !== MPQ_HASH_ENTRY_FREE &&
-    hash.blockIndex !== MPQ_HASH_ENTRY_DELETED
-  );
+  return hash.blockIndex !== MPQ_HASH_ENTRY_FREE && hash.blockIndex !== MPQ_HASH_ENTRY_DELETED
 }
 
-function countFiles(
-  hashTable: MpqHashEntry[],
-  blockTable: MpqBlockEntry[],
-): number {
-  const blocks = new Set<number>();
+function countFiles(hashTable: MpqHashEntry[], blockTable: MpqBlockEntry[]): number {
+  const blocks = new Set<number>()
   for (const hash of hashTable) {
     if (
       isActiveHash(hash) &&
       hash.blockIndex < blockTable.length &&
       blockTable[hash.blockIndex].flags & MPQ_FILE_FLAGS.EXISTS
     ) {
-      blocks.add(hash.blockIndex);
+      blocks.add(hash.blockIndex)
     }
   }
-  return blocks.size;
+  return blocks.size
 }
 
-function validateSectorOffsets(
-  offsets: number[],
-  rawLength: number,
-  minimumFirstOffset: number,
-) {
+function validateSectorOffsets(offsets: number[], rawLength: number, minimumFirstOffset: number) {
   if (offsets[0] < minimumFirstOffset || offsets.at(-1)! > rawLength) {
-    throw new MpqFormatError("MPQ sector offsets are outside the file block");
+    throw new MpqFormatError('MPQ sector offsets are outside the file block')
   }
   for (let index = 1; index < offsets.length; index += 1) {
     if (offsets[index] < offsets[index - 1]) {
-      throw new MpqFormatError("MPQ sector offsets are not monotonic");
+      throw new MpqFormatError('MPQ sector offsets are not monotonic')
     }
   }
 }
@@ -404,8 +344,8 @@ function validateSectorOffsets(
 function sortTree(node: MpqTreeNode) {
   node.children?.sort(
     (left, right) =>
-      Number(right.type === "directory") - Number(left.type === "directory") ||
+      Number(right.type === 'directory') - Number(left.type === 'directory') ||
       left.name.localeCompare(right.name),
-  );
-  node.children?.forEach(sortTree);
+  )
+  node.children?.forEach(sortTree)
 }

@@ -13,14 +13,6 @@
   },
   "type": "module",
   "main": "dist/index.mjs",
-  "devDependencies": {
-    "electron": "^44.5.1",
-    "typescript": "^5.7.2",
-    "vite": "^8.3.2"
-  },
-  "dependencies": {
-    "@scnexus/app-shared": "workspace:*"
-  },
   "scripts": {
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-preload && pnpm -w exec eslint packages/app-preload",
     "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-preload",
@@ -28,5 +20,13 @@
     "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-preload --fix && pnpm -w exec eslint packages/app-preload --fix",
     "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/app-preload",
     "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-preload"
+  },
+  "dependencies": {
+    "@scnexus/app-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "typescript": "^5.7.2",
+    "vite": "^8.3.2"
   }
 }

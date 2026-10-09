@@ -1,5 +1,5 @@
-import { initCampaignIpc } from "./campaign.ipc";
-export * from "./campaign";
+import { initCampaignIpc } from './campaign.ipc'
+export * from './campaign'
 export function initCampaignModule() {
-  initCampaignIpc();
+  initCampaignIpc()
 }

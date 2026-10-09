@@ -13,7 +13,7 @@ import { unheadVueComposablesImports } from '@unhead/vue'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import { visualizer } from 'rollup-plugin-visualizer'
 
-import electronVendorsCache from '../app-main/.electron-vendors.cache.json' with { type: "json" }
+import electronVendorsCache from '../app-main/.electron-vendors.cache.json' with { type: 'json' }
 
 const PACKAGE_ROOT = __dirname
 const PROJECT_ROOT = join(PACKAGE_ROOT, '../..')

@@ -1,1 +1,1 @@
-export { default } from "./CampaignTabs.vue";
+export { default } from './CampaignTabs.vue'

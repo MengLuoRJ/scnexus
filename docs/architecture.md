@@ -8,18 +8,18 @@
 
 ## 2. 技术基线
 
-| 层次          | 目标技术                   | 职责                             |
-| ------------- | -------------------------- | -------------------------------- |
-| 开发环境      | Node.js 26                 | 安装、构建、测试和开发工具运行   |
-| 工作区        | pnpm monorepo              | 工作区依赖、统一锁文件、包级命令 |
-| 构建          | Vite 8 / Rolldown          | 主进程、preload、renderer 构建   |
-| 桌面运行时    | Electron 44                | 主进程、隔离桥接、Chromium 页面  |
-| 打包          | electron-builder 36        | 应用资源、安装包及发布产物       |
-| 主进程持久化  | electron-store v11         | 本地配置及小规模结构化状态       |
+| 层次          | 目标技术                   | 职责                                      |
+| ------------- | -------------------------- | ----------------------------------------- |
+| 开发环境      | Node.js 26                 | 安装、构建、测试和开发工具运行            |
+| 工作区        | pnpm monorepo              | 工作区依赖、统一锁文件、包级命令          |
+| 构建          | Vite 8 / Rolldown          | 主进程、preload、renderer 构建            |
+| 桌面运行时    | Electron 44                | 主进程、隔离桥接、Chromium 页面           |
+| 打包          | electron-builder 36        | 应用资源、安装包及发布产物                |
+| 主进程持久化  | electron-store v11         | 本地配置及小规模结构化状态                |
 | 应用日志      | electron-log               | main 归集三进程日志，共用等级，默认 error |
-| UI            | Vue 3、Vue Router 5、Pinia | 组件、路由、界面状态             |
-| 前端基础能力  | Axios、VueUse              | HTTP 请求与组合式工具            |
-| UI 组件与样式 | Nuxt UI（`@nuxt/ui`）      | Vue 组件及其配套样式体系         |
+| UI            | Vue 3、Vue Router 5、Pinia | 组件、路由、界面状态                      |
+| 前端基础能力  | Axios、VueUse              | HTTP 请求与组合式工具                     |
+| UI 组件与样式 | Nuxt UI（`@nuxt/ui`）      | Vue 组件及其配套样式体系                  |
 
 注意：
 
@@ -102,13 +102,11 @@ src/
 ```ts
 interface DesktopApi {
   app: {
-    getVersion(): Promise<IpcResult<string>>;
-  };
+    getVersion(): Promise<IpcResult<string>>
+  }
 }
 
-type IpcResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: AppErrorDto };
+type IpcResult<T> = { ok: true; data: T } | { ok: false; error: AppErrorDto }
 ```
 
 AppErrorDto 是共享契约，包含静态定义 code、name、可选 description，以及本次抛出的 errorId、可选 message、可选业务 taskId。code 采用责任进程前缀和三位编号（M/P/R），name 使用全大写连字符名称；定义和全局码表见 [日志与错误规范](./logging-and-errors.md)。
@@ -230,7 +228,6 @@ campaign 战役包与 customize 自制作品保持独立。后续统一压缩包
 - [v2 包说明](../packages/app-renderer-v2/README.md)
 - [原生归档包维护](./native-packages.md)
 
-
 ## renderer-v2 IPC 适配层
 
 renderer-v2 的 src/ipcs 按业务提供 apiXXX 方法，通过 index.ts 汇总；组件不直接访问 Electron 或任意 IPC channel。现代接口从 window.scnexus 获取，旧的 app 补充能力、dialog、shell、updater、workshop 经内部 internal/bridge.ts 白名单访问现行 preload，不引入已废弃的 profile 与旧 campaign/customize 操作。
@@ -248,7 +245,7 @@ const result = await apiGameSettingInitialize()
 if (!result.ok) {
   // 将 result.error 交给界面统一错误展示。
 }
-const stop = apiSettingOnChanged(snapshot => {
+const stop = apiSettingOnChanged((snapshot) => {
   // 更新界面投影。
 })
 // Vue scope 会自动清理；非 scope 使用时手动调用 stop()。
@@ -258,16 +255,13 @@ const stop = apiSettingOnChanged(snapshot => {
 
 验证：renderer-v2 IPC 定向测试 5 项通过；pnpm --filter @scnexus/app-renderer-v2 type-check 通过；pnpm exec vite build --config packages/app-renderer-v2/vite.config.ts 通过。包级 oxfmt/build-only 曾因本地 bin 指向不存在的包文件失败，改用已有根目录工具验证，没有新增工具。main/preload 类型检查通过。
 
-
 2026-10-08 IPC 返回契约统一：main 的 ipcHandle/ipcHandleRegister 均返回 IpcResult，删除 ipcHandleTyped 和内部旧格式分支；preload 的 invoke 统一执行返回校验及 P001/R001 转换；renderer-v2 删除 legacyRequest 与 legacy.ts，bridge.ts 仅负责尚处于顶层桥接的白名单访问，不转换旧返回格式。旧 renderer v1 不再兼容。工坊上传失败抛出规范错误，不作为成功 data 返回 Error；工坊其他业务重构仍延期。事件和单向日志发送不适用请求结果信封。
-
 
 ### renderer-v2 IPC 目录组织
 
-src/ipcs 根目录只保留业务接口文件与业务导出 index.ts；公共请求、订阅及桥接辅助放 src/ipcs/internal，辅助测试位于 internal/__tests__；Window 桥接声明放 src/types/desktop.d.ts。unwrap 不从业务 index.ts 再导出，需显式从内部辅助模块导入。
+src/ipcs 根目录只保留业务接口文件与业务导出 index.ts；公共请求、订阅及桥接辅助放 src/ipcs/internal，辅助测试位于 internal/**tests**；Window 桥接声明放 src/types/desktop.d.ts。unwrap 不从业务 index.ts 再导出，需显式从内部辅助模块导入。
 
 后续自动导入扫描 src/ipcs/*.ts，排除 index.ts，不递归扫描 internal，不扫描 src/types。当前只整理结构，尚未启用自动导入；业务接口仍显式导入，名称和行为不变。文件路径获取 files.ts 保留为业务能力。
-
 
 ### renderer-v2 基本界面（2026-10-08）
 
@@ -279,24 +273,17 @@ Vue I18n 显式接入，src/locales 提供中文、英文、繁体中文扁平�
 
 验证：v2 类型检查与构建通过；IPC/国际化定向测试 7 项通过；浏览器检查欢迎页、导航折叠、设置路由和无桥接禁用状态。真实 Electron 设置保存、目录选择及 NSIS 更新端到端尚未验收。构建有主包超过 500kB 提示，未擅自进行无关拆包优化。
 
-
 设置页分为三个 Tab：基本设置（语言、下载目录、版本更新和帮助）、游戏环境、日志与隐私。应用统一语言编码为 zh/en/zh-Hant，system 仍表示跟随系统；系统地区语言检测仍接受 en-GB、zh-TW、zh-Hant-HK 等系统标识并归一化。设置 Store 升至 v2，迁移旧 zh-CN/en-US/zh-TW，保留其他用户偏好与 revision；语言资源文件使用新编码命名。
-
 
 界面密度：普通页面的 gap/space 优先使用 0.5、1、2，仅有明确视觉需求时使用 4 或以上。设置页卡片内边距和卡片/字段间距为 2，标签与控件间距为 1；布局内容内边距为 2，保留控件正常尺寸。欢迎页的大留白属于明确展示需求，不套用紧凑表单尺度。
 
-
 侧栏独立于 src/layouts/components/AppSidebar.vue，自持展开状态与菜单；展开宽度 160px（约六个中文菜单字及图标留白），折叠宽度 64px。底部切换按钮仅图标，保留可访问名称；折叠导航通过 Nuxt UI link 插槽样式居中。侧栏和欢迎页使用 src/assets/logo.png，不使用示例 planet 图标作为品牌标识。
-
 
 renderer IPC 参数必须是普通可序列化 DTO：安装、激活、移除的冲突选择以及设置/日志对象在调用 contextBridge 前使用 ipcSnapshot 快照，避免 Vue 嵌套 Proxy 无法跨隔离上下文传输产生 P001。该快照仅用于 JSON 业务 DTO，不用于 File、函数或订阅回调。响应式数组跨边界回归测试已覆盖。
 
-
 renderer-v2 图标统一使用 Tabler。Vite 配置中的 ui.icons 覆盖 Nuxt UI 全部默认图标角色；Vite clientBundle 扫描业务图标并打包本地已声明的 @iconify-json/tabler，不运行时拉取。src/icons.ts 在挂载前关闭 Iconify 网络 fetch 回退（未打包图标返回本地 404，不发网络请求）；File/品牌图片不属于字体图标。新增动态图标需在 clientBundle.icons 显式声明。Vue、Vue Router 与 Iconify 采用 dedupe，保证应用和组件库共享运行时。生产预览设置页验证 11 个 SVG 图标显示，远程请求为 0；默认图标存在性与禁用网络测试 2 项通过。
 
-
 图标打包仅开启 clientBundle.scan，不维护手动业务列表。当前 Nuxt UI 插件会自动将 ui.icons 映射加入本地 bundle，因此默认映射也无需重复传入 clientBundle.icons。
-
 
 ## 全仓库检查与格式化
 
@@ -305,6 +292,7 @@ renderer-v2 图标统一使用 Tabler。Vite 配置中的 ui.icons 覆盖 Nuxt U
 环境按路径分层：main/preload/本地绑定包/scripts/构建配置启用 Node，renderer 源码启用浏览器，preload 源码兼具桥接环境，shared/standard 不默认启用 Node/浏览器。测试通用启用 Node；Vitest 推荐规则仅针对使用 Vitest 的包，不强制 node:test 原生绑定测试迁移。构建产物、vendor、缓存、自动生成声明和工具元数据排除。生成目录即使被 Git 跟踪也不检查。
 
 命令：
+
 - pnpm lint：只检查 Oxlint 与 ESLint，不修改代码（前一工具失败会停止串行命令，完整诊断可分别运行两项）。
 - pnpm lint:oxlint / pnpm lint:eslint：分别检查。
 - pnpm lint:fix：显式修复，两工具串行执行。

@@ -1,35 +1,32 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { set } from "@vueuse/core";
-import type { CampaignType, MetadataInformated } from "scnexus-standard/metadata";
+import { ref } from 'vue'
+import { set } from '@vueuse/core'
+import type { CampaignType, MetadataInformated } from 'scnexus-standard/metadata'
 import {
   type CampaignConstant,
   checkCampaignSwitchable,
   uninstallCampaign,
   activeCampaign,
-} from "@/views/campaign/composables/useCampaign";
-import { renderUnoIcon } from "@/composables/useIconRender";
+} from '@/views/campaign/composables/useCampaign'
+import { renderUnoIcon } from '@/composables/useIconRender'
 
-import Campaign_thumbnail from "@/assets/campaign/Campaign_thumbnail.png";
-import { useCampaignStore } from "@/stores/campaign";
+import Campaign_thumbnail from '@/assets/campaign/Campaign_thumbnail.png'
+import { useCampaignStore } from '@/stores/campaign'
 
-const campaignStore = useCampaignStore();
+const campaignStore = useCampaignStore()
 
-const show = ref(false);
-const campaignConstant = ref<CampaignConstant>();
-const campaignList = ref<MetadataInformated[]>([]);
+const show = ref(false)
+const campaignConstant = ref<CampaignConstant>()
+const campaignList = ref<MetadataInformated[]>([])
 
-function hookupSwitchDrawer(
-  constant: CampaignConstant,
-  campaign: CampaignType
-) {
-  set(campaignConstant, constant);
-  console.log(campaignStore.CAMPAIGN_LIST_SET);
-  set(campaignList, campaignStore.CAMPAIGN_LIST_SET[campaign]);
-  set(show, true);
+function hookupSwitchDrawer(constant: CampaignConstant, campaign: CampaignType) {
+  set(campaignConstant, constant)
+  console.log(campaignStore.CAMPAIGN_LIST_SET)
+  set(campaignList, campaignStore.CAMPAIGN_LIST_SET[campaign])
+  set(show, true)
 }
 
-defineExpose({ hookupSwitchDrawer });
+defineExpose({ hookupSwitchDrawer })
 </script>
 <template>
   <n-drawer v-model:show="show" :width="351">
@@ -45,7 +42,7 @@ defineExpose({ hookupSwitchDrawer });
           />
           <div>
             {{
-              $t("campaign.switch-drawer.campaign", {
+              $t('campaign.switch-drawer.campaign', {
                 campaign: campaignConstant?.name,
               })
             }}
@@ -64,8 +61,8 @@ defineExpose({ hookupSwitchDrawer });
               <div class="text-base">{{ item.name }}</div>
               <div class="flex flex-row justify-start gap-1">
                 <div class="text-sm text-gray">
-                  <span> {{ $t("campaign.switch-drawer.author") }}</span>
-                  <span> {{ item.author ?? "NULL" }}</span>
+                  <span> {{ $t('campaign.switch-drawer.author') }}</span>
+                  <span> {{ item.author ?? 'NULL' }}</span>
                 </div>
               </div>
               <div class="mt-1 flex flex-row justify-start gap-1">
@@ -86,14 +83,12 @@ defineExpose({ hookupSwitchDrawer });
                   <n-button
                     size="small"
                     @click="uninstallCampaign(item).then(() => (show = false))"
-                    :render-icon="
-                      renderUnoIcon('i-tabler:trash', { size: '16px' })
-                    "
+                    :render-icon="renderUnoIcon('i-tabler:trash', { size: '16px' })"
                   >
                   </n-button>
                 </template>
                 <span>
-                  {{ $t("campaign.switch-drawer.uninstall-campaign") }}
+                  {{ $t('campaign.switch-drawer.uninstall-campaign') }}
                 </span>
               </n-popover>
               <n-popover placement="bottom" trigger="hover" :show-arrow="false">
@@ -110,7 +105,7 @@ defineExpose({ hookupSwitchDrawer });
                   >
                   </n-button>
                 </template>
-                <span>{{ $t("campaign.switch-drawer.active-campaign") }}</span>
+                <span>{{ $t('campaign.switch-drawer.active-campaign') }}</span>
               </n-popover>
             </div>
           </div>

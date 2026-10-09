@@ -25,67 +25,67 @@ main 与 preload 的错误注册表、结构化 IPC、日志归集和受控遥�
 
 同类故障若确实在多个进程独立产生，分别登记对应前缀的定义，name 增加责任限定以保持全局唯一；不能仅因转发或展示就重新编号。共享工具的原始异常在调用者责任边界分类，已有 AppError 则保留其定义。
 
-| code | name | description（可选） | 使用边界 / 处理方向 |
-| --- | --- | --- | --- |
-| M002 | APP-INITIALIZATION-FAILED | 必需启动环节失败 | 启动协调提供诊断或恢复入口 |
-| M001 | APP-UNEXPECTED-ERROR | 无法分类的内部异常 | 最终兜底，保留内部 cause，不替代已知错误 |
-| M003 | IPC-INVALID-ARGUMENT | IPC 参数不符合契约 | 参数校验，拒绝执行 |
-| M004 | IPC-SOURCE-REJECTED | 调用来源不被允许 | main 来源检查 |
-| P001 | IPC-TRANSPORT-FAILED | 桥接调用无法完成 | channel 缺失、窗口销毁等传输异常 |
-| R001 | IPC-RESULT-INVALID | 返回 DTO 不符合契约 | 边界检查，不将无效结果视为成功 |
-| M005 | STORE-READ-FAILED | 配置读取失败 | 权限、I/O 等错误 |
-| M006 | STORE-WRITE-FAILED | 配置提交失败 | 保留旧有效快照，不发送成功事件 |
-| M007 | STORE-DATA-INVALID | 已存数据损坏或违反 schema | 保留原文件并提供恢复 |
-| M008 | STORE-MIGRATION-FAILED | 数据迁移失败 | 保留备份，不继续覆写 |
-| M009 | STORE-VERSION-UNSUPPORTED | 数据版本高于程序支持 | 不降级覆写 |
-| M010 | SETTING-INVALID-VALUE | 用户偏好值无效 | setting 服务业务校验 |
-| M011 | PROFILE-NOT-READY | 没有可用游戏环境 | 引导配置，不使 IPC 消失 |
-| M012 | PROFILE-GAME-NOT-FOUND | 未发现游戏安装 | 自动检测失败 |
-| M013 | PROFILE-GAME-ROOT-INVALID | 候选目录不是有效游戏环境 | 不覆盖已有有效配置 |
-| M014 | PROFILE-CAPABILITY-UNAVAILABLE | 当前游戏环境缺少所需执行能力 | 编辑器/启动器等能力不可用 |
-| M015 | PROFILE-CHANGE-BLOCKED | 本地任务期间禁止切换游戏环境 | 完成或取消任务后再修改 |
-| M016 | WINDOW-CREATE-FAILED | 主窗口创建失败 | 清理部分资源，可重试 |
-| M017 | WINDOW-LOAD-FAILED | 界面加载失败 | 提供加载诊断与重试 |
-| M018 | WINDOW-NOT-READY | 当前没有可投递的就绪界面 | 可恢复事件排队或重新查询状态 |
-| M019 | WINDOW-RENDERER-FAILED | 页面进程崩溃或异常退出 | 恢复窗口并重新握手 |
-| M020 | DEEP-LINK-INVALID | 协议链接结构或参数无效 | 不投递，不记录令牌 |
-| M021 | DEEP-LINK-QUEUE-FULL | 待投递链接达到上限 | 明确报告，不无限保存 |
-| M022 | DIALOG-FAILED | 系统对话框失败 | 用户取消不是此错误 |
-| M023 | SHELL-TARGET-INVALID | URL/路径不符合打开约束 | 拒绝操作 |
-| M024 | SHELL-OPEN-FAILED | 系统打开目标失败 | 报告系统失败 |
-| M025 | TRAY-INITIALIZATION-FAILED | 托盘初始化失败 | 可选能力降级，不阻止窗口 |
-| M026 | UPDATER-UNAVAILABLE | 当前运行环境不支持更新 | 开发模式/不支持的平台等 |
-| M027 | UPDATER-CHECK-FAILED | 更新检查失败 | 保留当前版本 |
-| M028 | UPDATER-DOWNLOAD-FAILED | 更新下载失败 | 允许重试 |
-| M029 | UPDATER-INSTALL-FAILED | 更新安装启动失败 | 保留诊断 |
-| M030 | FILESYSTEM-OPERATION-FAILED | 未被业务错误分类的文件操作失败 | 保留内部操作及底层错误代码 |
-| M031 | FILESYSTEM-PATH-REJECTED | 目标不在允许目录内 | 拒绝读写 |
-| M032 | ARCHIVE-INVALID | 压缩包无效 | 不进入安装阶段 |
-| M033 | ARCHIVE-METADATA-MISSING | 包缺少元数据 | 引导修复内容包 |
-| M034 | ARCHIVE-METADATA-INVALID | 元数据字段或格式无效 | 返回可展示的校验信息 |
-| M035 | ARCHIVE-FORMAT-UNSUPPORTED | 不支持的归档或压缩能力 | 不伪装为包损坏 |
-| M036 | ARCHIVE-EXTRACT-FAILED | 解压失败 | 清理暂存目录，保留原目标 |
-| M037 | CONTENT-TYPE-UNSUPPORTED | 操作不支持该内容类型/管理格式 | 不静默返回成功 |
-| M038 | CONTENT-SCAN-FAILED | 内容库扫描失败 | 单包坏数据应隔离为 warning |
-| M039 | CONTENT-INSTALL-FAILED | 内容安装失败 | 关联任务恢复或回滚 |
-| M040 | CONTENT-UNINSTALL-FAILED | 内容卸载失败 | 刷新并报告实际状态 |
-| M041 | CAMPAIGN-ACTIVATION-FAILED | 战役激活失败 | 恢复原内容，或明确需人工恢复 |
-| M042 | CAMPAIGN-DEACTIVATION-FAILED | 取消激活失败 | 不更新为已取消状态 |
-| M043 | CAMPAIGN-RECOVERY-FAILED | 战役恢复失败 | 不声称恢复成功 |
-| M044 | GAME-LAUNCH-FAILED | 游戏或编辑器启动失败 | 捕获进程错误并反馈 |
-| M045 | WORKSHOP-METADATA-WRITE-FAILED | 内容包元数据写入失败 | 不继续上传错误产物 |
-| M046 | WORKSHOP-HASH-FAILED | 文件摘要计算失败 | 不继续上传 |
-| M047 | WORKSHOP-UPLOAD-FAILED | 工坊上传失败 | 不将 Error 当成功 data |
-| M048 | WORKSHOP-DOWNLOAD-FAILED | 工坊下载失败 | 清理或保留可恢复的 part 文件 |
-| R002 | NETWORK-REQUEST-FAILED | 未被领域分类的 HTTP/网络错误 | 不直接采用第三方错误码 |
-| R003 | NETWORK-TIMEOUT | 网络请求超时 | 允许按业务条件重试 |
-| M049 | TASK-CANCELLED | 用户取消长任务 | 终止结果，不默认输出 error |
-| M050 | TASK-TIMEOUT | 操作超时 | 清理资源并报告状态 |
-| M051 | TASK-CONFLICT | 同一资源已有互斥任务 | 用户稍后重试 |
-| M052 | LOGGING-CONFIGURATION-FAILED | 日志等级应用失败 | 偏好更新整体失败并恢复旧值 |
-| M053 | LOGGING-TRANSPORT-FAILED | 日志输出目标失败 | 有界非递归降级，不调用同一故障 transport |
-| M054 | TELEMETRY-INITIALIZATION-FAILED | Sentry 初始化或身份绑定失败 | 保留授权选择，报告未生效 |
-| M055 | TELEMETRY-DISABLE-FAILED | 遥测 SDK 清理或关闭失败 | 维持发送门控关闭，报告诊断 |
+| code | name                            | description（可选）            | 使用边界 / 处理方向                      |
+| ---- | ------------------------------- | ------------------------------ | ---------------------------------------- |
+| M002 | APP-INITIALIZATION-FAILED       | 必需启动环节失败               | 启动协调提供诊断或恢复入口               |
+| M001 | APP-UNEXPECTED-ERROR            | 无法分类的内部异常             | 最终兜底，保留内部 cause，不替代已知错误 |
+| M003 | IPC-INVALID-ARGUMENT            | IPC 参数不符合契约             | 参数校验，拒绝执行                       |
+| M004 | IPC-SOURCE-REJECTED             | 调用来源不被允许               | main 来源检查                            |
+| P001 | IPC-TRANSPORT-FAILED            | 桥接调用无法完成               | channel 缺失、窗口销毁等传输异常         |
+| R001 | IPC-RESULT-INVALID              | 返回 DTO 不符合契约            | 边界检查，不将无效结果视为成功           |
+| M005 | STORE-READ-FAILED               | 配置读取失败                   | 权限、I/O 等错误                         |
+| M006 | STORE-WRITE-FAILED              | 配置提交失败                   | 保留旧有效快照，不发送成功事件           |
+| M007 | STORE-DATA-INVALID              | 已存数据损坏或违反 schema      | 保留原文件并提供恢复                     |
+| M008 | STORE-MIGRATION-FAILED          | 数据迁移失败                   | 保留备份，不继续覆写                     |
+| M009 | STORE-VERSION-UNSUPPORTED       | 数据版本高于程序支持           | 不降级覆写                               |
+| M010 | SETTING-INVALID-VALUE           | 用户偏好值无效                 | setting 服务业务校验                     |
+| M011 | PROFILE-NOT-READY               | 没有可用游戏环境               | 引导配置，不使 IPC 消失                  |
+| M012 | PROFILE-GAME-NOT-FOUND          | 未发现游戏安装                 | 自动检测失败                             |
+| M013 | PROFILE-GAME-ROOT-INVALID       | 候选目录不是有效游戏环境       | 不覆盖已有有效配置                       |
+| M014 | PROFILE-CAPABILITY-UNAVAILABLE  | 当前游戏环境缺少所需执行能力   | 编辑器/启动器等能力不可用                |
+| M015 | PROFILE-CHANGE-BLOCKED          | 本地任务期间禁止切换游戏环境   | 完成或取消任务后再修改                   |
+| M016 | WINDOW-CREATE-FAILED            | 主窗口创建失败                 | 清理部分资源，可重试                     |
+| M017 | WINDOW-LOAD-FAILED              | 界面加载失败                   | 提供加载诊断与重试                       |
+| M018 | WINDOW-NOT-READY                | 当前没有可投递的就绪界面       | 可恢复事件排队或重新查询状态             |
+| M019 | WINDOW-RENDERER-FAILED          | 页面进程崩溃或异常退出         | 恢复窗口并重新握手                       |
+| M020 | DEEP-LINK-INVALID               | 协议链接结构或参数无效         | 不投递，不记录令牌                       |
+| M021 | DEEP-LINK-QUEUE-FULL            | 待投递链接达到上限             | 明确报告，不无限保存                     |
+| M022 | DIALOG-FAILED                   | 系统对话框失败                 | 用户取消不是此错误                       |
+| M023 | SHELL-TARGET-INVALID            | URL/路径不符合打开约束         | 拒绝操作                                 |
+| M024 | SHELL-OPEN-FAILED               | 系统打开目标失败               | 报告系统失败                             |
+| M025 | TRAY-INITIALIZATION-FAILED      | 托盘初始化失败                 | 可选能力降级，不阻止窗口                 |
+| M026 | UPDATER-UNAVAILABLE             | 当前运行环境不支持更新         | 开发模式/不支持的平台等                  |
+| M027 | UPDATER-CHECK-FAILED            | 更新检查失败                   | 保留当前版本                             |
+| M028 | UPDATER-DOWNLOAD-FAILED         | 更新下载失败                   | 允许重试                                 |
+| M029 | UPDATER-INSTALL-FAILED          | 更新安装启动失败               | 保留诊断                                 |
+| M030 | FILESYSTEM-OPERATION-FAILED     | 未被业务错误分类的文件操作失败 | 保留内部操作及底层错误代码               |
+| M031 | FILESYSTEM-PATH-REJECTED        | 目标不在允许目录内             | 拒绝读写                                 |
+| M032 | ARCHIVE-INVALID                 | 压缩包无效                     | 不进入安装阶段                           |
+| M033 | ARCHIVE-METADATA-MISSING        | 包缺少元数据                   | 引导修复内容包                           |
+| M034 | ARCHIVE-METADATA-INVALID        | 元数据字段或格式无效           | 返回可展示的校验信息                     |
+| M035 | ARCHIVE-FORMAT-UNSUPPORTED      | 不支持的归档或压缩能力         | 不伪装为包损坏                           |
+| M036 | ARCHIVE-EXTRACT-FAILED          | 解压失败                       | 清理暂存目录，保留原目标                 |
+| M037 | CONTENT-TYPE-UNSUPPORTED        | 操作不支持该内容类型/管理格式  | 不静默返回成功                           |
+| M038 | CONTENT-SCAN-FAILED             | 内容库扫描失败                 | 单包坏数据应隔离为 warning               |
+| M039 | CONTENT-INSTALL-FAILED          | 内容安装失败                   | 关联任务恢复或回滚                       |
+| M040 | CONTENT-UNINSTALL-FAILED        | 内容卸载失败                   | 刷新并报告实际状态                       |
+| M041 | CAMPAIGN-ACTIVATION-FAILED      | 战役激活失败                   | 恢复原内容，或明确需人工恢复             |
+| M042 | CAMPAIGN-DEACTIVATION-FAILED    | 取消激活失败                   | 不更新为已取消状态                       |
+| M043 | CAMPAIGN-RECOVERY-FAILED        | 战役恢复失败                   | 不声称恢复成功                           |
+| M044 | GAME-LAUNCH-FAILED              | 游戏或编辑器启动失败           | 捕获进程错误并反馈                       |
+| M045 | WORKSHOP-METADATA-WRITE-FAILED  | 内容包元数据写入失败           | 不继续上传错误产物                       |
+| M046 | WORKSHOP-HASH-FAILED            | 文件摘要计算失败               | 不继续上传                               |
+| M047 | WORKSHOP-UPLOAD-FAILED          | 工坊上传失败                   | 不将 Error 当成功 data                   |
+| M048 | WORKSHOP-DOWNLOAD-FAILED        | 工坊下载失败                   | 清理或保留可恢复的 part 文件             |
+| R002 | NETWORK-REQUEST-FAILED          | 未被领域分类的 HTTP/网络错误   | 不直接采用第三方错误码                   |
+| R003 | NETWORK-TIMEOUT                 | 网络请求超时                   | 允许按业务条件重试                       |
+| M049 | TASK-CANCELLED                  | 用户取消长任务                 | 终止结果，不默认输出 error               |
+| M050 | TASK-TIMEOUT                    | 操作超时                       | 清理资源并报告状态                       |
+| M051 | TASK-CONFLICT                   | 同一资源已有互斥任务           | 用户稍后重试                             |
+| M052 | LOGGING-CONFIGURATION-FAILED    | 日志等级应用失败               | 偏好更新整体失败并恢复旧值               |
+| M053 | LOGGING-TRANSPORT-FAILED        | 日志输出目标失败               | 有界非递归降级，不调用同一故障 transport |
+| M054 | TELEMETRY-INITIALIZATION-FAILED | Sentry 初始化或身份绑定失败    | 保留授权选择，报告未生效                 |
+| M055 | TELEMETRY-DISABLE-FAILED        | 遥测 SDK 清理或关闭失败        | 维持发送门控关闭，报告诊断               |
 
 规则：
 
@@ -104,22 +104,20 @@ main 与 preload 的错误注册表、结构化 IPC、日志归集和受控遥�
 
 ```ts
 type ErrorDefinition = {
-  readonly code: ErrorCode;
-  readonly name: ErrorName;
-  readonly description?: string;
-};
+  readonly code: ErrorCode
+  readonly name: ErrorName
+  readonly description?: string
+}
 
 type ErrorOccurrence = {
-  errorId: string;
-  message?: string;
-  taskId?: string;
-};
+  errorId: string
+  message?: string
+  taskId?: string
+}
 
-type AppErrorDto = ErrorDefinition & ErrorOccurrence;
+type AppErrorDto = ErrorDefinition & ErrorOccurrence
 
-type IpcResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: AppErrorDto };
+type IpcResult<T> = { ok: true; data: T } | { ok: false; error: AppErrorDto }
 ```
 
 ErrorCode 和 ErrorName 来源于共享注册表；上面的结构是字段说明，实际类型与运行时校验必须保证 code/name/description 属于同一登记定义，不能任意组合。
@@ -130,15 +128,15 @@ ErrorCode 和 ErrorName 来源于共享注册表；上面的结构是字段说�
 
 ```ts
 const definition = {
-  code: "M002",
-  name: "APP-INITIALIZATION-FAILED",
-  description: "必需启动环节失败",
-} as const;
+  code: 'M002',
+  name: 'APP-INITIALIZATION-FAILED',
+  description: '必需启动环节失败',
+} as const
 
 throw new AppError(definition, {
-  message: "初始化游戏环境失败",
-  taskId: "startup-session-42",
-});
+  message: '初始化游戏环境失败',
+  taskId: 'startup-session-42',
+})
 ```
 
 AppError 在新故障构造时生成 errorId，例如 UUID。对应 IPC DTO：
@@ -298,13 +296,12 @@ renderer 初始化前、关闭后或重新加载时读取有效授权状态，�
 - [electron-log 初始化文档](https://github.com/megahertz/electron-log/blob/master/docs/initialize.md)：v5 的 renderer 日志归集到 main，以及自动注入、手动 preload、直接 IPC 等不同方式。本文选择自有受控桥接，不依赖其内部 channel 名称作为应用契约。
 - electron-log 具体版本在实施期按 Electron 44 的兼容性选择并锁定；本文不同时要求升级未指定的主版本。
 
-
 新增主进程初始化错误码：
 
-| code | name | description |
-| --- | --- | --- |
-| M056 | GAME-DISCOVERY-FAILED | 游戏目录自动发现失败 |
-| M057 | GAME-DIRECTORY-PREPARATION-FAILED | 游戏管理目录创建失败 |
+| code | name                              | description                  |
+| ---- | --------------------------------- | ---------------------------- |
+| M056 | GAME-DISCOVERY-FAILED             | 游戏目录自动发现失败         |
+| M057 | GAME-DIRECTORY-PREPARATION-FAILED | 游戏管理目录创建失败         |
 | M058 | GAME-MODULE-INITIALIZATION-FAILED | 游戏或内容依赖模块初始化失败 |
 
 更新阶段沿用 M027/M028/M029（检查/下载/安装），不将所有错误都归为下载失败。

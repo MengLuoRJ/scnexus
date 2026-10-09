@@ -1,37 +1,37 @@
-import { type RouteRecordRaw } from "vue-router";
+import { type RouteRecordRaw } from 'vue-router'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/creator",
+    path: '/creator',
     name: `creator_root`,
-    component: () => import("@/layouts/BasicLayout.vue"),
+    component: () => import('@/layouts/BasicLayout.vue'),
     children: [
       {
-        path: "",
-        name: "creator",
+        path: '',
+        name: 'creator',
         meta: {
-          title: "创作服务",
+          title: '创作服务',
         },
-        component: () => import("@/views/Creator/CreatorView.vue"),
+        component: () => import('@/views/Creator/CreatorView.vue'),
       },
       {
-        path: "uploader",
-        name: "creator_uploader",
+        path: 'uploader',
+        name: 'creator_uploader',
         meta: {
-          title: "作品上传",
+          title: '作品上传',
         },
-        component: () => import("@/views/Creator/CreatorUploaderView.vue"),
+        component: () => import('@/views/Creator/CreatorUploaderView.vue'),
       },
       {
-        path: "manage",
-        name: "creator_manage",
+        path: 'manage',
+        name: 'creator_manage',
         meta: {
-          title: "作品管理",
+          title: '作品管理',
         },
-        component: () => import("@/views/Creator/CreatorWorkshopManageView.vue"),
-      }
+        component: () => import('@/views/Creator/CreatorWorkshopManageView.vue'),
+      },
     ],
   },
-];
+]
 
-export default routes;
+export default routes

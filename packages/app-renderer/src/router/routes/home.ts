@@ -1,22 +1,22 @@
-import { type RouteRecordRaw } from "vue-router";
+import { type RouteRecordRaw } from 'vue-router'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/",
-    name: "home_root",
-    component: () => import("@/layouts/BasicLayout.vue"),
+    path: '/',
+    name: 'home_root',
+    component: () => import('@/layouts/BasicLayout.vue'),
     children: [
       {
-        path: "",
+        path: '',
         name: `home`,
         meta: {
-          title: "首页",
+          title: '首页',
           public: true,
         },
-        component: () => import("@/views/HomeView.vue"),
+        component: () => import('@/views/HomeView.vue'),
       },
     ],
   },
-];
+]
 
-export default routes;
+export default routes

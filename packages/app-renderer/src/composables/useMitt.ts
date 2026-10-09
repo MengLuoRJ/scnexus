@@ -1,26 +1,23 @@
-import { tryOnScopeDispose } from "@vueuse/core";
-import mitt from "mitt";
+import { tryOnScopeDispose } from '@vueuse/core'
+import mitt from 'mitt'
 
-const emitter = mitt();
+const emitter = mitt()
 
 function emitterOn(type: string | symbol, handler: (evt?: any) => void) {
-  emitter.on(type, handler);
+  emitter.on(type, handler)
 }
 
 function emitterOff(type: string | symbol, handler: (evt?: any) => void) {
-  emitter.off(type, handler);
+  emitter.off(type, handler)
 }
 
 export function emitterEmit(type: string | symbol, evt?: any) {
-  emitter.emit(type, evt);
+  emitter.emit(type, evt)
 }
 
-export function useEmitter(
-  type: string | symbol,
-  handler: (evt?: any) => void
-) {
+export function useEmitter(type: string | symbol, handler: (evt?: any) => void) {
   tryOnScopeDispose(() => {
-    emitterOff(type, handler);
-  });
-  emitterOn(type, handler);
+    emitterOff(type, handler)
+  })
+  emitterOn(type, handler)
 }

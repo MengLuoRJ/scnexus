@@ -12,9 +12,6 @@
     "url": "https://github.com/MengLuoRJ/scnexus"
   },
   "type": "module",
-  "exports": {
-    "./*": "./src/*.ts"
-  },
   "typesVersions": {
     "*": {
       "*": [
@@ -22,8 +19,8 @@
       ]
     }
   },
-  "dependencies": {
-    "@scnexus/standard": "workspace:*"
+  "exports": {
+    "./*": "./src/*.ts"
   },
   "scripts": {
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-shared && pnpm -w exec eslint packages/app-shared",
@@ -32,5 +29,8 @@
     "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-shared --fix && pnpm -w exec eslint packages/app-shared --fix",
     "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/app-shared",
     "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-shared"
+  },
+  "dependencies": {
+    "@scnexus/standard": "workspace:*"
   }
 }

@@ -1,93 +1,87 @@
-import { isInstallingUpdate } from "./modules/updater";
-import { app, dialog, Menu } from "electron";
-import { initLoggingModule, reportError } from "./modules/logging";
-import { initModules, disposeModules } from "./modules/init";
-import { captureDeepLink } from "./modules/deep-link";
-import { restoreOrCreateWindow } from "./modules/window";
+import { isInstallingUpdate } from './modules/updater'
+import { app, dialog, Menu } from 'electron'
+import { initLoggingModule, reportError } from './modules/logging'
+import { initModules, disposeModules } from './modules/init'
+import { captureDeepLink } from './modules/deep-link'
+import { restoreOrCreateWindow } from './modules/window'
 
 if (!app.requestSingleInstanceLock()) {
-  app.quit();
-  process.exit(0);
+  app.quit()
+  process.exit(0)
 }
 
-initLoggingModule();
+initLoggingModule()
 
-process.on("uncaughtException", (error) => {
-  reportError(error, "uncaught-exception");
-  app.exit(1);
-});
-process.on("unhandledRejection", (error) => {
-  reportError(error, "unhandled-rejection");
-  app.quit();
-});
+process.on('uncaughtException', (error) => {
+  reportError(error, 'uncaught-exception')
+  app.exit(1)
+})
+process.on('unhandledRejection', (error) => {
+  reportError(error, 'unhandled-rejection')
+  app.quit()
+})
 
 function receiveDeepLink(url: string) {
   try {
-    captureDeepLink(url);
+    captureDeepLink(url)
   } catch (error) {
-    reportError(error, "deep-link");
+    reportError(error, 'deep-link')
   }
 }
 
-if (process.platform === "win32") app.setAppUserModelId(app.getName());
+if (process.platform === 'win32') app.setAppUserModelId(app.getName())
 for (const argument of process.argv) {
-  if (argument.startsWith("scnexus://")) receiveDeepLink(argument);
+  if (argument.startsWith('scnexus://')) receiveDeepLink(argument)
 }
 
-app.on("open-url", (event, url) => {
-  event.preventDefault();
-  receiveDeepLink(url);
-});
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  receiveDeepLink(url)
+})
 
-app.on("second-instance", (_event, args) => {
-  for (const argument of args)
-    if (argument.startsWith("scnexus://")) receiveDeepLink(argument);
+app.on('second-instance', (_event, args) => {
+  for (const argument of args) if (argument.startsWith('scnexus://')) receiveDeepLink(argument)
   void app
     .whenReady()
     .then(restoreOrCreateWindow)
-    .catch((error) => reportError(error, "window"));
-});
+    .catch((error) => reportError(error, 'window'))
+})
 
-app.on("activate", () => {
+app.on('activate', () => {
   void app
     .whenReady()
     .then(restoreOrCreateWindow)
-    .catch((error) => reportError(error, "window"));
-});
+    .catch((error) => reportError(error, 'window'))
+})
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
 
-let exiting = false;
-app.on("before-quit", (event) => {
-  if (exiting || isInstallingUpdate()) return;
-  event.preventDefault();
-  exiting = true;
-  void disposeModules().finally(() => app.quit());
-});
+let exiting = false
+app.on('before-quit', (event) => {
+  if (exiting || isInstallingUpdate()) return
+  event.preventDefault()
+  exiting = true
+  void disposeModules().finally(() => app.quit())
+})
 
 void app
   .whenReady()
   .then(async () => {
-    Menu.setApplicationMenu(null);
-    const failures = await initModules();
-    await restoreOrCreateWindow();
+    Menu.setApplicationMenu(null)
+    const failures = await initModules()
+    await restoreOrCreateWindow()
     if (failures.length)
       dialog.showErrorBox(
-        "SCNexus 初始化异常",
+        'SCNexus 初始化异常',
         failures
-          .map(
-            (error) => `${error.code} ${error.name}\nerrorId=${error.errorId}`,
-          )
-          .join("\n\n"),
-      );
+          .map((error) => `${error.code} ${error.name}\nerrorId=${error.errorId}`)
+          .join('\n\n'),
+      )
   })
   .catch((value) => {
-    const error = reportError(value, "startup");
-    dialog.showErrorBox(
-      "SCNexus 启动失败",
-      `${error.code} ${error.name}\nerrorId=${error.errorId}`,
-    );
-    app.quit();
-  });
+    const error = reportError(value, 'startup')
+    dialog.showErrorBox('SCNexus 启动失败', `${error.code} ${error.name}\nerrorId=${error.errorId}`)
+    app.quit()
+  })

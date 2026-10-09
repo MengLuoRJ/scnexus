@@ -1,58 +1,44 @@
-import { ipcMain, type IpcMainInvokeEvent } from "electron";
-import {
-  AppError,
-  ERRORS,
-  normalizeError,
-  toErrorDto,
-} from "@scnexus/app-shared/errors/app.error";
-import { assertIpcSource } from "./ipc-source";
-import { reportError } from "../modules/logging/logging";
-import { getGamePaths } from "../modules/scii-game-setting/scii-game-setting";
+import { ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
+import { assertIpcSource } from './ipc-source'
+import { reportError } from '../modules/logging/logging'
+import { getGamePaths } from '../modules/scii-game-setting/scii-game-setting'
 
 async function guard(channel: string, event: IpcMainInvokeEvent) {
-  assertIpcSource(event);
-  if (/^(campaign|customize):/.test(channel)) await getGamePaths();
+  assertIpcSource(event)
+  if (/^(campaign|customize):/.test(channel)) await getGamePaths()
 }
 
-function register(
-  channel: string,
-  func: (...args: any[]) => any,
-  passEvent: boolean,
-) {
-  ipcMain.removeHandler(channel);
+function register(channel: string, func: (...args: any[]) => any, passEvent: boolean) {
+  ipcMain.removeHandler(channel)
   ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
-      await guard(channel, event);
-      const data = await (passEvent ? func(event, ...args) : func(...args));
-      return { ok: true, data };
+      await guard(channel, event)
+      const data = await (passEvent ? func(event, ...args) : func(...args))
+      return { ok: true, data }
     } catch (value) {
-      const error = normalizeError(value);
-      if (error.code !== ERRORS.TASK_CANCELLED.code)
-        reportError(error, channel);
-      const dto = toErrorDto(error);
-      return { ok: false, error: dto };
+      const error = normalizeError(value)
+      if (error.code !== ERRORS.TASK_CANCELLED.code) reportError(error, channel)
+      const dto = toErrorDto(error)
+      return { ok: false, error: dto }
     }
-  });
+  })
 }
 export function ipcHandleRegister(
   channel: string,
   func: (...args: any[]) => any,
   passEvent = false,
 ) {
-  register(channel, func, passEvent);
+  register(channel, func, passEvent)
 }
 export function ipcHandleRemove(channel: string) {
-  ipcMain.removeHandler(channel);
+  ipcMain.removeHandler(channel)
 }
-export function ipcHandle(
-  channel: string,
-  func: (...args: any[]) => any,
-  passEvent = false,
-) {
-  register(channel, func, passEvent);
+export function ipcHandle(channel: string, func: (...args: any[]) => any, passEvent = false) {
+  register(channel, func, passEvent)
 }
 export type ipcHandleConfig = {
-  channel: string;
-  function: (...args: any[]) => any;
-  passEvent: boolean;
-};
+  channel: string
+  function: (...args: any[]) => any
+  passEvent: boolean
+}

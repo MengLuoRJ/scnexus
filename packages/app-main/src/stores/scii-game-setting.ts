@@ -1,6 +1,6 @@
-import { join, isAbsolute } from "node:path";
-import type { SciiGameSetting } from "@scnexus/app-shared/types/content.type";
-import { createRepository, isRecord, invalidData } from "./store-repository";
+import { join, isAbsolute } from 'node:path'
+import type { SciiGameSetting } from '@scnexus/app-shared/types/content.type'
+import { createRepository, isRecord, invalidData } from './store-repository'
 export function createSciiGameSettingRepository(documents: () => string) {
   return createRepository<SciiGameSetting>({
     defaults: () => ({
@@ -13,54 +13,47 @@ export function createSciiGameSettingRepository(documents: () => string) {
     }),
     schema: {
       _schemaVersion: { const: 3 },
-      _revision: { type: "integer", minimum: 0 },
-      gameRoot: { type: ["string", "null"] },
-      customizeDataRoot: { type: ["string", "null"] },
-      documentRoot: { type: "string" },
-      confirmedAt: { type: ["number", "null"] },
+      _revision: { type: 'integer', minimum: 0 },
+      gameRoot: { type: ['string', 'null'] },
+      customizeDataRoot: { type: ['string', 'null'] },
+      documentRoot: { type: 'string' },
+      confirmedAt: { type: ['number', 'null'] },
     },
     validate(data) {
-      if (!isRecord(data)) invalidData("Invalid game setting");
+      if (!isRecord(data)) invalidData('Invalid game setting')
       if (
         data.gameRoot !== null &&
-        (typeof data.gameRoot !== "string" || !isAbsolute(data.gameRoot))
+        (typeof data.gameRoot !== 'string' || !isAbsolute(data.gameRoot))
       )
-        invalidData("Invalid game root");
+        invalidData('Invalid game root')
       if (
         data.customizeDataRoot !==
-        (data.gameRoot
-          ? join(data.gameRoot as string, "SCNexusCustomizeData")
-          : null)
+        (data.gameRoot ? join(data.gameRoot as string, 'SCNexusCustomizeData') : null)
       )
-        invalidData("Invalid derived management root");
+        invalidData('Invalid derived management root')
     },
     migrate(data, defaults) {
-      if (!isRecord(data)) invalidData("Invalid old game setting");
+      if (!isRecord(data)) invalidData('Invalid old game setting')
       if (data._schemaVersion === 2) {
-        const { SCNEXUS_CUTOMIZE_DATA_ROOT, ...fields } = data;
+        const { SCNEXUS_CUTOMIZE_DATA_ROOT, ...fields } = data
         return {
           ...fields,
           _schemaVersion: defaults._schemaVersion,
           customizeDataRoot: SCNEXUS_CUTOMIZE_DATA_ROOT,
-        } as SciiGameSetting;
+        } as SciiGameSetting
       }
-      const game = isRecord(data.PROFILE_GAME) ? data.PROFILE_GAME : {};
-      const root =
-        typeof game.GAME_ROOT === "string" && game.GAME_ROOT
-          ? game.GAME_ROOT
-          : null;
+      const game = isRecord(data.PROFILE_GAME) ? data.PROFILE_GAME : {}
+      const root = typeof game.GAME_ROOT === 'string' && game.GAME_ROOT ? game.GAME_ROOT : null
       return {
         ...defaults,
         gameRoot: root,
-        customizeDataRoot: root ? join(root, "SCNexusCustomizeData") : null,
-      };
+        customizeDataRoot: root ? join(root, 'SCNexusCustomizeData') : null,
+      }
     },
-  });
+  })
 }
-let documents = "";
+let documents = ''
 export function configureGameDefaults(value: string) {
-  documents = value;
+  documents = value
 }
-export const sciiGameSettingRepository = createSciiGameSettingRepository(
-  () => documents,
-);
+export const sciiGameSettingRepository = createSciiGameSettingRepository(() => documents)

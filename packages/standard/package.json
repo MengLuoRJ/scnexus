@@ -1,19 +1,32 @@
 {
   "name": "@scnexus/standard",
   "version": "0.0.21",
-  "author": "MengLuoRJ",
-  "license": "MIT",
   "description": "SCNexus Standard types, definitions, parsers and so on files.",
   "keywords": [
     "SCNexus"
   ],
   "homepage": "https://github.com/MengLuoRJ/scnexus/packages-standard/README.md",
+  "bugs": {
+    "url": "https://github.com/MengLuoRJ/scnexus/issues"
+  },
+  "license": "MIT",
+  "author": "MengLuoRJ",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MengLuoRJ/scnexus.git"
   },
-  "bugs": {
-    "url": "https://github.com/MengLuoRJ/scnexus/issues"
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/index.d.ts"
+      ],
+      "metadata": [
+        "./dist/metadata/index.d.ts"
+      ],
+      "package": [
+        "./dist/package/index.d.ts"
+      ]
+    }
   },
   "exports": {
     "./metadata": {
@@ -35,19 +48,6 @@
         "types": "./dist/package/index.d.mts",
         "default": "./dist/package/index.mjs"
       }
-    }
-  },
-  "typesVersions": {
-    "*": {
-      ".": [
-        "./dist/index.d.ts"
-      ],
-      "metadata": [
-        "./dist/metadata/index.d.ts"
-      ],
-      "package": [
-        "./dist/package/index.d.ts"
-      ]
     }
   },
   "scripts": {

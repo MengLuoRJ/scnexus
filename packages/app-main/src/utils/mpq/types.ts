@@ -1,98 +1,87 @@
-import type { Readable } from "node:stream";
+import type { Readable } from 'node:stream'
 
-export type MpqInput = string | Readable;
+export type MpqInput = string | Readable
 
 export type MpqOpenOptions = {
-  writable?: boolean;
-  listfile?: string[];
-  tempDirectory?: string;
-  maxHeaderSearchBytes?: number;
-};
+  writable?: boolean
+  listfile?: string[]
+  tempDirectory?: string
+  maxHeaderSearchBytes?: number
+}
 
 export type MpqCreateOptions = {
-  sectorSizeShift?: number;
-  hashTableSize?: number;
-  userData?: Buffer;
-};
+  sectorSizeShift?: number
+  hashTableSize?: number
+  userData?: Buffer
+}
 
 export type MpqFileEntry = {
-  name?: string;
-  hashIndex: number;
-  blockIndex: number;
-  locale: number;
-  platform: number;
-  offset: bigint;
-  compressedSize: number;
-  size: number;
-  flags: number;
-  isFile: boolean;
-  isCompressed: boolean;
-  isEncrypted: boolean;
-  isSingleUnit: boolean;
-};
+  name?: string
+  hashIndex: number
+  blockIndex: number
+  locale: number
+  platform: number
+  offset: bigint
+  compressedSize: number
+  size: number
+  flags: number
+  isFile: boolean
+  isCompressed: boolean
+  isEncrypted: boolean
+  isSingleUnit: boolean
+}
 
 export type MpqTreeNode = {
-  name: string;
-  path: string;
-  type: "file" | "directory";
-  entry?: MpqFileEntry;
-  children?: MpqTreeNode[];
-};
+  name: string
+  path: string
+  type: 'file' | 'directory'
+  entry?: MpqFileEntry
+  children?: MpqTreeNode[]
+}
 
 export type MpqAddOptions = {
-  archivePath?: string;
-  compress?: boolean;
-  encrypt?: boolean;
-  replace?: boolean;
-  locale?: number;
-  platform?: number;
-};
+  archivePath?: string
+  compress?: boolean
+  encrypt?: boolean
+  replace?: boolean
+  locale?: number
+  platform?: number
+}
 
 export type MpqExtractOptions = {
-  overwrite?: boolean;
-};
+  overwrite?: boolean
+}
 
 export type MpqReadOptions = {
-  maxBytes?: number;
-};
+  maxBytes?: number
+}
 
 export type MpqArchiveInfo = {
-  sourcePath?: string;
-  headerOffset: bigint;
-  archiveSize: bigint;
-  formatVersion: number;
-  sectorSize: number;
-  fileCount: number;
-  hashTableSize: number;
-  blockTableSize: number;
-  hasUserData: boolean;
-};
+  sourcePath?: string
+  headerOffset: bigint
+  archiveSize: bigint
+  formatVersion: number
+  sectorSize: number
+  fileCount: number
+  hashTableSize: number
+  blockTableSize: number
+  hasUserData: boolean
+}
 
 export interface MpqArchiveApi {
-  readonly info: MpqArchiveInfo;
-  readonly fileCount: number;
-  list(): Promise<MpqFileEntry[]>;
-  listTree(): Promise<MpqTreeNode>;
-  hasFile(path: string): Promise<boolean>;
-  readFile(path: string, options?: MpqReadOptions): Promise<Buffer>;
-  readTextFile(
-    path: string,
-    encoding?: BufferEncoding,
-    options?: MpqReadOptions,
-  ): Promise<string>;
-  extract(
-    path: string,
-    destination: string,
-    options?: MpqExtractOptions,
-  ): Promise<void>;
-  add(
-    source: string | Buffer | Readable,
-    options: MpqAddOptions,
-  ): Promise<void>;
-  delete(path: string): Promise<void>;
-  rename(path: string, newPath: string): Promise<void>;
-  save(destination?: string): Promise<void>;
-  close(): Promise<void>;
+  readonly info: MpqArchiveInfo
+  readonly fileCount: number
+  list(): Promise<MpqFileEntry[]>
+  listTree(): Promise<MpqTreeNode>
+  hasFile(path: string): Promise<boolean>
+  readFile(path: string, options?: MpqReadOptions): Promise<Buffer>
+  readTextFile(path: string, encoding?: BufferEncoding, options?: MpqReadOptions): Promise<string>
+  extract(path: string, destination: string, options?: MpqExtractOptions): Promise<void>
+  add(source: string | Buffer | Readable, options: MpqAddOptions): Promise<void>
+  delete(path: string): Promise<void>
+  rename(path: string, newPath: string): Promise<void>
+  save(destination?: string): Promise<void>
+  close(): Promise<void>
 }
 
 export const MPQ_FILE_FLAGS = {
@@ -105,7 +94,7 @@ export const MPQ_FILE_FLAGS = {
   DELETE_MARKER: 0x02000000,
   SECTOR_CRC: 0x04000000,
   EXISTS: 0x80000000,
-} as const;
+} as const
 
 export const MPQ_COMPRESSION = {
   HUFFMAN: 0x01,
@@ -115,4 +104,4 @@ export const MPQ_COMPRESSION = {
   SPARSE: 0x20,
   ADPCM_MONO: 0x40,
   ADPCM_STEREO: 0x80,
-} as const;
+} as const

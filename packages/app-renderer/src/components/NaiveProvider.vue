@@ -1,40 +1,40 @@
 <script setup lang="ts">
-import { darkTheme, zhCN, dateZhCN, enUS, dateEnUS } from "naive-ui";
-import { computed } from "vue";
+import { darkTheme, zhCN, dateZhCN, enUS, dateEnUS } from 'naive-ui'
+import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
-    darkTheme?: boolean;
-    locale?: "zh-cn" | "en-us";
+    darkTheme?: boolean
+    locale?: 'zh-cn' | 'en-us'
   }>(),
   {
     darkTheme: false,
-    locale: "zh-cn",
-  }
-);
+    locale: 'zh-cn',
+  },
+)
 
 const naiveLocale = computed(() => {
   switch (props.locale) {
-    case "zh-cn":
+    case 'zh-cn':
       return {
         locale: zhCN,
         date: dateZhCN,
-      };
-    case "en-us":
+      }
+    case 'en-us':
       return {
         locale: enUS,
         date: dateEnUS,
-      };
+      }
     default:
       return {
         locale: zhCN,
         date: dateZhCN,
-      };
+      }
   }
-});
+})
 
 const naiveTheme = computed(() => {
-  return props.darkTheme ? darkTheme : null;
-});
+  return props.darkTheme ? darkTheme : null
+})
 </script>
 
 <template>

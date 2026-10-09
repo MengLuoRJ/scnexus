@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-import { useI18n } from "vue-i18n";
-import type { Conflict, ConflictDecision } from "@scnexus/app-shared/types/content.type";
-defineOptions({ name: "CampaignConflictChoices" });
-const props = defineProps<{ files: Conflict[] }>();
-const decisions = defineModel<ConflictDecision[]>({ required: true });
-const { t } = useI18n();
-function choose(id: string, action: "keep" | "overwrite") {
+import { useI18n } from 'vue-i18n'
+import type { Conflict, ConflictDecision } from '@scnexus/app-shared/types/content.type'
+defineOptions({ name: 'CampaignConflictChoices' })
+const props = defineProps<{ files: Conflict[] }>()
+const decisions = defineModel<ConflictDecision[]>({ required: true })
+const { t } = useI18n()
+function choose(id: string, action: 'keep' | 'overwrite') {
   decisions.value = [
     ...decisions.value.filter((item) => item.conflictId !== id),
     { conflictId: id, action },
-  ];
+  ]
 }
 function date(value: number | null) {
-  return value === null ? "—" : new Date(value).toLocaleString();
+  return value === null ? '—' : new Date(value).toLocaleString()
 }
 </script>
 <template>
@@ -24,11 +24,11 @@ function date(value: number | null) {
     >
       <p class="font-medium">{{ file.type }} · {{ file.incoming.name }}</p>
       <p class="break-all">
-        {{ t("campaign.incoming") }}: {{ file.incoming.path }} · {{ file.incoming.bytes }} B ·
+        {{ t('campaign.incoming') }}: {{ file.incoming.path }} · {{ file.incoming.bytes }} B ·
         {{ date(file.incoming.modifiedAt) }}
       </p>
       <p class="break-all">
-        {{ t("campaign.local") }}: {{ file.local.path }} · {{ file.local.bytes }} B ·
+        {{ t('campaign.local') }}: {{ file.local.path }} · {{ file.local.bytes }} B ·
         {{ date(file.local.modifiedAt) }}
       </p>
       <USelect

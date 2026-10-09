@@ -10,14 +10,14 @@ export type GameExecutableParameters = {
    * @type {string}
    * @example `-run "MyMap.SC2Map"`, `-run "D:\Path\To\MyMap.SC2Map"`
    */
-  run?: string;
+  run?: string
   /**
    * Mod filename. Can be relative or absolute path. Relative path assumes root SC2 installation folder.
    * @type {string}
    * @example `-testmod "Mods\MyMod.SC2Mod;ComponentList.SC2Components"`
    * @example `-testmod "D:\Path\To\MyMod.SC2Mod;ComponentList.SC2Components"`
    */
-  testmod?: string;
+  testmod?: string
   /**
    * Sets wether SC2 should be run windowed or fullscreen
    *
@@ -27,11 +27,11 @@ export type GameExecutableParameters = {
    *
    * `2` - Fullscreen
    */
-  displaymode?: number;
+  displaymode?: number
   /**
    * Causes the Trigger Debug window to open on load finish.
    */
-  trigdebug?: boolean;
+  trigdebug?: boolean
   /**
    * Sets wether resources should be preloaded or not
    *
@@ -39,15 +39,15 @@ export type GameExecutableParameters = {
    *
    * `1` - Yes
    */
-  preload?: number;
+  preload?: number
   /**
    * Unknown
    */
-  NoUserCheats?: boolean;
+  NoUserCheats?: boolean
   /**
    * Unknown
    */
-  reloadcheck?: boolean;
+  reloadcheck?: boolean
   /**
    * Sets default Melee Mode when loading a melee map
    *
@@ -57,10 +57,10 @@ export type GameExecutableParameters = {
    *
    * `Void`
    */
-  meleeMod?: string;
+  meleeMod?: string
   /**
    * Sets the AI difficulty
-   * 
+   *
    * `1` - Casual
    *
    * `2` - Normal
@@ -69,7 +69,7 @@ export type GameExecutableParameters = {
    *
    * `4`- Brutal
    */
-  difficulty?: number;
+  difficulty?: number
   /**
    * Sets the initial game speed
    *
@@ -83,5 +83,5 @@ export type GameExecutableParameters = {
    *
    * `4`- Faster
    */
-  speed?: number;
-};
+  speed?: number
+}

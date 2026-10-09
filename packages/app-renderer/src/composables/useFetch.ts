@@ -1,5 +1,5 @@
-import { useUserStore } from "@/stores/user";
-import { createFetch } from "@vueuse/core";
+import { useUserStore } from '@/stores/user'
+import { createFetch } from '@vueuse/core'
 
 export const useFetch = createFetch({
   baseUrl: import.meta.env.PROD
@@ -7,17 +7,17 @@ export const useFetch = createFetch({
     : import.meta.env.VITE_API_BASE_URL_DEV,
   options: {
     async beforeFetch({ options }) {
-      const user = useUserStore();
+      const user = useUserStore()
       options.headers = {
         ...options.headers,
-        "X-SCNexus-client-id": user.client_id,
-        "X-SCNexus-access-token": user.access_token,
-      };
-      return { options };
+        'X-SCNexus-client-id': user.client_id,
+        'X-SCNexus-access-token': user.access_token,
+      }
+      return { options }
     },
   },
   fetchOptions: {
-    mode: "cors",
-    credentials: "include",
+    mode: 'cors',
+    credentials: 'include',
   },
-});
+})

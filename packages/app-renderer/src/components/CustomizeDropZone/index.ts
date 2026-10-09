@@ -1,1 +1,1 @@
-export { default } from "./CustomizeDropZone.vue"
+export { default } from './CustomizeDropZone.vue'

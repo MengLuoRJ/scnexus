@@ -1,22 +1,22 @@
-import { type RouteRecordRaw } from "vue-router";
+import { type RouteRecordRaw } from 'vue-router'
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/user",
+    path: '/user',
     name: `user_root`,
-    component: () => import("@/layouts/BasicLayout.vue"),
+    component: () => import('@/layouts/BasicLayout.vue'),
     children: [
       {
-        path: "",
-        name: "user",
+        path: '',
+        name: 'user',
         meta: {
-          title: "User",
+          title: 'User',
           public: true,
         },
-        component: () => import("@/views/User/UserView.vue"),
+        component: () => import('@/views/User/UserView.vue'),
       },
     ],
   },
-];
+]
 
-export default routes;
+export default routes

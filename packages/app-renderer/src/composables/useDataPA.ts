@@ -5,7 +5,7 @@ export const axiosInstance = axios.create({
   baseURL: import.meta.env.PROD
     ? import.meta.env.VITE_PA_API_BASE_URL
     : import.meta.env.VITE_PA_API_BASE_URL_DEV,
-  withCredentials: true
+  withCredentials: true,
 })
 
 export function useRequest(...args: Parameters<typeof useAxios>): ReturnType<typeof useAxios> {
@@ -14,65 +14,65 @@ export function useRequest(...args: Parameters<typeof useAxios>): ReturnType<typ
 
 export function useGet(
   url: string,
-  config?: AxiosRequestConfig<any> | undefined
+  config?: AxiosRequestConfig<any> | undefined,
 ): Promise<EasyUseAxiosReturn<any, AxiosResponse<any, any>, any>> {
   const { execute } = useAxios(
     {
-      method: 'GET'
+      method: 'GET',
     },
-    axiosInstance
+    axiosInstance,
   )
   return execute(url, config)
 }
 
 export function usePost(
   url: string,
-  config?: AxiosRequestConfig<any> | undefined
+  config?: AxiosRequestConfig<any> | undefined,
 ): Promise<EasyUseAxiosReturn<any, AxiosResponse<any, any>, any>> {
   const { execute } = useAxios(
     {
-      method: 'POST'
+      method: 'POST',
     },
-    axiosInstance
+    axiosInstance,
   )
   return execute(url, config)
 }
 
 export function usePatch(
   url: string,
-  config?: AxiosRequestConfig<any> | undefined
+  config?: AxiosRequestConfig<any> | undefined,
 ): Promise<EasyUseAxiosReturn<any, AxiosResponse<any, any>, any>> {
   const { execute } = useAxios(
     {
-      method: 'PATCH'
+      method: 'PATCH',
     },
-    axiosInstance
+    axiosInstance,
   )
   return execute(url, config)
 }
 
 export function usePut(
   url: string,
-  config?: AxiosRequestConfig<any> | undefined
+  config?: AxiosRequestConfig<any> | undefined,
 ): Promise<EasyUseAxiosReturn<any, AxiosResponse<any, any>, any>> {
   const { execute } = useAxios(
     {
-      method: 'PUT'
+      method: 'PUT',
     },
-    axiosInstance
+    axiosInstance,
   )
   return execute(url, config)
 }
 
 export function useDelete(
   url: string,
-  config?: AxiosRequestConfig<any> | undefined
+  config?: AxiosRequestConfig<any> | undefined,
 ): Promise<EasyUseAxiosReturn<any, AxiosResponse<any, any>, any>> {
   const { execute } = useAxios(
     {
-      method: 'DELETE'
+      method: 'DELETE',
     },
-    axiosInstance
+    axiosInstance,
   )
   return execute(url, config)
 }

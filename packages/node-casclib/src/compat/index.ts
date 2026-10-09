@@ -9,26 +9,26 @@
  */
 
 // High-level API
-export { Storage, withStorage, withStorageAsync } from './storage.js';
-export type { StorageOpenOptions, FileInfo, FileOpenOptions } from './storage.js';
-export { File } from './file.js';
-export { CascError, CascErrorCode } from './errors.js';
+export { Storage, withStorage, withStorageAsync } from './storage.js'
+export type { StorageOpenOptions, FileInfo, FileOpenOptions } from './storage.js'
+export { File } from './file.js'
+export { CascError, CascErrorCode } from './errors.js'
 
 // Low-level bindings (types, raw classes, utility functions)
-export * from './bindings.js';
+export * from './bindings.js'
 
 // Constants (re-exported from the native addon)
-export * from './constants.js';
+export * from './constants.js'
 
 // Default export
-import { Storage, withStorage, withStorageAsync } from './storage.js';
-import { File } from './file.js';
-import { CascError } from './errors.js';
+import { Storage, withStorage, withStorageAsync } from './storage.js'
+import { File } from './file.js'
+import { CascError } from './errors.js'
 
 export default {
   Storage,
   File,
   CascError,
   withStorage,
-  withStorageAsync
-};
+  withStorageAsync,
+}

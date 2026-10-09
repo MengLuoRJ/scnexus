@@ -1,14 +1,14 @@
-import { normalizeError, ERRORS, toErrorDto } from "@scnexus/app-shared/errors/app.error";
-import { getMainWindow } from "@/modules/window";
-import { pipeline } from "node:stream";
-import { createReadStream, createWriteStream, statSync } from "node:fs";
-import { promisify } from "node:util";
-import { MetadataStandard } from "scnexus-standard/metadata";
-import { sevenZip } from "@/utils/7zip-wrapper";
-import { mkdtemp, writeFile, copyFile, rename, rm } from "node:fs/promises";
-import { dirname, join, basename } from "node:path";
+import { normalizeError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
+import { getMainWindow } from '@/modules/window'
+import { pipeline } from 'node:stream'
+import { createReadStream, createWriteStream, statSync } from 'node:fs'
+import { promisify } from 'node:util'
+import { MetadataStandard } from 'scnexus-standard/metadata'
+import { sevenZip } from '@/utils/7zip-wrapper'
+import { mkdtemp, writeFile, copyFile, rename, rm } from 'node:fs/promises'
+import { dirname, join, basename } from 'node:path'
 
-import axios from "axios";
+import axios from 'axios'
 
 /**
  * Write standard Metadata to metadata.json file in given Compressed file.
@@ -19,38 +19,28 @@ import axios from "axios";
  * @param file_path path to the compressed file
  * @param metadata Metadata to write
  */
-export async function writeMetadataToCompressedFile(
-  file_path: string,
-  metadata: MetadataStandard,
-) {
-  const temporary = await mkdtemp(
-    join(dirname(file_path), ".scnexus-metadata-"),
-  );
-  const stagedArchive = join(temporary, basename(file_path));
+export async function writeMetadataToCompressedFile(file_path: string, metadata: MetadataStandard) {
+  const temporary = await mkdtemp(join(dirname(file_path), '.scnexus-metadata-'))
+  const stagedArchive = join(temporary, basename(file_path))
   try {
-    await copyFile(file_path, stagedArchive);
-    const { entries } = await sevenZip.list(stagedArchive);
+    await copyFile(file_path, stagedArchive)
+    const { entries } = await sevenZip.list(stagedArchive)
     const old = entries.filter(
-      (entry) =>
-        entry.path.replaceAll("\\", "/").split("/").at(-1) === "metadata.json",
-    );
+      (entry) => entry.path.replaceAll('\\', '/').split('/').at(-1) === 'metadata.json',
+    )
     if (old.length)
       await sevenZip.delete(
         stagedArchive,
         old.map((entry) => entry.path),
-      );
-    await writeFile(
-      join(temporary, "metadata.json"),
-      JSON.stringify(metadata, null, "\t"),
-      "utf8",
-    );
-    await sevenZip.add(stagedArchive, ["metadata.json"], {
+      )
+    await writeFile(join(temporary, 'metadata.json'), JSON.stringify(metadata, null, '\t'), 'utf8')
+    await sevenZip.add(stagedArchive, ['metadata.json'], {
       cwd: temporary,
       recursive: false,
-    });
-    await rename(stagedArchive, file_path);
+    })
+    await rename(stagedArchive, file_path)
   } finally {
-    await rm(temporary, { recursive: true, force: true });
+    await rm(temporary, { recursive: true, force: true })
   }
 }
 
@@ -64,31 +54,28 @@ export async function uploadCompressedFile(
   target_url: string,
   file_md5: string,
 ) {
-  const fileStream = createReadStream(file_path);
-  const fileStat = statSync(file_path);
+  const fileStream = createReadStream(file_path)
+  const fileStat = statSync(file_path)
 
   try {
     const response = await axios({
-      method: "put",
+      method: 'put',
       url: target_url,
       data: fileStream,
       headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Length": fileStat.size,
-        "Content-MD5": file_md5,
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': fileStat.size,
+        'Content-MD5': file_md5,
       },
       onUploadProgress: (progressEvent) => {
-        getMainWindow()?.webContents.send(
-          "workshop::upload-progress",
-          progressEvent,
-        );
+        getMainWindow()?.webContents.send('workshop::upload-progress', progressEvent)
       },
-    });
-    return response.data;
+    })
+    return response.data
   } catch (error) {
-    const normalized = normalizeError(error, ERRORS.NETWORK_REQUEST_FAILED);
-    getMainWindow()?.webContents.send("workshop::upload-error", toErrorDto(normalized));
-    throw normalized;
+    const normalized = normalizeError(error, ERRORS.NETWORK_REQUEST_FAILED)
+    getMainWindow()?.webContents.send('workshop::upload-error', toErrorDto(normalized))
+    throw normalized
   }
 }
 
@@ -97,24 +84,21 @@ export async function uploadCompressedFile(
  * @param url presigned file path
  */
 export async function downloadCompressedFile(url: string) {
-  const target_path = ""; // change this later;
-  const fileWriter = createWriteStream(target_path);
+  const target_path = '' // change this later;
+  const fileWriter = createWriteStream(target_path)
 
   try {
     const response = await axios({
-      method: "get",
+      method: 'get',
       url: url,
-      responseType: "stream",
+      responseType: 'stream',
       onDownloadProgress: (progressEvent) => {
-        getMainWindow()?.webContents.send(
-          "workshop::download-progress",
-          progressEvent,
-        );
+        getMainWindow()?.webContents.send('workshop::download-progress', progressEvent)
       },
-    });
+    })
 
-    await promisify(pipeline)(response.data, fileWriter);
+    await promisify(pipeline)(response.data, fileWriter)
   } catch (error) {
-    console.log(error);
+    console.log(error)
   }
 }

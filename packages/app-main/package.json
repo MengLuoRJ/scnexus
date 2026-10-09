@@ -25,16 +25,6 @@
     "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/app-main",
     "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-main"
   },
-  "devDependencies": {
-    "@scnexus/app-shared": "workspace:*",
-    "@types/semver": "^7.5.8",
-    "electron": "^44.5.1",
-    "electron-builder": "^26.15.3",
-    "scnexus-standard": "^0.0.13",
-    "typescript": "^5.7.2",
-    "vite": "^8.3.2",
-    "vitest": "^4.1.11"
-  },
   "dependencies": {
     "7z-bin": "0.0.3",
     "@scnexus/standard": "workspace:*",
@@ -48,5 +38,15 @@
     "regedit": "^5.1.3",
     "semver": "^7.6.3",
     "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@scnexus/app-shared": "workspace:*",
+    "@types/semver": "^7.5.8",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "scnexus-standard": "^0.0.13",
+    "typescript": "^5.7.2",
+    "vite": "^8.3.2",
+    "vitest": "^4.1.11"
   }
 }

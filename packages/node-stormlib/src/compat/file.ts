@@ -1,7 +1,7 @@
-import { MPQFile } from "./bindings.js";
-import { invoke, invokeAsync } from "./errors.js";
-import { kDispose } from "./dispose.js";
-import { Archive } from "./archive.js";
+import { MPQFile } from './bindings.js'
+import { invoke, invokeAsync } from './errors.js'
+import { kDispose } from './dispose.js'
+import { Archive } from './archive.js'
 
 /**
  * StormLib File wrapper class
@@ -11,11 +11,11 @@ import { Archive } from "./archive.js";
  * Always `close()` (or `finish()` for written files) when done.
  */
 export class File {
-  private file: MPQFile;
+  private file: MPQFile
 
   /** @internal — use `Archive.openFile()` / `Archive.createFile()` */
   constructor(file: MPQFile) {
-    this.file = file;
+    this.file = file
   }
 
   /**
@@ -24,7 +24,7 @@ export class File {
    * @returns Buffer containing the read data
    */
   read(bytesToRead?: number): Buffer {
-    return invoke(() => this.file.SFileReadFile(bytesToRead ?? 4096));
+    return invoke(() => this.file.SFileReadFile(bytesToRead ?? 4096))
   }
 
   /**
@@ -32,7 +32,7 @@ export class File {
    * @returns Buffer containing the remaining file data
    */
   readAll(): Buffer {
-    return invoke(() => this.file.readFileAll());
+    return invoke(() => this.file.readFileAll())
   }
 
   /**
@@ -42,7 +42,7 @@ export class File {
    * Do not perform other operations on this file while the read is pending.
    */
   readAllAsync(): Promise<Buffer> {
-    return invokeAsync(this.file.readAllAsync());
+    return invokeAsync(this.file.readAllAsync())
   }
 
   /**
@@ -50,7 +50,7 @@ export class File {
    * @returns File size in bytes
    */
   getSize(): number {
-    return invoke(() => this.file.SFileGetFileSize());
+    return invoke(() => this.file.SFileGetFileSize())
   }
 
   /**
@@ -58,7 +58,7 @@ export class File {
    * @returns Current position in bytes
    */
   getPosition(): number {
-    return invoke(() => this.file.SFileGetFilePointer());
+    return invoke(() => this.file.SFileGetFilePointer())
   }
 
   /**
@@ -67,7 +67,7 @@ export class File {
    * @returns The new position
    */
   setPosition(position: number): number {
-    return invoke(() => this.file.SFileSetFilePointer(position));
+    return invoke(() => this.file.SFileSetFilePointer(position))
   }
 
   /**
@@ -75,7 +75,7 @@ export class File {
    * @returns true if closed successfully
    */
   close(): boolean {
-    return this.file.SFileCloseFile();
+    return this.file.SFileCloseFile()
   }
 
   /**
@@ -85,7 +85,7 @@ export class File {
    * @returns true if successful
    */
   write(data: Buffer, compression?: number): boolean {
-    return invoke(() => this.file.SFileWriteFile(data, compression || 0x02)); // MPQ_COMPRESSION_ZLIB
+    return invoke(() => this.file.SFileWriteFile(data, compression || 0x02)) // MPQ_COMPRESSION_ZLIB
   }
 
   /**
@@ -93,7 +93,7 @@ export class File {
    * @returns true if successful
    */
   finish(): boolean {
-    return invoke(() => this.file.SFileFinishFile());
+    return invoke(() => this.file.SFileFinishFile())
   }
 
   /**
@@ -101,7 +101,7 @@ export class File {
    * @returns The filename
    */
   getFileName(): string {
-    return invoke(() => this.file.SFileGetFileName());
+    return invoke(() => this.file.SFileGetFileName())
   }
 
   /**
@@ -110,7 +110,7 @@ export class File {
    * @returns true if successful
    */
   setLocale(locale: number): boolean {
-    return invoke(() => this.file.SFileSetFileLocale(locale));
+    return invoke(() => this.file.SFileSetFileLocale(locale))
   }
 
   /**
@@ -119,7 +119,7 @@ export class File {
    * @returns Buffer containing the info data or null
    */
   getFileInfo(infoClass: number): Buffer | null {
-    return invoke(() => this.file.SFileGetFileInfo(infoClass));
+    return invoke(() => this.file.SFileGetFileInfo(infoClass))
   }
 
   /**
@@ -132,14 +132,14 @@ export class File {
    * original opener and is unaffected either way.
    */
   getArchive(): Archive {
-    const archive = invoke(() => this.file.SFileGetFileArchive());
-    return new Archive(archive);
+    const archive = invoke(() => this.file.SFileGetFileArchive())
+    return new Archive(archive)
   }
 
   /**
    * Symbol.dispose support for `using` blocks (TS 5.2+).
    */
   [kDispose](): void {
-    this.close();
+    this.close()
   }
 }

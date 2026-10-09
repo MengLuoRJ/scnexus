@@ -1,22 +1,22 @@
-import * as fs from "fs";
-import * as nodePath from "path";
+import * as fs from 'fs'
+import * as nodePath from 'path'
 import {
   CascStorageBinding,
   CascFindData,
   CascStorageInfo,
   CascOpenStorageExOptions,
   CascStorage,
-} from "./bindings.js";
-import { invoke, invokeAsync } from "./errors.js";
-import { kDispose } from "./dispose.js";
-import { File } from "./file.js";
+} from './bindings.js'
+import { invoke, invokeAsync } from './errors.js'
+import { kDispose } from './dispose.js'
+import { File } from './file.js'
 
 /**
  * Options for opening a CASC storage
  */
 export interface StorageOpenOptions {
   /** Flags for opening the storage */
-  flags?: number;
+  flags?: number
 }
 
 /**
@@ -24,9 +24,9 @@ export interface StorageOpenOptions {
  */
 export interface FileInfo {
   /** File name */
-  name: string;
+  name: string
   /** File size in bytes */
-  size: number;
+  size: number
 }
 
 /**
@@ -34,7 +34,7 @@ export interface FileInfo {
  */
 export interface FileOpenOptions {
   /** Open flags */
-  flags?: number;
+  flags?: number
 }
 
 /**
@@ -48,11 +48,11 @@ export interface FileOpenOptions {
  * ```
  */
 export class Storage {
-  private storage: CascStorage;
-  private opened = false;
+  private storage: CascStorage
+  private opened = false
 
   constructor() {
-    this.storage = new CascStorageBinding();
+    this.storage = new CascStorageBinding()
   }
 
   // ---------------------------------------------------------------------------
@@ -65,9 +65,9 @@ export class Storage {
    * @param options - Optional opening options
    */
   static open(path: string, options?: StorageOpenOptions): Storage {
-    const storage = new Storage();
-    storage.open(path, options);
-    return storage;
+    const storage = new Storage()
+    storage.open(path, options)
+    return storage
   }
 
   /**
@@ -75,13 +75,10 @@ export class Storage {
    * @param path - Path to the CASC storage directory
    * @param options - Optional opening options
    */
-  static async openAsync(
-    path: string,
-    options?: StorageOpenOptions,
-  ): Promise<Storage> {
-    const storage = new Storage();
-    await storage.openAsync(path, options);
-    return storage;
+  static async openAsync(path: string, options?: StorageOpenOptions): Promise<Storage> {
+    const storage = new Storage()
+    await storage.openAsync(path, options)
+    return storage
   }
 
   /**
@@ -90,9 +87,9 @@ export class Storage {
    * @param options - Optional opening options
    */
   static openOnline(connection: string, options?: StorageOpenOptions): Storage {
-    const storage = new Storage();
-    storage.openOnline(connection, options);
-    return storage;
+    const storage = new Storage()
+    storage.openOnline(connection, options)
+    return storage
   }
 
   /**
@@ -103,13 +100,10 @@ export class Storage {
    * @param connection - Connection string, see {@link Storage.openOnline}
    * @param options - Optional opening options
    */
-  static async openOnlineAsync(
-    connection: string,
-    options?: StorageOpenOptions,
-  ): Promise<Storage> {
-    const storage = new Storage();
-    await storage.openOnlineAsync(connection, options);
-    return storage;
+  static async openOnlineAsync(connection: string, options?: StorageOpenOptions): Promise<Storage> {
+    const storage = new Storage()
+    await storage.openOnlineAsync(connection, options)
+    return storage
   }
 
   /**
@@ -118,9 +112,9 @@ export class Storage {
    * @param options - Extended opening options
    */
   static openEx(params: string, options?: CascOpenStorageExOptions): Storage {
-    const storage = new Storage();
-    storage.openEx(params, options);
-    return storage;
+    const storage = new Storage()
+    storage.openEx(params, options)
+    return storage
   }
 
   // ---------------------------------------------------------------------------
@@ -129,7 +123,7 @@ export class Storage {
 
   /** Whether the storage is currently open. */
   get isOpen(): boolean {
-    return this.opened;
+    return this.opened
   }
 
   /**
@@ -138,8 +132,8 @@ export class Storage {
    * @param options - Optional opening options
    */
   open(path: string, options?: StorageOpenOptions): void {
-    invoke(() => this.storage.CascOpenStorage(path, options?.flags || 0));
-    this.opened = true;
+    invoke(() => this.storage.CascOpenStorage(path, options?.flags || 0))
+    this.opened = true
   }
 
   /**
@@ -148,8 +142,8 @@ export class Storage {
    * @param options - Optional opening options
    */
   async openAsync(path: string, options?: StorageOpenOptions): Promise<void> {
-    await invokeAsync(this.storage.openAsync(path, options?.flags || 0));
-    this.opened = true;
+    await invokeAsync(this.storage.openAsync(path, options?.flags || 0))
+    this.opened = true
   }
 
   /**
@@ -182,24 +176,17 @@ export class Storage {
    * ```
    */
   openOnline(connection: string, options?: StorageOpenOptions): void {
-    invoke(() =>
-      this.storage.CascOpenOnlineStorage(connection, options?.flags || 0),
-    );
-    this.opened = true;
+    invoke(() => this.storage.CascOpenOnlineStorage(connection, options?.flags || 0))
+    this.opened = true
   }
 
   /**
    * Open an online CASC storage on a worker thread (does not block the event loop).
    * See {@link Storage.openOnline} for the connection string format.
    */
-  async openOnlineAsync(
-    connection: string,
-    options?: StorageOpenOptions,
-  ): Promise<void> {
-    await invokeAsync(
-      this.storage.openOnlineAsync(connection, options?.flags || 0),
-    );
-    this.opened = true;
+  async openOnlineAsync(connection: string, options?: StorageOpenOptions): Promise<void> {
+    await invokeAsync(this.storage.openOnlineAsync(connection, options?.flags || 0))
+    this.opened = true
   }
 
   /**
@@ -208,16 +195,16 @@ export class Storage {
    * @param options - Extended opening options
    */
   openEx(params: string, options?: CascOpenStorageExOptions): void {
-    invoke(() => this.storage.CascOpenStorageEx(params, options));
-    this.opened = true;
+    invoke(() => this.storage.CascOpenStorageEx(params, options))
+    this.opened = true
   }
 
   /**
    * Close the CASC storage
    */
   close(): boolean {
-    this.opened = false;
-    return this.storage.CascCloseStorage();
+    this.opened = false
+    return this.storage.CascCloseStorage()
   }
 
   // ---------------------------------------------------------------------------
@@ -231,10 +218,8 @@ export class Storage {
    * @returns A File object
    */
   openFile(filename: string, options?: FileOpenOptions): File {
-    const file = invoke(() =>
-      this.storage.CascOpenFile(filename, options?.flags || 0),
-    );
-    return new File(file);
+    const file = invoke(() => this.storage.CascOpenFile(filename, options?.flags || 0))
+    return new File(file)
   }
 
   /**
@@ -243,7 +228,7 @@ export class Storage {
    * @returns File information or null if file doesn't exist
    */
   getFileInfo(filename: string): FileInfo | null {
-    return invoke(() => this.storage.CascGetFileInfo(filename));
+    return invoke(() => this.storage.CascGetFileInfo(filename))
   }
 
   /**
@@ -252,14 +237,14 @@ export class Storage {
    * @returns true if file exists, false otherwise
    */
   fileExists(filename: string): boolean {
-    return invoke(() => this.storage.fileExists(filename));
+    return invoke(() => this.storage.fileExists(filename))
   }
 
   /**
    * Alias for fileExists — symmetry with stormlib's Archive.hasFile()
    */
   hasFile(filename: string): boolean {
-    return this.fileExists(filename);
+    return this.fileExists(filename)
   }
 
   /**
@@ -267,11 +252,11 @@ export class Storage {
    * Opens and closes the file internally.
    */
   readFile(filename: string, options?: FileOpenOptions): Buffer {
-    const file = this.openFile(filename, options);
+    const file = this.openFile(filename, options)
     try {
-      return file.readAll();
+      return file.readAll()
     } finally {
-      file.close();
+      file.close()
     }
   }
 
@@ -279,15 +264,12 @@ export class Storage {
    * Read a file from storage on a worker thread (does not block the event loop).
    * Opens and closes the file internally.
    */
-  async readFileAsync(
-    filename: string,
-    options?: FileOpenOptions,
-  ): Promise<Buffer> {
-    const file = this.openFile(filename, options);
+  async readFileAsync(filename: string, options?: FileOpenOptions): Promise<Buffer> {
+    const file = this.openFile(filename, options)
     try {
-      return await file.readAllAsync();
+      return await file.readAllAsync()
     } finally {
-      file.close();
+      file.close()
     }
   }
 
@@ -295,18 +277,15 @@ export class Storage {
    * Read a file from storage as a string.
    * @param encoding Buffer encoding (default 'utf-8').
    */
-  readFileAsString(
-    filename: string,
-    encoding: BufferEncoding = "utf-8",
-  ): string {
-    return this.readFile(filename).toString(encoding);
+  readFileAsString(filename: string, encoding: BufferEncoding = 'utf-8'): string {
+    return this.readFile(filename).toString(encoding)
   }
 
   /**
    * Read a file from storage and parse as JSON.
    */
   readFileAsJson<T = unknown>(filename: string): T {
-    return JSON.parse(this.readFileAsString(filename, "utf-8")) as T;
+    return JSON.parse(this.readFileAsString(filename, 'utf-8')) as T
   }
 
   /**
@@ -316,9 +295,9 @@ export class Storage {
    */
   async readFileAsStringAsync(
     filename: string,
-    encoding: BufferEncoding = "utf-8",
+    encoding: BufferEncoding = 'utf-8',
   ): Promise<string> {
-    return (await this.readFileAsync(filename)).toString(encoding);
+    return (await this.readFileAsync(filename)).toString(encoding)
   }
 
   /**
@@ -326,11 +305,11 @@ export class Storage {
    * Throws CascError if the file does not exist.
    */
   getFileSize(filename: string): number | bigint {
-    const file = this.openFile(filename);
+    const file = this.openFile(filename)
     try {
-      return file.getSize64();
+      return file.getSize64()
     } finally {
-      file.close();
+      file.close()
     }
   }
 
@@ -339,22 +318,19 @@ export class Storage {
    * Returns the number of bytes written.
    */
   extractFile(filename: string, destination: string): number {
-    const buf = this.readFile(filename);
-    fs.writeFileSync(destination, buf);
-    return buf.length;
+    const buf = this.readFile(filename)
+    fs.writeFileSync(destination, buf)
+    return buf.length
   }
 
   /**
    * Extract a file from storage to a path on disk without blocking the
    * event loop. Returns the number of bytes written.
    */
-  async extractFileAsync(
-    filename: string,
-    destination: string,
-  ): Promise<number> {
-    const buf = await this.readFileAsync(filename);
-    await fs.promises.writeFile(destination, buf);
-    return buf.length;
+  async extractFileAsync(filename: string, destination: string): Promise<number> {
+    const buf = await this.readFileAsync(filename)
+    await fs.promises.writeFile(destination, buf)
+    return buf.length
   }
 
   // ---------------------------------------------------------------------------
@@ -367,7 +343,7 @@ export class Storage {
    * @returns Storage information object
    */
   getStorageInfo(infoClass: number): CascStorageInfo {
-    return invoke(() => this.storage.CascGetStorageInfo(infoClass));
+    return invoke(() => this.storage.CascGetStorageInfo(infoClass))
   }
 
   /**
@@ -375,8 +351,8 @@ export class Storage {
    * Convenience wrapper over getStorageInfo(CascStorageTotalFileCount).
    */
   getTotalFileCount(): number {
-    const info = this.getStorageInfo(1 /* CascStorageTotalFileCount */);
-    return info.fileCount ?? 0;
+    const info = this.getStorageInfo(1 /* CascStorageTotalFileCount */)
+    return info.fileCount ?? 0
   }
 
   /**
@@ -390,11 +366,11 @@ export class Storage {
    * ```
    */
   getProductInfo(): { codeName: string; buildNumber: number } {
-    const info = this.getStorageInfo(4 /* CascStorageProduct */);
+    const info = this.getStorageInfo(4 /* CascStorageProduct */)
     return {
-      codeName: info.codeName ?? "",
+      codeName: info.codeName ?? '',
       buildNumber: info.buildNumber ?? 0,
-    };
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -408,7 +384,7 @@ export class Storage {
    * @returns Find data or null if no files found
    */
   findFirstFile(mask?: string, listFile?: string): CascFindData | null {
-    return invoke(() => this.storage.CascFindFirstFile(mask, listFile));
+    return invoke(() => this.storage.CascFindFirstFile(mask, listFile))
   }
 
   /**
@@ -416,7 +392,7 @@ export class Storage {
    * @returns Find data or null if no more files
    */
   findNextFile(): CascFindData | null {
-    return invoke(() => this.storage.CascFindNextFile());
+    return invoke(() => this.storage.CascFindNextFile())
   }
 
   /**
@@ -424,7 +400,7 @@ export class Storage {
    * @returns true if closed successfully
    */
   findClose(): boolean {
-    return this.storage.CascFindClose();
+    return this.storage.CascFindClose()
   }
 
   /**
@@ -438,18 +414,15 @@ export class Storage {
    * }
    * ```
    */
-  *files(
-    mask: string = "*",
-    listFile?: string,
-  ): IterableIterator<CascFindData> {
-    let entry = this.findFirstFile(mask, listFile);
-    if (!entry) return;
+  *files(mask: string = '*', listFile?: string): IterableIterator<CascFindData> {
+    let entry = this.findFirstFile(mask, listFile)
+    if (!entry) return
     try {
       do {
-        yield entry;
-      } while ((entry = this.findNextFile()));
+        yield entry
+      } while ((entry = this.findNextFile()))
     } finally {
-      this.findClose();
+      this.findClose()
     }
   }
 
@@ -457,34 +430,31 @@ export class Storage {
    * Iterating a Storage yields every file in it (mask "*").
    */
   [Symbol.iterator](): IterableIterator<CascFindData> {
-    return this.files();
+    return this.files()
   }
 
   /**
    * Find all files matching a mask, returning an array.
    * Wraps the stateful findFirstFile/findNextFile/findClose loop.
    */
-  findAllFiles(mask: string = "*", listFile?: string): CascFindData[] {
-    return [...this.files(mask, listFile)];
+  findAllFiles(mask: string = '*', listFile?: string): CascFindData[] {
+    return [...this.files(mask, listFile)]
   }
 
   /**
    * Get all file names matching a mask.
    */
-  getFileNames(mask: string = "*"): string[] {
-    return this.findAllFiles(mask).map((f) => f.fileName);
+  getFileNames(mask: string = '*'): string[] {
+    return this.findAllFiles(mask).map((f) => f.fileName)
   }
 
   /**
    * Invoke a callback for each file matching a mask.
    * Iteration stops if the callback returns false.
    */
-  forEachFile(
-    mask: string,
-    callback: (entry: CascFindData) => boolean | void,
-  ): void {
+  forEachFile(mask: string, callback: (entry: CascFindData) => boolean | void): void {
     for (const entry of this.files(mask)) {
-      if (callback(entry) === false) return;
+      if (callback(entry) === false) return
     }
   }
 
@@ -501,9 +471,7 @@ export class Storage {
    * ```
    */
   findFilesMatching(pattern: RegExp, listFile?: string): CascFindData[] {
-    return this.findAllFiles("*", listFile).filter((f) =>
-      pattern.test(f.fileName),
-    );
+    return this.findAllFiles('*', listFile).filter((f) => pattern.test(f.fileName))
   }
 
   /**
@@ -524,29 +492,27 @@ export class Storage {
    */
   extractFiles(
     outputDir: string,
-    pattern: string | RegExp = "*",
+    pattern: string | RegExp = '*',
   ): { extracted: string[]; failed: string[] } {
     const entries =
-      typeof pattern === "string"
-        ? this.findAllFiles(pattern)
-        : this.findFilesMatching(pattern);
-    const extracted: string[] = [];
-    const failed: string[] = [];
+      typeof pattern === 'string' ? this.findAllFiles(pattern) : this.findFilesMatching(pattern)
+    const extracted: string[] = []
+    const failed: string[] = []
     for (const entry of entries) {
-      const destination = Storage.safeDestination(outputDir, entry.fileName);
+      const destination = Storage.safeDestination(outputDir, entry.fileName)
       if (!destination) {
-        failed.push(entry.fileName);
-        continue;
+        failed.push(entry.fileName)
+        continue
       }
       try {
-        fs.mkdirSync(nodePath.dirname(destination), { recursive: true });
-        this.extractFile(entry.fileName, destination);
-        extracted.push(entry.fileName);
+        fs.mkdirSync(nodePath.dirname(destination), { recursive: true })
+        this.extractFile(entry.fileName, destination)
+        extracted.push(entry.fileName)
       } catch {
-        failed.push(entry.fileName);
+        failed.push(entry.fileName)
       }
     }
-    return { extracted, failed };
+    return { extracted, failed }
   }
 
   /**
@@ -556,31 +522,29 @@ export class Storage {
    */
   async extractFilesAsync(
     outputDir: string,
-    pattern: string | RegExp = "*",
+    pattern: string | RegExp = '*',
   ): Promise<{ extracted: string[]; failed: string[] }> {
     const entries =
-      typeof pattern === "string"
-        ? this.findAllFiles(pattern)
-        : this.findFilesMatching(pattern);
-    const extracted: string[] = [];
-    const failed: string[] = [];
+      typeof pattern === 'string' ? this.findAllFiles(pattern) : this.findFilesMatching(pattern)
+    const extracted: string[] = []
+    const failed: string[] = []
     for (const entry of entries) {
-      const destination = Storage.safeDestination(outputDir, entry.fileName);
+      const destination = Storage.safeDestination(outputDir, entry.fileName)
       if (!destination) {
-        failed.push(entry.fileName);
-        continue;
+        failed.push(entry.fileName)
+        continue
       }
       try {
         await fs.promises.mkdir(nodePath.dirname(destination), {
           recursive: true,
-        });
-        await this.extractFileAsync(entry.fileName, destination);
-        extracted.push(entry.fileName);
+        })
+        await this.extractFileAsync(entry.fileName, destination)
+        extracted.push(entry.fileName)
       } catch {
-        failed.push(entry.fileName);
+        failed.push(entry.fileName)
       }
     }
-    return { extracted, failed };
+    return { extracted, failed }
   }
 
   /**
@@ -590,20 +554,13 @@ export class Storage {
    * then verify the resolved path stays under the output root (zip-slip
    * guard).
    */
-  private static safeDestination(
-    outputDir: string,
-    fileName: string,
-  ): string | null {
-    const parts = fileName.split(/[\\/]+/).filter((p) => p && p !== ".");
-    if (
-      parts.length === 0 ||
-      parts.some((p) => p === ".." || /^[a-zA-Z]:$/.test(p))
-    )
-      return null;
-    const destination = nodePath.resolve(outputDir, ...parts);
-    const root = nodePath.resolve(outputDir) + nodePath.sep;
-    if (!destination.startsWith(root)) return null;
-    return destination;
+  private static safeDestination(outputDir: string, fileName: string): string | null {
+    const parts = fileName.split(/[\\/]+/).filter((p) => p && p !== '.')
+    if (parts.length === 0 || parts.some((p) => p === '..' || /^[a-zA-Z]:$/.test(p))) return null
+    const destination = nodePath.resolve(outputDir, ...parts)
+    const root = nodePath.resolve(outputDir) + nodePath.sep
+    if (!destination.startsWith(root)) return null
+    return destination
   }
 
   // ---------------------------------------------------------------------------
@@ -617,7 +574,7 @@ export class Storage {
    * @returns true if added successfully
    */
   addEncryptionKey(keyName: number | bigint, key: Buffer): boolean {
-    return invoke(() => this.storage.CascAddEncryptionKey(keyName, key));
+    return invoke(() => this.storage.CascAddEncryptionKey(keyName, key))
   }
 
   /**
@@ -627,9 +584,7 @@ export class Storage {
    * @returns true if added successfully
    */
   addStringEncryptionKey(keyName: number | bigint, keyStr: string): boolean {
-    return invoke(() =>
-      this.storage.CascAddStringEncryptionKey(keyName, keyStr),
-    );
+    return invoke(() => this.storage.CascAddStringEncryptionKey(keyName, keyStr))
   }
 
   /**
@@ -638,7 +593,7 @@ export class Storage {
    * @returns true if imported successfully
    */
   importKeysFromString(keyList: string): boolean {
-    return invoke(() => this.storage.CascImportKeysFromString(keyList));
+    return invoke(() => this.storage.CascImportKeysFromString(keyList))
   }
 
   /**
@@ -647,7 +602,7 @@ export class Storage {
    * @returns true if imported successfully
    */
   importKeysFromFile(filePath: string): boolean {
-    return invoke(() => this.storage.CascImportKeysFromFile(filePath));
+    return invoke(() => this.storage.CascImportKeysFromFile(filePath))
   }
 
   /**
@@ -656,7 +611,7 @@ export class Storage {
    * @returns Key data or null if not found
    */
   findEncryptionKey(keyName: number | bigint): Buffer | null {
-    return invoke(() => this.storage.CascFindEncryptionKey(keyName));
+    return invoke(() => this.storage.CascFindEncryptionKey(keyName))
   }
 
   /**
@@ -664,14 +619,14 @@ export class Storage {
    * @returns Key name or null
    */
   getNotFoundEncryptionKey(): number | bigint | null {
-    return invoke(() => this.storage.CascGetNotFoundEncryptionKey());
+    return invoke(() => this.storage.CascGetNotFoundEncryptionKey())
   }
 
   /**
    * Symbol.dispose support for `using` blocks (TS 5.2+).
    */
   [kDispose](): void {
-    this.close();
+    this.close()
   }
 }
 
@@ -685,12 +640,12 @@ export class Storage {
  *   );
  */
 export function withStorage<T>(fn: (storage: Storage) => T): T {
-  const storage = new Storage();
+  const storage = new Storage()
   try {
-    return fn(storage);
+    return fn(storage)
   } finally {
     try {
-      storage.close();
+      storage.close()
     } catch {
       /* already closed */
     }
@@ -706,15 +661,13 @@ export function withStorage<T>(fn: (storage: Storage) => T): T {
  *     return s.readFileAsString('buildid.txt');
  *   });
  */
-export async function withStorageAsync<T>(
-  fn: (storage: Storage) => Promise<T>,
-): Promise<T> {
-  const storage = new Storage();
+export async function withStorageAsync<T>(fn: (storage: Storage) => Promise<T>): Promise<T> {
+  const storage = new Storage()
   try {
-    return await fn(storage);
+    return await fn(storage)
   } finally {
     try {
-      storage.close();
+      storage.close()
     } catch {
       /* already closed */
     }

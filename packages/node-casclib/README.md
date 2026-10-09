@@ -47,26 +47,24 @@ are configured; consumers must build the native binary explicitly.
 ## Usage
 
 ```typescript
-import { Storage, Locale } from "@scnexus/node-casclib";
+import { Storage, Locale } from '@scnexus/node-casclib'
 
-const storage = await Storage.open("D:/Games/StarCraft II", {
+const storage = await Storage.open('D:/Games/StarCraft II', {
   locale: Locale.ZHCN,
-});
+})
 try {
-  const info = await storage.getInfo();
-  const entries = await storage.list({ mask: "*" });
-  const tree = await storage.listTree();
-  const candidate = entries.find(
-    (entry) => entry.available && entry.size < 1024 * 1024,
-  );
+  const info = await storage.getInfo()
+  const entries = await storage.list({ mask: '*' })
+  const tree = await storage.listTree()
+  const candidate = entries.find((entry) => entry.available && entry.size < 1024 * 1024)
   if (candidate) {
     const bytes = await storage.readFile(candidate.name, {
       maxBytes: 1024 * 1024,
-    });
-    await storage.extract(candidate.name, "D:/Exports/file.bin");
+    })
+    await storage.extract(candidate.name, 'D:/Exports/file.bin')
   }
 } finally {
-  await storage.close();
+  await storage.close()
 }
 ```
 
@@ -114,20 +112,20 @@ lookup, error accessors and CDN helpers. Most calls are synchronous; explicitly
 named async helpers use libuv workers, not the main entry's serialized queue.
 
 ```typescript
-import { Storage, CASC_LOCALE_ZHCN } from "@scnexus/node-casclib/compat";
+import { Storage, CASC_LOCALE_ZHCN } from '@scnexus/node-casclib/compat'
 
-const storage = await Storage.openAsync("D:/Games/StarCraft II", {
+const storage = await Storage.openAsync('D:/Games/StarCraft II', {
   flags: CASC_LOCALE_ZHCN,
-});
+})
 try {
-  const file = storage.openFile("example.txt");
+  const file = storage.openFile('example.txt')
   try {
-    const bytes = await file.readAllAsync();
+    const bytes = await file.readAllAsync()
   } finally {
-    file.close();
+    file.close()
   }
 } finally {
-  storage.close();
+  storage.close()
 }
 ```
 

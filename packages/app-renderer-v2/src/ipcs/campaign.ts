@@ -1,30 +1,30 @@
-import { desktop, request, ipcSnapshot } from "./internal/ipc-common";
+import { desktop, request, ipcSnapshot } from './internal/ipc-common'
 import type {
   SourceInput,
   InstallSelection,
   RemovalDecision,
   ConflictDecision,
-} from "@scnexus/app-shared/types/content.type";
+} from '@scnexus/app-shared/types/content.type'
 
-export const apiCampaignCancel = (id: string) => request(() => desktop().campaign.cancel(id));
+export const apiCampaignCancel = (id: string) => request(() => desktop().campaign.cancel(id))
 export const apiCampaignAnalyze = (input: SourceInput) =>
-  request(() => desktop().campaign.analyze(ipcSnapshot(input)));
+  request(() => desktop().campaign.analyze(ipcSnapshot(input)))
 export const apiCampaignInstall = (selection: InstallSelection) =>
-  request(() => desktop().campaign.install(ipcSnapshot(selection)));
-export const apiCampaignList = () => request(() => desktop().campaign.list());
-export const apiCampaignScan = () => request(() => desktop().campaign.scan());
+  request(() => desktop().campaign.install(ipcSnapshot(selection)))
+export const apiCampaignList = () => request(() => desktop().campaign.list())
+export const apiCampaignScan = () => request(() => desktop().campaign.scan())
 export const apiCampaignPrepareUninstall = (id: string) =>
-  request(() => desktop().campaign.prepareUninstall(id));
+  request(() => desktop().campaign.prepareUninstall(id))
 export const apiCampaignUninstall = (id: string, decisions: RemovalDecision[]) =>
-  request(() => desktop().campaign.uninstall(id, ipcSnapshot(decisions)));
+  request(() => desktop().campaign.uninstall(id, ipcSnapshot(decisions)))
 export const apiCampaignPrepareActivation = (id: string) =>
-  request(() => desktop().campaign.prepareActivation(id));
+  request(() => desktop().campaign.prepareActivation(id))
 export const apiCampaignActivate = (id: string, decisions: ConflictDecision[]) =>
-  request(() => desktop().campaign.activate(id, ipcSnapshot(decisions)));
-export const apiCampaignActive = () => request(() => desktop().campaign.active());
+  request(() => desktop().campaign.activate(id, ipcSnapshot(decisions)))
+export const apiCampaignActive = () => request(() => desktop().campaign.active())
 export const apiCampaignPrepareDeactivation = (id: string) =>
-  request(() => desktop().campaign.prepareDeactivation(id));
+  request(() => desktop().campaign.prepareDeactivation(id))
 export const apiCampaignDeactivate = (id: string, decisions: RemovalDecision[]) =>
-  request(() => desktop().campaign.deactivate(id, ipcSnapshot(decisions)));
+  request(() => desktop().campaign.deactivate(id, ipcSnapshot(decisions)))
 
-export const apiCampaignLaunch = () => request(() => desktop().campaign.launch());
+export const apiCampaignLaunch = () => request(() => desktop().campaign.launch())

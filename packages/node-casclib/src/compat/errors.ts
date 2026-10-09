@@ -27,20 +27,20 @@ export enum CascErrorCode {
   FileEncrypted = 1005,
   FileTooLarge = 1006,
   NetworkNotAvailable = 1008,
-  Cancelled = 1010
+  Cancelled = 1010,
 }
 
 export class CascError extends Error {
   /** Numeric CascLib error code (see {@link CascErrorCode}). */
-  readonly code: number;
+  readonly code: number
   /** Symbolic name of the error code, e.g. `"ERROR_FILE_NOT_FOUND"`. */
-  readonly codeName: string;
+  readonly codeName: string
 
   constructor(message: string, code: number = 0, codeName: string = 'UNKNOWN') {
-    super(message);
-    this.name = 'CascError';
-    this.code = code;
-    this.codeName = codeName;
+    super(message)
+    this.name = 'CascError'
+    this.code = code
+    this.codeName = codeName
   }
 
   /**
@@ -52,35 +52,36 @@ export class CascError extends Error {
    * global inside VM-based test runners like Jest.
    */
   static from(err: unknown): unknown {
-    if (err instanceof CascError) return err;
+    if (err instanceof CascError) return err
     if (
-      typeof err === 'object' && err !== null &&
+      typeof err === 'object' &&
+      err !== null &&
       typeof (err as { message?: unknown }).message === 'string' &&
       typeof (err as { code?: unknown }).code === 'number'
     ) {
-      const native = err as { message: string; code: number; codeName?: string; stack?: string };
-      const wrapped = new CascError(native.message, native.code, native.codeName ?? 'UNKNOWN');
-      wrapped.stack = native.stack ?? wrapped.stack;
-      return wrapped;
+      const native = err as { message: string; code: number; codeName?: string; stack?: string }
+      const wrapped = new CascError(native.message, native.code, native.codeName ?? 'UNKNOWN')
+      wrapped.stack = native.stack ?? wrapped.stack
+      return wrapped
     }
-    return err;
+    return err
   }
 }
 
 /** Run a synchronous native call, translating native errors into CascError. */
 export function invoke<T>(fn: () => T): T {
   try {
-    return fn();
+    return fn()
   } catch (err) {
-    throw CascError.from(err);
+    throw CascError.from(err)
   }
 }
 
 /** Await a native promise, translating native rejections into CascError. */
 export async function invokeAsync<T>(promise: Promise<T>): Promise<T> {
   try {
-    return await promise;
+    return await promise
   } catch (err) {
-    throw CascError.from(err);
+    throw CascError.from(err)
   }
 }

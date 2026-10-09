@@ -10,23 +10,23 @@ main 与 preload 已完成基础模块及内容业务重构：common 已拆分�
 
 移除 common 作为能力集合的业务边界，将其每项能力提到 modules 的一级目录；窗口管理也作为独立模块。
 
-| 模块 | 能力与边界 | 主要依赖 |
-| --- | --- | --- |
-| app | 应用版本、系统语言、应用路径等查询；不负责创建窗口 | Electron app |
-| window | 主窗口创建、加载、恢复、聚焦、关闭、renderer-ready 状态 | Electron BrowserWindow |
-| deep-link | 协议注册、首次启动/第二实例/open-url 入口、解析及待投递队列 | window |
-| dialog | 文件和目录选择；统一绑定所属窗口 | window、Electron dialog |
-| shell | 打开网页、路径、定位文件，校验协议和输入 | Electron shell |
-| tray | 托盘创建、菜单、动作与销毁；保留原能力，是否启用单独控制 | window、应用退出协调 |
-| updater | 检查、下载、安装与状态事件；不承载普通内容包下载 | window 事件适配、更新工具 |
-| setting | 用户偏好与客户端设置，含统一日志等级 | setting repository |
-| scii-game-setting | 游戏环境配置、检测、验证、派生路径、配置变更 | scii-game-setting repository、游戏检测工具 |
-| content-package | 目录/归档读取、描述解析、冲突预览、文件操作与扫描 | 游戏路径服务、内容索引 |
-| campaign | 战役库、激活、取消激活、恢复和卸载 | profile、内容索引与文件工具 |
-| customize | 自定义地图/模组导入、安装、卸载及游戏启动 | profile、内容索引与归档工具 |
-| workshop | 内容元数据、摘要、上传及后续下载 | setting（下载目录）、网络与归档工具 |
-| logging | 日志入口、等级应用、各进程日志归集与脱敏 | electron-log；通过装配接收等级 |
-| telemetry | 用户授权后的 Sentry 初始化、错误上报、身份绑定和关闭 | Sentry；通过装配接收遥测偏好 |
+| 模块              | 能力与边界                                                  | 主要依赖                                   |
+| ----------------- | ----------------------------------------------------------- | ------------------------------------------ |
+| app               | 应用版本、系统语言、应用路径等查询；不负责创建窗口          | Electron app                               |
+| window            | 主窗口创建、加载、恢复、聚焦、关闭、renderer-ready 状态     | Electron BrowserWindow                     |
+| deep-link         | 协议注册、首次启动/第二实例/open-url 入口、解析及待投递队列 | window                                     |
+| dialog            | 文件和目录选择；统一绑定所属窗口                            | window、Electron dialog                    |
+| shell             | 打开网页、路径、定位文件，校验协议和输入                    | Electron shell                             |
+| tray              | 托盘创建、菜单、动作与销毁；保留原能力，是否启用单独控制    | window、应用退出协调                       |
+| updater           | 检查、下载、安装与状态事件；不承载普通内容包下载            | window 事件适配、更新工具                  |
+| setting           | 用户偏好与客户端设置，含统一日志等级                        | setting repository                         |
+| scii-game-setting | 游戏环境配置、检测、验证、派生路径、配置变更                | scii-game-setting repository、游戏检测工具 |
+| content-package   | 目录/归档读取、描述解析、冲突预览、文件操作与扫描           | 游戏路径服务、内容索引                     |
+| campaign          | 战役库、激活、取消激活、恢复和卸载                          | profile、内容索引与文件工具                |
+| customize         | 自定义地图/模组导入、安装、卸载及游戏启动                   | profile、内容索引与归档工具                |
+| workshop          | 内容元数据、摘要、上传及后续下载                            | setting（下载目录）、网络与归档工具        |
+| logging           | 日志入口、等级应用、各进程日志归集与脱敏                    | electron-log；通过装配接收等级             |
+| telemetry         | 用户授权后的 Sentry 初始化、错误上报、身份绑定和关闭        | Sentry；通过装配接收遥测偏好               |
 
 现有 utils/logger.ts 与 utils/sentry.ts 的能力分别迁入 modules/logging 和 modules/telemetry，不再作为 utils 中的全局有状态单例。两个模块遵循同一基础文件结构，通过 index.ts 初始化及导出能力；Sentry SDK 适配实现放在 telemetry 内部。
 
@@ -77,26 +77,26 @@ src/
 
 **都作为 module；共享 electron-store 基础设施，但不合并为一个配置业务模块或一个可任意修改的 Store。**
 
-| 维度 | setting | scii-game-setting |
-| --- | --- | --- |
-| 内容 | 用户偏好、日志等级、下载目录、客户端标识 | 游戏安装目录、检测状态、派生执行路径与内容目录 |
-| 修改频率 | 用户可频繁修改 | 需要验证并影响整个本地业务环境 |
-| 校验 | 枚举、路径选择、偏好约束 | 游戏目录、实际文件、执行能力与路径归属 |
-| 后果 | 应用偏好立即生效 | 使内容缓存失效，可能与正在执行的安装冲突 |
-| main 调用者 | logging 装配、workshop 等 | campaign、customize、游戏启动等 |
+| 维度        | setting                                  | scii-game-setting                              |
+| ----------- | ---------------------------------------- | ---------------------------------------------- |
+| 内容        | 用户偏好、日志等级、下载目录、客户端标识 | 游戏安装目录、检测状态、派生执行路径与内容目录 |
+| 修改频率    | 用户可频繁修改                           | 需要验证并影响整个本地业务环境                 |
+| 校验        | 枚举、路径选择、偏好约束                 | 游戏目录、实际文件、执行能力与路径归属         |
+| 后果        | 应用偏好立即生效                         | 使内容缓存失效，可能与正在执行的安装冲突       |
+| main 调用者 | logging 装配、workshop 等                | campaign、customize、游戏启动等                |
 
 合并只会减少文件数量，却让生命周期、校验和依赖混杂。若 UI 需要同时读取二者，可由 preload/renderer 聚合结果，不合并存储职责，也不引入所谓“全局配置万能模块”。
 
 ### setting 字段与修改归属
 
-| 字段 | 含义与默认值 | 修改归属 |
-| --- | --- | --- |
-| clientId | 客户端安装标识，首次创建一次 UUID；迁移保留旧值 | main 内部维护，UI 只读 |
-| lastUpdatedAt | 客户端最近成功完成版本更新的时间，Unix 毫秒时间戳；尚无已知更新时为 null | updater/启动版本确认流程，UI 只读 |
-| downloadDirectory | 默认文件下载目录，首次使用系统 downloads 路径 | 用户通过受控 IPC 修改，main 校验 |
-| displayLanguage | 显示语言选择，默认 system；显式选择支持的语言 | 用户通过受控 IPC 修改 |
-| logLevel | 全局输出阈值，默认 error | 用户或 main 通过日志等级协调流程修改 |
-| telemetryEnabled | 是否启用遥测，默认 false | 用户主动授权或撤销，通过受控 IPC 修改 |
+| 字段              | 含义与默认值                                                             | 修改归属                              |
+| ----------------- | ------------------------------------------------------------------------ | ------------------------------------- |
+| clientId          | 客户端安装标识，首次创建一次 UUID；迁移保留旧值                          | main 内部维护，UI 只读                |
+| lastUpdatedAt     | 客户端最近成功完成版本更新的时间，Unix 毫秒时间戳；尚无已知更新时为 null | updater/启动版本确认流程，UI 只读     |
+| downloadDirectory | 默认文件下载目录，首次使用系统 downloads 路径                            | 用户通过受控 IPC 修改，main 校验      |
+| displayLanguage   | 显示语言选择，默认 system；显式选择支持的语言                            | 用户通过受控 IPC 修改                 |
+| logLevel          | 全局输出阈值，默认 error                                                 | 用户或 main 通过日志等级协调流程修改  |
+| telemetryEnabled  | 是否启用遥测，默认 false                                                 | 用户主动授权或撤销，通过受控 IPC 修改 |
 
 _schemaVersion、_revision 是存储管理字段，不属于用户偏好。lastUpdatedAt 不随设置保存、更新检查或下载完成而变化；仅在新版本实际安装并成功启动确认后更新。实现时保留内部已确认版本信息以避免每次启动重复更新时间；初次安装不冒充一次版本更新，旧 LAST_UPDATED_TIME 不直接迁移为该值。
 
@@ -131,13 +131,12 @@ store-schema.ts 仅提供版本、字符串、时间戳等通用 schema 片段�
 
 存储基础文件统一使用 `store-` 前缀：
 
-| 文件 | 职责 |
-| --- | --- |
-| `store-schema.ts` | 定义复用 JSON Schema，由 electron-store 校验字段类型、枚举、范围和内容索引结构 |
-| `store-validation.ts` | 保留 schema 之外的校验及旧数据迁移辅助，如绝对路径检查和旧字段检查；不替代 schema |
-| `store-repository.ts` | 提供初始化、快照读取、按 key 获取/更新和完整更新，维护内部版本字段与统一错误；不保存重复内存快照 |
+| 文件                        | 职责                                                                                                |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `store-schema.ts`           | 定义复用 JSON Schema，由 electron-store 校验字段类型、枚举、范围和内容索引结构                      |
+| `store-validation.ts`       | 保留 schema 之外的校验及旧数据迁移辅助，如绝对路径检查和旧字段检查；不替代 schema                   |
+| `store-repository.ts`       | 提供初始化、快照读取、按 key 获取/更新和完整更新，维护内部版本字段与统一错误；不保存重复内存快照    |
 | `store-electron-backend.ts` | 创建 electron-store 实例，启动时识别旧格式、备份和迁移，配置 schema；日常读写由 electron-store 执行 |
-
 
 ### 版本与运行边界
 
@@ -277,15 +276,15 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 
 已执行：
 
-| 检查 | 结果 |
-| --- | --- |
-| `pnpm run typecheck:main` | 通过 |
-| `pnpm run typecheck:preload` | 通过 |
-| `pnpm run test:main` | 5 个 Vitest 文件、25 项测试通过（含 14 项真实 electron-store 存储测试和 4 项 MPQ 测试） |
-| `pnpm run build:main` | 通过；原 Vite 配置仍有 native configLoader 迁移提示 |
-| `pnpm run build:preload` | 通过；同上 |
-| 上一轮 Electron 44 临时 userData 真实运行冒烟（本轮未重新执行） | 首次启动及重启通过：默认设置、设置写入、只读字段拒绝、旧 API 兼容、单窗口、日志文件等级过滤和 clientId/等级持久化 |
-| `pnpm exec vue-tsc --noEmit -p packages/app-renderer/tsconfig.json` | 未能完成：旧 vue-tsc 与当前 TypeScript 不兼容，出现 supportedTSExtensions 查找失败；本轮未修改旧 renderer 工具链 |
+| 检查                                                                | 结果                                                                                                              |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `pnpm run typecheck:main`                                           | 通过                                                                                                              |
+| `pnpm run typecheck:preload`                                        | 通过                                                                                                              |
+| `pnpm run test:main`                                                | 5 个 Vitest 文件、25 项测试通过（含 14 项真实 electron-store 存储测试和 4 项 MPQ 测试）                           |
+| `pnpm run build:main`                                               | 通过；原 Vite 配置仍有 native configLoader 迁移提示                                                               |
+| `pnpm run build:preload`                                            | 通过；同上                                                                                                        |
+| 上一轮 Electron 44 临时 userData 真实运行冒烟（本轮未重新执行）     | 首次启动及重启通过：默认设置、设置写入、只读字段拒绝、旧 API 兼容、单窗口、日志文件等级过滤和 clientId/等级持久化 |
+| `pnpm exec vue-tsc --noEmit -p packages/app-renderer/tsconfig.json` | 未能完成：旧 vue-tsc 与当前 TypeScript 不兼容，出现 supportedTSExtensions 查找失败；本轮未修改旧 renderer 工具链  |
 
 不包含实际游戏目录修改、真实 Sentry 网络上报、NSIS 更新安装、v2 界面或完整安装包验证。app-main 已移除 node:test 入口，统一由 Vitest 发现并执行上述用例。
 
@@ -299,7 +298,6 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 
 - [electron-store v11 文档](https://github.com/sindresorhus/electron-store/blob/v11.0.0/readme.md)：ESM、Electron 版本、schema、单文件原子写入及 migrations 限制。
 - [日志与错误规范](./logging-and-errors.md)：错误码表、日志传输与等级更新流程。
-
 
 ## 初始化恢复与更新收尾（2026-10-08）
 
@@ -326,7 +324,6 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 
 后续崩溃恢复需在文件改动前持久化目标、备份、操作阶段和 Store 提交状态，启动时发现未完成事务，经核验恢复或提示用户；失败保留证据，不自动删除。该能力本轮未实现。
 
-
 ### preload 文件职责
 
 - src/index.ts：唯一构建入口，加载 ipc/index.ts，并暴露受控 webUtils。
@@ -337,15 +334,12 @@ scii-game-setting 无有效游戏配置时，查询与配置接口仍可用；ca
 
 验证：pnpm run typecheck:preload、pnpm run build:preload 均通过；模拟执行构建产物检查 59 个暴露入口、游戏初始化 invoke 和旧事件取消订阅通过。构建仍有既有 __dirname 配置警告，本轮不改无关工具链配置。
 
-
 ### 开发窗口加载诊断
 
 pnpm dev 必须等待 preload 首次 writeBundle 后才启动 main watcher，首次 preload 构建不广播 full-reload；后续更新仍刷新页面。主进程重构建先等待旧 Electron 退出再启动新进程，超过 10 秒报错，避免新旧实例竞争。
 
 M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；不将所有加载失败归为构建竞态，也不通过无条件重试隐藏错误。窗口加载失败的原因输出与后续重建已有单元测试（2 项通过）。实际用户开发会话中的偶发失败仍需用增强日志确认。
 
-
 2026-10-08 IPC 返回契约统一：main 的 ipcHandle/ipcHandleRegister 均返回 IpcResult，删除 ipcHandleTyped 和内部旧格式分支；preload 的 invoke 统一执行返回校验及 P001/R001 转换；renderer-v2 删除 legacyRequest 与 legacy.ts，bridge.ts 仅负责尚处于顶层桥接的白名单访问，不转换旧返回格式。旧 renderer v1 不再兼容。工坊上传失败抛出规范错误，不作为成功 data 返回 Error；工坊其他业务重构仍延期。事件和单向日志发送不适用请求结果信封。
-
 
 窗口就绪由 renderer-v2 主动握手，不再由 preload 的旧 renderer 兼容逻辑自动通知。握手早于主页面加载完成时，main 暂存请求，did-finish-load 后才投递队列和通知监听者；导航、关闭和 renderer 崩溃清除待完成握手，避免把新页面误标为已就绪。没有窗口仍返回 M018。加载期握手与跨导航清理测试通过。

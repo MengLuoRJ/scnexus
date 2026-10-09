@@ -1,1 +1,1 @@
-export { default } from "./StartButton.vue"
+export { default } from './StartButton.vue'

@@ -1,5 +1,5 @@
-import { initTrayIpc } from "./tray.ipc";
-export * from "./tray";
+import { initTrayIpc } from './tray.ipc'
+export * from './tray'
 export function initTrayModule() {
-  initTrayIpc();
+  initTrayIpc()
 }

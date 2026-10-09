@@ -3,7 +3,7 @@
   <div class="cm">
     <div class="flex flex-row justify-between items-center">
       <div class="header text-lg">
-        {{ "自制作品" }}
+        {{ '自制作品' }}
       </div>
     </div>
     <n-divider :style="{ marginTop: '6px', marginBottom: '6px' }" />

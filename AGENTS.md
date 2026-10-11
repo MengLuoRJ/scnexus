@@ -137,6 +137,7 @@ appStore.setAppReady(true)
 ## 国际化
 
 - 保留 Vue I18n 的多语言方向，简体中文为源语言，英文与繁体中文按功能迁移。
+- 繁体中文采用和简体中文相同的文本，仅将汉字转换为繁体汉字。
 - 语言资源相对于 renderer 包存放于 `src/locales`，按语言和业务模块组织。
 - 文本键使用扁平结构，例如 `campaign.manage.install.title`。
 - v2 的插件接入、语言初始化及资源迁移需明确实现，不能把旧 renderer 配置视为已存在。

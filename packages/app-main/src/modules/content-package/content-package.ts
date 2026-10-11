@@ -44,6 +44,7 @@ import {
   type ContentSource,
 } from './source'
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
+import { detectCampaign } from './auto-detector'
 import {
   campaignRoots,
   CAMPAIGNS,
@@ -356,6 +357,11 @@ export class ContentService {
         origin: 'ccm-converted',
       }
     }
+    if (type === 'campaign') {
+      const automatic = detectCampaign(source)
+      result.modes.auto = automatic.preview
+      if (automatic.diagnostic) result.diagnostics.push(automatic.diagnostic)
+    }
     for (const name of ['scnexus', 'ccm'] as const) {
       const preview = result.modes[name]
       if (preview?.package.dependencies?.length)
@@ -374,10 +380,15 @@ export class ContentService {
     const mode = recommended === 'SCNexus' ? 'scnexus' : recommended === 'CCM' ? 'ccm' : null
     if (mode && result.modes[mode]) result.recommendedMode = mode
     const hashes = new Map<string, string>()
-    for (const mode of ['scnexus', 'ccm'] as const) {
+    for (const mode of ['scnexus', 'ccm', 'auto'] as const) {
       const preview = result.modes[mode]
       if (!preview) continue
-      result.existingInstallations[mode] = await this.findExisting(type, preview, mode, paths)
+      result.existingInstallations[mode] = await this.findExisting(
+        type,
+        preview,
+        mode === 'auto' ? 'scnexus' : mode,
+        paths,
+      )
       result.conflicts.push({
         mode,
         files: await this.conflicts(
@@ -385,7 +396,7 @@ export class ContentService {
           paths,
         ),
       })
-      if (input.kind === 'directory') {
+      if (input.kind === 'directory' && mode !== 'auto') {
         for (const file of preview.files)
           if (!hashes.has(file.source))
             hashes.set(file.source, await hashFile(await safePath(input.path, file.source)))
@@ -396,8 +407,9 @@ export class ContentService {
       }
     }
     for (const group of result.conflicts)
-      for (const file of group.files)
-        hashes.set('local:' + file.local.path, await hashFile(file.local.path))
+      if (group.mode !== 'auto')
+        for (const file of group.files)
+          hashes.set('local:' + file.local.path, await hashFile(file.local.path))
     if (input.kind === 'archive') await verifyArchive(source)
     this.analyses.set(result.analysisId, {
       source,
@@ -538,10 +550,11 @@ export class ContentService {
       report('preparing')
       this.prune()
       const context = this.analyses.get(selection?.analysisId)
-      const mode = selection?.mode
-      if (!context || !['scnexus', 'ccm'].includes(mode))
+      const selectedMode = selection?.mode
+      if (!context || !['scnexus', 'ccm', 'auto'].includes(selectedMode))
         throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
-      const preview = context.result.modes[mode as 'scnexus' | 'ccm']
+      const mode = selectedMode === 'auto' ? 'scnexus' : selectedMode
+      const preview = context.result.modes[selectedMode as 'scnexus' | 'ccm' | 'auto']
       if (!preview) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
       const paths = await this.paths()
       if (context.root !== paths.gameRoot || context.gameRevision !== paths._revision)
@@ -558,6 +571,23 @@ export class ContentService {
           (await hashFile(await safePath(source.input.path, path))) !== digest
         )
           throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed' })
+      if (selectedMode === 'auto') {
+        const current = detectCampaign(source).preview
+        if (
+          context.result.contentType !== 'campaign' ||
+          !current ||
+          JSON.stringify(current) !== JSON.stringify(preview)
+        )
+          throw new AppError(ERRORS.TASK_CONFLICT, {
+            message: 'Automatic recognition changed; request a new analysis',
+          })
+        if (source.input.kind === 'directory')
+          for (const file of preview.files)
+            context.hashes.set(
+              file.source,
+              await hashFile(await safePath(source.input.path, file.source)),
+            )
+      }
       const type = context.result.contentType
       if (expectedType && type !== expectedType) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
       if ((await this.findExisting(type, preview, mode as 'scnexus' | 'ccm', paths)).length)
@@ -568,7 +598,7 @@ export class ContentService {
       const actualFiles =
         mode === 'ccm' ? preview.files.filter((f) => f.type === 'mod') : preview.files
       const conflicts = context.result.conflicts
-        .find((c) => c.mode === mode)!
+        .find((c) => c.mode === selectedMode)!
         .files.filter((c) => mode !== 'ccm' || c.type === 'mod')
       const choices = direct
         ? this.decisions(conflicts, selection.decisions ?? [], actualFiles)
@@ -587,13 +617,16 @@ export class ContentService {
       const staging = await mkdtemp(join(paths.gameRoot, '.scnexus-stage-'))
       try {
         const originalCcmPath =
-          preview.origin !== 'package-json'
-            ? preview.descriptorPath
-            : source.entries.find(
-                (e) =>
-                  e.path ===
-                  (preview.rootRelativePath ? preview.rootRelativePath + '/' : '') + 'metadata.txt',
-              )?.path
+          preview.origin === 'auto-detected'
+            ? undefined
+            : preview.origin !== 'package-json'
+              ? preview.descriptorPath
+              : source.entries.find(
+                  (e) =>
+                    e.path ===
+                    (preview.rootRelativePath ? preview.rootRelativePath + '/' : '') +
+                      'metadata.txt',
+                )?.path
         const selected = [
           ...(payload
             ? preview.files
@@ -601,7 +634,7 @@ export class ContentService {
                 (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
               )
           ).map((file) => file.source),
-          preview.descriptorPath,
+          ...(preview.descriptorPath ? [preview.descriptorPath] : []),
           ...(originalCcmPath ? [originalCcmPath] : []),
         ]
         let stagedFiles: Map<string, string>
@@ -670,7 +703,7 @@ export class ContentService {
           ...f,
           source:
             type === 'campaign'
-              ? mode === 'scnexus' && preview.origin === 'ccm-converted'
+              ? mode === 'scnexus' && ['ccm-converted', 'auto-detected'].includes(preview.origin)
                 ? f.target
                 : f.source.slice(preview.rootRelativePath ? preview.rootRelativePath.length + 1 : 0)
               : f.source,
@@ -714,7 +747,7 @@ export class ContentService {
           for (const f of preview.files) {
             this.checkCancelled(selection.analysisId)
             const logical =
-              mode === 'scnexus' && preview.origin === 'ccm-converted'
+              mode === 'scnexus' && ['ccm-converted', 'auto-detected'].includes(preview.origin)
                 ? f.target
                 : f.source.slice(preview.rootRelativePath ? preview.rootRelativePath.length + 1 : 0)
             const destination = await safePath(stagedPayload, logical)
@@ -806,7 +839,10 @@ export class ContentService {
           if (source.input.kind === 'archive') await verifyArchive(source)
           else {
             const current = await openSource(source.input)
-            if (JSON.stringify(current.entries) !== JSON.stringify(source.entries))
+            if (
+              JSON.stringify(current.entries) !== JSON.stringify(source.entries) ||
+              (selectedMode === 'auto' && !detectCampaign(current).preview)
+            )
               throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source layout changed' })
             for (const [path, digest] of context.hashes)
               if (

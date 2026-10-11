@@ -2,10 +2,10 @@
 
 ## 1. 范围、状态与已确认决策
 
-本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现；renderer-v2 交互已在文末记录的后续迭代中接入，自动识别仍预留 null。实现与验证见第 12 节，不代表所有后续方向已落地。
+本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现；renderer-v2 交互已在文末记录的后续迭代中接入；campaign 已实现无描述文件的保守自动识别，customize 自动识别仍预留 null。实现与验证见第 12 节，不代表所有后续方向已落地。
 
 - campaign 与 customize 保持独立：前者管理战役包，后者管理自制作品。
-- campaign 提供 SCNexus、CCM、自动识别三种分析模式；customize 提供 SCNexus、自动识别两种。自动识别先保留接口位置，本阶段不实现。
+- campaign 提供 SCNexus、CCM、自动识别三种分析模式；customize 提供 SCNexus、自动识别两种。campaign 自动识别仅在来源中找不到 package.json 与 metadata.txt 时启用；customize 自动识别仍保留接口位置。
 - 战役的安装（导入）与激活分开；SCNexus 导入不得修改活动地图或游戏 Mods；CCM 为兼容旧行为，在导入时直接安装 Mods。renderer 可在导入成功后按用户选择发起自动激活，也可只导入供以后手动激活。
 - SCNexus 模式优先读取有效 package.json；campaign 输入仅有有效 metadata.txt 时，也可转换为 SCNexus 安装计划。CCM 模式独立读取 metadata.txt。新标准结构以 [package.type.ts](../packages/standard/src/package/package.type.ts) 为准，不继续以旧 metadata.json 为新标准。
 - 自动深入输入层级并定位最外层有效包根；源路径相对定位后的逻辑包根，目标路径相对游戏根目录。SCNexus 资源路径必须以 /Maps/ 或 /Mods/ 开头，target_path 缺省时使用 source_path。原归档/输入根与逻辑包根分开记录，不改写用户输入地址。
@@ -14,7 +14,7 @@
 - SCNexus campaign 的覆盖地图由 campaign 类型和标准布局自动形成清单；maps/mods 仅声明额外地图和模组。customize 则必须声明所有需安装的地图和模组。
 - CCM 根部模组安装到 Mods 根目录；Mods 下模组保留相对层级。不按任意父目录猜测模组位置。
 - **CCM 模式不生成 package.json**：保留 metadata.txt，激活时写入该战役主地图目录；管理、扫描与删除以 metadata.txt 为格式依据。
-- **SCNexus 与未来自动识别模式采用 SCNexus 管理方式**：在游戏根目录 SCNexusCustomizeData 下每个包一个子目录，保存 package.json、安装文件清单，以及存在时的 CCM 原文副本。
+- **SCNexus 与 campaign 自动识别模式采用 SCNexus 管理方式**：在游戏根目录 SCNexusCustomizeData 下每个包一个子目录，保存 package.json、安装文件清单，以及存在时的 CCM 原文副本。
 - customize、campaign、campaign-active Store 改为基于新 Package 类型的本地记录；profile Store 已改为 scii-game-setting Store。
 
 最新 CCM 决策替代早期“所有安装都生成 package.json”的设想。Package 可以作为内部统一信息模型，但内部转换不意味着向 CCM 安装目录写入 SCNexus 清单。
@@ -159,7 +159,7 @@ CCM 导入到 GameRoot\\Maps\\CustomCampaigns\\<清洗后的 metadata.title>，�
 
 库目录来自 metadata.txt 的 title，不来自归档文件名：去除 `<>:"/\\|?*` 与控制字符，清理首尾空白，内部空白逐个替换为下划线，去除尾随点；结果为空、Windows 保留设备名或超出通用 255 字节/字符限制则拒绝。保留中文与正常 Unicode 字符。目录名与内部 localId 分离，同名目录不能静默覆盖或追加 UUID。
 
-分析返回 existingInstallations，按 scnexus/ccm/auto 分开列出已有记录的包信息、目录、描述文件路径和匹配依据：SCNexus 在同一游戏、同一业务类型、同一模式下按 scnid 相同**或**name 相同匹配；CCM 按 title 匹配，并检查清洗后的库目录，即使 Store 缺少记录也返回磁盘已有信息。auto 不检查，恒为 []。可返回多个匹配，不以其中一个覆盖其他记录。
+分析返回 existingInstallations，按 scnexus/ccm/auto 分开列出已有记录的包信息、目录、描述文件路径和匹配依据：SCNexus 在同一游戏、同一业务类型、同一模式下按 scnid 相同**或**name 相同匹配；CCM 按 title 匹配，并检查清洗后的库目录，即使 Store 缺少记录也返回磁盘已有信息。campaign auto 按 SCNexus 规则检查重复内容，与 mode=scnexus 的持久化记录共享判定；customize auto 恒为 []。可返回多个匹配，不以其中一个覆盖其他记录。
 
 安装前再次检查，已有相同包时明确拒绝并要求新分析，不自动升级或覆盖。CCM 扫描按管理目录保留已有内部 localId；没有旧记录时生成稳定路径标识，不把中文目录名当成内部 ID。已有 UUID 目录仍可扫描，不自动改动历史磁盘目录。
 
@@ -183,14 +183,14 @@ CCM 模式管理、重建和取消激活以 metadata.txt 及战役地图布局�
 ```text
 输入压缩包 / 文件夹
   ↓ content-source：文件树、读取文本、流读取、暂存复制
-  ↓ package-parser / ccm-parser / auto-detector（预留）
+  ↓ package-parser / ccm-parser / auto-detector（campaign 无描述文件识别）
   ↓ campaign 或 customize：资源映射与目标安装计划
   ↓ renderer 展示并选择
 ```
 
 content-source 与格式解析不依赖 campaign/customize Store，不直接操作窗口、安装目标或用户源文件。归档/目录提供一致条目，格式解析器只解释内容；campaign/customize 保留各自安装规则与生命周期。
 
-已为本地调用的独立文件能力设置 content-package 模块（index.ts、content-package.ipc.ts、content-package.ts，额外 source/parser 文件按需），格式纯契约可放 standard，桥接 DTO 放 app-shared；不在 preload 放解压或解析业务。自动识别单独预留，当前一律返回 null，不实现伪识别、不临时指定 campaign。
+已为本地调用的独立文件能力设置 content-package 模块（index.ts、content-package.ipc.ts、content-package.ts，额外 source/parser 文件按需），格式纯契约可放 standard，桥接 DTO 放 app-shared；不在 preload 放解压或解析业务。自动识别逻辑位于 auto-detector.ts；只接受无描述文件且可唯一推断的标准战役目录，不临时指定 campaign，也不根据地图名称猜测类型。customize 自动识别仍返回 null。
 
 ### 最外层有效描述文件与默认包根
 
@@ -263,7 +263,7 @@ type AnalysisResult = {
 这些契约已在 app-shared 定义。FileTree、InstallPreview、ModeDiagnostic 当前返回：每种可用预览含内部 Package、安装方式、rootRelativePath、descriptorPath、描述来源（package-json/ccm-converted/metadata-txt）、资源映射清单、目标树、数量/大小、依赖及警告。conflicts 按 mode 区分，推荐为空时不替用户自动选择。SCNexus 与自动模式的持久化格式为 SCNexus；CCM 保留 CCM 格式。
 
 - renderer 通过 IPC 传入**作品类型、输入形式和路径**；主进程核实存在性、目录/归档类型和允许访问范围。
-- campaign 独立读取 package.json、metadata.txt：返回标准或 CCM 转换的 scnexus 预览、原 CCM 的 ccm 预览以及 auto 预留；customize 只支持自制作品 package.json 和 auto，ccm 恒为 null，不能把 CCM 战役转换伪装为 customize。
+- campaign 独立读取 package.json、metadata.txt：返回标准或 CCM 转换的 scnexus 预览、原 CCM 的 ccm 预览；来源中无任何描述文件时，才尝试生成 auto 预览；customize 只支持自制作品 package.json 和 auto，ccm 恒为 null，不能把 CCM 战役转换伪装为 customize。
 - 某模式无法使用返回 null；诊断分开携带原因。缺少描述文件不是整个分析失败，一个模式 JSON 错误不阻断其他模式。
 - 无法读取输入或游戏环境不可用等全局错误使用统一 IpcResult，不伪装为三种 null。
 - sourceTree 是输入结构；各模式 targetTree 是具体目标结构，不能复用输入树假装预览。
@@ -588,3 +588,29 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 renderer-v2 的文件树、冲突对比、战役库/详情、来源与安装统计及安装结果统一通过 formatFileSize 显示大小。采用 1000 进制：小于 1000 为 B，达到 1000 切换为 kB，依次为 MB/GB/TB/PB/EB；B 保留整数，其他单位最多两位小数并去掉无意义的尾零。仅影响界面格式，不改变字节数据、安装清单或 IPC。
 
 验证包含单位边界、逐文件切换、批量设置/混合状态、模式与对话框重置、激活显式决策和文件树格式。1000×660 浏览器模拟确认默认全部覆盖、统一保留后逐文件调整、无下拉框以及 B/kB/MB/GB 显示正确。
+
+
+### campaign 保守自动识别（2026-10-11）
+
+仅在来源中不存在 package.json 和 metadata.txt 时允许自动识别，文件名大小写不敏感。严格检查所有层级，包括 .SC2Map/.SC2Mod components 内部；无效或损坏描述不允许回退 auto。为避免伪装描述入口，具有这两个名字的目录也使 auto 不可用；只有正常 SCNexus/CCM 解析仍按原规则忽略资源内部描述。
+
+按 Maps/Campaign 的标准目录推断唯一战役类型：直属地图为 WOL，swarm（含 evolution）为 HOTS，void/voidprologue 为 LOTV，nova 为 NCO。支持共同包装目录、SC2Map/SC2Mod components；Maps 与 Mods 必须共享唯一逻辑包根，Mods 保留层级，可附带同根 Maps 下的额外地图。不根据压缩包名、地图名或文件正文猜测类型；出现多个类型、多个包根或非标准战役布局返回 auto 诊断而不安装。包名取包装包根目录名，无包装则取来源目录名或移除扩展名的归档名称；作者、版本、描述保持空，不伪造。auto 不作为“作者推荐模式”。
+
+InstallPreview.origin 增加 auto-detected，预览 descriptorPath 为空（不存在来源描述），生成文件只在确认后写入。auto 选择沿用 SCNexus 管理：ContentRecord.mode=scnexus、origin=auto-detected，生成有效 package.json、资源声明和安装清单，供激活、扫描、恢复与卸载复用。payload 路径按目标规范化，归档来源路径仍保持原始条目供精确批量解压。auto 的 existingInstallations 按 SCNexus 规则检查重复；conflicts 按 auto 分组，正式激活时重新生成冲突预览。customize 未启用自动识别。
+
+分析不读取资源正文或解压资源：目录 auto 根据路径/大小/mtime/ctime 构建预览，资源哈希在用户确认后采集；归档 auto 不读取任何条目正文，仍使用整体归档 SHA-256 验证来源。确认后重检无描述文件条件及推断计划，批量解压一次，沿用暂存结果验证、事务提交和回滚。目录来源确认后添加描述、改变文件、归档改变或持久化失败都不得产生成功安装。
+
+界面选中唯一可用的 auto 模式，说明推断依据并将未知字段显示为“—”。自动识别不可用时展示描述存在、布局不支持/有歧义、多战役类型或未找到战役目录的本地化标题与具体诊断。
+
+验证包含四种战役及 HOTS evolution/LOTV voidprologue、包装根与大小写规范化、components、损坏/内部/大小写描述门槛、目录与真实 ZIP/solid 7z 完整安装→激活→扫描→恢复→卸载、重复安装、来源变化和 Store 失败回滚。真实归档断言 analyze 不调用 readFile/extractExact，确认安装仅调用一次提取子进程。真实 SC2 地图运行与用户大型归档仍需实际环境验收。
+
+
+自动识别验证结果：
+
+| 范围 | 命令与结果 |
+| --- | --- |
+| main 自动识别、内容生命周期、战役与 Store 回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__\campaign.test.ts src\stores\__test__`：9 文件、102 项通过，其中自动识别 28 项。 |
+| renderer 自动模式、确认流程与语言 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run campaign.test campaign-dialogs pages.test`：3 文件、23 项通过。 |
+| 类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。 |
+| 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`、`pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过。 |
+| 静态检查 | detector、content service/source、campaign store、自动识别测试、renderer 安装预览与流程测试定向 ESLint/oxlint，以及 `git diff --check`：通过。 |

@@ -143,5 +143,12 @@
   "campaign.applyAll": "统一设置",
   "campaign.overwriteAll": "全部覆盖",
   "campaign.keepAll": "全部保留",
-  "campaign.defaultOverwriteHint": "默认覆盖冲突文件；可统一设置，或逐个切换为保留。"
+  "campaign.defaultOverwriteHint": "默认覆盖冲突文件；可统一设置，或逐个切换为保留。",
+  "campaign.autoDetected": "已按目录结构自动识别",
+  "campaign.autoDetectedHint": "仅在未找到 package.json 和 metadata.txt 时启用。按标准战役目录识别类型，名称取自目录或来源文件名；作者、版本等未知信息不推测。使用 SCNexus 战役库安装，激活后才写入游戏资源。",
+  "campaign.diagnostic.AUTO_DESCRIPTOR_PRESENT": "来源中存在描述文件，不能启用自动识别",
+  "campaign.diagnostic.AUTO_LAYOUT_AMBIGUOUS": "资源目录不明确或包含多个包根，不能自动识别",
+  "campaign.diagnostic.AUTO_LAYOUT_UNSUPPORTED": "资源不符合标准 Maps / Mods 目录结构",
+  "campaign.diagnostic.AUTO_CAMPAIGN_AMBIGUOUS": "检测到多个战役类型，不能自动识别",
+  "campaign.diagnostic.AUTO_CAMPAIGN_NOT_FOUND": "未找到可唯一识别的标准战役地图目录"
 }

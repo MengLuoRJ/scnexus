@@ -6,12 +6,13 @@ import type { FileTree, SourceInput } from '@scnexus/app-shared/types/content.ty
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { sevenZip } from '../../utils/7zip-wrapper'
 import { logicalPath, keyPath, safePath } from './paths'
-export type Entry = { path: string; bytes: number; modifiedAt: number | null }
+export type Entry = { path: string; bytes: number; modifiedAt: number | null; changedAt?: number }
 export type ContentSource = {
   input: SourceInput
   entries: Entry[]
   tree: FileTree
   archiveHash?: string
+  descriptorPaths?: string[]
   read(path: string): Promise<Buffer>
 }
 export async function hashFile(path: string): Promise<string> {
@@ -126,16 +127,30 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
   if (info.isSymbolicLink() || (input.kind === 'directory' ? !info.isDirectory() : !info.isFile()))
     throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
   const entries: Entry[] = []
+  const descriptorPaths: string[] = []
+  const noteDescriptor = (path: string) => {
+    const parts = path.split('/')
+    for (let i = 0; i < parts.length; i++)
+      if (/^(package\.json|metadata\.txt)$/i.test(parts[i]))
+        descriptorPaths.push(parts.slice(0, i + 1).join('/'))
+  }
   let archiveHash: string | undefined
   let read: ContentSource['read']
   if (input.kind === 'directory') {
     const walk = async (dir: string, prefix = '') => {
       for (const item of await readdir(dir, { withFileTypes: true })) {
         const path = prefix + item.name
+        noteDescriptor(path)
         const absolute = await safePath(input.path, path)
         const stat = await lstat(absolute)
         if (stat.isDirectory()) await walk(absolute, path + '/')
-        else if (stat.isFile()) entries.push({ path, bytes: stat.size, modifiedAt: stat.mtimeMs })
+        else if (stat.isFile())
+          entries.push({
+            path,
+            bytes: stat.size,
+            modifiedAt: stat.mtimeMs,
+            changedAt: stat.ctimeMs,
+          })
         else throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
       }
     }
@@ -147,6 +162,7 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     for (const entry of result.entries) {
       if (/^[\\/]/.test(entry.path)) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
       const path = logicalPath(entry.path)
+      noteDescriptor(path)
       if (
         entry.attributes?.includes('L') ||
         entry.properties['Symbolic Link'] ||
@@ -186,6 +202,7 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     entries,
     read,
     archiveHash,
+    descriptorPaths: [...new Set(descriptorPaths)].sort(),
     tree: makeTree(entries, basename(input.path)),
   }
 }

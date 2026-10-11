@@ -14,7 +14,7 @@ defineOptions({ name: 'CampaignInstallModal' })
 const props = defineProps<{ service: ReturnType<typeof useCampaign> }>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ activate: [record: ContentRecord] }>()
-const { t } = useI18n()
+const { t, te } = useI18n()
 const { analysis, preview, mode, busy, error, existing, conflicts, installProgress } = props.service
 const percentage = computed(() => {
   const progress = installProgress.value
@@ -179,6 +179,12 @@ function activate() {
         <p v-if="analysis.recommendedMode" class="text-xs text-muted">
           {{ t('campaign.recommended') }}: {{ analysis.recommendedMode }}
         </p>
+        <UAlert
+          v-if="mode === 'auto' && preview"
+          color="info"
+          :title="t('campaign.autoDetected')"
+          :description="t('campaign.autoDetectedHint')"
+        />
         <UAlert v-if="mode === 'ccm'" color="warning" :title="t('campaign.ccmWarning')" />
         <UAlert
           v-for="item in existing"
@@ -215,7 +221,9 @@ function activate() {
               </div>
               <div>
                 <dt class="text-muted">{{ t('campaign.origin') }}</dt>
-                <dd>{{ preview.origin }}</dd>
+                <dd>
+                  {{ preview.origin === 'auto-detected' ? t('campaign.auto') : preview.origin }}
+                </dd>
               </div>
             </dl>
             <p class="whitespace-pre-wrap text-sm">{{ preview.package.description }}</p>
@@ -235,7 +243,9 @@ function activate() {
               {{ t('campaign.compressedSize') }}:
               {{ formatFileSize(analysis.sourceStats.compressedBytes) }}
             </p>
-            <p class="break-all text-muted">{{ preview.descriptorPath }}</p>
+            <p v-if="preview.descriptorPath" class="break-all text-muted">
+              {{ preview.descriptorPath }}
+            </p>
           </section>
           <div class="grid gap-4 md:grid-cols-2">
             <section>
@@ -271,7 +281,11 @@ function activate() {
                 ? 'warning'
                 : 'info'
           "
-          :title="diagnostic.code"
+          :title="
+            te(`campaign.diagnostic.${diagnostic.code}`)
+              ? t(`campaign.diagnostic.${diagnostic.code}`)
+              : diagnostic.code
+          "
           :description="diagnostic.message"
         />
       </div>

@@ -33,7 +33,10 @@ export function validateCampaignRecord(value: unknown): asserts value is Content
     value.package.type !== 'campaign' ||
     !string(value.localId) ||
     !['scnexus', 'ccm'].includes(value.mode as string) ||
-    !['package-json', 'ccm-converted', 'metadata-txt'].includes(value.origin as string)
+    !['package-json', 'ccm-converted', 'metadata-txt', 'auto-detected'].includes(
+      value.origin as string,
+    ) ||
+    (value.origin === 'auto-detected' && value.mode !== 'scnexus')
   )
     invalidData('Invalid content record')
   for (const key of ['managementDirectory', 'descriptorPath', 'gameRoot', 'rootRelativePath'])

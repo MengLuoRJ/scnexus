@@ -106,7 +106,14 @@ function render(
   const wrapper = mount(component, {
     props: props as never,
     global: {
-      plugins: [createI18n({ legacy: false, locale: 'zh', messages: { zh } }) as unknown as Plugin],
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'zh',
+          flatJson: true,
+          messages: { zh },
+        }) as unknown as Plugin,
+      ],
       stubs: {
         Modal: modal,
         Button: button,
@@ -360,5 +367,81 @@ test('activation conflicts still require an explicit decision rather than instal
   await wrapper.setProps({ request: { record, action: 'activate' } })
   await flushPromises()
   await click(wrapper, '确认执行')
+  expect(state.confirm).not.toHaveBeenCalled()
+})
+
+test('automatic mode remains disabled when standard descriptor-based previews are available', () => {
+  const state = service()
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+  })
+  const modes = wrapper.findComponent({ name: 'Tabs' }).props('items') as {
+    value: string
+    disabled: boolean
+  }[]
+  expect(modes.find((item) => item.value === 'auto')?.disabled).toBe(true)
+})
+
+test('automatic preview enables only its available mode and does not invent author or version', async () => {
+  const state = service()
+  const autoPreview = {
+    ...preview,
+    origin: 'auto-detected',
+    package: {
+      ...preview.package,
+      name: 'Detected root',
+      author: '',
+      version: '',
+      description: '',
+    },
+  }
+  state.analysis.value = {
+    ...analysis,
+    recommendedMode: null,
+    modes: { scnexus: null, ccm: null, auto: autoPreview },
+  } as unknown as AnalysisResult
+  state.preview.value = autoPreview
+  state.mode.value = 'auto'
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+  })
+  const modes = wrapper.findComponent({ name: 'Tabs' }).props('items') as {
+    value: string
+    disabled: boolean
+  }[]
+  expect(modes.map((item) => [item.value, item.disabled])).toEqual([
+    ['scnexus', true],
+    ['ccm', true],
+    ['auto', false],
+  ])
+  expect(wrapper.text()).toContain('Detected root')
+  expect(wrapper.text()).toContain('自动识别')
+  expect(wrapper.text()).not.toContain('Author')
+  expect(wrapper.text()).not.toContain('作者推荐模式')
+  await click(wrapper, '确认安装')
+  expect(state.confirm).toHaveBeenCalledWith([], [])
+})
+
+test('unrecognizable automatic layout shows localized reason and cannot install', async () => {
+  const state = service()
+  state.analysis.value = {
+    ...analysis,
+    recommendedMode: null,
+    modes: { scnexus: null, ccm: null, auto: null },
+    diagnostics: [
+      { mode: 'auto', level: 'error', code: 'AUTO_CAMPAIGN_AMBIGUOUS', message: 'WOL, HOTS' },
+    ],
+  } as AnalysisResult
+  state.preview.value = null as never
+  state.mode.value = 'auto'
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+  })
+  const alerts = wrapper.findAllComponents({ name: 'Alert' })
+  expect(alerts.map((alert) => alert.props('title'))).toContain('检测到多个战役类型，不能自动识别')
+  await click(wrapper, '确认安装')
   expect(state.confirm).not.toHaveBeenCalled()
 })

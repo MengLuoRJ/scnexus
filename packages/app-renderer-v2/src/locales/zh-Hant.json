@@ -143,5 +143,12 @@
   "campaign.applyAll": "統一設定",
   "campaign.overwriteAll": "全部覆寫",
   "campaign.keepAll": "全部保留",
-  "campaign.defaultOverwriteHint": "預設覆寫衝突檔案；可統一設定，或逐一切換為保留。"
+  "campaign.defaultOverwriteHint": "預設覆寫衝突檔案；可統一設定，或逐一切換為保留。",
+  "campaign.autoDetected": "已按目錄結構自動識別",
+  "campaign.autoDetectedHint": "僅在未找到 package.json 和 metadata.txt 時啟用。按標準戰役目錄識別類型，名稱取自目錄或來源文件名；作者、版本等未知信息不推測。使用 SCNexus 戰役庫安裝，激活後才寫入遊戲資源。",
+  "campaign.diagnostic.AUTO_DESCRIPTOR_PRESENT": "來源中存在描述文件，不能啟用自動識別",
+  "campaign.diagnostic.AUTO_LAYOUT_AMBIGUOUS": "資源目錄不明確或包含多個包根，不能自動識別",
+  "campaign.diagnostic.AUTO_LAYOUT_UNSUPPORTED": "資源不符合標準 Maps / Mods 目錄結構",
+  "campaign.diagnostic.AUTO_CAMPAIGN_AMBIGUOUS": "檢測到多個戰役類型，不能自動識別",
+  "campaign.diagnostic.AUTO_CAMPAIGN_NOT_FOUND": "未找到可唯一識別的標準戰役地圖目錄"
 }

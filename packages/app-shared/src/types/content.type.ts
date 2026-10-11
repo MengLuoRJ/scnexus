@@ -42,7 +42,7 @@ export type InstallPreview = {
   package: Package
   rootRelativePath: string
   descriptorPath: string
-  origin: 'package-json' | 'ccm-converted' | 'metadata-txt'
+  origin: 'package-json' | 'ccm-converted' | 'metadata-txt' | 'auto-detected'
   files: PlannedFile[]
   targetTree: FileTree
   fileCount: number

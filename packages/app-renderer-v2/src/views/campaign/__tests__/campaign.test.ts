@@ -196,3 +196,27 @@ test('install failure unsubscribes without discarding its preview', async () => 
   expect(mocks.unsubscribe).toHaveBeenCalledOnce()
   expect(service.analysis.value?.analysisId).toBe('a')
 })
+
+test('descriptorless analysis selects auto and submits its exact selection', async () => {
+  const service = setup()
+  const auto = {
+    ...analysis,
+    recommendedMode: null,
+    modes: { scnexus: null, ccm: null, auto: { origin: 'auto-detected' } },
+    conflicts: [{ mode: 'auto', files: [{ conflictId: 'auto-conflict' }] }],
+  } as unknown as AnalysisResult
+  mocks.analyze.mockResolvedValue({ ok: true, data: auto })
+  mocks.install.mockResolvedValue({ ok: true, data: record })
+  await service.analyze({ kind: 'archive', path: 'D:\\Campaign.7z' })
+  expect(service.mode.value).toBe('auto')
+  expect(service.preview.value?.origin).toBe('auto-detected')
+  expect(service.conflicts.value).toEqual([{ conflictId: 'auto-conflict' }])
+  await service.confirm([{ conflictId: 'auto-conflict', action: 'keep' }], [])
+  expect(mocks.install).toHaveBeenCalledWith({
+    analysisId: 'a',
+    taskId: expect.any(String),
+    mode: 'auto',
+    decisions: [{ conflictId: 'auto-conflict', action: 'keep' }],
+  })
+  expect(service.analysis.value).toBeNull()
+})

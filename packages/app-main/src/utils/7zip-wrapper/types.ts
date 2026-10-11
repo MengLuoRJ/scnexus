@@ -46,6 +46,7 @@ export type SevenZipCommonOptions = {
   timeout?: number
   cwd?: string
   onProgress?: (progress: SevenZipProgress) => void
+  onWarning?: (result: SevenZipResult) => void
   signal?: AbortSignal
 }
 

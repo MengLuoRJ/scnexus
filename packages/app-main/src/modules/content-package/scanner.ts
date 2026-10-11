@@ -2,9 +2,9 @@ import { validateCampaignRecord } from '../../stores/campaign'
 import { validateCustomizeRecord } from '../../stores/customize'
 import { validateActive } from '../../stores/campaign-active'
 import { validateRecordPaths } from './content-package'
-import { readdir, readFile, lstat } from 'node:fs/promises'
-import { join, basename } from 'node:path'
-import { randomUUID, createHash } from 'node:crypto'
+import { readdir, readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { createHash } from 'node:crypto'
 import type {
   ContentRecord,
   GamePaths,
@@ -12,9 +12,21 @@ import type {
   PackageCampaignType,
 } from '@scnexus/app-shared/types/content.type'
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
+import { isContentDiagnostic } from './diagnostics'
 import { openSource, makeTree } from './source'
 import { campaignRoots, CAMPAIGNS, safePath, officialMap } from './paths'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+function parseManifest(raw: Buffer) {
+  try {
+    return JSON.parse(raw.toString())
+  } catch (cause) {
+    throw new AppError(
+      ERRORS.ARCHIVE_METADATA_INVALID,
+      { message: 'Invalid manifest JSON' },
+      { cause },
+    )
+  }
+}
 async function optional(path: string) {
   try {
     return await readFile(path)
@@ -41,7 +53,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
     const raw = await optional(join(directory, 'install-manifest.json'))
     if (!raw) continue
     try {
-      const record = JSON.parse(raw.toString()) as ContentRecord
+      const record = parseManifest(raw) as ContentRecord
       if (record.package?.type === 'campaign') validateCampaignRecord(record)
       else validateCustomizeRecord(record)
       validateRecordPaths(record, paths)
@@ -53,7 +65,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         !Array.isArray(record.installedFiles) ||
         !Array.isArray(record.files)
       )
-        throw new Error('Invalid manifest')
+        throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Invalid manifest' })
       const packageRaw = await readFile(join(directory, 'package.json'))
       record.package = parsePackage(
         packageRaw.toString(),
@@ -61,7 +73,8 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
       )
       for (const file of record.installedFiles) {
         const target = await safePath(paths.gameRoot, file.target)
-        if (target !== file.absolutePath) throw new Error('Manifest path mismatch')
+        if (target !== file.absolutePath)
+          throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Manifest path mismatch' })
       }
       if (record.package.type === 'customize') {
         const present = []
@@ -81,7 +94,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
       }
       records.push(record)
     } catch (error) {
-      if (!(error instanceof AppError) && (error as NodeJS.ErrnoException).code) throw error
+      if (!isContentDiagnostic(error)) throw error
       diagnostics.push({
         path: directory,
         message: 'Invalid SCNexus package; retained old record if available',
@@ -125,7 +138,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         gameRoot: paths.gameRoot,
       })
     } catch (error) {
-      if (!(error instanceof AppError) && (error as NodeJS.ErrnoException).code) throw error
+      if (!isContentDiagnostic(error)) throw error
       diagnostics.push({ path: directory, message: 'Invalid CCM package' })
     }
   }
@@ -164,7 +177,8 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
     }
     try {
       const pkg = json ? parsePackage(json.toString(), 'campaign') : parseCcm(decodeCcm(txt!).text)
-      if (pkg.campaign !== campaign) throw new Error('Campaign mismatch')
+      if (pkg.campaign !== campaign)
+        throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Campaign mismatch' })
       const matches = records.filter(
         (r) =>
           r.package.type === 'campaign' &&
@@ -186,10 +200,12 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
       if (record?.mode === 'scnexus') {
         const raw = await optional(join(record.managementDirectory, 'active-manifest.json'))
         if (raw) {
-          saved = JSON.parse(raw.toString())
+          saved = parseManifest(raw)
           validateActive(saved)
           if (saved?.localId !== record.localId || saved.gameRoot !== paths.gameRoot)
-            throw new Error('Invalid active manifest')
+            throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
+              message: 'Invalid active manifest',
+            })
         }
       }
       if (!record) {
@@ -260,7 +276,8 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
       }
       for (const file of installed) {
         const target = await safePath(paths.gameRoot, file.target)
-        if (target !== file.absolutePath) throw new Error('Invalid target path')
+        if (target !== file.absolutePath)
+          throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Invalid target path' })
       }
       active[campaign] = {
         localId: record.localId,
@@ -272,7 +289,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         gameRoot: paths.gameRoot,
       }
     } catch (error) {
-      if (!(error instanceof AppError) && (error as NodeJS.ErrnoException).code) throw error
+      if (!isContentDiagnostic(error)) throw error
       diagnostics.push({ path: directory, message: 'Invalid active campaign' })
     }
   }
@@ -340,7 +357,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         gameRoot: paths.gameRoot,
       })
     } catch (error) {
-      if (!(error instanceof AppError) && (error as NodeJS.ErrnoException).code) throw error
+      if (!isContentDiagnostic(error)) throw error
       diagnostics.push({
         path: join(paths.gameRoot, entry.path, '..'),
         message: 'Invalid external customize package',
@@ -386,7 +403,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         gameRoot: paths.gameRoot,
       })
     } catch (error) {
-      if (!(error instanceof AppError) && (error as NodeJS.ErrnoException).code) throw error
+      if (!isContentDiagnostic(error)) throw error
       diagnostics.push({
         path: join(paths.gameRoot, entry.path, '..'),
         message: 'Invalid external CCM metadata',

@@ -3,9 +3,31 @@ import { createReadStream } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { basename } from 'node:path'
 import type { FileTree, SourceInput } from '@scnexus/app-shared/types/content.type'
-import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
-import { sevenZip } from '../../utils/7zip-wrapper'
+import {
+  AppError,
+  ERRORS,
+  normalizeError,
+  type ErrorDefinition,
+} from '@scnexus/app-shared/errors/app.error'
+import { sevenZip, SevenZipError, SevenZipTimeoutError } from '../../utils/7zip-wrapper'
 import { logicalPath, keyPath, safePath } from './paths'
+import { reportOperationWarning } from '../../utils/operation-warnings'
+import type { SevenZipResult } from '../../utils/7zip-wrapper/types'
+
+async function archiveOperation<T>(
+  definition: ErrorDefinition,
+  message: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run()
+  } catch (cause) {
+    if (cause instanceof SevenZipTimeoutError) throw normalizeError(cause)
+    if (cause instanceof SevenZipError)
+      throw new AppError(definition, { message: `${message}: ${cause.message}` }, { cause })
+    throw cause
+  }
+}
 export type Entry = { path: string; bytes: number; modifiedAt: number | null; changedAt?: number }
 export type ContentSource = {
   input: SourceInput
@@ -36,12 +58,21 @@ export async function stageArchive(
   await verifyArchive(source)
   await mkdir(output)
   const paths = [...new Set(selected)]
-  if (paths.length)
-    await sevenZip.extractExact(source.input.path, paths, output, {
-      signal,
-      timeout: 1200000,
-      onProgress: ({ percent }) => onProgress(percent),
-    })
+  const warnings: SevenZipResult[] = []
+  if (paths.length) {
+    const result = await archiveOperation(
+      ERRORS.ARCHIVE_EXTRACT_FAILED,
+      'Archive extraction failed',
+      () =>
+        sevenZip.extractExact(source.input.path, paths, output, {
+          signal,
+          timeout: 1200000,
+          onProgress: ({ percent }) => onProgress(percent),
+          onWarning: (result) => warnings.push(result),
+        }),
+    )
+    if (result.exitCode === 1 && !warnings.length) warnings.push(result)
+  }
   await verifyArchive(source)
   const staged = await openSource({ kind: 'directory', path: output })
   const sourceEntries = new Map(source.entries.map((entry) => [entry.path, entry]))
@@ -81,9 +112,20 @@ export async function stageArchive(
     )
   )
     throw new AppError(ERRORS.ARCHIVE_INVALID, { message: 'Unexpected extraction output' })
-  return new Map(
+  const files = new Map(
     await Promise.all(paths.map(async (path) => [path, await safePath(output, path)] as const)),
   )
+  for (const warning of warnings)
+    reportOperationWarning(
+      new AppError(
+        ERRORS.ARCHIVE_WARNING,
+        {
+          message: '7-Zip extraction completed with warnings; output verified',
+        },
+        { cause: warning },
+      ),
+    )
+  return files
 }
 export function makeTree(entries: Entry[], name: string): FileTree {
   const root: FileTree = {
@@ -159,7 +201,9 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     read = async (path) => readFile(await safePath(input.path, path))
   } else {
     archiveHash = await hashFile(input.path)
-    const result = await sevenZip.list(input.path)
+    const result = await archiveOperation(ERRORS.ARCHIVE_INVALID, 'Archive listing failed', () =>
+      sevenZip.list(input.path),
+    )
     for (const entry of result.entries) {
       if (/^[\\/]/.test(entry.path)) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
       const path = logicalPath(entry.path)
@@ -181,7 +225,15 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     read = (path) => {
       if (!/^(package\.json|metadata\.txt)$/i.test(path.split('/').at(-1) ?? ''))
         throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
-      return sevenZip.readFile(input.path, path, { maxBytes: 1024 * 1024, timeout: 120000 })
+      return archiveOperation(ERRORS.ARCHIVE_EXTRACT_FAILED, 'Archive metadata read failed', () =>
+        sevenZip.readFile(input.path, path, { maxBytes: 1024 * 1024, timeout: 120000 }),
+      ).then((data) => {
+        if (data.length !== entries.find((entry) => entry.path === path)?.bytes)
+          throw new AppError(ERRORS.ARCHIVE_EXTRACT_FAILED, {
+            message: 'Archive metadata output is incomplete',
+          })
+        return data
+      })
     }
   }
   const seen = new Set<string>()

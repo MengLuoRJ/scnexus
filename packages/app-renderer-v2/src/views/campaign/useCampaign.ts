@@ -39,17 +39,20 @@ export function useCampaign() {
   const busy = ref(false)
   const installProgress = ref<InstallProgress | null>(null)
   let stopProgress: (() => void) | undefined
+  const warnings = ref<AppErrorDto[]>([])
   const error = ref<AppErrorDto | null>(null)
   const diagnostics = ref<{ path: string; message: string }[]>([])
   let disposed = false
   function data<T>(result: IpcResult<T>): T {
     if (!result.ok) throw result.error
+    if (result.warnings?.length) warnings.value = [...warnings.value, ...result.warnings]
     return result.data
   }
   async function execute<T>(run: () => Promise<T>): Promise<T | undefined> {
     if (busy.value) return
     busy.value = true
     error.value = null
+    warnings.value = []
     try {
       return await run()
     } catch (value) {
@@ -170,6 +173,7 @@ export function useCampaign() {
     busy,
     installProgress,
     error,
+    warnings,
     diagnostics,
     preview,
     conflicts,

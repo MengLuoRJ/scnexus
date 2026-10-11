@@ -305,6 +305,31 @@ export const ERRORS = {
     name: 'GAME-MODULE-INITIALIZATION-FAILED',
     description: '游戏或内容依赖模块初始化失败',
   },
+  FILESYSTEM_PERMISSION_DENIED: {
+    code: 'M059',
+    name: 'FILESYSTEM-PERMISSION-DENIED',
+    description: '无法访问文件，请检查权限或文件是否被其他程序占用',
+  },
+  FILESYSTEM_BUSY: {
+    code: 'M060',
+    name: 'FILESYSTEM-BUSY',
+    description: '文件正被其他程序占用，请关闭相关程序后重试',
+  },
+  FILESYSTEM_NO_SPACE: {
+    code: 'M061',
+    name: 'FILESYSTEM-NO-SPACE',
+    description: '磁盘空间不足，请释放空间后重试',
+  },
+  CONTENT_CLEANUP_WARNING: {
+    code: 'M062',
+    name: 'CONTENT-CLEANUP-WARNING',
+    description: '操作已提交，但临时文件清理失败；请勿重复执行，稍后清理残留文件',
+  },
+  ARCHIVE_WARNING: {
+    code: 'M063',
+    name: 'ARCHIVE-WARNING',
+    description: '归档处理完成但有警告，请检查处理结果',
+  },
 } as const
 
 export type ErrorDefinition = (typeof ERRORS)[keyof typeof ERRORS]

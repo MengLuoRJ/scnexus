@@ -220,3 +220,20 @@ test('descriptorless analysis selects auto and submits its exact selection', asy
   })
   expect(service.analysis.value).toBeNull()
 })
+
+test('cleanup warning preserves committed installation and is exposed to the page', async () => {
+  const service = setup()
+  mocks.analyze.mockResolvedValue({ ok: true, data: analysis })
+  const warning = toErrorDto(
+    new AppError(ERRORS.CONTENT_CLEANUP_WARNING, { message: 'cleanup EBUSY' }),
+  )
+  mocks.install.mockResolvedValue({ ok: true, data: record, warnings: [warning] })
+  await service.analyze({ kind: 'directory', path: 'D:\\Content' })
+  const result = await service.confirm([], [])
+  expect(result?.installed).toEqual(record)
+  expect(service.error.value).toBeNull()
+  expect(service.warnings.value).toEqual([warning])
+  expect(service.analysis.value).toBeNull()
+  await service.refresh()
+  expect(service.warnings.value).toEqual([])
+})

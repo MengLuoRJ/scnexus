@@ -160,5 +160,6 @@
   "customize.uninstallComplete": "自製作品卸載完成",
   "customize.refreshComplete": "自製作品列表已刷新",
   "customize.scanComplete": "自製作品掃描完成",
-  "customize.descriptorPresent": "來源中存在 package.json，不能啟用自動識別"
+  "customize.descriptorPresent": "來源中存在 package.json，不能啟用自動識別",
+  "ui.warning": "操作警告"
 }

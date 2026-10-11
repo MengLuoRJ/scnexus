@@ -66,9 +66,19 @@ export function decodeCcm(buffer: Buffer) {
       encoding: 'utf-8',
     }
   } catch {
-    return {
-      text: new TextDecoder('gb18030', { fatal: true }).decode(buffer),
-      encoding: 'gb18030',
+    try {
+      return {
+        text: new TextDecoder('gb18030', { fatal: true }).decode(buffer),
+        encoding: 'gb18030',
+      }
+    } catch (cause) {
+      throw new AppError(
+        ERRORS.ARCHIVE_METADATA_INVALID,
+        {
+          message: 'Metadata text encoding is invalid',
+        },
+        { cause },
+      )
     }
   }
 }

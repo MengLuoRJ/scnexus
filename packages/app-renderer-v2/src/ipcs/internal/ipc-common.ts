@@ -3,6 +3,7 @@ import {
   AppError,
   ERRORS,
   isErrorDto,
+  isErrorDtoList,
   toErrorDto,
   type IpcResult,
 } from '@scnexus/app-shared/errors/app.error'
@@ -17,7 +18,12 @@ export function desktop(): DesktopApi {
 export async function request<T>(run: () => Promise<IpcResult<T>>): Promise<IpcResult<T>> {
   try {
     const result = await run()
-    if (result?.ok === true && Object.hasOwn(result, 'data')) return result
+    if (
+      result?.ok === true &&
+      Object.hasOwn(result, 'data') &&
+      (result.warnings === undefined || isErrorDtoList(result.warnings))
+    )
+      return result
     if (result?.ok === false && isErrorDto(result.error)) return result
     return { ok: false, error: toErrorDto(new AppError(ERRORS.IPC_RESULT_INVALID)) }
   } catch (cause) {

@@ -313,7 +313,9 @@ function activate() {
         </template>
         <UAlert v-else color="warning" :title="t('campaign.modeUnavailable')" />
         <UAlert
-          v-for="(diagnostic, index) in analysis.diagnostics.filter((item) => item.mode === mode)"
+          v-for="(diagnostic, index) in analysis.diagnostics.filter(
+            (item) => !preview || item.mode === mode,
+          )"
           :key="index"
           :color="
             diagnostic.level === 'error'

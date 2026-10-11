@@ -305,3 +305,21 @@ renderer 初始化前、关闭后或重新加载时读取有效授权状态，�
 | M058 | GAME-MODULE-INITIALIZATION-FAILED | 游戏或内容依赖模块初始化失败 |
 
 更新阶段沿用 M027/M028/M029（检查/下载/安装），不将所有错误都归为下载失败。
+
+## 内容操作异常审计补充
+
+| code | name                         | description            | 处理边界                                                |
+| ---- | ---------------------------- | ---------------------- | ------------------------------------------------------- |
+| M059 | FILESYSTEM-PERMISSION-DENIED | 文件操作权限不足       | EACCES、EPERM；提示检查权限或安全软件                   |
+| M060 | FILESYSTEM-BUSY              | 文件正被占用           | EBUSY、ETXTBSY；提示关闭游戏、编辑器或占用程序          |
+| M061 | FILESYSTEM-NO-SPACE          | 存储空间不足           | ENOSPC、EDQUOT；保留原目标并提示释放空间                |
+| M062 | CONTENT-CLEANUP-WARNING      | 内容操作完成但清理失败 | 清理暂存、备份或 7z 选择列表失败；不覆盖主操作结果      |
+| M063 | ARCHIVE-WARNING              | 压缩工具完成但报告警告 | 7z exit 1；安装需先验证完整输出，不能把缺失输出视为成功 |
+
+main 的 `ipc-util` 使用 AsyncLocalStorage 为每次调用创建独立警告上下文。服务通过 `reportOperationWarning(AppError)` 报告，进度回调可通过 `notifyOperation(callback, taskId?)` 防止通知异常逃逸。警告按 errorId 在本次调用内去重，成功 DTO 为 `{ ok: true, data, warnings?: AppErrorDto[] }`；无警告时不增加字段。失败仍为 `{ ok: false, error }`，次要清理警告仅安全记录，绝不替换原始错误或 M043 回滚失败。请求结束后关闭上下文，迟到回调不修改已返回结果。日志使用 warn 等级并经过已有脱敏管线，遵守用户日志阈值；日志/report 失败不能使 handler 丢失原始错误 DTO。
+
+文件系统分类基于 code/errno，不根据 message 猜测；其他可识别文件错误沿用 M030。7z 超时沿用 M050；列目录失败为 M032，元数据读出或解压失败为 M036，保留内部 cause 及明确的本次 message。描述发现只将预期的元数据、类型、路径校验错误隔离为 diagnostics；读取时的 ENOENT、权限、占用、I/O 和 7z 异常均拒绝本次调用，不伪装成格式错误。`assertPathExists` 仅将 ENOENT 包装为缺失路径，其他 errno 保留供 IPC 分类。
+
+验证补充：父任务复验 main 138 项及 workshop 1 项通过，三包类型检查通过；`pnpm --filter @scnexus/app-renderer-v2 build-only`、仓库根的 `pnpm exec vite build --config packages\app-main\vite.config.ts` 与 `pnpm exec vite build --config packages\app-preload\vite.config.ts` 均通过。该结果不改变旧 lint 基线未清理的说明。
+
+测试基线补充（父任务回传）：renderer-v2 针对性 8 文件 58 项通过，`pnpm run test:preload` 7 项通过。`pnpm --filter @scnexus/app-renderer-v2 test:unit --run` 全量为 83/84 通过；唯一失败为既有 `icons.test` 双引号正则与 Vite 配置单引号不匹配，两文件均无本次修改，未修复无关基线。

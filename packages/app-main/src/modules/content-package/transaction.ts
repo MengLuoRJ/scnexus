@@ -1,6 +1,7 @@
 import { copyFile, mkdir, mkdtemp, lstat, rm, rename, writeFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+import { reportOperationWarning } from '../../utils/operation-warnings'
 export type WriteData = Buffer | null | { file: string } | { directory: string }
 export async function fileTransaction<T>(
   root: string,
@@ -73,6 +74,20 @@ export async function fileTransaction<T>(
     }
     throw cause
   } finally {
-    if (!retain) await rm(backup, { recursive: true, force: true })
+    if (!retain) {
+      try {
+        await rm(backup, { recursive: true, force: true })
+      } catch (cause) {
+        reportOperationWarning(
+          new AppError(
+            ERRORS.CONTENT_CLEANUP_WARNING,
+            {
+              message: 'Operation backup cleanup failed; files retained',
+            },
+            { cause },
+          ),
+        )
+      }
+    }
   }
 }

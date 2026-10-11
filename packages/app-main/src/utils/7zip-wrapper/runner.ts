@@ -3,6 +3,8 @@ import sevenZipBin from '7z-bin'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { StringDecoder } from 'node:string_decoder'
 import { access } from 'node:fs/promises'
+import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+import { notifyOperation, reportOperationWarning } from '../operation-warnings'
 import {
   createSevenZipError,
   SevenZipError,
@@ -41,10 +43,17 @@ export class SevenZipRunner {
       let timedOut = false
       let settled = false
       let processError: Error | undefined
+      const stop = () => {
+        try {
+          child.kill()
+        } catch (error) {
+          processError ??= error as Error
+        }
+      }
       const timeout = options.timeout
         ? setTimeout(() => {
             timedOut = true
-            child.kill()
+            stop()
           }, options.timeout)
         : undefined
 
@@ -56,8 +65,14 @@ export class SevenZipRunner {
         stderr.push(chunk)
         stderrProgress.write(chunk)
       })
+      const recordError = (error: Error) => {
+        processError ??= error
+        stop()
+      }
+      child.stdout.on('error', recordError)
+      child.stderr.on('error', recordError)
       child.on('error', (error) => {
-        processError = error
+        processError ??= error
       })
       child.on('close', (exitCode) => {
         if (settled) return
@@ -73,11 +88,12 @@ export class SevenZipRunner {
           stderr: Buffer.concat(stderr).toString('utf8'),
         }
 
-        if (processError) {
-          reject(new SevenZipError(`7-Zip process failed: ${processError.message}`, result))
-        } else if (timedOut) {
+        if (timedOut) {
           reject(new SevenZipTimeoutError(options.timeout ?? 0, result))
+        } else if (processError) {
+          reject(new SevenZipError(`7-Zip process failed: ${processError.message}`, result))
         } else if (result.exitCode === 0 || result.exitCode === 1) {
+          if (result.exitCode === 1) reportSevenZipWarning(result, options)
           resolve(result)
         } else {
           reject(createSevenZipError(result))
@@ -97,9 +113,24 @@ export function resolveBundledBinaryPath(): string {
 export async function assertPathExists(path: string): Promise<void> {
   try {
     await access(path)
-  } catch {
-    throw new SevenZipPathError(path)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new SevenZipPathError(path)
+    throw error
   }
+}
+
+export function reportSevenZipWarning(result: SevenZipResult, options: SevenZipCommonOptions = {}) {
+  if (options.onWarning) notifyOperation(() => options.onWarning!(result))
+  else
+    reportOperationWarning(
+      new AppError(
+        ERRORS.ARCHIVE_WARNING,
+        {
+          message: '7-Zip completed with warnings',
+        },
+        { cause: createSevenZipError(result) },
+      ),
+    )
 }
 
 export function parseTechnicalList(output: string, archive: string): SevenZipEntry[] {
@@ -150,7 +181,7 @@ function parseProgress(output: string, callback?: SevenZipCommonOptions['onProgr
   for (const line of output.split(/[\r\n\b]+/)) {
     const match = line.match(/^\s*(\d{1,3})%(?:\s+(.*))?$/)
     if (match && Number(match[1]) <= 100)
-      callback({ percent: Number(match[1]), file: match[2]?.trim() })
+      notifyOperation(() => callback({ percent: Number(match[1]), file: match[2]?.trim() }))
   }
 }
 

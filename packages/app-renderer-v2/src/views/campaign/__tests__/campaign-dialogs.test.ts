@@ -490,3 +490,30 @@ test('customize descriptor rejection refers only to package.json', () => {
   expect(titles).toContain('来源中存在 package.json，不能启用自动识别')
   expect(titles).not.toContain('来源中存在描述文件，不能启用自动识别')
 })
+
+test('when every mode is unavailable, malformed descriptor diagnostics cannot be hidden by the auto tab', () => {
+  const state = service()
+  state.mode.value = 'auto'
+  state.preview.value = null as never
+  state.analysis.value = {
+    ...analysis,
+    modes: { scnexus: null, ccm: null, auto: null },
+    diagnostics: [
+      {
+        mode: 'scnexus',
+        level: 'error',
+        code: 'M034',
+        message: 'Invalid descriptor: package.json',
+      },
+      { mode: 'auto', level: 'error', code: 'AUTO_DESCRIPTOR_PRESENT' },
+    ],
+  } as AnalysisResult
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+  })
+  const alerts = wrapper.findAllComponents({ name: 'Alert' })
+  expect(alerts.map((alert) => alert.props('description'))).toContain(
+    'Invalid descriptor: package.json',
+  )
+})

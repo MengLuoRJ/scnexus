@@ -160,5 +160,6 @@
   "customize.uninstallComplete": "Custom content uninstalled",
   "customize.refreshComplete": "Custom content list refreshed",
   "customize.scanComplete": "Custom content scan completed",
-  "customize.descriptorPresent": "A package.json is present; automatic recognition is unavailable"
+  "customize.descriptorPresent": "A package.json is present; automatic recognition is unavailable",
+  "ui.warning": "Operation warning"
 }

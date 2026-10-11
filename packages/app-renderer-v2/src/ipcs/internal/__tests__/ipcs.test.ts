@@ -161,3 +161,14 @@ test('campaign progress listener receives correlated DTOs and disposes with its 
   stop()
   expect(dispose).toHaveBeenCalledOnce()
 })
+
+test('success warnings survive renderer adapter validation without turning into errors', async () => {
+  const warning = toErrorDto(
+    new AppError(ERRORS.CONTENT_CLEANUP_WARNING, { message: 'cleanup busy' }),
+  )
+  const response = { ok: true as const, data: { localId: 'record' }, warnings: [warning] }
+  expect(await request(async () => response)).toEqual(response)
+  expect(
+    await request(async () => ({ ok: true, data: {}, warnings: [{ code: 'M062' }] }) as never),
+  ).toMatchObject({ ok: false, error: { code: 'R001' } })
+})

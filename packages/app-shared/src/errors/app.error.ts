@@ -3,7 +3,9 @@ export { ERRORS, type ErrorDefinition, type ErrorCode, type ErrorName } from './
 
 export type ErrorOccurrence = { message?: string; taskId?: string }
 export type AppErrorDto = ErrorDefinition & ErrorOccurrence & { errorId: string }
-export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: AppErrorDto }
+export type IpcResult<T> =
+  | { ok: true; data: T; warnings?: AppErrorDto[] }
+  | { ok: false; error: AppErrorDto }
 
 export class AppError extends Error {
   readonly code: ErrorDefinition['code']
@@ -45,7 +47,43 @@ export function normalizeError(
   const message = error instanceof Error ? error.message : typeof error === 'string' ? error : ''
   const legacyDefinition = Object.hasOwn(legacy, message) ? legacy[message] : undefined
   if (legacyDefinition) return new AppError(legacyDefinition, { message }, { cause: error })
-  return new AppError(definition, {}, { cause: error })
+  const details =
+    error && typeof error === 'object'
+      ? (error as { code?: unknown; errno?: unknown; name?: unknown })
+      : undefined
+  const code = typeof details?.code === 'string' ? details.code : ''
+  const filesystem =
+    code === 'EACCES' || code === 'EPERM'
+      ? ERRORS.FILESYSTEM_PERMISSION_DENIED
+      : code === 'EBUSY' || code === 'ETXTBSY'
+        ? ERRORS.FILESYSTEM_BUSY
+        : code === 'ENOSPC' || code === 'EDQUOT'
+          ? ERRORS.FILESYSTEM_NO_SPACE
+          : typeof details?.errno === 'number' ||
+              [
+                'ENOENT',
+                'ENOTDIR',
+                'EISDIR',
+                'EIO',
+                'EROFS',
+                'EMFILE',
+                'ENFILE',
+                'ENAMETOOLONG',
+                'EXDEV',
+              ].includes(code)
+            ? ERRORS.FILESYSTEM_OPERATION_FAILED
+            : undefined
+  const archive =
+    details?.name === 'SevenZipTimeoutError'
+      ? ERRORS.TASK_TIMEOUT
+      : typeof details?.name === 'string' &&
+          ['SevenZipError', 'SevenZipPathError'].includes(details.name)
+        ? ERRORS.ARCHIVE_EXTRACT_FAILED
+        : undefined
+  const classified = filesystem ?? archive
+  return new AppError(classified ?? definition, classified && message ? { message } : {}, {
+    cause: error,
+  })
 }
 
 export function toErrorDto(error: AppError): AppErrorDto {
@@ -56,6 +94,10 @@ export function toErrorDto(error: AppError): AppErrorDto {
     ...(error.message ? { message: error.message } : {}),
     ...(error.taskId ? { taskId: error.taskId } : {}),
   }
+}
+
+export function isErrorDtoList(value: unknown): value is AppErrorDto[] {
+  return Array.isArray(value) && value.every(isErrorDto)
 }
 
 export function isErrorDto(value: unknown): value is AppErrorDto {

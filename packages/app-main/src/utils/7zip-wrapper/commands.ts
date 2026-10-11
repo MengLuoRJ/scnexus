@@ -1,9 +1,16 @@
 import { basename, resolve, join } from 'node:path'
 import { writeFile, rm } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
+import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+import { reportOperationWarning } from '../operation-warnings'
 import { PassThrough, type Readable } from 'node:stream'
 import { createSevenZipError, SevenZipError, SevenZipTimeoutError } from './errors'
-import { assertPathExists, parseTechnicalList, SevenZipRunner } from './runner'
+import {
+  assertPathExists,
+  parseTechnicalList,
+  reportSevenZipWarning,
+  SevenZipRunner,
+} from './runner'
 import type {
   SevenZipAddOptions,
   SevenZipCommonOptions,
@@ -136,7 +143,19 @@ export async function extractExact(
       options,
     )
   } finally {
-    await rm(listPath, { force: true })
+    try {
+      await rm(listPath, { force: true })
+    } catch (cause) {
+      reportOperationWarning(
+        new AppError(
+          ERRORS.CONTENT_CLEANUP_WARNING,
+          {
+            message: '7-Zip selection list cleanup failed; file retained',
+          },
+          { cause },
+        ),
+      )
+    }
   }
 }
 
@@ -230,24 +249,53 @@ export function extractToStream(
   const output = new PassThrough()
   const stderr: Buffer[] = []
   let timedOut = false
+  let processError: Error | undefined
+  let settled = false
+  const stop = () => {
+    try {
+      child.kill()
+    } catch (error) {
+      processError ??= error as Error
+    }
+  }
   const timeout = options.timeout
     ? setTimeout(() => {
         timedOut = true
-        child.kill()
+        stop()
       }, options.timeout)
     : undefined
 
   child.stdout.pipe(output, { end: false })
   child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk))
+  const recordError = (error: Error) => {
+    processError ??= error
+    stop()
+  }
+  child.stdout.on('error', recordError)
+  child.stderr.on('error', recordError)
   child.on('error', (error) => {
-    if (timeout) clearTimeout(timeout)
-    output.destroy(new SevenZipError(`Failed to start 7-Zip: ${error.message}`))
+    processError ??= error
   })
   child.on('close', (exitCode) => {
+    if (settled) return
+    settled = true
     if (timeout) clearTimeout(timeout)
     if (timedOut) {
       output.destroy(new SevenZipTimeoutError(options.timeout ?? 0))
+    } else if (processError) {
+      output.destroy(new SevenZipError(`7-Zip process failed: ${processError.message}`))
     } else if (exitCode === 0 || exitCode === 1) {
+      if (exitCode === 1)
+        reportSevenZipWarning(
+          {
+            command: runner.binaryPath,
+            args: ['x', archive, file, '-so'],
+            exitCode,
+            stdout: '',
+            stderr: Buffer.concat(stderr).toString('utf8'),
+          },
+          options,
+        )
       output.end()
     } else {
       output.destroy(
@@ -262,7 +310,7 @@ export function extractToStream(
     }
   })
   output.on('close', () => {
-    if (child.exitCode === null && !child.killed) child.kill()
+    if (child.exitCode === null && !child.killed) stop()
   })
   return output
 }

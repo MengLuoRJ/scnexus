@@ -160,5 +160,6 @@
   "customize.uninstallComplete": "自制作品卸载完成",
   "customize.refreshComplete": "自制作品列表已刷新",
   "customize.scanComplete": "自制作品扫描完成",
-  "customize.descriptorPresent": "来源中存在 package.json，不能启用自动识别"
+  "customize.descriptorPresent": "来源中存在 package.json，不能启用自动识别",
+  "ui.warning": "操作警告"
 }

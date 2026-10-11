@@ -26,7 +26,7 @@ defineOptions({ name: 'CampaignView' })
 const { t } = useI18n()
 const toast = useToast()
 const service = useCampaign()
-const { diagnostics, records, active, busy, error } = service
+const { diagnostics, records, active, busy, error, warnings } = service
 const available = Boolean(window.scnexus)
 const headerReady = ref(false)
 const chooserOpen = ref(false)
@@ -44,11 +44,21 @@ function notifyError(value: AppErrorDto) {
   toast.add({
     color: 'error',
     title: `${t('ui.error')} · ${value.code}`,
-    description: `${value.message || value.description} · ${value.errorId}`,
+    description: `${value.description}${value.message ? ` · ${value.message}` : ''} · ${value.errorId}`,
   })
 }
 watch(error, (value) => {
   if (value) notifyError(value)
+})
+watch(warnings, (values) => {
+  for (const value of values)
+    toast.add({
+      id: value.errorId,
+      color: 'warning',
+      title: `${t('ui.warning')} · ${value.code}`,
+      description: `${value.description}${value.message ? ` · ${value.message}` : ''} · ${value.errorId}`,
+      duration: 10000,
+    })
 })
 function manageCategory(value: PackageCampaignType) {
   category.value = value

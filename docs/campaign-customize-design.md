@@ -533,7 +533,7 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 
 选择来源后立即打开安装对话框：读取中 → 三模式预览（名称/类型/作者/版本、安装与来源统计、源树/目标树、冲突与模式诊断）→ 确认安装 → 文件进度 → 实际返回的安装结果与“立即激活”。不可用模式禁用；安装冲突默认覆盖，可统一或逐文件切换为保留；模式切换或重新打开流程按当前冲突清单重置为覆盖，不沿用其他模式的 conflictId。重复安装仍阻止确认。安装期间禁止关闭或重复提交。完成后可关闭而不激活，或继续进入激活确认。结果区区分战役库导入与游戏资源处理：SCNexus 导入不直接写入游戏资源，CCM 的 copied/replaced/kept 仅统计本次 Mods 处理，不冒充全部导入文件数。
 
-真实进度通过 campaign.onInstallProgress 受控订阅返回。InstallSelection 的可选 taskId 用于关联本次请求；进度携带 analysisId、阶段、已完成/总文件数及当前路径，仅发给发起安装的 renderer。preparing/extracting 不显示文件数；extracting 的可选 `percent?: number` 只来自 7z 实际回调，缺省为不确定进度。copying/finalizing 的数量统计实际安装文件，包含 payload、游戏目标、描述和清单，不含选择保留的游戏目标、解压输出及备份；目录重命名提交后，其包含的安装文件逐项计数，不把重命名本身另算一项。文件百分比不代表字节进度或整个事务已提交。preparing/extracting/copying/finalizing/completed/failed 区分准备、解压、复制与提交；只有持久化与事务清理成功才报告完成。renderer 在成功、失败和页面卸载时取消订阅，并忽略其他 taskId/analysisId 的事件。
+真实进度通过 campaign.onInstallProgress 受控订阅返回。InstallSelection 的可选 taskId 用于关联本次请求；进度携带 analysisId、阶段、已完成/总文件数及当前路径，仅发给发起安装的 renderer。preparing/extracting 不显示文件数；extracting 的可选 `percent?: number` 只来自 7z 实际回调，缺省为不确定进度。copying/finalizing 的数量统计实际安装文件，包含 payload、游戏目标、描述和清单，不含选择保留的游戏目标、解压输出及备份；目录重命名提交后，其包含的安装文件逐项计数，不把重命名本身另算一项。文件百分比不代表字节进度或整个事务已提交。preparing/extracting/copying/finalizing/completed/failed 区分准备、解压、复制与提交；只有文件及持久化提交成功才报告完成；备份、暂存与选择列表的清理失败作为成功结果附带警告，不将已提交安装改报失败。renderer 在成功、失败和页面卸载时取消订阅，并忽略其他 taskId/analysisId 的事件。
 
 归档性能与一致性：确认安装前仅列举条目、读取必要描述文件到内存，不解压到磁盘、不读资源正文或资源哈希。包根、模式、映射路径和冲突均从条目列表推导。归档本体流式 SHA256 在列举前/元数据读取后、安装解压前后及提交前复核，不能仅凭大小和 mtime 判断不变；目录来源保留资源哈希与布局复核。确认模式后生成精确文件清单：战役包括库 payload、CCM 原描述和标准描述所需内容；customize 排除选择保留的目标对应资源。使用 UTF-8 list file、`-spd`、`-r-` 和选项终止符执行一次批量 7z 解压，复核输出文件/目录、大小和链接，不允许额外条目。7z 的取消信号终止子进程，失败和取消均清理清单及隔离暂存。
 
@@ -654,3 +654,48 @@ InstalledFile.result=kept 表示没有取得文件删除所有权。卸载跳过
 | 浏览器 mock 联调 | 1000×660 验证 `/customize` 仅两种安装模式、mock 安装完成无激活提示、卸载确认共享选择、loading 与 toast：通过；不是实机游戏验收。 |
 
 customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`、`AUTO_LAYOUT_UNSUPPORTED`；没有新增诊断代码，也不会返回 campaign 专用的 `AUTO_CAMPAIGN_AMBIGUOUS`/`AUTO_CAMPAIGN_NOT_FOUND`。`AUTO_DESCRIPTOR_PRESENT` 在 customize 中仅指 package.json，界面说明不应将 metadata.txt 说成 customize 的阻断描述。
+
+## 内容异常与提交后警告
+
+- 描述文件解析、编码与资源声明校验失败可成为逐包 diagnostics；元数据读取的文件系统错误或 7z 工具错误必须拒绝 analyze，不吞为“描述无效”。库扫描只隔离预期的包/清单校验错误，未知异常与实际读错误保留失败语义。
+- archive list/read/extract 在对应边界补充明确说明并保留 cause；超时 M050 不降为坏包。7z exit 1 保留返回结果与 warning 回调，内容解压先验证选定文件数、路径及长度，再报告 M063；即使 exit 1，缺失或异常输出仍失败，不持久化安装记录。
+- 文件事务提交与 Store 更新成功后，备份清理、内容暂存清理、7z 选择列表清理失败返回 M062 warnings，不触发错误 toast 或重复安装。失败操作中清理仅作次要警告；回滚不完整保留恢复文件并保持 M043 为主错误。
+- 进度通知是非提交依赖。回调、窗口投递和日志失败不能从 EventEmitter 逃逸、打断事务或把 completed 改报 failed；通知失败使用 M018 警告。7z stdout/stderr/process 错误记录后在 close 统一结算，超时优先保留超时定义。
+- 警告通过 main 每次 IPC 调用的 AsyncLocalStorage 收集，只在成功结果返回一次；并发调用、后续调用及失败结果互不泄漏。renderer 消费可选 warnings，但不得因为警告撤销已提交 data。
+
+
+### 本次异常审计验证
+
+| 命令 | 结果 |
+| ---- | ---- |
+| `pnpm run typecheck:main` | 通过。 |
+| `pnpm --filter @scnexus/app-main test src\utils\__test__\ipc-util.test.ts src\modules\content-package\__test__ src\modules\campaign\__test__ src\modules\customize\__test__` | 12 文件、138 项通过；包含请求隔离、迟到警告、日志失败、真实文件读写错误注入、清理 EPERM、回滚 M043、7z exit 1 完整/缺失输出及 stream/process/timeout 回归。 |
+| `pnpm --filter @scnexus/app-main test src\modules\workshop\__test__\workshop-archive.test.ts` | 1 文件、1 项通过，保留 wrapper workshop 兼容行为。 |
+| `pnpm --filter @scnexus/app-main lint` | 未通过；包级存在旧测试 mock 类型/条件断言及旧 IPC explicit-any 等基线，不宣称全包 lint 清洁。 |
+| `git diff --check -- packages\app-main docs\logging-and-errors.md docs\campaign-customize-design.md` | 通过。 |
+
+本次新增文件与修改的实现、测试使用 `pnpm exec oxlint -c .oxlintrc.json` 显式指定路径检查通过；同组 `pnpm exec eslint` 排除已有 `ipc-util.ts` explicit-any 签名后通过。未修改其他旧模块/测试来清除全包 lint 基线。构建验证由父任务统一执行，结果见下表。
+
+
+### 父任务最终构建复验
+
+以下结果由父任务复验并回传；main 域回归再次通过 138 项，workshop archive 回归再次通过 1 项；main、preload、renderer-v2 三包类型检查均通过。
+
+| 命令 | 结果 |
+| ---- | ---- |
+| `pnpm --filter @scnexus/app-renderer-v2 build-only` | 通过。 |
+| `pnpm exec vite build --config packages\app-main\vite.config.ts` | 从仓库根执行，通过。 |
+| `pnpm exec vite build --config packages\app-preload\vite.config.ts` | 从仓库根执行，通过。 |
+
+清理 warning 不代表自动恢复已完成：成功提交后的备份/暂存/选择列表清理失败会保留相应文件，尚无自动重试清理；回滚失败保留事务备份并以 M043 拒绝，绝不因后续清理或通知失败改报成功。失败结果不附加 warnings，次要警告通过 warn 日志安全记录；默认 error 阈值可能不输出 warn，但成功 DTO 的 warnings 不受日志阈值影响。尚无进程骤停后的自动事务恢复保证。
+
+
+### renderer/preload 回归与既有基线
+
+父任务回传以下验证结果；本次未修改失败用例与相关 Vite 配置，不修复无关基线。
+
+| 命令 | 结果 |
+| ---- | ---- |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run error-normalization content-notifications campaign.test campaign-dialogs customize.test uninstall-dialog ipcs.test pages.test` | 8 文件、58 项通过。 |
+| `pnpm run test:preload` | 7 项通过。 |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run` | 全量 84 项中 83 项通过、1 项失败：既有 `icons.test` 正则仅识别双引号 `i-tabler` 字符串，而 `vite.config.ts` 使用单引号；两文件均无本次 diff。不得将全量 v2 测试描述为全部通过。 |

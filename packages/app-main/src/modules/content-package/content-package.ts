@@ -1,4 +1,5 @@
 import { fileTransaction, type WriteData } from './transaction'
+import { notifyOperation, reportOperationWarning } from '../../utils/operation-warnings'
 import { randomUUID, createHash } from 'node:crypto'
 import { ccmDirectoryName } from './ccm-title'
 import {
@@ -44,6 +45,7 @@ import {
   type ContentSource,
 } from './source'
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
+import { isContentDiagnostic } from './diagnostics'
 import { detectCampaign, detectCustomize } from './auto-detector'
 import {
   campaignRoots,
@@ -229,13 +231,7 @@ export class ContentService {
         try {
           pkg = parseCcm(decodeCcm(await readFile(descriptorPath)).text)
         } catch (error) {
-          if (
-            !(error instanceof AppError) &&
-            (error as NodeJS.ErrnoException).code !== 'ENOENT' &&
-            (error as NodeJS.ErrnoException).code !== 'ENOTDIR' &&
-            !(error instanceof TypeError)
-          )
-            throw error
+          if (!isContentDiagnostic(error)) throw error
           diagnostic = {
             code: ERRORS.ARCHIVE_METADATA_INVALID.code,
             message: '已存在同名内容，但信息无法解析',
@@ -328,10 +324,11 @@ export class ContentService {
             : parsePackage(data.toString('utf8'), type)
           found.push(buildPreview(source, entry.path, pkg, ccm))
         } catch (error) {
+          if (!isContentDiagnostic(error)) throw error
           result.diagnostics.push({
             mode: ccm ? 'ccm' : 'scnexus',
             level: 'error',
-            code: error instanceof AppError ? error.code : ERRORS.ARCHIVE_METADATA_INVALID.code,
+            code: error.code,
             message: `Invalid descriptor: ${entry.path}`,
           })
         }
@@ -543,7 +540,7 @@ export class ContentService {
       progress.stage = stage
       if (stage !== 'extracting') delete progress.percent
       progress.currentFile = currentFile
-      onProgress?.({ ...progress })
+      if (onProgress) notifyOperation(() => onProgress({ ...progress }), progress.taskId)
     }
     return this.operation(selection.analysisId, async () => {
       report('preparing')
@@ -873,7 +870,20 @@ export class ContentService {
           return record
         })
       } finally {
-        await rm(staging, { recursive: true, force: true })
+        try {
+          await rm(staging, { recursive: true, force: true })
+        } catch (cause) {
+          reportOperationWarning(
+            new AppError(
+              ERRORS.CONTENT_CLEANUP_WARNING,
+              {
+                message: 'Content staging cleanup failed; files retained',
+                taskId: progress.taskId,
+              },
+              { cause },
+            ),
+          )
+        }
       }
     })
       .then((record) => {

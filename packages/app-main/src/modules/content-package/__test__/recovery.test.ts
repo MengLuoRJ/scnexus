@@ -186,7 +186,9 @@ test('7z input uses real bundled archive tools without extraction to live game',
     kind: 'archive',
     path: archive,
   })
-  expect(result.diagnostics).toEqual([])
+  expect(result.diagnostics).toEqual([
+    expect.objectContaining({ mode: 'auto', code: 'AUTO_DESCRIPTOR_PRESENT' }),
+  ])
   expect(result.modes.scnexus?.fileCount).toBe(2)
   await service.install({
     analysisId: result.analysisId,

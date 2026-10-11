@@ -1,9 +1,13 @@
-import { desktop, request, ipcSnapshot } from './internal/ipc-common'
+import { desktop, request, ipcSnapshot, subscription } from './internal/ipc-common'
 import type {
   SourceInput,
   InstallSelection,
+  InstallProgress,
   RemovalDecision,
 } from '@scnexus/app-shared/types/content.type'
+
+export const apiCustomizeOnInstallProgress = (listener: (progress: InstallProgress) => void) =>
+  subscription((handler) => desktop().customize.onInstallProgress(handler), listener)
 
 export const apiCustomizeCancel = (id: string) => request(() => desktop().customize.cancel(id))
 export const apiCustomizeAnalyze = (input: SourceInput) =>

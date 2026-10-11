@@ -31,6 +31,9 @@ export interface ContentApi {
   prepareUninstall(localId: string): Promise<IpcResult<RemovalPreview>>
   uninstall(removalId: string, decisions: RemovalDecision[]): Promise<IpcResult<unknown>>
 }
+export interface CustomizeApi extends ContentApi {
+  onInstallProgress(listener: (progress: InstallProgress) => void): () => void
+}
 export interface CampaignApi extends ContentApi {
   onInstallProgress(listener: (progress: InstallProgress) => void): () => void
   launch(): Promise<IpcResult<void>>

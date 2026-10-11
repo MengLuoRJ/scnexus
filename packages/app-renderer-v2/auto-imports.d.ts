@@ -35,6 +35,7 @@ declare global {
   const apiCustomizeCancel: typeof import('./src/ipcs/customize').apiCustomizeCancel
   const apiCustomizeInstall: typeof import('./src/ipcs/customize').apiCustomizeInstall
   const apiCustomizeList: typeof import('./src/ipcs/customize').apiCustomizeList
+  const apiCustomizeOnInstallProgress: typeof import('./src/ipcs/customize').apiCustomizeOnInstallProgress
   const apiCustomizePrepareUninstall: typeof import('./src/ipcs/customize').apiCustomizePrepareUninstall
   const apiCustomizeScan: typeof import('./src/ipcs/customize').apiCustomizeScan
   const apiCustomizeUninstall: typeof import('./src/ipcs/customize').apiCustomizeUninstall
@@ -208,6 +209,7 @@ declare module 'vue' {
     readonly apiCustomizeCancel: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeCancel']>
     readonly apiCustomizeInstall: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeInstall']>
     readonly apiCustomizeList: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeList']>
+    readonly apiCustomizeOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeOnInstallProgress']>
     readonly apiCustomizePrepareUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizePrepareUninstall']>
     readonly apiCustomizeScan: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeScan']>
     readonly apiCustomizeUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeUninstall']>

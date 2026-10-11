@@ -445,3 +445,48 @@ test('unrecognizable automatic layout shows localized reason and cannot install'
   await click(wrapper, '确认安装')
   expect(state.confirm).not.toHaveBeenCalled()
 })
+
+test('customize install exposes only SCNexus/auto and finishes without activation', async () => {
+  const state = service()
+  const customRecord = {
+    ...record,
+    payloadDirectory: null,
+    package: { ...record.package, type: 'customize', campaign: undefined },
+  } as ContentRecord
+  state.preview.value = { ...preview, package: customRecord.package }
+  state.confirm.mockResolvedValue({ installed: customRecord })
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+    contentType: 'customize',
+  })
+  const modes = wrapper.findComponent({ name: 'Tabs' }).props('items') as { value: string }[]
+  expect(modes.map((item) => item.value)).toEqual(['scnexus', 'auto'])
+  expect(wrapper.text()).not.toContain('campaign.undefined')
+  await click(wrapper, '确认安装')
+  await flushPromises()
+  expect(wrapper.findComponent({ name: 'Alert' }).props('description')).toBe(
+    '作品已直接安装到游戏目录，无需激活。',
+  )
+  expect(wrapper.findAll('button').map((item) => item.text())).toEqual(['完成'])
+  expect(wrapper.emitted('activate')).toBeUndefined()
+})
+
+test('customize descriptor rejection refers only to package.json', () => {
+  const state = service()
+  state.mode.value = 'auto'
+  state.preview.value = null as never
+  state.analysis.value = {
+    ...analysis,
+    modes: { scnexus: null, ccm: null, auto: null },
+    diagnostics: [{ mode: 'auto', code: 'AUTO_DESCRIPTOR_PRESENT', level: 'error' }],
+  } as AnalysisResult
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+    contentType: 'customize',
+  })
+  const titles = wrapper.findAllComponents({ name: 'Alert' }).map((alert) => alert.props('title'))
+  expect(titles).toContain('来源中存在 package.json，不能启用自动识别')
+  expect(titles).not.toContain('来源中存在描述文件，不能启用自动识别')
+})

@@ -16,7 +16,10 @@ function contentApi(
   }
 }
 const api: DesktopApi = {
-  customize: contentApi('customize'),
+  customize: {
+    ...contentApi('customize'),
+    onInstallProgress: (listener) => subscribeTyped('customize:install-progress', listener),
+  },
   campaign: {
     onInstallProgress: (listener) => subscribeTyped('campaign:install-progress', listener),
     launch: () => invoke('campaign:launch'),

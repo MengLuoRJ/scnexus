@@ -2,19 +2,19 @@
 
 ## 1. 范围、状态与已确认决策
 
-本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现；renderer-v2 交互已在文末记录的后续迭代中接入；campaign 已实现无描述文件的保守自动识别，customize 自动识别仍预留 null。实现与验证见第 12 节，不代表所有后续方向已落地。
+本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现；renderer-v2 交互已在文末记录的后续迭代中接入；campaign 与 customize 已实现无描述文件的保守自动识别。实现与验证见第 12 节，不代表所有后续方向已落地。
 
 - campaign 与 customize 保持独立：前者管理战役包，后者管理自制作品。
-- campaign 提供 SCNexus、CCM、自动识别三种分析模式；customize 提供 SCNexus、自动识别两种。campaign 自动识别仅在来源中找不到 package.json 与 metadata.txt 时启用；customize 自动识别仍保留接口位置。
+- campaign 提供 SCNexus、CCM、自动识别三种分析模式；customize 提供 SCNexus、自动识别两种。campaign 自动识别仅在来源中找不到 package.json 与 metadata.txt 时启用；customize 自动识别仅在所有层级均找不到 package.json（含同名目录、资源内部、大小写变体）时启用；metadata.txt 不阻止 customize auto。
 - 战役的安装（导入）与激活分开；SCNexus 导入不得修改活动地图或游戏 Mods；CCM 为兼容旧行为，在导入时直接安装 Mods。renderer 可在导入成功后按用户选择发起自动激活，也可只导入供以后手动激活。
 - SCNexus 模式优先读取有效 package.json；campaign 输入仅有有效 metadata.txt 时，也可转换为 SCNexus 安装计划。CCM 模式独立读取 metadata.txt。新标准结构以 [package.type.ts](../packages/standard/src/package/package.type.ts) 为准，不继续以旧 metadata.json 为新标准。
 - 自动深入输入层级并定位最外层有效包根；源路径相对定位后的逻辑包根，目标路径相对游戏根目录。SCNexus 资源路径必须以 /Maps/ 或 /Mods/ 开头，target_path 缺省时使用 source_path。原归档/输入根与逻辑包根分开记录，不改写用户输入地址。
 - manager 仅表示作者推荐安装方式，不强制选择或禁用其他模式；AnalysisResult 返回可为空的 recommendedMode。manager_mode 已从新类型移除，不继续设计 default/strict 分支。
 - AnalysisResult 的 conflicts 按模式分组，files 中的 Map/Mod 项各有 conflictId 并返回新资源与本地资源的名称、路径、修改时间和大小；用户可选择覆盖、保留或取消。
-- SCNexus campaign 的覆盖地图由 campaign 类型和标准布局自动形成清单；maps/mods 仅声明额外地图和模组。customize 则必须声明所有需安装的地图和模组。
+- SCNexus campaign 的覆盖地图由 campaign 类型和标准布局自动形成清单；maps/mods 仅声明额外地图和模组。customize 的 package.json 模式必须声明所有需安装的地图和模组；auto 模式自动声明标准 Maps/Mods 层级内全部地图与模组。
 - CCM 根部模组安装到 Mods 根目录；Mods 下模组保留相对层级。不按任意父目录猜测模组位置。
 - **CCM 模式不生成 package.json**：保留 metadata.txt，激活时写入该战役主地图目录；管理、扫描与删除以 metadata.txt 为格式依据。
-- **SCNexus 与 campaign 自动识别模式采用 SCNexus 管理方式**：在游戏根目录 SCNexusCustomizeData 下每个包一个子目录，保存 package.json、安装文件清单，以及存在时的 CCM 原文副本。
+- **SCNexus 与自动识别模式采用 SCNexus 管理方式**：在游戏根目录 SCNexusCustomizeData 下每个包一个子目录，保存 package.json、安装文件清单；只有 campaign 保留存在时的 CCM 原文副本，customize 不读取或持久化 metadata.txt 为 ccmOriginal。
 - customize、campaign、campaign-active Store 改为基于新 Package 类型的本地记录；profile Store 已改为 scii-game-setting Store。
 
 最新 CCM 决策替代早期“所有安装都生成 package.json”的设想。Package 可以作为内部统一信息模型，但内部转换不意味着向 CCM 安装目录写入 SCNexus 清单。
@@ -596,7 +596,7 @@ renderer-v2 的文件树、冲突对比、战役库/详情、来源与安装统�
 
 按 Maps/Campaign 的标准目录推断唯一战役类型：直属地图为 WOL，swarm（含 evolution）为 HOTS，void/voidprologue 为 LOTV，nova 为 NCO。支持共同包装目录、SC2Map/SC2Mod components；Maps 与 Mods 必须共享唯一逻辑包根，Mods 保留层级，可附带同根 Maps 下的额外地图。不根据压缩包名、地图名或文件正文猜测类型；出现多个类型、多个包根或非标准战役布局返回 auto 诊断而不安装。包名取包装包根目录名，无包装则取来源目录名或移除扩展名的归档名称；作者、版本、描述保持空，不伪造。auto 不作为“作者推荐模式”。
 
-InstallPreview.origin 增加 auto-detected，预览 descriptorPath 为空（不存在来源描述），生成文件只在确认后写入。auto 选择沿用 SCNexus 管理：ContentRecord.mode=scnexus、origin=auto-detected，生成有效 package.json、资源声明和安装清单，供激活、扫描、恢复与卸载复用。payload 路径按目标规范化，归档来源路径仍保持原始条目供精确批量解压。auto 的 existingInstallations 按 SCNexus 规则检查重复；conflicts 按 auto 分组，正式激活时重新生成冲突预览。customize 未启用自动识别。
+InstallPreview.origin 增加 auto-detected，预览 descriptorPath 为空（不存在来源描述），生成文件只在确认后写入。auto 选择沿用 SCNexus 管理：ContentRecord.mode=scnexus、origin=auto-detected，生成有效 package.json、资源声明和安装清单，供激活、扫描、恢复与卸载复用。payload 路径按目标规范化，归档来源路径仍保持原始条目供精确批量解压。auto 的 existingInstallations 按 SCNexus 规则检查重复；conflicts 按 auto 分组，正式激活时重新生成冲突预览。customize 自动识别见后续实施记录。
 
 分析不读取资源正文或解压资源：目录 auto 根据路径/大小/mtime/ctime 构建预览，资源哈希在用户确认后采集；归档 auto 不读取任何条目正文，仍使用整体归档 SHA-256 验证来源。确认后重检无描述文件条件及推断计划，批量解压一次，沿用暂存结果验证、事务提交和回滚。目录来源确认后添加描述、改变文件、归档改变或持久化失败都不得产生成功安装。
 
@@ -614,3 +614,43 @@ InstallPreview.origin 增加 auto-detected，预览 descriptorPath 为空（不�
 | 类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。 |
 | 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`、`pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过。 |
 | 静态检查 | detector、content service/source、campaign store、自动识别测试、renderer 安装预览与流程测试定向 ESLint/oxlint，以及 `git diff --check`：通过。 |
+
+### customize 自动识别、直接安装与卸载所有权（2026-10-12）
+
+customize 仅提供 analyze、install、list、scan、prepareUninstall、uninstall，复用取消与安装进度订阅；没有激活、移除活动状态或移动生命周期。SCNexus package.json 模式维持现有声明解析。customize auto 只在来源所有层级均无 package.json 时可用，门槛大小写不敏感，包含 resource components 内部和 package.json 同名目录；无效描述不回退 auto。metadata.txt 不是 customize 描述，允许出现，不读取或持久化为 ccmOriginal；components 内的 metadata.txt 仍作为普通资源文件随组件安装。campaign 原有 package.json/metadata.txt 双门槛和战役推断规则保持不变。
+
+customize auto 要求全部 SC2Map/SC2Mod 资源位于唯一共同包装根的标准 Maps/Mods 层级，包含文件及 components，Maps 任意子路径按 customize parser 原有规则保留，不猜测 campaign。拒绝多个逻辑根、松散资源、不匹配的 Maps/Mods 类型和大小写规范化歧义。包名取逻辑包根末级目录，无包装根则取输入目录名或去扩展名的归档名；作者、版本、描述为空。预览 origin=auto-detected，描述路径为空，确认后生成 package.json；记录 mode=scnexus。
+
+customize 无完整 payload/本地库资源副本，只直接安装到游戏 Maps/Mods，再在 SCNexusCustomizeData 中持久化 package.json 与 install-manifest.json。分析不读取来源资源正文、不解压；目录资源哈希在确认后采集并复核，归档继续按精确整体 SHA-256 校验来源。确认并解决直接文件冲突后，选择的归档资源单次批量提取；全部选择保留且无来源描述需要提取时无需启动提取进程。保留默认覆盖由 renderer 提供，不在 backend 隐式替用户决定。长时间解压后重检冲突，文件写入与 Store 失败仍通过现有暂存/事务回滚，不新增持久化原文件备份。
+
+InstalledFile.result=kept 表示没有取得文件删除所有权。卸载跳过这些文件，也不为它们要求共享删除选择；即使用户后来改变保留文件也不会删除或阻止移除管理记录。对实际 copied/replaced 文件继续提供共享引用 keep/delete 决策；其他包的 kept 文件虽然不拥有删除权，仍计入 usedBy 作为只读使用引用，因此卸载拥有文件的包时也会提示保护这些存留使用者。共享 campaign 清单的 kept 同样不取得删除所有权，取消激活时保留。扫描保存 origin 与结果标记，customize Store 接受 auto-detected。
+
+共享 CustomizeApi extends ContentApi 增加 onInstallProgress(listener): () => void，进度 DTO 不变；main 只向安装调用方的 live sender 发送 customize:install-progress。preload 去除 Electron event 并返回精准取消函数，v2 IPC 层仅新增 apiCustomizeOnInstallProgress 订阅适配器。
+
+后端验证：
+
+| 范围 | 精确命令与结果 |
+| --- | --- |
+| 内容、真实 ZIP/solid 7z、customize/campaign IPC 与 Store 回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\customize\__test__\customize.test.ts src\modules\campaign\__test__\campaign.test.ts src\stores\__test__`：10 文件、128 项通过。 |
+| preload 两域进度订阅、任务 ID 转发 | `pnpm run test:preload`：1 文件、4 项通过。 |
+| 独立类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`：通过。 |
+| 定向静态检查 | `pnpm exec eslint` 指定 content-package detector/service/source、auto-detection/recovery 测试、customize service/IPC/测试、customize Store、共享 content-api/desktop 类型、preload desktop/测试及 v2 customize IPC：通过。`pnpm exec oxlint -c .oxlintrc.json` 同范围（不含既有 recovery.test.ts）：通过。recovery.test.ts 的旧 unused imports/toThrow-message oxlint 问题不在本次修改范围。 |
+
+回归覆盖目录/真实 ZIP/solid 7z 的分析→直接安装→扫描→卸载、内部及损坏描述门槛、同名空目录、metadata.txt 非描述、components 与任意 Maps 子路径、keep/overwrite 所有权、共享 keep/delete、全部保留无资源提取、来源/归档变更、提取期间目标变化、Store 失败回滚，以及 sender-only 进度订阅与取消。用户真实游戏启动和大型归档仍需实际环境验收。
+
+#### customize renderer-v2 接入及联调验证
+
+新增 `/customize` 路由与导航，展示自制作品列表、详情和本地记录，支持刷新、扫描、来源分析及安装。来源选择、树形预览、冲突选择和安装进度复用 campaign 流程：`CampaignInstallModal` 通过 `contentType='customize'` 只提供 SCNexus/自动识别两种模式；不出现战役类型选择、激活提示或激活操作。默认覆盖、逐文件/批量保留和取消保持共用交互。
+
+卸载通过 prepareUninstall 获得共享文件引用，确认对话框要求明确 keep/delete，提交时显示 loading 并锁定重复操作，成功/失败使用 toast 反馈。uninstall 的返回 DTO 未变，UI 依据 IpcResult 成功状态判断，不要求额外布尔结果。只读 kept 记录依然保护其他包的 shared usedBy 引用，但它自身卸载不删除文件。
+
+父级最终集成验证（2026-10-12）：
+
+| 范围 | 精确命令与结果 |
+| --- | --- |
+| renderer-v2 类型检查 | `pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。 |
+| customize、卸载确认、campaign 回归及共用来源/冲突/IPC | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run customize.test uninstall-dialog campaign.test campaign-dialogs source-picker conflict-choices file-size pages.test ipcs.test`：9 文件、62 项通过（含刷新失败与 customize 描述门槛本地化消息回归）。 |
+| renderer-v2 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过。 |
+| 浏览器 mock 联调 | 1000×660 验证 `/customize` 仅两种安装模式、mock 安装完成无激活提示、卸载确认共享选择、loading 与 toast：通过；不是实机游戏验收。 |
+
+customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`、`AUTO_LAYOUT_UNSUPPORTED`；没有新增诊断代码，也不会返回 campaign 专用的 `AUTO_CAMPAIGN_AMBIGUOUS`/`AUTO_CAMPAIGN_NOT_FOUND`。`AUTO_DESCRIPTOR_PRESENT` 在 customize 中仅指 package.json，界面说明不应将 metadata.txt 说成 customize 的阻断描述。

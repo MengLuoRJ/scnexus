@@ -33,7 +33,9 @@ export function validateCustomizeRecord(value: unknown): asserts value is Conten
     value.package.type !== 'customize' ||
     !string(value.localId) ||
     value.mode !== 'scnexus' ||
-    !['package-json', 'ccm-converted', 'metadata-txt'].includes(value.origin as string)
+    !['package-json', 'ccm-converted', 'metadata-txt', 'auto-detected'].includes(
+      value.origin as string,
+    )
   )
     invalidData('Invalid content record')
   for (const key of ['managementDirectory', 'descriptorPath', 'gameRoot', 'rootRelativePath'])

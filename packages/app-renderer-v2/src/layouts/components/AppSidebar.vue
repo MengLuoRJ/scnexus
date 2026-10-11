@@ -11,6 +11,7 @@ const collapsed = ref(false)
 const items = computed(() => [
   { label: t('ui.home'), image: logo, to: '/', exact: true },
   { label: t('campaign.title'), image: campaignIcon, to: '/campaign' },
+  { label: t('customize.title'), image: campaignIcon, to: '/customize' },
   { label: t('ui.settings'), image: settingsIcon, to: '/settings' },
 ])
 </script>

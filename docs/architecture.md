@@ -124,9 +124,9 @@ AppErrorDto 是共享契约，包含静态定义 code、name、可选 descriptio
 - 多个并行长任务的事件必须带 taskId。短操作不强制包装为任务。
 - 内部日志可记录诊断细节，面向 UI 的错误信息不包含令牌和不必要的敏感路径。
 
-### 战役安装进度（已实现）
+### 内容安装进度（已实现）
 
-`campaign.install(selection)` 接受可选的 `InstallSelection.taskId`（非空字符串，最长 200 字符）；省略时使用 `analysisId`。调用前订阅 `campaign.onInstallProgress(listener)`，返回取消函数；v2 适配器为 `apiCampaignOnInstallProgress`，同时在 Vue scope 销毁时取消订阅。IPC 事件 `campaign:install-progress` 只发给发起调用的 renderer，不暴露 Electron event。
+`campaign.install(selection)` 与 `customize.install(selection)` 接受可选的 `InstallSelection.taskId`（非空字符串，最长 200 字符）；省略时使用 `analysisId`。调用前订阅相应的 `campaign.onInstallProgress(listener)` / `customize.onInstallProgress(listener)`，返回取消函数；v2 适配器为 `apiCampaignOnInstallProgress` / `apiCustomizeOnInstallProgress`，同时在 Vue scope 销毁时取消订阅。IPC 事件 `campaign:install-progress` / `customize:install-progress` 只发给发起调用的 renderer，不暴露 Electron event。
 
 共享 `InstallProgress` 包含 `taskId`、`analysisId`、`stage`、`completedFiles`、`totalFiles`、`currentFile` 和可选 `percent?: number`。阶段为 `preparing`、`extracting`、`copying`、`finalizing`、`completed` 或 `failed`。`extracting` 的 `percent` 仅转发 7z 实际回调，缺省表示不确定进度；不由文件数或定时器伪造。准备/解压阶段 UI 不显示文件计数；复制开始后总数固定。当前文件为相对游戏根目录的路径；阶段切换时当前文件为 null。
 
@@ -221,11 +221,13 @@ src/
 
 ## 10. campaign/customize 后续业务设计
 
-campaign 战役包与 customize 自制作品保持独立。后续统一压缩包/文件夹分析，campaign 提供 SCNexus、CCM、自动识别预留三种模式，customize 提供 SCNexus、自动识别预留两种模式。自动识别当前不实现。
+campaign 战役包与 customize 自制作品保持独立。统一压缩包/文件夹分析，campaign 提供 SCNexus、CCM、自动识别三种模式，customize 提供 SCNexus、自动识别两种模式。campaign auto 要求所有层级均无 package.json 与 metadata.txt；customize auto 仅要求所有层级无 package.json（大小写不敏感，包含资源内部及同名目录）。customize metadata.txt 不是描述文件，不阻止 auto，不读取或保留为 CCM 原文。customize auto 接受唯一共同包装根下标准 Maps/Mods 层级的全部资源与 components，保留 Maps 任意子路径，不推断 campaign。
 
-战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/未来自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 已迁为 scii-game-setting，路径信息与内容业务已在 main/preload 实现；游戏版本检测与 auto 模式仍未实现。
+战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 已迁为 scii-game-setting，路径信息与内容业务已在 main/preload 实现；游戏版本检测仍未实现。customize 只提供 analyze/install/list/scan/prepareUninstall/uninstall（以及共享取消与进度订阅），直接安装到游戏目录，无激活或移动生命周期，不建立完整 payload/本地库副本或持久化原文件备份。保留冲突标记为 kept，不取得删除所有权；卸载跳过 kept，共享引用继续要求明确保留/删除选择。campaign 同一安装清单的 kept 也不取得删除所有权。
 
 完整规则、现有代码依据和待决策项见 [campaign/customize 设计](./campaign-customize-design.md)。具体实现边界与验证结果见该文档的实施记录。
+
+renderer-v2 的 `/customize` 路由提供自制作品列表、详情、刷新/扫描、来源分析安装与卸载。来源预览复用 `CampaignInstallModal` 的 `contentType='customize'` 分支，仅展示 SCNexus/自动识别两种模式，不展示战役类型、激活确认或激活操作。卸载先生成共享引用预览，再通过确认对话框收集 keep/delete 决策；提交期间显示 loading，成功/失败使用 toast 反馈，结果按 IPC 传输成功判断，不新增卸载结果 DTO。1000×660 的 mock browser 安装/卸载已验证不出现激活提示；真实游戏运行尚需环境验收。
 
 ## 11. 相关文档
 

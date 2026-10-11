@@ -36,11 +36,12 @@ export async function stageArchive(
   await verifyArchive(source)
   await mkdir(output)
   const paths = [...new Set(selected)]
-  await sevenZip.extractExact(source.input.path, paths, output, {
-    signal,
-    timeout: 1200000,
-    onProgress: ({ percent }) => onProgress(percent),
-  })
+  if (paths.length)
+    await sevenZip.extractExact(source.input.path, paths, output, {
+      signal,
+      timeout: 1200000,
+      onProgress: ({ percent }) => onProgress(percent),
+    })
   await verifyArchive(source)
   const staged = await openSource({ kind: 'directory', path: output })
   const sourceEntries = new Map(source.entries.map((entry) => [entry.path, entry]))

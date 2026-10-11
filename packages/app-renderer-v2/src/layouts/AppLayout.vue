@@ -33,9 +33,11 @@ onMounted(async () => {
             t(
               route.name === 'campaign'
                 ? 'campaign.title'
-                : route.name === 'settings'
-                  ? 'ui.settings'
-                  : 'ui.home',
+                : route.name === 'customize'
+                  ? 'customize.title'
+                  : route.name === 'settings'
+                    ? 'ui.settings'
+                    : 'ui.home',
             )
           }}
         </h1>

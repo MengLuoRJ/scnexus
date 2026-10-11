@@ -1,3 +1,5 @@
+import type { IpcMainInvokeEvent } from 'electron'
+import type { InstallSelection } from '@scnexus/app-shared/types/content.type'
 import { ipcHandle } from '../../utils/ipc-util'
 import * as service from './customize'
 import { runGameClient, runGameExecutable, runEditorExecutable } from './client-launcher'
@@ -28,7 +30,7 @@ export function initCustomizeIpc() {
   ])
     ipcHandle('customize:' + action, () => {
       throw new AppError(ERRORS.IPC_INVALID_ARGUMENT, {
-        message: 'Use the analyzed install/activation/removal workflow',
+        message: 'Use the analyzed install/uninstall workflow',
       })
     })
 
@@ -36,7 +38,14 @@ export function initCustomizeIpc() {
   ipcHandle('customize:run-game-executable', runGameExecutable)
   ipcHandle('customize:run-editor-executable', runEditorExecutable)
   ipcHandle('customize:analyze', service.analyze)
-  ipcHandle('customize:install', service.install)
+  ipcHandle(
+    'customize:install',
+    (event: IpcMainInvokeEvent, selection: InstallSelection) =>
+      service.install(selection, (progress) => {
+        if (!event.sender.isDestroyed()) event.sender.send('customize:install-progress', progress)
+      }),
+    true,
+  )
   ipcHandle('customize:list', service.list)
   ipcHandle('customize:scan', service.scan)
   ipcHandle('customize:prepare-uninstall', service.prepareUninstall)

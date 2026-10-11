@@ -6,12 +6,28 @@ import type {
   ContentRecord,
   ConflictDecision,
   InstallMode,
+  ContentType,
 } from '@scnexus/app-shared/types/content.type'
 import type { useCampaign } from '../useCampaign'
 import FileTree from './FileTree.vue'
 import ConflictChoices from './ConflictChoices.vue'
 defineOptions({ name: 'CampaignInstallModal' })
-const props = defineProps<{ service: ReturnType<typeof useCampaign> }>()
+type InstallService = Pick<
+  ReturnType<typeof useCampaign>,
+  | 'analysis'
+  | 'preview'
+  | 'mode'
+  | 'busy'
+  | 'error'
+  | 'existing'
+  | 'conflicts'
+  | 'installProgress'
+  | 'confirm'
+  | 'close'
+>
+const props = withDefaults(defineProps<{ service: InstallService; contentType?: ContentType }>(), {
+  contentType: 'campaign',
+})
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ activate: [record: ContentRecord] }>()
 const { t, te } = useI18n()
@@ -27,11 +43,13 @@ const installed = ref<ContentRecord | null>(null)
 const installing = ref(false)
 const decisions = ref<ConflictDecision[]>([])
 const modes = computed(() =>
-  ['scnexus', 'ccm', 'auto'].map((value) => ({
-    label: value === 'auto' ? t('campaign.auto') : value === 'ccm' ? 'CCM' : 'SCNexus',
-    value,
-    disabled: !analysis.value?.modes[value as InstallMode],
-  })),
+  (props.contentType === 'campaign' ? ['scnexus', 'ccm', 'auto'] : ['scnexus', 'auto']).map(
+    (value) => ({
+      label: value === 'auto' ? t('campaign.auto') : value === 'ccm' ? 'CCM' : 'SCNexus',
+      value,
+      disabled: !analysis.value?.modes[value as InstallMode],
+    }),
+  ),
 )
 const canInstall = computed(
   () =>
@@ -112,7 +130,13 @@ function activate() {
           color="success"
           icon="i-tabler-circle-check"
           :title="t('campaign.installComplete')"
-          :description="t('campaign.activatePrompt')"
+          :description="
+            t(
+              props.contentType === 'campaign'
+                ? 'campaign.activatePrompt'
+                : 'customize.installedHint',
+            )
+          "
         />
         <p class="font-semibold">
           {{ installed.package.name }} · {{ installed.package.version || '—' }}
@@ -123,7 +147,15 @@ function activate() {
           {{ installed.mode }}
         </p>
         <p class="break-all text-sm text-muted">{{ installed.managementDirectory }}</p>
-        <p class="text-sm text-muted">{{ t('campaign.libraryInstalled') }}</p>
+        <p class="text-sm text-muted">
+          {{
+            t(
+              props.contentType === 'campaign'
+                ? 'campaign.libraryInstalled'
+                : 'customize.directInstall',
+            )
+          }}
+        </p>
         <p v-if="installed.installedFiles.length" class="text-sm font-medium">
           {{ t('campaign.gameResourceResults') }}
         </p>
@@ -134,7 +166,7 @@ function activate() {
           </div>
         </dl>
         <UAlert
-          v-if="!installed.payloadDirectory"
+          v-if="props.contentType === 'campaign' && !installed.payloadDirectory"
           color="warning"
           :title="t('campaign.activationUnavailable')"
         />
@@ -183,7 +215,13 @@ function activate() {
           v-if="mode === 'auto' && preview"
           color="info"
           :title="t('campaign.autoDetected')"
-          :description="t('campaign.autoDetectedHint')"
+          :description="
+            t(
+              props.contentType === 'campaign'
+                ? 'campaign.autoDetectedHint'
+                : 'customize.autoDetectedHint',
+            )
+          "
         />
         <UAlert v-if="mode === 'ccm'" color="warning" :title="t('campaign.ccmWarning')" />
         <UAlert
@@ -204,7 +242,10 @@ function activate() {
               <div>
                 <dt class="text-muted">{{ t('campaign.type') }}</dt>
                 <dd>
-                  {{ preview.package.type }} · {{ t(`campaign.${preview.package.campaign}`) }}
+                  {{ preview.package.type
+                  }}<template v-if="preview.package.campaign">
+                    · {{ t(`campaign.${preview.package.campaign}`) }}</template
+                  >
                 </dd>
               </div>
               <div>
@@ -282,9 +323,11 @@ function activate() {
                 : 'info'
           "
           :title="
-            te(`campaign.diagnostic.${diagnostic.code}`)
-              ? t(`campaign.diagnostic.${diagnostic.code}`)
-              : diagnostic.code
+            props.contentType === 'customize' && diagnostic.code === 'AUTO_DESCRIPTOR_PRESENT'
+              ? t('customize.descriptorPresent')
+              : te(`campaign.diagnostic.${diagnostic.code}`)
+                ? t(`campaign.diagnostic.${diagnostic.code}`)
+                : diagnostic.code
           "
           :description="diagnostic.message"
         />
@@ -301,11 +344,14 @@ function activate() {
         <UButton color="neutral" variant="outline" :disabled="busy" @click="close">{{
           t(installed ? 'campaign.finish' : 'campaign.cancel')
         }}</UButton>
-        <UButton v-if="installed" :disabled="!installed.payloadDirectory" @click="activate">{{
-          t('campaign.activateNow')
-        }}</UButton>
         <UButton
-          v-else-if="analysis || installing"
+          v-if="installed && props.contentType === 'campaign'"
+          :disabled="!installed.payloadDirectory"
+          @click="activate"
+          >{{ t('campaign.activateNow') }}</UButton
+        >
+        <UButton
+          v-else-if="!installed && (analysis || installing)"
           :disabled="!canInstall || busy"
           :loading="installing"
           @click="install"

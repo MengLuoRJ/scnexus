@@ -9,7 +9,13 @@ import { buildPreview } from './parser'
 import { keyPath } from './paths'
 import type { ContentSource } from './source'
 
-export function detectCampaign(source: ContentSource): {
+export const detectCampaign = (source: ContentSource) => detectContent(source, 'campaign')
+export const detectCustomize = (source: ContentSource) => detectContent(source, 'customize')
+
+function detectContent(
+  source: ContentSource,
+  type: 'campaign' | 'customize',
+): {
   preview: InstallPreview | null
   diagnostic?: ModeDiagnostic
 } {
@@ -24,11 +30,14 @@ export function detectCampaign(source: ContentSource): {
         entry.path.split('/').some((part) => /^(package\.json|metadata\.txt)$/i.test(part)),
       )
       .map((entry) => entry.path)
-  if (descriptors.length)
+  const blocking = descriptors.filter(
+    (path) => type === 'campaign' || path.split('/').some((part) => /^package\.json$/i.test(part)),
+  )
+  if (blocking.length)
     return unavailable(
       'AUTO_DESCRIPTOR_PRESENT',
-      'Automatic recognition requires no package.json or metadata.txt anywhere in the source, including resource components: ' +
-        descriptors.join(', '),
+      `Automatic recognition requires no ${type === 'campaign' ? 'package.json or metadata.txt' : 'package.json'} anywhere in the source, including resource components: ` +
+        blocking.join(', '),
     )
   const resources = new Map<
     string,
@@ -42,21 +51,21 @@ export function detectCampaign(source: ContentSource): {
     const anchors = resource
       .slice(0, -1)
       .flatMap((part, index) => (/^(Maps|Mods)$/i.test(part) ? [index] : []))
-    if (anchors.length !== 1)
+    if (!anchors.length || (type === 'campaign' && anchors.length !== 1))
       return unavailable(
         'AUTO_LAYOUT_AMBIGUOUS',
         'Every resource must belong to one unambiguous standard Maps/Mods root',
       )
     const anchor = anchors[0]
-    const type = /\.sc2map$/i.test(resource.at(-1)!) ? 'map' : 'mod'
-    if (resource[anchor].toLowerCase() !== (type === 'map' ? 'maps' : 'mods'))
+    const resourceType = /\.sc2map$/i.test(resource.at(-1)!) ? 'map' : 'mod'
+    if (resource[anchor].toLowerCase() !== (resourceType === 'map' ? 'maps' : 'mods'))
       return unavailable(
         'AUTO_LAYOUT_UNSUPPORTED',
         'Resource is outside its standard Maps/Mods hierarchy: ' + entry.path,
       )
     const relative = resource.slice(anchor)
-    relative[0] = type === 'map' ? 'Maps' : 'Mods'
-    if (relative[1]?.toLowerCase() === 'campaign') {
+    relative[0] = resourceType === 'map' ? 'Maps' : 'Mods'
+    if (type === 'campaign' && relative[1]?.toLowerCase() === 'campaign') {
       relative[1] = 'Campaign'
       if (/^(swarm|void|voidprologue|nova)$/i.test(relative[2] ?? ''))
         relative[2] = relative[2].toLowerCase()
@@ -65,11 +74,13 @@ export function detectCampaign(source: ContentSource): {
     }
     const path = resource.join('/')
     const old = resources.get(keyPath(path))
+    if (old && old.source !== path)
+      return unavailable('AUTO_LAYOUT_AMBIGUOUS', 'Resource paths differ only in casing')
     resources.set(keyPath(path), {
       source: path,
       root: resource.slice(0, anchor).join('/'),
       target: relative.join('/'),
-      type,
+      type: resourceType,
       components: !!old?.components || component < parts.length - 1,
     })
   }
@@ -81,7 +92,12 @@ export function detectCampaign(source: ContentSource): {
     )
   const campaigns = new Set<PackageCampaignType>()
   for (const resource of resources.values()) {
-    if (resource.type !== 'map' || !resource.target.startsWith('Maps/Campaign/')) continue
+    if (
+      type !== 'campaign' ||
+      resource.type !== 'map' ||
+      !resource.target.startsWith('Maps/Campaign/')
+    )
+      continue
     const path = resource.target
     if (/^Maps\/Campaign\/[^/]+\.sc2map$/i.test(path)) campaigns.add('WOL')
     else if (/^Maps\/Campaign\/swarm\/(?:evolution\/)?[^/]+\.sc2map$/i.test(path))
@@ -96,8 +112,17 @@ export function detectCampaign(source: ContentSource): {
       'AUTO_CAMPAIGN_AMBIGUOUS',
       'Multiple campaign types found: ' + [...campaigns].join(', '),
     )
-  if (campaigns.size !== 1)
+  if (type === 'campaign' && campaigns.size !== 1)
     return unavailable('AUTO_CAMPAIGN_NOT_FOUND', 'No unique standard campaign map layout found')
+  if (!resources.size)
+    return unavailable('AUTO_LAYOUT_UNSUPPORTED', 'No standard Maps/Mods resources found')
+  const targets = new Set<string>()
+  for (const resource of resources.values()) {
+    const target = keyPath(resource.target)
+    if (targets.has(target))
+      return unavailable('AUTO_LAYOUT_AMBIGUOUS', 'Resources resolve to the same canonical target')
+    targets.add(target)
+  }
   const root = [...roots][0]
   const inputName = basename(source.input.path)
   const pkg: Package = {
@@ -109,8 +134,8 @@ export function detectCampaign(source: ContentSource): {
     description: '',
     author: '',
     version: '',
-    type: 'campaign',
-    campaign: [...campaigns][0],
+    type,
+    ...(type === 'campaign' ? { campaign: [...campaigns][0] } : {}),
   }
   const declarations = (type: 'map' | 'mod') =>
     [...resources.values()]

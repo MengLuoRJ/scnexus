@@ -44,7 +44,7 @@ import {
   type ContentSource,
 } from './source'
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
-import { detectCampaign } from './auto-detector'
+import { detectCampaign, detectCustomize } from './auto-detector'
 import {
   campaignRoots,
   CAMPAIGNS,
@@ -58,6 +58,7 @@ import { campaignRepository } from '../../stores/campaign'
 import { customizeRepository } from '../../stores/customize'
 import { campaignActiveRepository } from '../../stores/campaign-active'
 import { getGamePaths, withGameLock } from '../scii-game-setting'
+const detector = (type: ContentType) => (type === 'campaign' ? detectCampaign : detectCustomize)
 function officialScope(target: string, campaign: PackageCampaignType) {
   const path = target.toLowerCase()
   if (!path.startsWith('maps/campaign/')) return true
@@ -357,11 +358,9 @@ export class ContentService {
         origin: 'ccm-converted',
       }
     }
-    if (type === 'campaign') {
-      const automatic = detectCampaign(source)
-      result.modes.auto = automatic.preview
-      if (automatic.diagnostic) result.diagnostics.push(automatic.diagnostic)
-    }
+    const automatic = detector(type)(source)
+    result.modes.auto = automatic.preview
+    if (automatic.diagnostic) result.diagnostics.push(automatic.diagnostic)
     for (const name of ['scnexus', 'ccm'] as const) {
       const preview = result.modes[name]
       if (preview?.package.dependencies?.length)
@@ -397,9 +396,10 @@ export class ContentService {
         ),
       })
       if (input.kind === 'directory' && mode !== 'auto') {
-        for (const file of preview.files)
-          if (!hashes.has(file.source))
-            hashes.set(file.source, await hashFile(await safePath(input.path, file.source)))
+        if (type === 'campaign')
+          for (const file of preview.files)
+            if (!hashes.has(file.source))
+              hashes.set(file.source, await hashFile(await safePath(input.path, file.source)))
         hashes.set(
           preview.descriptorPath,
           await hashFile(await safePath(input.path, preview.descriptorPath)),
@@ -407,9 +407,8 @@ export class ContentService {
       }
     }
     for (const group of result.conflicts)
-      if (group.mode !== 'auto')
-        for (const file of group.files)
-          hashes.set('local:' + file.local.path, await hashFile(file.local.path))
+      for (const file of group.files)
+        hashes.set('local:' + file.local.path, await hashFile(file.local.path))
     if (input.kind === 'archive') await verifyArchive(source)
     this.analyses.set(result.analysisId, {
       source,
@@ -572,12 +571,8 @@ export class ContentService {
         )
           throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed' })
       if (selectedMode === 'auto') {
-        const current = detectCampaign(source).preview
-        if (
-          context.result.contentType !== 'campaign' ||
-          !current ||
-          JSON.stringify(current) !== JSON.stringify(preview)
-        )
+        const current = detector(context.result.contentType)(source).preview
+        if (!current || JSON.stringify(current) !== JSON.stringify(preview))
           throw new AppError(ERRORS.TASK_CONFLICT, {
             message: 'Automatic recognition changed; request a new analysis',
           })
@@ -589,6 +584,12 @@ export class ContentService {
             )
       }
       const type = context.result.contentType
+      if (type === 'customize' && selectedMode !== 'auto' && source.input.kind === 'directory')
+        for (const file of preview.files)
+          context.hashes.set(
+            file.source,
+            await hashFile(await safePath(source.input.path, file.source)),
+          )
       if (expectedType && type !== expectedType) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
       if ((await this.findExisting(type, preview, mode as 'scnexus' | 'ccm', paths)).length)
         throw new AppError(ERRORS.TASK_CONFLICT, {
@@ -617,7 +618,7 @@ export class ContentService {
       const staging = await mkdtemp(join(paths.gameRoot, '.scnexus-stage-'))
       try {
         const originalCcmPath =
-          preview.origin === 'auto-detected'
+          type === 'customize' || preview.origin === 'auto-detected'
             ? undefined
             : preview.origin !== 'package-json'
               ? preview.descriptorPath
@@ -841,7 +842,7 @@ export class ContentService {
             const current = await openSource(source.input)
             if (
               JSON.stringify(current.entries) !== JSON.stringify(source.entries) ||
-              (selectedMode === 'auto' && !detectCampaign(current).preview)
+              (selectedMode === 'auto' && !detector(type)(current).preview)
             )
               throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source layout changed' })
             for (const [path, digest] of context.hashes)
@@ -1053,7 +1054,7 @@ export class ContentService {
       files: [],
     }
     if (record.mode === 'scnexus')
-      for (const file of files.filter((f) => !f.official)) {
+      for (const file of files.filter((f) => !f.official && f.result !== 'kept')) {
         const usedBy = others
           .filter((o) => o.files.some((f) => keyPath(f.target) === keyPath(file.target)))
           .map(({ files: _files, ...o }) => o)
@@ -1102,7 +1103,9 @@ export class ContentService {
       const state = this.active.getSnapshot()
       const active = state.active[record.package.campaign!]
       const files = context.active ? active!.installedFiles : record.installedFiles
-      const removable = record.mode === 'ccm' ? files.filter((f) => f.type === 'map') : files
+      const removable = files.filter(
+        (f) => f.result !== 'kept' && (record.mode !== 'ccm' || f.type === 'map'),
+      )
       await this.transaction(
         paths,
         async (write) => {

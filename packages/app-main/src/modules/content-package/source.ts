@@ -1,5 +1,7 @@
-import { lstat, readdir, readFile } from 'node:fs/promises'
-import { join, basename } from 'node:path'
+import { lstat, readdir, readFile, mkdir } from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { basename } from 'node:path'
 import type { FileTree, SourceInput } from '@scnexus/app-shared/types/content.type'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { sevenZip } from '../../utils/7zip-wrapper'
@@ -9,7 +11,77 @@ export type ContentSource = {
   input: SourceInput
   entries: Entry[]
   tree: FileTree
+  archiveHash?: string
   read(path: string): Promise<Buffer>
+}
+export async function hashFile(path: string): Promise<string> {
+  const digest = createHash('sha256')
+  for await (const chunk of createReadStream(path)) digest.update(chunk)
+  return digest.digest('hex')
+}
+export async function verifyArchive(source: ContentSource) {
+  const info = await lstat(source.input.path)
+  if (info.isSymbolicLink() || !info.isFile()) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+  if ((await hashFile(source.input.path)) !== source.archiveHash)
+    throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Archive source changed' })
+}
+export async function stageArchive(
+  source: ContentSource,
+  selected: string[],
+  output: string,
+  signal: AbortSignal,
+  onProgress: (percent: number) => void,
+): Promise<Map<string, string>> {
+  await verifyArchive(source)
+  await mkdir(output)
+  const paths = [...new Set(selected)]
+  await sevenZip.extractExact(source.input.path, paths, output, {
+    signal,
+    timeout: 1200000,
+    onProgress: ({ percent }) => onProgress(percent),
+  })
+  await verifyArchive(source)
+  const staged = await openSource({ kind: 'directory', path: output })
+  const sourceEntries = new Map(source.entries.map((entry) => [entry.path, entry]))
+  const expected = new Map(paths.map((path) => [keyPath(path), sourceEntries.get(path)]))
+  const allowedDirectories = new Set(
+    paths.flatMap((path) =>
+      path
+        .split('/')
+        .slice(0, -1)
+        .map((_, index) =>
+          keyPath(
+            path
+              .split('/')
+              .slice(0, index + 1)
+              .join('/'),
+          ),
+        ),
+    ),
+  )
+  const checkDirectories = async (directory: string, prefix = '') => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = prefix + entry.name
+      if (entry.isDirectory()) {
+        if (!allowedDirectories.has(keyPath(path)))
+          throw new AppError(ERRORS.ARCHIVE_INVALID, { message: 'Unexpected extraction directory' })
+        await checkDirectories(await safePath(output, path), path + '/')
+      }
+    }
+  }
+  await checkDirectories(output)
+  if (
+    staged.entries.length !== expected.size ||
+    staged.entries.some(
+      (entry) =>
+        !expected.has(keyPath(entry.path)) ||
+        expected.get(keyPath(entry.path))?.bytes !== entry.bytes,
+    )
+  )
+    throw new AppError(ERRORS.ARCHIVE_INVALID, { message: 'Unexpected extraction output' })
+  return new Map(
+    await Promise.all(paths.map(async (path) => [path, await safePath(output, path)] as const)),
+  )
 }
 export function makeTree(entries: Entry[], name: string): FileTree {
   const root: FileTree = {
@@ -20,13 +92,14 @@ export function makeTree(entries: Entry[], name: string): FileTree {
     kind: 'directory',
     children: [],
   }
+  const nodes = new Map<string, FileTree>()
   for (const entry of entries) {
     let parent = root
     root.bytes += entry.bytes
     const parts = entry.path.split('/')
     for (let i = 0; i < parts.length; i++) {
       const path = parts.slice(0, i + 1).join('/')
-      let child = parent.children!.find((item) => item.path === path)
+      let child = nodes.get(path)
       if (!child) {
         child = {
           name: parts[i],
@@ -36,6 +109,7 @@ export function makeTree(entries: Entry[], name: string): FileTree {
           kind: i === parts.length - 1 ? 'file' : 'directory',
           ...(i === parts.length - 1 ? {} : { children: [] }),
         }
+        nodes.set(path, child)
         parent.children!.push(child)
       }
       child.bytes += entry.bytes
@@ -51,7 +125,8 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
   const info = await lstat(input.path)
   if (info.isSymbolicLink() || (input.kind === 'directory' ? !info.isDirectory() : !info.isFile()))
     throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
-  let entries: Entry[] = []
+  const entries: Entry[] = []
+  let archiveHash: string | undefined
   let read: ContentSource['read']
   if (input.kind === 'directory') {
     const walk = async (dir: string, prefix = '') => {
@@ -67,10 +142,18 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     await walk(input.path)
     read = async (path) => readFile(await safePath(input.path, path))
   } else {
+    archiveHash = await hashFile(input.path)
     const result = await sevenZip.list(input.path)
     for (const entry of result.entries) {
+      if (/^[\\/]/.test(entry.path)) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
       const path = logicalPath(entry.path)
-      if (entry.attributes?.includes('L')) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+      if (
+        entry.attributes?.includes('L') ||
+        entry.properties['Symbolic Link'] ||
+        entry.properties['Hard Link'] ||
+        /(?:^|\s)l[rwx-]{9}(?:\s|$)/.test(entry.attributes ?? '')
+      )
+        throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
       if (!entry.isDirectory)
         entries.push({
           path,
@@ -78,15 +161,20 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
           modifiedAt: entry.modified?.getTime() ?? null,
         })
     }
-    read = (path) =>
-      sevenZip.readFile(input.path, path, {
-        maxBytes: 512 * 1024 * 1024,
-        timeout: 120000,
-      })
+    read = (path) => {
+      if (!/^(package\.json|metadata\.txt)$/i.test(path.split('/').at(-1) ?? ''))
+        throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
+      return sevenZip.readFile(input.path, path, { maxBytes: 1024 * 1024, timeout: 120000 })
+    }
   }
   const seen = new Set<string>()
+  const fileKeys = new Set(entries.map((entry) => keyPath(entry.path)))
   for (const entry of entries) {
-    if (seen.has(keyPath(entry.path)))
+    const parts = keyPath(entry.path).split('/')
+    if (
+      seen.has(keyPath(entry.path)) ||
+      parts.slice(0, -1).some((_, index) => fileKeys.has(parts.slice(0, index + 1).join('/')))
+    )
       throw new AppError(ERRORS.ARCHIVE_INVALID, {
         message: 'Duplicate archive path',
       })
@@ -97,6 +185,7 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     input,
     entries,
     read,
+    archiveHash,
     tree: makeTree(entries, basename(input.path)),
   }
 }

@@ -29,7 +29,12 @@ function current(category: PackageCampaignType) {
 </script>
 <template>
   <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-    <UCard v-for="category in campaigns" :key="category" :ui="{ body: 'p-0 sm:p-0' }">
+    <UCard
+      v-for="category in campaigns"
+      :key="category"
+      class="min-w-0"
+      :ui="{ body: 'p-0 sm:p-0' }"
+    >
       <div class="relative h-24 overflow-hidden">
         <img
           draggable="false"
@@ -45,7 +50,7 @@ function current(category: PackageCampaignType) {
             {{ t(props.active[category] ? 'campaign.active' : 'campaign.official') }}
           </UBadge>
         </div>
-        <div v-if="current(category)" class="space-y-1 text-center">
+        <div v-if="current(category)" class="space-y-1 break-words text-center">
           <p class="font-medium">{{ current(category)?.package.name }}</p>
           <p class="text-xs text-muted">
             {{ t('campaign.version') }}: {{ current(category)?.package.version }} ·

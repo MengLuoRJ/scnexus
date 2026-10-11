@@ -41,17 +41,19 @@ function size(bytes: number) {
       />
     </template>
   </UTabs>
-  <div class="grid gap-2 md:grid-cols-[240px_1fr]">
-    <UCard :ui="{ body: 'p-2 sm:p-2' }">
+  <div class="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+    <UCard class="min-w-0" :ui="{ body: 'p-2 sm:p-2' }">
       <div class="flex h-full flex-col items-center gap-2 text-center">
         <img draggable="false" :src="logos[category]" alt="" class="h-32 w-full object-contain" />
         <h2 class="font-semibold">{{ t(`campaign.${category}`) }}</h2>
         <template v-if="props.current">
-          <p>{{ props.current.package.name }}</p>
+          <p class="max-w-full break-words">{{ props.current.package.name }}</p>
           <UBadge variant="subtle">
             {{ props.current.package.version }} · {{ props.current.mode }}
           </UBadge>
-          <p class="text-sm text-muted">{{ props.current.package.author }}</p>
+          <p class="max-w-full break-words text-sm text-muted">
+            {{ props.current.package.author }}
+          </p>
         </template>
         <UBadge v-else color="neutral" variant="subtle">
           {{ t('campaign.official') }}
@@ -101,8 +103,8 @@ function size(bytes: number) {
         </div>
       </div>
     </UCard>
-    <UCard :ui="{ body: 'p-2 sm:p-2' }">
-      <div class="space-y-2 text-sm">
+    <UCard class="min-w-0" :ui="{ body: 'p-3 sm:p-3' }">
+      <div class="space-y-2 break-words text-sm">
         <h3 class="font-semibold">{{ t('campaign.details') }}</h3>
         <p class="whitespace-pre-wrap">
           {{ props.current?.package.description || t('campaign.overviewHint') }}

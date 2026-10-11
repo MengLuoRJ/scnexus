@@ -1,7 +1,17 @@
-import { fileTransaction } from './transaction'
+import { fileTransaction, type WriteData } from './transaction'
 import { randomUUID, createHash } from 'node:crypto'
 import { ccmDirectoryName } from './ccm-title'
-import { readFile, writeFile, mkdir, rm, lstat, rmdir } from 'node:fs/promises'
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  rm,
+  lstat,
+  rmdir,
+  mkdtemp,
+  rename,
+  copyFile,
+} from 'node:fs/promises'
 import { join, dirname, basename, relative } from 'node:path'
 import type {
   AnalysisResult,
@@ -25,7 +35,14 @@ import type {
   InstallProgress,
 } from '@scnexus/app-shared/types/content.type'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
-import { openSource, makeTree, type ContentSource } from './source'
+import {
+  openSource,
+  makeTree,
+  hashFile,
+  verifyArchive,
+  stageArchive,
+  type ContentSource,
+} from './source'
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
 import {
   campaignRoots,
@@ -121,6 +138,7 @@ type Removal = {
 }
 export class ContentService {
   private cancelled = new Set<string>()
+  private extractionControllers = new Map<string, AbortController>()
   cancel(previewId: string) {
     if (
       !this.analyses.has(previewId) &&
@@ -129,6 +147,7 @@ export class ContentService {
     )
       throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
     this.cancelled.add(previewId)
+    this.extractionControllers.get(previewId)?.abort()
     this.analyses.delete(previewId)
     this.activations.delete(previewId)
     this.removals.delete(previewId)
@@ -366,13 +385,20 @@ export class ContentService {
           paths,
         ),
       })
-      for (const file of preview.files)
-        if (!hashes.has(file.source)) hashes.set(file.source, hash(await source.read(file.source)))
-      hashes.set(preview.descriptorPath, hash(await source.read(preview.descriptorPath)))
+      if (input.kind === 'directory') {
+        for (const file of preview.files)
+          if (!hashes.has(file.source))
+            hashes.set(file.source, await hashFile(await safePath(input.path, file.source)))
+        hashes.set(
+          preview.descriptorPath,
+          await hashFile(await safePath(input.path, preview.descriptorPath)),
+        )
+      }
     }
     for (const group of result.conflicts)
       for (const file of group.files)
-        hashes.set('local:' + file.local.path, hash(await readFile(file.local.path)))
+        hashes.set('local:' + file.local.path, await hashFile(file.local.path))
+    if (input.kind === 'archive') await verifyArchive(source)
     this.analyses.set(result.analysisId, {
       source,
       result,
@@ -383,7 +409,7 @@ export class ContentService {
     })
     return structuredClone(result)
   }
-  private decisions(conflicts: Conflict[], decisions: ConflictDecision[], files: PlannedFile[]) {
+  private decisions(conflicts: Conflict[], decisions: ConflictDecision[], _files: PlannedFile[]) {
     if (!Array.isArray(decisions)) throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
     const choices = new Map<string, 'overwrite' | 'keep'>()
     const seen = new Set<string>()
@@ -420,7 +446,7 @@ export class ContentService {
         throw new AppError(ERRORS.TASK_CONFLICT, {
           message: 'Target changed; request a new preview',
         })
-      if (actual && old && hash(await readFile(target)) !== hashes.get('local:' + old.local.path))
+      if (actual && old && (await hashFile(target)) !== hashes.get('local:' + old.local.path))
         throw new AppError(ERRORS.TASK_CONFLICT, {
           message: 'Target contents changed',
         })
@@ -428,7 +454,7 @@ export class ContentService {
   }
   private async transaction<T>(
     paths: GamePaths,
-    run: (write: (path: string, data: Buffer | null) => Promise<void>) => Promise<T>,
+    run: (write: (path: string, data: WriteData) => Promise<void>) => Promise<T>,
     removeDirectories: string[] = [],
     operationId?: string,
   ): Promise<T> {
@@ -447,24 +473,29 @@ export class ContentService {
 
   private async copy(
     files: PlannedFile[],
-    read: (source: string) => Promise<Buffer>,
+    read: (source: string) => Promise<string>,
     paths: GamePaths,
     choices: Map<string, string>,
-    write: (path: string, data: Buffer | null) => Promise<void>,
+    write: (path: string, data: WriteData) => Promise<void>,
   ) {
     const installed: InstalledFile[] = []
     for (const f of files) {
       const target = await safePath(paths.gameRoot, f.target)
       const local = await existing(target)
       const keep = choices.get(keyPath(target)) === 'keep'
-      const data = keep ? await readFile(target) : await read(f.source)
-      if (!keep) await write(target, data)
+      const source = keep ? target : await read(f.source)
+      const digest = await hashFile(source)
+      if (!keep) {
+        await write(target, { file: source })
+        if ((await hashFile(target)) !== digest)
+          throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Payload changed while copying' })
+      }
       installed.push({
         ...f,
-        bytes: data.length,
+        bytes: (await lstat(source)).size,
         absolutePath: target,
         result: keep ? 'kept' : local ? 'replaced' : 'copied',
-        hash: hash(data),
+        hash: digest,
       })
     }
     return installed
@@ -499,6 +530,7 @@ export class ContentService {
     }
     const report = (stage: InstallProgress['stage'], currentFile: string | null = null) => {
       progress.stage = stage
+      if (stage !== 'extracting') delete progress.percent
       progress.currentFile = currentFile
       onProgress?.({ ...progress })
     }
@@ -514,16 +546,18 @@ export class ContentService {
       const paths = await this.paths()
       if (context.root !== paths.gameRoot || context.gameRevision !== paths._revision)
         throw new AppError(ERRORS.TASK_CONFLICT)
-      const source = await openSource(context.source.input)
+      const source =
+        context.source.input.kind === 'archive'
+          ? context.source
+          : await openSource(context.source.input)
       if (JSON.stringify(source.entries) !== JSON.stringify(context.source.entries))
-        throw new AppError(ERRORS.TASK_CONFLICT, {
-          message: 'Source layout changed',
-        })
+        throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source layout changed' })
       for (const [path, digest] of context.hashes)
-        if (!path.startsWith('local:') && hash(await source.read(path)) !== digest)
-          throw new AppError(ERRORS.TASK_CONFLICT, {
-            message: 'Source changed',
-          })
+        if (
+          !path.startsWith('local:') &&
+          (await hashFile(await safePath(source.input.path, path))) !== digest
+        )
+          throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed' })
       const type = context.result.contentType
       if (expectedType && type !== expectedType) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
       if ((await this.findExisting(type, preview, mode as 'scnexus' | 'ccm', paths)).length)
@@ -548,111 +582,207 @@ export class ContentService {
       const payload =
         type === 'campaign' ? (mode === 'ccm' ? management : join(management, 'payload')) : null
       await safePath(paths.gameRoot, relative(paths.gameRoot, management))
-      await mkdir(dirname(management), { recursive: true })
+      if (await existing(management))
+        throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Package directory already exists' })
+      const staging = await mkdtemp(join(paths.gameRoot, '.scnexus-stage-'))
       try {
-        await mkdir(management)
-      } catch (cause) {
-        if ((cause as NodeJS.ErrnoException).code === 'EEXIST')
-          throw new AppError(
-            ERRORS.TASK_CONFLICT,
-            { message: 'CCM package directory already exists' },
-            { cause },
+        const originalCcmPath =
+          preview.origin !== 'package-json'
+            ? preview.descriptorPath
+            : source.entries.find(
+                (e) =>
+                  e.path ===
+                  (preview.rootRelativePath ? preview.rootRelativePath + '/' : '') + 'metadata.txt',
+              )?.path
+        const selected = [
+          ...(payload
+            ? preview.files
+            : actualFiles.filter(
+                (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
+              )
+          ).map((file) => file.source),
+          preview.descriptorPath,
+          ...(originalCcmPath ? [originalCcmPath] : []),
+        ]
+        let stagedFiles: Map<string, string>
+        if (source.input.kind === 'archive') {
+          const controller = new AbortController()
+          this.extractionControllers.set(selection.analysisId, controller)
+          try {
+            report('extracting')
+            this.checkCancelled(selection.analysisId)
+            stagedFiles = await stageArchive(
+              source,
+              selected,
+              join(staging, 'extracted'),
+              controller.signal,
+              (percent) => {
+                progress.percent = percent
+                report('extracting')
+              },
+            )
+          } catch (error) {
+            this.checkCancelled(selection.analysisId)
+            throw error
+          } finally {
+            this.extractionControllers.delete(selection.analysisId)
+          }
+        } else {
+          stagedFiles = new Map(
+            await Promise.all(
+              [...new Set(selected)].map(
+                async (path) => [path, await safePath(source.input.path, path)] as const,
+              ),
+            ),
           )
-        throw cause
-      }
-      const originalCcmPath =
-        preview.origin !== 'package-json'
-          ? preview.descriptorPath
-          : source.entries.find(
-              (e) =>
-                e.path ===
-                (preview.rootRelativePath ? preview.rootRelativePath + '/' : '') + 'metadata.txt',
-            )?.path
-      const ccm = originalCcmPath ? decodeCcm(await source.read(originalCcmPath)) : null
-      const pkg = structuredClone(preview.package)
-      if (preview.origin === 'ccm-converted') {
-        pkg.maps = preview.files
-          .filter((f) => f.type === 'map' && !f.official)
-          .map((f) => ({
-            name: basename(f.target),
-            source_path: '/' + f.target,
-            target_path: '/' + f.target,
+        }
+        this.checkCancelled(selection.analysisId)
+        const readMetadata = async (path: string) => {
+          const file = stagedFiles.get(path)!
+          if ((await lstat(file)).size > 1024 * 1024)
+            throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
+          return readFile(file)
+        }
+        const ccm = originalCcmPath ? decodeCcm(await readMetadata(originalCcmPath)) : null
+        const pkg = structuredClone(preview.package)
+        if (preview.origin === 'ccm-converted') {
+          pkg.maps = preview.files
+            .filter((f) => f.type === 'map' && !f.official)
+            .map((f) => ({
+              name: basename(f.target),
+              source_path: '/' + f.target,
+              target_path: '/' + f.target,
+            }))
+          pkg.mods = [
+            ...new Set(
+              preview.files
+                .filter((f) => f.type === 'mod')
+                .map((f) => f.target.match(/^(.*?\.sc2mod)(?:\/|$)/i)![1]),
+            ),
+          ].map((target) => ({
+            name: basename(target),
+            source_path: '/' + target,
+            target_path: '/' + target,
+            components: preview.files.some((f) => f.target.startsWith(target + '/')),
           }))
-        pkg.mods = [
-          ...new Set(
-            preview.files
-              .filter((f) => f.type === 'mod')
-              .map((f) => f.target.match(/^(.*?\.sc2mod)(?:\/|$)/i)![1]),
-          ),
-        ].map((target) => ({
-          name: basename(target),
-          source_path: '/' + target,
-          target_path: '/' + target,
-          components: preview.files.some((f) => f.target.startsWith(target + '/')),
+        }
+        const files = preview.files.map((f) => ({
+          ...f,
+          source:
+            type === 'campaign'
+              ? mode === 'scnexus' && preview.origin === 'ccm-converted'
+                ? f.target
+                : f.source.slice(preview.rootRelativePath ? preview.rootRelativePath.length + 1 : 0)
+              : f.source,
         }))
-      }
-      const files = preview.files.map((f) => ({
-        ...f,
-        source:
-          type === 'campaign'
-            ? mode === 'scnexus' && preview.origin === 'ccm-converted'
-              ? f.target
-              : f.source.slice(preview.rootRelativePath ? preview.rootRelativePath.length + 1 : 0)
-            : f.source,
-      }))
-      const record: ContentRecord = {
-        localId,
-        package: pkg,
-        mode: mode as 'scnexus' | 'ccm',
-        origin: preview.origin,
-        source: source.input,
-        rootRelativePath: preview.rootRelativePath,
-        managementDirectory: management,
-        descriptorPath: join(management, mode === 'ccm' ? 'metadata.txt' : 'package.json'),
-        payloadDirectory: payload,
-        ccmOriginal: ccm,
-        files,
-        installedFiles: [],
-        sourceTree: source.tree,
-        targetTree: preview.targetTree,
-        fileCount: preview.fileCount,
-        bytes: preview.bytes,
-        importedAt: Date.now(),
-        gameRoot: paths.gameRoot,
-      }
-      progress.totalFiles =
-        (payload ? preview.files.length : 0) +
-        (direct
-          ? actualFiles.filter(
-              (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
-            ).length
-          : 0) +
-        1 +
-        (mode === 'scnexus' ? 1 + (ccm ? 1 : 0) : 0)
-      report('copying')
-      try {
-        return await this.transaction(paths, async (writeFile) => {
-          const write = async (path: string, data: Buffer | null) => {
-            await writeFile(path, data)
+        const record: ContentRecord = {
+          localId,
+          package: pkg,
+          mode: mode as 'scnexus' | 'ccm',
+          origin: preview.origin,
+          source: source.input,
+          rootRelativePath: preview.rootRelativePath,
+          managementDirectory: management,
+          descriptorPath: join(management, mode === 'ccm' ? 'metadata.txt' : 'package.json'),
+          payloadDirectory: payload,
+          ccmOriginal: ccm,
+          files,
+          installedFiles: [],
+          sourceTree: source.tree,
+          targetTree: preview.targetTree,
+          fileCount: preview.fileCount,
+          bytes: preview.bytes,
+          importedAt: Date.now(),
+          gameRoot: paths.gameRoot,
+        }
+        progress.totalFiles =
+          (payload ? preview.files.length : 0) +
+          (direct
+            ? actualFiles.filter(
+                (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
+              ).length
+            : 0) +
+          1 +
+          (mode === 'scnexus' ? 1 + (ccm ? 1 : 0) : 0)
+        const stagedManagement = join(staging, 'management')
+        await mkdir(stagedManagement)
+        const payloadPaths: string[] = []
+        if (payload) {
+          const stagedPayload =
+            mode === 'ccm' ? stagedManagement : join(stagedManagement, 'payload')
+          await mkdir(stagedPayload, { recursive: true })
+          for (const f of preview.files) {
+            this.checkCancelled(selection.analysisId)
+            const logical =
+              mode === 'scnexus' && preview.origin === 'ccm-converted'
+                ? f.target
+                : f.source.slice(preview.rootRelativePath ? preview.rootRelativePath.length + 1 : 0)
+            const destination = await safePath(stagedPayload, logical)
+            await mkdir(dirname(destination), { recursive: true })
+            const sourceFile = stagedFiles.get(f.source)!
+            if (source.input.kind === 'archive') await rename(sourceFile, destination)
+            else await copyFile(sourceFile, destination)
+            if (
+              source.input.kind === 'directory' &&
+              (await hashFile(destination)) !== context.hashes.get(f.source)
+            )
+              throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed while staging' })
+            stagedFiles.set(f.source, destination)
+            payloadPaths.push(join(payload, logical))
+          }
+        }
+        const metadataFiles: { path: string; data: Buffer }[] = [
+          {
+            path: record.descriptorPath,
+            data:
+              mode === 'ccm'
+                ? await readMetadata(preview.descriptorPath)
+                : Buffer.from(JSON.stringify(pkg, null, 2)),
+          },
+        ]
+        if (mode === 'scnexus' && ccm)
+          metadataFiles.push({
+            path: join(management, 'metadata.txt'),
+            data: await readMetadata(originalCcmPath!),
+          })
+        for (const file of metadataFiles)
+          await writeFile(join(stagedManagement, relative(management, file.path)), file.data)
+        if (direct) await this.recheckConflicts(actualFiles, conflicts, paths, context.hashes)
+        this.checkCancelled(selection.analysisId)
+        report('copying')
+        return await this.transaction(paths, async (write) => {
+          const completed = (path: string) => {
             progress.completedFiles++
             report(progress.stage, relative(paths.gameRoot, path).replaceAll('\\', '/'))
+            this.checkCancelled(selection.analysisId)
           }
-          if (payload) {
-            await mkdir(payload, { recursive: true })
-            for (const f of preview.files) {
-              const destination = await safePath(
-                payload,
-                mode === 'scnexus' && preview.origin === 'ccm-converted'
-                  ? f.target
-                  : f.source.slice(
-                      preview.rootRelativePath ? preview.rootRelativePath.length + 1 : 0,
-                    ),
-              )
-              await write(destination, await source.read(f.source))
+          if (direct) {
+            for (const f of actualFiles) {
+              this.checkCancelled(selection.analysisId)
+              const target = await safePath(paths.gameRoot, f.target)
+              const local = await existing(target)
+              const keep = choices.get(keyPath(target)) === 'keep'
+              const file = keep ? target : stagedFiles.get(f.source)!
+              const digest = await hashFile(file)
+              if (!keep) {
+                if (source.input.kind === 'directory' && digest !== context.hashes.get(f.source))
+                  throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed' })
+                await write(target, { file })
+                if ((await hashFile(target)) !== digest)
+                  throw new AppError(ERRORS.TASK_CONFLICT, {
+                    message: 'Source changed while copying',
+                  })
+                completed(target)
+              }
+              record.installedFiles.push({
+                ...f,
+                bytes: (await lstat(file)).size,
+                absolutePath: target,
+                result: keep ? 'kept' : local ? 'replaced' : 'copied',
+                hash: digest,
+              })
             }
           }
-          if (direct)
-            record.installedFiles = await this.copy(actualFiles, source.read, paths, choices, write)
           if (type === 'customize') {
             record.targetTree = makeTree(
               record.installedFiles.map((f) => ({
@@ -665,29 +795,48 @@ export class ContentService {
             record.fileCount = record.installedFiles.length
             record.bytes = record.installedFiles.reduce((n, f) => n + f.bytes, 0)
           }
-          report('finalizing')
-          await write(
-            record.descriptorPath,
-            mode === 'ccm'
-              ? await source.read(preview.descriptorPath)
-              : Buffer.from(JSON.stringify(pkg, null, 2)),
-          )
-          if (mode === 'scnexus' && ccm)
-            await write(join(management, 'metadata.txt'), await source.read(originalCcmPath!))
-          if (mode === 'scnexus')
-            await write(
-              join(management, 'install-manifest.json'),
-              Buffer.from(JSON.stringify(record, null, 2)),
+          if (mode === 'scnexus') {
+            const manifest = join(management, 'install-manifest.json')
+            await writeFile(
+              join(stagedManagement, 'install-manifest.json'),
+              JSON.stringify(record, null, 2),
             )
+            metadataFiles.push({ path: manifest, data: Buffer.alloc(0) })
+          }
+          if (source.input.kind === 'archive') await verifyArchive(source)
+          else {
+            const current = await openSource(source.input)
+            if (JSON.stringify(current.entries) !== JSON.stringify(source.entries))
+              throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source layout changed' })
+            for (const [path, digest] of context.hashes)
+              if (
+                !path.startsWith('local:') &&
+                (await hashFile(await safePath(source.input.path, path))) !== digest
+              )
+                throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed' })
+          }
+          if (await existing(management))
+            throw new AppError(ERRORS.TASK_CONFLICT, {
+              message: 'Package directory already exists',
+            })
+          await write(management, { directory: stagedManagement })
+          for (const path of payloadPaths) completed(path)
+          report('finalizing')
+          for (const file of metadataFiles) completed(file.path)
+          const currentPaths = await this.paths()
+          if (
+            currentPaths.gameRoot !== paths.gameRoot ||
+            currentPaths._revision !== paths._revision
+          )
+            throw new AppError(ERRORS.TASK_CONFLICT)
           const index = this.index(type)
           const old = index.getSnapshot()
           index.update({ ...old, records: [...old.records, record] })
           this.analyses.delete(selection.analysisId)
           return record
         })
-      } catch (error) {
-        await rm(management, { recursive: true, force: true })
-        throw error
+      } finally {
+        await rm(staging, { recursive: true, force: true })
       }
     })
       .then((record) => {
@@ -726,10 +875,10 @@ export class ContentService {
     }
     const hashes = new Map<string, string>()
     for (const f of files)
-      hashes.set(f.source, hash(await readFile(await safePath(record.payloadDirectory, f.source))))
+      hashes.set(f.source, await hashFile(await safePath(record.payloadDirectory, f.source)))
     for (const file of preview.conflicts)
-      hashes.set('local:' + file.local.path, hash(await readFile(file.local.path)))
-    hashes.set('descriptor', hash(await readFile(record.descriptorPath)))
+      hashes.set('local:' + file.local.path, await hashFile(file.local.path))
+    hashes.set('descriptor', await hashFile(record.descriptorPath))
     this.activations.set(preview.activationId, {
       record,
       preview,
@@ -765,12 +914,12 @@ export class ContentService {
           message: 'Descriptor changed',
         })
       const read = async (path: string) => {
-        const data = await readFile(await safePath(record.payloadDirectory!, path))
-        if (hash(data) !== context.hashes.get(path))
+        const file = await safePath(record.payloadDirectory!, path)
+        if ((await hashFile(file)) !== context.hashes.get(path))
           throw new AppError(ERRORS.TASK_CONFLICT, {
             message: 'Payload changed',
           })
-        return data
+        return file
       }
       return this.transaction(paths, async (write) => {
         const installedFiles = await this.copy(preview.files, read, paths, choices, write)
@@ -871,7 +1020,7 @@ export class ContentService {
       for (const file of files.filter((f) => !f.official)) {
         const usedBy = others
           .filter((o) => o.files.some((f) => keyPath(f.target) === keyPath(file.target)))
-          .map(({ files, ...o }) => o)
+          .map(({ files: _files, ...o }) => o)
         if (usedBy.length) preview.files.push({ conflictId: randomUUID(), file, usedBy })
       }
     this.removals.set(preview.removalId, {

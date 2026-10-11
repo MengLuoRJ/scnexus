@@ -53,6 +53,15 @@ export class SevenZipWrapper implements SevenZipCommandApi {
     return this.commands.extract(archive, options)
   }
 
+  extractExact(
+    archive: string,
+    files: string[],
+    outputDir: string,
+    options?: SevenZipCommonOptions,
+  ) {
+    return this.commands.extractExact(archive, files, outputDir, options)
+  }
+
   list(archive: string, options?: SevenZipListOptions) {
     return this.commands.list(archive, options)
   }
@@ -111,6 +120,7 @@ export const sevenZip = createSevenZip()
 
 export const add = sevenZip.add.bind(sevenZip)
 export const extract = sevenZip.extract.bind(sevenZip)
+export const extractExact = sevenZip.extractExact.bind(sevenZip)
 export const list = sevenZip.list.bind(sevenZip)
 export const listTree = sevenZip.listTree.bind(sevenZip)
 export const test = sevenZip.test.bind(sevenZip)

@@ -5,8 +5,8 @@ defineOptions({ name: 'HomeView' })
 const { t } = useI18n()
 </script>
 <template>
-  <section class="flex min-h-[65vh] flex-col items-center justify-center text-center">
-    <div class="mb-8 rounded-3xl bg-primary/10 p-7">
+  <section class="flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
+    <div class="mb-6 rounded-3xl bg-primary/10 p-6">
       <img draggable="false" :src="logo" alt="SCNexus" class="size-24 object-contain" />
     </div>
     <UBadge label="SCNexus · 星际枢纽" variant="subtle" class="mb-4" />

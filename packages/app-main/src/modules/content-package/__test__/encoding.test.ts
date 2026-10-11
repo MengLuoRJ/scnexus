@@ -1,9 +1,8 @@
 import { test, expect, vi } from 'vitest'
-import { mkdtemp, writeFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdtemp, writeFile, rm, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
-import { openSource } from '../source'
+import { openSource, stageArchive } from '../source'
 import { decodeCcm } from '../parser'
 
 function crc32(data: Buffer) {
@@ -47,14 +46,22 @@ function legacyZip() {
 }
 
 test('legacy non-UTF8 ZIP names remain consistent between 7z listing and reading', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'scnexus-encoding-'))
+  const directory = await mkdtemp(join(process.cwd(), '.scnexus-encoding-'))
   try {
     const archive = join(directory, 'legacy.zip')
     await writeFile(archive, legacyZip())
     const source = await openSource({ kind: 'archive', path: archive })
     expect(source.entries).toHaveLength(1)
     expect(source.entries[0].path).not.toContain('\ufffd')
-    expect((await source.read(source.entries[0].path)).toString()).toBe('legacy payload')
+    expect(() => source.read(source.entries[0].path)).toThrow('')
+    const staged = await stageArchive(
+      source,
+      [source.entries[0].path],
+      join(directory, 'extracted'),
+      new AbortController().signal,
+      () => {},
+    )
+    expect((await readFile(staged.get(source.entries[0].path)!)).toString()).toBe('legacy payload')
     if (process.platform === 'win32') expect(source.entries[0].path).toBe('Maps/地图.SC2Map')
   } finally {
     await rm(directory, { recursive: true, force: true })

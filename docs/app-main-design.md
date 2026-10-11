@@ -206,6 +206,8 @@ electron-store v11 文档明确提示内置 migrations 存在已知问题。采�
 
 window 是唯一创建和维护主 BrowserWindow 的模块，避免其他模块根据 getAllWindows() 随意选择窗口。
 
+主窗口默认尺寸和最小尺寸均为 1000×700（BrowserWindow 的窗口尺寸，不开启 useContentSize）。renderer-v2 使用 56px 标题栏与内容区独立滚动；首页按剩余高度居中，设置基本页将版本/帮助区并排，战役详情采用 220px 左栏与可收缩右栏，长包名/描述/路径换行。安装弹窗限制可视高度、正文独立滚动、底部确认按钮不随正文滚出；其他战役弹窗也允许长文本换行。布局用 1000×660 浏览器内容区保守模拟原生标题栏占用，并验证首页、设置的三个标签页、战役总览/详情和长文本、多文件树不会造成横向溢出。窗口测试断言首次创建与销毁后重建都使用默认/最小 1000×700；窗口、安装弹窗、来源选择与语言定向测试共 18 项通过。`pnpm run typecheck:main`、`pnpm --filter @scnexus/app-renderer-v2 type-check`、`pnpm --filter @scnexus/app-renderer-v2 build-only` 和定向 ESLint/oxlint 通过。浏览器模拟不替代真实 Electron 窗口边框与系统缩放验收。
+
 建议服务方法：ensureMainWindow、restoreAndFocus、getStatus、sendWhenReady、dispose。尽量不向业务服务暴露 BrowserWindow；对话框的父窗口需求由适配层处理。
 
 renderer 不接受任意窗口配置、URL 或 preload 路径；窗口 IPC 只暴露产品确有需要的操作。

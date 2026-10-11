@@ -128,14 +128,16 @@
   "campaign.uninstallComplete": "战役卸载完成",
   "campaign.refreshComplete": "战役列表已刷新",
   "campaign.scanComplete": "扫描重建完成",
-  "campaign.progress.preparing": "准备安装",
-  "campaign.progress.copying": "正在写入文件",
-  "campaign.progress.finalizing": "正在提交并保存安装结果",
+  "campaign.progress.preparing": "正在检查安装条件",
+  "campaign.progress.copying": "正在安装与提交文件",
+  "campaign.progress.finalizing": "正在保存安装结果",
   "campaign.progress.completed": "安装完成",
   "campaign.progress.failed": "安装失败",
-  "campaign.progressCountHint": "进度统计实际写入文件（含描述和清单），不含选择保留的目标文件。",
+  "campaign.progressCountHint": "统计本次安装提交的文件（含描述和清单），不含选择保留的游戏目标文件。",
   "campaign.libraryInstalled": "战役库导入成功；游戏地图将在激活后写入。",
   "campaign.gameResourceResults": "游戏资源处理结果",
   "campaign.switchTarget": "切换目标",
-  "campaign.archive": "压缩包"
+  "campaign.archive": "压缩包",
+  "campaign.progress.extracting": "正在解压安装文件",
+  "campaign.extractionHint": "按清单一次解压到隔离暂存目录；解压完成后还需安装与提交。"
 }

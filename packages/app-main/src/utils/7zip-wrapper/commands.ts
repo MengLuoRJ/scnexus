@@ -1,4 +1,6 @@
-import { basename } from 'node:path'
+import { basename, resolve, join } from 'node:path'
+import { writeFile, rm } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { PassThrough, type Readable } from 'node:stream'
 import { createSevenZipError, SevenZipError, SevenZipTimeoutError } from './errors'
 import { assertPathExists, parseTechnicalList, SevenZipRunner } from './runner'
@@ -20,6 +22,12 @@ export function createCommands(runner: SevenZipRunner) {
       add(runner, archive, files, options),
     extract: (archive: string, options?: SevenZipExtractOptions) =>
       extract(runner, archive, options),
+    extractExact: (
+      archive: string,
+      files: string[],
+      outputDir: string,
+      options?: SevenZipCommonOptions,
+    ) => extractExact(runner, archive, files, outputDir, options),
     list: (archive: string, options?: SevenZipListOptions) => list(runner, archive, options),
     listTree: (archive: string, options?: SevenZipListOptions) =>
       listTree(runner, archive, options),
@@ -85,14 +93,62 @@ export async function extract(
   return runner.run(args, options)
 }
 
+export async function extractExact(
+  runner: SevenZipRunner,
+  archive: string,
+  files: string[],
+  outputDir: string,
+  options: SevenZipCommonOptions = {},
+): Promise<SevenZipResult> {
+  if (
+    !files.length ||
+    files.some(
+      (name) =>
+        !name ||
+        [...name].some((character) => character.charCodeAt(0) < 32) ||
+        name.includes(':') ||
+        /^[\\/]/.test(name) ||
+        name
+          .replaceAll('\\', '/')
+          .split('/')
+          .some((part) => !part || part === '.' || part === '..'),
+    )
+  )
+    throw new SevenZipError('Invalid exact extraction paths')
+  await assertPathExists(archive)
+  const listPath = join(resolve(outputDir, '..'), '.scnexus-list-' + randomUUID() + '.txt')
+  try {
+    await writeFile(listPath, files.join('\n'), { encoding: 'utf8', flag: 'wx' })
+    return await runner.run(
+      [
+        'x',
+        ...commonSwitches(options),
+        '-y',
+        '-aoa',
+        '-spd',
+        '-r-',
+        '-scsUTF-8',
+        `-o${resolve(outputDir)}`,
+        `-i@${listPath}`,
+        '--',
+        resolve(archive),
+      ],
+      options,
+    )
+  } finally {
+    await rm(listPath, { force: true })
+  }
+}
+
 export async function list(
   runner: SevenZipRunner,
   archive: string,
   options: SevenZipListOptions = {},
 ): Promise<SevenZipListResult> {
   await assertPathExists(archive)
-  const args = ['l', archive, '-slt', ...commonSwitches(options)]
+  const args = ['l', '-slt', ...commonSwitches(options)]
   appendPatterns(args, '-i!', options.files)
+  args.push('--', resolve(archive))
   const result = await runner.run(args, options)
   return { ...result, entries: parseTechnicalList(result.stdout, archive) }
 }
@@ -157,15 +213,17 @@ export function extractToStream(
   const child = runner.spawn(
     [
       'x',
-      archive,
-      file,
+      `-i!${file}`,
       '-so',
       '-spd',
+      '-r-',
       '-sccUTF-8',
       '-bso2',
       '-bsp2',
       '-bse2',
       ...(options.password ? [`-p${options.password}`] : []),
+      '--',
+      resolve(archive),
     ],
     options,
   )

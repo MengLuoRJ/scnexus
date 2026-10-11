@@ -3,7 +3,11 @@ import { defineComponent, nextTick, ref } from 'vue'
 import type { Plugin } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import type { AnalysisResult, ContentRecord } from '@scnexus/app-shared/types/content.type'
+import type {
+  AnalysisResult,
+  ContentRecord,
+  InstallProgress,
+} from '@scnexus/app-shared/types/content.type'
 import type { useCampaign } from '../useCampaign'
 import CampaignInstallModal from '../components/CampaignInstallModal.vue'
 import CampaignOperationModal from '../components/CampaignOperationModal.vue'
@@ -62,7 +66,7 @@ function service() {
     mode: ref('scnexus'),
     busy: ref(false),
     error: ref(null),
-    installProgress: ref(null),
+    installProgress: ref<InstallProgress | null>(null),
     existing: ref([]),
     conflicts: ref([]),
     activation: ref(null),
@@ -262,4 +266,56 @@ test('operation failure closes the dialog without reporting success', async () =
   expect(state.close).toHaveBeenCalledOnce()
   expect(wrapper.emitted('close')).toHaveLength(1)
   expect(wrapper.emitted('completed')).toBeUndefined()
+})
+
+test('extraction progress is separate from file commit counts and never implies installation is complete', async () => {
+  const state = service()
+  let finish!: (result: unknown) => void
+  state.confirm.mockImplementation(() => {
+    state.busy.value = true
+    return new Promise((resolve) => {
+      finish = resolve
+    })
+  })
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+  })
+  await click(wrapper, '确认安装')
+  const progress = {
+    taskId: 'task',
+    analysisId: 'analysis',
+    stage: 'preparing',
+    completedFiles: 0,
+    totalFiles: 5,
+    currentFile: null,
+  } as InstallProgress
+  state.installProgress.value = progress
+  await nextTick()
+  expect(wrapper.text()).toContain('正在检查安装条件')
+  expect(wrapper.text()).not.toContain('0 / 5')
+  state.installProgress.value = { ...progress, stage: 'extracting' }
+  await nextTick()
+  expect(wrapper.text()).toContain('正在解压安装文件')
+  expect(wrapper.text()).not.toContain('0%')
+  expect(wrapper.text()).not.toContain('0 / 5')
+  state.installProgress.value = { ...progress, stage: 'extracting', percent: 100 }
+  await nextTick()
+  expect(wrapper.text()).toContain('100%')
+  expect(wrapper.text()).not.toContain('安装完成')
+  expect(wrapper.find('button[data-loading="true"]').exists()).toBe(true)
+  state.installProgress.value = { ...progress, stage: 'copying', completedFiles: 2 }
+  await nextTick()
+  expect(wrapper.text()).toContain('正在安装与提交文件')
+  expect(wrapper.text()).toContain('2 / 5')
+  expect(wrapper.text()).toContain('40%')
+  expect(wrapper.text()).not.toContain('100%')
+  state.installProgress.value = { ...progress, stage: 'finalizing', completedFiles: 5 }
+  await nextTick()
+  expect(wrapper.text()).toContain('正在保存安装结果')
+  expect(wrapper.text()).not.toContain('安装完成')
+  state.busy.value = false
+  finish({ installed: record })
+  await flushPromises()
+  expect(wrapper.text()).toContain('安装完成')
 })

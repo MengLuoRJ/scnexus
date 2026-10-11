@@ -128,14 +128,16 @@
   "campaign.uninstallComplete": "Campaign uninstalled",
   "campaign.refreshComplete": "Campaign list refreshed",
   "campaign.scanComplete": "Scan completed",
-  "campaign.progress.preparing": "Preparing installation",
-  "campaign.progress.copying": "Writing files",
-  "campaign.progress.finalizing": "Committing and saving installation results",
+  "campaign.progress.preparing": "Checking installation conditions",
+  "campaign.progress.copying": "Installing and committing files",
+  "campaign.progress.finalizing": "Saving installation results",
   "campaign.progress.completed": "Installation complete",
   "campaign.progress.failed": "Installation failed",
-  "campaign.progressCountHint": "Counts actual file writes (including descriptors and manifests), excluding targets kept unchanged.",
+  "campaign.progressCountHint": "Counts files submitted for installation (including descriptors and manifests), excluding game targets kept unchanged.",
   "campaign.libraryInstalled": "Campaign library import succeeded. Game maps are written when activated.",
   "campaign.gameResourceResults": "Game resource results",
   "campaign.switchTarget": "Switch target",
-  "campaign.archive": "archive"
+  "campaign.archive": "archive",
+  "campaign.progress.extracting": "Extracting installation files",
+  "campaign.extractionHint": "Extracting selected entries in one batch to isolated staging. Installation and commit follow extraction."
 }

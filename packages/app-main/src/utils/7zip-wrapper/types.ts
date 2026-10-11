@@ -46,6 +46,7 @@ export type SevenZipCommonOptions = {
   timeout?: number
   cwd?: string
   onProgress?: (progress: SevenZipProgress) => void
+  signal?: AbortSignal
 }
 
 export type SevenZipAddOptions = SevenZipCommonOptions & {
@@ -88,6 +89,12 @@ export type SevenZipCommandApi = {
     options?: SevenZipAddOptions,
   ): Promise<SevenZipResult>
   extract(archive: string, options?: SevenZipExtractOptions): Promise<SevenZipResult>
+  extractExact(
+    archive: string,
+    files: string[],
+    outputDir: string,
+    options?: SevenZipCommonOptions,
+  ): Promise<SevenZipResult>
   list(archive: string, options?: SevenZipListOptions): Promise<SevenZipListResult>
   listTree(archive: string, options?: SevenZipListOptions): Promise<SevenZipTreeNode>
   test(archive: string, options?: SevenZipCommonOptions): Promise<SevenZipResult>

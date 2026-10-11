@@ -128,9 +128,11 @@ AppErrorDto 是共享契约，包含静态定义 code、name、可选 descriptio
 
 `campaign.install(selection)` 接受可选的 `InstallSelection.taskId`（非空字符串，最长 200 字符）；省略时使用 `analysisId`。调用前订阅 `campaign.onInstallProgress(listener)`，返回取消函数；v2 适配器为 `apiCampaignOnInstallProgress`，同时在 Vue scope 销毁时取消订阅。IPC 事件 `campaign:install-progress` 只发给发起调用的 renderer，不暴露 Electron event。
 
-共享 `InstallProgress` 包含 `taskId`、`analysisId`、`stage`、`completedFiles`、`totalFiles` 和 `currentFile`。阶段为 `preparing`、`copying`、`finalizing`、`completed` 或 `failed`。准备阶段总数尚未确定时为 0；复制开始后总数固定。每次真实文件写入成功后递增完成数，当前文件为相对游戏根目录的路径；阶段切换时当前文件为 null。
+共享 `InstallProgress` 包含 `taskId`、`analysisId`、`stage`、`completedFiles`、`totalFiles`、`currentFile` 和可选 `percent?: number`。阶段为 `preparing`、`extracting`、`copying`、`finalizing`、`completed` 或 `failed`。`extracting` 的 `percent` 仅转发 7z 实际回调，缺省表示不确定进度；不由文件数或定时器伪造。准备/解压阶段 UI 不显示文件计数；复制开始后总数固定。当前文件为相对游戏根目录的路径；阶段切换时当前文件为 null。
 
-总数计入 payload 复制、实际写入游戏目录的文件及描述文件/安装清单，不计冲突选择保留而未写入的目标，也不计事务内部备份。同一 CCM mod 的 payload 和游戏目录复制是两次独立写入。进度按文件数（非字节或时间）计算，UI 可在总数大于 0 时使用 `completedFiles / totalFiles`；全部文件写入不代表安装成功，只有持久化提交和事务清理完成后才发送 `completed`。失败/取消发送 `failed`，其中完成数保留已执行写入数，不代表回滚后的存留文件数；调用结果仍通过 `IpcResult` 返回，订阅不能代替结果处理。
+归档分析只列举条目并把必要的 package.json/metadata.txt 读入内存，不落盘、不读取或哈希资源正文。归档文件本身以流式 SHA256 在列举前、元数据读取后，以及确认安装后的解压前后和提交前复核。目录输入保留条目及内容哈希复核。确认模式及冲突选择后，用 UTF-8 清单、禁用通配符的单次 7z 批量解压到游戏同文件系统的隔离目录；拒绝路径越界、链接及多余输出。资源复用暂存文件，不按资源启动 7z；游戏目标冲突在长时间暂存后重新核验。
+
+总数计入管理目录 payload、实际写入游戏目录的文件及描述文件/安装清单，不计选择保留的游戏目标、解压输出、事务备份和目录重命名本身。管理目录在暂存中完整构建，再以一次目录重命名提交；其包含的文件在提交成功后逐项计数，失败/取消回滚整个目录。CCM mod 的库 payload 与游戏目录仍分别计数，只有游戏目标需要复制；库资源从解压目录移动而非重复复制。进度按文件数（非字节或时间）计算；全部文件写入不代表安装成功，只有持久化提交和事务清理完成后才发送 `completed`。失败/取消发送 `failed`，其中完成数保留已执行写入数，不代表回滚后的存留文件数；调用结果仍通过 `IpcResult` 返回，订阅不能代替结果处理。
 
 ## 6. 数据与本地操作
 

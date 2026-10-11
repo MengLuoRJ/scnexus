@@ -17,7 +17,9 @@ const { t } = useI18n()
 const { analysis, preview, mode, busy, error, existing, conflicts, installProgress } = props.service
 const percentage = computed(() => {
   const progress = installProgress.value
-  if (!progress || progress.stage === 'preparing' || !progress.totalFiles) return undefined
+  if (!progress || progress.stage === 'preparing') return undefined
+  if (progress.stage === 'extracting') return progress.percent
+  if (!progress.totalFiles) return undefined
   return Math.floor((progress.completedFiles / progress.totalFiles) * 100)
 })
 const installed = ref<ContentRecord | null>(null)
@@ -86,7 +88,13 @@ function activate() {
     :title="title"
     :dismissible="!busy"
     :close="!busy"
-    :ui="{ content: 'sm:max-w-5xl', body: 'space-y-4' }"
+    :ui="{
+      content: 'sm:max-w-4xl',
+      header: 'shrink-0 p-4 sm:px-4',
+      body: 'min-h-0 space-y-4 break-words p-4 sm:p-4',
+      footer: 'shrink-0 p-4 sm:px-4',
+      title: 'min-w-0 break-words',
+    }"
     @update:open="
       (value: boolean) => {
         if (!value) close()
@@ -130,14 +138,32 @@ function activate() {
         <template v-if="installing && installProgress">
           <p>{{ t(`campaign.progress.${installProgress.stage}`) }}</p>
           <UProgress :model-value="percentage" :max="100" />
-          <p v-if="installProgress.totalFiles" class="text-sm">
+          <p
+            v-if="installProgress.stage === 'extracting' && percentage !== undefined"
+            class="text-sm"
+          >
+            {{ percentage }}%
+          </p>
+          <p
+            v-else-if="
+              installProgress.stage !== 'preparing' &&
+              installProgress.stage !== 'extracting' &&
+              installProgress.totalFiles
+            "
+            class="text-sm"
+          >
             {{ installProgress.completedFiles }} / {{ installProgress.totalFiles }}
             {{ t('campaign.files') }} · {{ percentage ?? 0 }}%
           </p>
           <p v-if="installProgress.currentFile" class="break-all text-xs text-muted">
             {{ installProgress.currentFile }}
           </p>
-          <p class="text-xs text-muted">{{ t('campaign.progressCountHint') }}</p>
+          <p v-if="installProgress.stage === 'extracting'" class="text-xs text-muted">
+            {{ t('campaign.extractionHint') }}
+          </p>
+          <p v-else-if="installProgress.stage !== 'preparing'" class="text-xs text-muted">
+            {{ t('campaign.progressCountHint') }}
+          </p>
         </template>
         <UProgress v-else />
       </div>

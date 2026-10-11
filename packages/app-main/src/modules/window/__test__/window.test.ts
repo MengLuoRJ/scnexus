@@ -1,6 +1,7 @@
 import { test, expect, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
-let instances: FakeWindow[] = []
+import type { BrowserWindowConstructorOptions } from 'electron'
+const instances: FakeWindow[] = []
 class FakeWindow extends EventEmitter {
   destroyed = false
   minimized = false
@@ -10,7 +11,7 @@ class FakeWindow extends EventEmitter {
     openDevTools: vi.fn(),
     setWindowOpenHandler: vi.fn(),
   })
-  constructor() {
+  constructor(readonly options: BrowserWindowConstructorOptions) {
     super()
     instances.push(this)
   }
@@ -49,6 +50,12 @@ test('window singleton, reload handshake, renderer failure and recreation', asyn
   ])
   expect(a).toBe(b)
   expect(instances).toHaveLength(1)
+  expect(instances[0].options).toMatchObject({
+    width: 1000,
+    height: 700,
+    minWidth: 1000,
+    minHeight: 700,
+  })
   service.sendWhenReady('updater:download-progress', 1)
   service.sendWhenReady('updater:download-progress', 2)
   service.markWindowReady()
@@ -65,6 +72,12 @@ test('window singleton, reload handshake, renderer failure and recreation', asyn
   service.destroyMainWindow()
   await service.restoreOrCreateWindow()
   expect(instances).toHaveLength(2)
+  expect(instances[1].options).toMatchObject({
+    width: 1000,
+    height: 700,
+    minWidth: 1000,
+    minHeight: 700,
+  })
   service.destroyMainWindow()
 })
 

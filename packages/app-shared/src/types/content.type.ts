@@ -132,7 +132,8 @@ export type InstallSelection = {
 export type InstallProgress = {
   taskId: string
   analysisId: string
-  stage: 'preparing' | 'copying' | 'finalizing' | 'completed' | 'failed'
+  stage: 'preparing' | 'extracting' | 'copying' | 'finalizing' | 'completed' | 'failed'
+  percent?: number
   completedFiles: number
   totalFiles: number
   currentFile: string | null

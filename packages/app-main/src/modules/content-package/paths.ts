@@ -12,7 +12,7 @@ export const campaignRoots: Record<PackageCampaignType, string[]> = {
 export function logicalPath(input: string): string {
   if (
     typeof input !== 'string' ||
-    input.includes('\0') ||
+    [...input].some((character) => character.charCodeAt(0) < 32) ||
     input.includes(':') ||
     input.startsWith('\\') ||
     input.startsWith('//')

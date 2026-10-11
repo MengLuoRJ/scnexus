@@ -533,7 +533,11 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 
 选择来源后立即打开安装对话框：读取中 → 三模式预览（名称/类型/作者/版本、安装与来源统计、源树/目标树、冲突与模式诊断）→ 确认安装 → 文件进度 → 实际返回的安装结果与“立即激活”。不可用模式禁用；模式切换清空冲突选择；重复安装和未明确处理的冲突阻止确认。安装期间禁止关闭或重复提交。完成后可关闭而不激活，或继续进入激活确认。结果区区分战役库导入与游戏资源处理：SCNexus 导入不直接写入游戏资源，CCM 的 copied/replaced/kept 仅统计本次 Mods 处理，不冒充全部导入文件数。
 
-真实进度通过 campaign.onInstallProgress 受控订阅返回。InstallSelection 的可选 taskId 用于关联本次请求；进度携带 analysisId、阶段、已完成/总文件数及当前路径，仅发给发起安装的 renderer。数量统计成功的文件写入，包含描述和清单、不含选择保留的目标；百分比表示文件写入进度，不代表字节进度或整个事务已提交。preparing/copying/finalizing/completed/failed 区分复制与提交；只有持久化与事务清理成功才报告完成。renderer 在成功、失败和页面卸载时取消订阅，并忽略其他 taskId/analysisId 的事件。
+真实进度通过 campaign.onInstallProgress 受控订阅返回。InstallSelection 的可选 taskId 用于关联本次请求；进度携带 analysisId、阶段、已完成/总文件数及当前路径，仅发给发起安装的 renderer。preparing/extracting 不显示文件数；extracting 的可选 `percent?: number` 只来自 7z 实际回调，缺省为不确定进度。copying/finalizing 的数量统计实际安装文件，包含 payload、游戏目标、描述和清单，不含选择保留的游戏目标、解压输出及备份；目录重命名提交后，其包含的安装文件逐项计数，不把重命名本身另算一项。文件百分比不代表字节进度或整个事务已提交。preparing/extracting/copying/finalizing/completed/failed 区分准备、解压、复制与提交；只有持久化与事务清理成功才报告完成。renderer 在成功、失败和页面卸载时取消订阅，并忽略其他 taskId/analysisId 的事件。
+
+归档性能与一致性：确认安装前仅列举条目、读取必要描述文件到内存，不解压到磁盘、不读资源正文或资源哈希。包根、模式、映射路径和冲突均从条目列表推导。归档本体流式 SHA256 在列举前/元数据读取后、安装解压前后及提交前复核，不能仅凭大小和 mtime 判断不变；目录来源保留资源哈希与布局复核。确认模式后生成精确文件清单：战役包括库 payload、CCM 原描述和标准描述所需内容；customize 排除选择保留的目标对应资源。使用 UTF-8 list file、`-spd`、`-r-` 和选项终止符执行一次批量 7z 解压，复核输出文件/目录、大小和链接，不允许额外条目。7z 的取消信号终止子进程，失败和取消均清理清单及隔离暂存。
+
+暂存目录在游戏文件系统内。战役 payload 从解压目录移动到完整管理目录（CCM 转换保持标准 Maps/Mods 映射），写入描述文件、原始 CCM 正文及安装清单后，目录重命名提交，避免第二遍 payload 复制；目录输入则复制一次到该暂存。游戏 Maps/Mods 使用磁盘备份、文件复制和流式哈希的事务写入，在解压/暂存后重新核验目标冲突。Store 持久化失败或取消回滚资源和管理目录，回滚失败保留恢复备份并报告恢复错误。
 
 激活、恢复、卸载均需二次确认，执行按钮显示 loading，成功或失败通过 toast 提示，结束后关闭确认框。切换已有活动战役或卸载活动包时，先确认恢复，再在恢复完成后生成目标操作预览并再次确认，避免使用恢复前的过期冲突信息；取消第二步不会重新激活旧包。共享删除仍须明确保留/删除。刷新/扫描及打开目录、网站、启动失败等操作反馈优先 toast，持久上下文警告与安装结果保留在对话框中。
 
@@ -557,3 +561,21 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 包级 Vite/Vitest 失效源于切换到 `nodeLinker: hoisted` 后，包内残留旧 isolated 布局生成的 shim，遮蔽根目录有效命令。执行 `pnpm install --frozen-lockfile --offline --ignore-scripts` 恢复锁文件对应安装后，清理 renderer-v2 中仅指向不存在路径的 Vite/Vitest shim；未改构建脚本、依赖版本或锁文件。再次执行相同安装命令后，包级 Vite/Vitest 仍正常。该修复属于本地生成物清理，不需要提交 node_modules。
 
 验证：`pnpm --filter @scnexus/app-renderer-v2 exec vite --version` 与 `exec vitest --version` 成功；`pnpm --filter @scnexus/app-renderer-v2 test:unit --run source-picker pages.test`：8 项通过；`pnpm --filter @scnexus/app-renderer-v2 type-check` 与 `build-only` 通过。入口组件和测试定向 ESLint/oxlint 通过；包级 dev 服务响应 HTTP 200，浏览器模拟确认两个下划线入口分别调用 openFile/openDirectory，且不打开来源弹窗，其他区域点击不执行操作。
+
+### 批量归档安装验收（2026-10-11）
+
+后端回归使用真实 ZIP 和 solid 7z。`archive-performance.test.ts` 验证预览仅读取描述、确认安装恰好一个 7z 子进程、CCM/转换映射、UTF-8 大清单与字面量名称、归档同大小/mtime 内容改变、分析/解压期间源变化、解压期间目标冲突改变、取消与 Store 失败回滚、清单/暂存清理。目录输入的导入、激活、恢复、卸载及内容变化检查沿用 content/recovery 回归。实际 7z 子进程覆盖预先中止信号及关闭后清理；解压中途取消用进度回调测试确认 AbortSignal 已中止，不等同于真实大归档运行中取消验收。进度解析按 CR/LF/backspace 分隔的完整记录匹配 0–100 的整数百分比，UTF-8 解码及跨 chunk 百分比保留缓冲；不伪造进度或保证每次 7z 都输出百分比。
+
+约束：描述正文限制 1 MiB；预览单个描述读取超时 120 秒；确认后的批量解压超时 1200 秒。没有实测用户大型战役的耗时/峰值内存，不声称已测得加速比例；仍需真实游戏及大包验收。
+
+| 范围 | 命令与结果 |
+| --- | --- |
+| main 内容、战役、共享 7z/工坊回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__\campaign.test.ts src\modules\workshop\__test__\workshop-archive.test.ts`：8 文件、60 项通过。现有工坊测试验证 ZIP 元数据替换保留资源，未修改该测试。运行时 TEMP/TMP 指向工作区，避免测试写系统临时目录。 |
+| main/shared 类型 | `pnpm exec tsc --noEmit -p packages\app-main\tsconfig.json`、`pnpm exec tsc --noEmit -p packages\app-shared\tsconfig.json`：通过。 |
+| 后端定向 lint | `pnpm exec oxlint -c .oxlintrc.json` / `pnpm exec eslint`，范围为 content-package 的 content-package.ts/source.ts/transaction.ts/paths.ts、新 archive-performance.test.ts、utils/7zip-wrapper 及共享 content.type.ts：通过；不将已有 legacy tests/scanner 的全目录 lint 问题归为本轮已修复。 |
+| renderer-v2 类型 | `pnpm --filter @scnexus/app-renderer-v2 type-check`：通过（集成协调方验证）。 |
+| IPC/main 编排类型 | `pnpm run typecheck:preload`、`pnpm run typecheck:main`：通过（集成协调方验证）。 |
+| renderer 交互回归 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run campaign.test campaign-dialogs source-picker pages.test ipcs.test`：5 文件、30 项通过（集成协调方验证）。 |
+| renderer 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过（集成协调方验证）。 |
+| main/preload 构建 | `pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过（集成协调方验证）。 |
+| renderer 定向 lint | 定向 ESLint / Oxlint：通过（集成协调方验证；未提供完整路径参数，不虚构完整命令）。 |

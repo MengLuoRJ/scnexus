@@ -1,7 +1,6 @@
 import { test, expect, afterEach, vi } from 'vitest'
 import { mkdtemp, mkdir, writeFile, readFile, rm, stat, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { ContentService } from '../content-package'
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
 import type { ContentStore, CampaignActiveStoreData } from '@scnexus/app-shared/types/content.type'
@@ -16,7 +15,7 @@ afterEach(async () => {
   for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true })
 })
 async function setup() {
-  const root = await mkdtemp(join(tmpdir(), 'scnexus-rollback-'))
+  const root = await mkdtemp(join(process.cwd(), '.scnexus-rollback-'))
   dirs.push(root)
   const paths = gamePaths(root, join(root, 'documents'))
   const storage = join(root, 'storage')

@@ -180,8 +180,8 @@ onMounted(async () => {
     <UAlert v-if="saved" color="success" :title="t('ui.saved')" />
     <UTabs default-value="basic" :items="tabs" size="sm" class="w-full">
       <template #basic>
-        <div class="space-y-2">
-          <UCard :ui="{ header: 'p-2 sm:p-2', body: 'p-2 sm:p-2' }">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <UCard class="sm:col-span-2" :ui="{ header: 'p-2 sm:p-2', body: 'p-2 sm:p-2' }">
             <template #header>
               <h2 class="font-semibold">{{ t('ui.preferences') }}</h2>
             </template>
@@ -204,7 +204,7 @@ onMounted(async () => {
                 <div class="flex flex-wrap gap-2">
                   <UInput
                     v-model="downloadDirectory"
-                    class="min-w-0 flex-1"
+                    class="min-w-0 basis-full sm:flex-1"
                     :disabled="!settings || busy"
                   />
                   <UButton

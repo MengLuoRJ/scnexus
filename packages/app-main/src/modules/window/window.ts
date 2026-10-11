@@ -75,10 +75,10 @@ async function createMainWindow(): Promise<BrowserWindow> {
     window = new BrowserWindow({
       title: 'SCNexus Client',
       show: false,
-      width: 800,
-      height: 600,
-      minWidth: 800,
-      minHeight: 600,
+      width: 1000,
+      height: 700,
+      minWidth: 1000,
+      minHeight: 700,
       autoHideMenuBar: true,
       webPreferences: {
         preload: join(app.getAppPath(), 'packages', 'app-preload', 'dist', 'index.mjs'),

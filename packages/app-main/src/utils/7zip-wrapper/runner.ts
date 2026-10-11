@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import sevenZipBin from '7z-bin'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { StringDecoder } from 'node:string_decoder'
 import { access } from 'node:fs/promises'
 import {
   createSevenZipError,
@@ -23,6 +24,7 @@ export class SevenZipRunner {
         cwd: options.cwd,
         windowsHide: true,
         stdio: ['pipe', 'pipe', 'pipe'],
+        signal: options.signal,
       })
     } catch (error) {
       throw new SevenZipError(`Failed to start 7-Zip: ${(error as Error).message}`)
@@ -34,8 +36,11 @@ export class SevenZipRunner {
       const child = this.spawn(args, options)
       const stdout: Buffer[] = []
       const stderr: Buffer[] = []
+      const stdoutProgress = progressReader(options.onProgress)
+      const stderrProgress = progressReader(options.onProgress)
       let timedOut = false
       let settled = false
+      let processError: Error | undefined
       const timeout = options.timeout
         ? setTimeout(() => {
             timedOut = true
@@ -45,19 +50,21 @@ export class SevenZipRunner {
 
       child.stdout.on('data', (chunk: Buffer) => {
         stdout.push(chunk)
-        parseProgress(chunk.toString('utf8'), options.onProgress)
+        stdoutProgress.write(chunk)
       })
-      child.stderr.on('data', (chunk: Buffer) => stderr.push(chunk))
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr.push(chunk)
+        stderrProgress.write(chunk)
+      })
       child.on('error', (error) => {
-        if (settled) return
-        settled = true
-        if (timeout) clearTimeout(timeout)
-        reject(new SevenZipError(`Failed to start 7-Zip: ${error.message}`))
+        processError = error
       })
       child.on('close', (exitCode) => {
         if (settled) return
         settled = true
         if (timeout) clearTimeout(timeout)
+        stdoutProgress.end()
+        stderrProgress.end()
         const result: SevenZipResult = {
           command: this.binaryPath,
           args: [...args],
@@ -66,7 +73,9 @@ export class SevenZipRunner {
           stderr: Buffer.concat(stderr).toString('utf8'),
         }
 
-        if (timedOut) {
+        if (processError) {
+          reject(new SevenZipError(`7-Zip process failed: ${processError.message}`, result))
+        } else if (timedOut) {
           reject(new SevenZipTimeoutError(options.timeout ?? 0, result))
         } else if (result.exitCode === 0 || result.exitCode === 1) {
           resolve(result)
@@ -99,9 +108,9 @@ export function parseTechnicalList(output: string, archive: string): SevenZipEnt
     const properties = Object.fromEntries(
       block
         .split(/\r?\n/)
-        .map((line) => line.match(/^([^=]+?)\s*=\s*(.*)$/))
+        .map((line) => line.match(/^([^=]+?) = (.*)$/))
         .filter((match): match is RegExpMatchArray => match !== null)
-        .map((match) => [match[1].trim(), match[2].trim()]),
+        .map((match) => [match[1].trim(), match[2]]),
     )
     const path = properties.Path
     if (!path || path === archive || properties.Type) continue
@@ -120,11 +129,28 @@ export function parseTechnicalList(output: string, archive: string): SevenZipEnt
   return entries
 }
 
+function progressReader(callback?: SevenZipCommonOptions['onProgress']) {
+  const decoder = new StringDecoder('utf8')
+  let pending = ''
+  return {
+    write(chunk: Buffer) {
+      if (!callback) return
+      const lines = (pending + decoder.write(chunk)).split(/[\r\n\b]+/)
+      pending = lines.pop() ?? ''
+      for (const line of lines) parseProgress(line, callback)
+    },
+    end() {
+      if (callback) parseProgress(pending + decoder.end(), callback)
+    },
+  }
+}
+
 function parseProgress(output: string, callback?: SevenZipCommonOptions['onProgress']) {
   if (!callback) return
-  for (const line of output.split(/\r?\n/)) {
-    const match = line.match(/(\d+)%\s+(.*)?$/)
-    if (match) callback({ percent: Number(match[1]), file: match[2]?.trim() })
+  for (const line of output.split(/[\r\n\b]+/)) {
+    const match = line.match(/^\s*(\d{1,3})%(?:\s+(.*))?$/)
+    if (match && Number(match[1]) <= 100)
+      callback({ percent: Number(match[1]), file: match[2]?.trim() })
   }
 }
 

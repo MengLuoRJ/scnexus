@@ -2,7 +2,6 @@ import { test, expect, afterEach, vi } from 'vitest'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
 import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { ContentService } from '../content-package'
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
 import type {
@@ -25,7 +24,7 @@ function index<T extends { _revision: number }>(data: T) {
   }
 }
 async function fixture() {
-  const root = await mkdtemp(join(tmpdir(), 'scnexus-content-'))
+  const root = await mkdtemp(join(process.cwd(), '.scnexus-content-'))
   roots.push(root)
   const game = join(root, 'game')
   await mkdir(game)

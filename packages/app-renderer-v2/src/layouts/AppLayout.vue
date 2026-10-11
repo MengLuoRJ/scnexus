@@ -25,8 +25,10 @@ onMounted(async () => {
   <div class="flex h-full bg-default text-default">
     <AppSidebar />
     <div class="flex min-w-0 flex-1 flex-col">
-      <header class="flex h-16 shrink-0 items-center border-b border-default px-4">
-        <h1 class="font-semibold">
+      <header
+        class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-default px-3 py-2"
+      >
+        <h1 class="shrink-0 font-semibold">
           {{
             t(
               route.name === 'campaign'
@@ -37,10 +39,13 @@ onMounted(async () => {
             )
           }}
         </h1>
-        <div id="page-actions" class="ml-auto flex items-center gap-1" />
+        <div
+          id="page-actions"
+          class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1"
+        />
       </header>
-      <main class="min-h-0 flex-1 overflow-y-auto p-2">
-        <div class="mx-auto max-w-4xl"><RouterView /></div>
+      <main class="min-h-0 flex-1 overflow-y-auto p-3">
+        <div class="mx-auto flex min-h-full min-w-0 max-w-5xl flex-col"><RouterView /></div>
       </main>
     </div>
   </div>

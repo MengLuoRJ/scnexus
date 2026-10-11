@@ -34,7 +34,11 @@ function size(bytes: number) {
 }
 </script>
 <template>
-  <UModal v-model:open="open" :title="t('campaign.switch')" :ui="{ content: 'sm:max-w-3xl' }">
+  <UModal
+    v-model:open="open"
+    :title="t('campaign.switch')"
+    :ui="{ content: 'sm:max-w-3xl', body: 'min-h-0 break-words p-4 sm:p-4' }"
+  >
     <template #body>
       <div class="space-y-2">
         <UAlert v-if="!list.length" :title="t('campaign.empty')" color="neutral" />
@@ -113,6 +117,7 @@ function size(bytes: number) {
   <UModal
     :open="Boolean(selected)"
     :title="selected?.package.name"
+    :ui="{ title: 'min-w-0 break-words', body: 'min-h-0 break-words p-4 sm:p-4' }"
     @update:open="
       (value: boolean) => {
         if (!value) selected = null

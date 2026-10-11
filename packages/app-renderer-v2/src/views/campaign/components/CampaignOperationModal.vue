@@ -104,7 +104,7 @@ async function confirm() {
     :title="title"
     :dismissible="!busy && !executing && !preparing"
     :close="!busy && !executing && !preparing"
-    :ui="{ content: 'sm:max-w-3xl' }"
+    :ui="{ content: 'sm:max-w-3xl', body: 'min-h-0 break-words p-4 sm:p-4', footer: 'shrink-0' }"
     @update:open="
       (value: boolean) => {
         if (!value) close()

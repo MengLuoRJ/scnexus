@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatFileSize } from '../formatFileSize'
 import type { ContentRecord, PackageCampaignType } from '@scnexus/app-shared/types/content.type'
 import wolLogo from '../../../assets/campaign/Campaign_WOL_LOGO.png'
 import hotsLogo from '../../../assets/campaign/Campaign_HOTS_LOGO.png'
@@ -26,9 +27,6 @@ import hotsThumbnail from '../../../assets/campaign/Campaign_HOTS_thumbnail.png'
 import lotvThumbnail from '../../../assets/campaign/Campaign_LOTV_thumbnail.png'
 import thumbnail from '../../../assets/campaign/Campaign_thumbnail.png'
 const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO: thumbnail }
-function size(bytes: number) {
-  return `${(bytes / 1024 / 1024).toFixed(2)} MiB`
-}
 </script>
 <template>
   <UTabs v-model="category" :items="categories" :content="false" variant="link">
@@ -113,7 +111,7 @@ function size(bytes: number) {
           <p>SCNID: {{ props.current.package.scnid ?? '—' }}</p>
           <p>
             {{ props.current.fileCount }} {{ t('campaign.files') }} ·
-            {{ size(props.current.bytes) }}
+            {{ formatFileSize(props.current.bytes) }}
           </p>
           <p class="break-all">{{ props.current.managementDirectory }}</p>
           <UButton

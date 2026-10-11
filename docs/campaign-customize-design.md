@@ -503,7 +503,7 @@ CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store �
 
 新增 /campaign 路由与侧栏导航，使用 Nuxt UI 重新实现 WOL/HOTS/LOTV/NCO 分类与紧凑列表，展示当前游戏的活动战役、包信息、管理目录、文件数量/大小和目标文件树。仅参考旧 renderer 的分类/详情设计，不沿用其组件与 Store。诺娃使用现有 NCO LOGO 素材（没有独立 thumbnail）。
 
-本地闭环：选择压缩包/目录或拖放单个输入 → analyze → 独立展示模式、推荐、诊断、重复安装、源树/目标树 → 用户明确解决每个 Map/Mod 冲突 → install。auto 不可用时禁用，不模拟安装；已有相同内容时禁止重复确认。CCM 提示导入即安装 Mods，后续取消激活/卸载不管理这些 Mods。
+本地闭环：选择压缩包/目录或拖放单个输入 → analyze → 独立展示模式、推荐、诊断、重复安装、源树/目标树 → 展示每个 Map/Mod 冲突并允许调整默认覆盖决策 → install。auto 不可用时禁用，不模拟安装；已有相同内容时禁止重复确认。CCM 提示导入即安装 Mods，后续取消激活/卸载不管理这些 Mods。
 
 激活使用 prepareActivation/activate；取消激活与卸载分别使用 prepareDeactivation/deactivate、prepareUninstall/uninstall。main 禁止在同类型仍有其他活动战役时直接激活、禁止直接卸载活动包；2026-10-11 的界面迭代提供先恢复再确认目标操作的连续流程，不绕过这些限制。共享删除须逐文件明确保留/删除。模态框关闭或页面卸载清理预览；安装失败保留预览以便重试，管理操作结束后关闭确认框并通过 toast 提示。文件树只展示，不从 renderer 操作游戏文件。
 
@@ -531,7 +531,7 @@ CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store �
 
 CampaignView 只编排页面状态和通知，安装来源、详细管理、战役库、连续安装流程和操作确认分别由 CampaignSourcePicker、CampaignDetails、CampaignLibraryModal、CampaignInstallModal、CampaignOperationModal 承担。
 
-选择来源后立即打开安装对话框：读取中 → 三模式预览（名称/类型/作者/版本、安装与来源统计、源树/目标树、冲突与模式诊断）→ 确认安装 → 文件进度 → 实际返回的安装结果与“立即激活”。不可用模式禁用；模式切换清空冲突选择；重复安装和未明确处理的冲突阻止确认。安装期间禁止关闭或重复提交。完成后可关闭而不激活，或继续进入激活确认。结果区区分战役库导入与游戏资源处理：SCNexus 导入不直接写入游戏资源，CCM 的 copied/replaced/kept 仅统计本次 Mods 处理，不冒充全部导入文件数。
+选择来源后立即打开安装对话框：读取中 → 三模式预览（名称/类型/作者/版本、安装与来源统计、源树/目标树、冲突与模式诊断）→ 确认安装 → 文件进度 → 实际返回的安装结果与“立即激活”。不可用模式禁用；安装冲突默认覆盖，可统一或逐文件切换为保留；模式切换或重新打开流程按当前冲突清单重置为覆盖，不沿用其他模式的 conflictId。重复安装仍阻止确认。安装期间禁止关闭或重复提交。完成后可关闭而不激活，或继续进入激活确认。结果区区分战役库导入与游戏资源处理：SCNexus 导入不直接写入游戏资源，CCM 的 copied/replaced/kept 仅统计本次 Mods 处理，不冒充全部导入文件数。
 
 真实进度通过 campaign.onInstallProgress 受控订阅返回。InstallSelection 的可选 taskId 用于关联本次请求；进度携带 analysisId、阶段、已完成/总文件数及当前路径，仅发给发起安装的 renderer。preparing/extracting 不显示文件数；extracting 的可选 `percent?: number` 只来自 7z 实际回调，缺省为不确定进度。copying/finalizing 的数量统计实际安装文件，包含 payload、游戏目标、描述和清单，不含选择保留的游戏目标、解压输出及备份；目录重命名提交后，其包含的安装文件逐项计数，不把重命名本身另算一项。文件百分比不代表字节进度或整个事务已提交。preparing/extracting/copying/finalizing/completed/failed 区分准备、解压、复制与提交；只有持久化与事务清理成功才报告完成。renderer 在成功、失败和页面卸载时取消订阅，并忽略其他 taskId/analysisId 的事件。
 
@@ -579,3 +579,12 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 | renderer 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过（集成协调方验证）。 |
 | main/preload 构建 | `pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过（集成协调方验证）。 |
 | renderer 定向 lint | 定向 ESLint / Oxlint：通过（集成协调方验证；未提供完整路径参数，不虚构完整命令）。 |
+
+
+### 冲突快捷设置与文件大小显示（2026-10-11）
+
+安装冲突默认选择覆盖，界面显示默认行为提示；每个文件使用“覆盖 / 保留”切换按钮，不再使用下拉框。两个及以上冲突提供“全部覆盖 / 全部保留”，统一设置后仍可逐文件调整；混合状态下两个统一按钮都不显示选中。模式切换、新冲突清单或重新打开安装流程时，按当前 conflictId 重置默认覆盖。激活冲突也使用相同的切换与统一控件，但仍需用户明确选择；恢复/卸载的共享删除决策保持原有行为，不自动删除。
+
+renderer-v2 的文件树、冲突对比、战役库/详情、来源与安装统计及安装结果统一通过 formatFileSize 显示大小。采用 1000 进制：小于 1000 为 B，达到 1000 切换为 kB，依次为 MB/GB/TB/PB/EB；B 保留整数，其他单位最多两位小数并去掉无意义的尾零。仅影响界面格式，不改变字节数据、安装清单或 IPC。
+
+验证包含单位边界、逐文件切换、批量设置/混合状态、模式与对话框重置、激活显式决策和文件树格式。1000×660 浏览器模拟确认默认全部覆盖、统一保留后逐文件调整、无下拉框以及 B/kB/MB/GB 显示正确。

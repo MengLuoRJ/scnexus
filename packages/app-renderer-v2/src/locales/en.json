@@ -139,5 +139,9 @@
   "campaign.switchTarget": "Switch target",
   "campaign.archive": "archive",
   "campaign.progress.extracting": "Extracting installation files",
-  "campaign.extractionHint": "Extracting selected entries in one batch to isolated staging. Installation and commit follow extraction."
+  "campaign.extractionHint": "Extracting selected entries in one batch to isolated staging. Installation and commit follow extraction.",
+  "campaign.applyAll": "Apply to all",
+  "campaign.overwriteAll": "Overwrite all",
+  "campaign.keepAll": "Keep all",
+  "campaign.defaultOverwriteHint": "Conflicting files default to overwrite. Apply a choice to all files or switch individual files to keep."
 }

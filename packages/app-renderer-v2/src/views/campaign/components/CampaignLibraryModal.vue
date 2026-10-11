@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatFileSize } from '../formatFileSize'
 import type {
   ContentRecord,
   ActiveCampaign,
@@ -29,9 +30,6 @@ import hotsThumbnail from '../../../assets/campaign/Campaign_HOTS_thumbnail.png'
 import lotvThumbnail from '../../../assets/campaign/Campaign_LOTV_thumbnail.png'
 import thumbnail from '../../../assets/campaign/Campaign_thumbnail.png'
 const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO: thumbnail }
-function size(bytes: number) {
-  return `${(bytes / 1024 / 1024).toFixed(2)} MiB`
-}
 </script>
 <template>
   <UModal
@@ -66,7 +64,7 @@ function size(bytes: number) {
               </div>
               <p class="text-xs text-muted">
                 {{ record.package.author }} · {{ record.fileCount }} {{ t('campaign.files') }} ·
-                {{ size(record.bytes) }}
+                {{ formatFileSize(record.bytes) }}
               </p>
             </div>
             <div class="flex flex-wrap gap-1">

@@ -168,7 +168,7 @@ test('installation previews metadata and mode-specific files before confirmation
   expect(wrapper.emitted('update:open')?.[0]).toEqual([false])
 })
 
-test('existing installations and undecided conflicts prevent installation', async () => {
+test('existing installations prevent installation, while new installation conflicts default to overwrite', async () => {
   const state = service()
   state.existing.value = [{ directory: 'existing', package: record.package }] as never
   const wrapper = render(CampaignInstallModal, {
@@ -181,7 +181,7 @@ test('existing installations and undecided conflicts prevent installation', asyn
   state.conflicts.value = [{ conflictId: 'conflict' }] as never
   await nextTick()
   await click(wrapper, '确认安装')
-  expect(state.confirm).not.toHaveBeenCalled()
+  expect(state.confirm).toHaveBeenCalledWith([{ conflictId: 'conflict', action: 'overwrite' }], [])
 })
 
 test('activation requires confirmation and keeps the action loading until completion', async () => {
@@ -318,4 +318,47 @@ test('extraction progress is separate from file commit counts and never implies 
   finish({ installed: record })
   await flushPromises()
   expect(wrapper.text()).toContain('安装完成')
+})
+
+test('mode changes and reopening installation reset conflicts to overwrite without submitting stale IDs', async () => {
+  const state = service()
+  state.conflicts.value = [{ conflictId: 'scnexus-file' }] as never
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    service: state as unknown as ReturnType<typeof useCampaign>,
+  })
+  const choices = wrapper.findComponent({ name: 'ConflictChoices' })
+  choices.vm.$emit('update:modelValue', [{ conflictId: 'scnexus-file', action: 'keep' }])
+  await nextTick()
+  expect(choices.props('modelValue')).toEqual([{ conflictId: 'scnexus-file', action: 'keep' }])
+  state.mode.value = 'ccm'
+  state.conflicts.value = [{ conflictId: 'ccm-file' }] as never
+  await nextTick()
+  expect(choices.props('modelValue')).toEqual([{ conflictId: 'ccm-file', action: 'overwrite' }])
+  choices.vm.$emit('update:modelValue', [{ conflictId: 'ccm-file', action: 'keep' }])
+  await nextTick()
+  await wrapper.setProps({ open: false })
+  await wrapper.setProps({ open: true })
+  await nextTick()
+  expect(wrapper.findComponent({ name: 'ConflictChoices' }).props('modelValue')).toEqual([
+    { conflictId: 'ccm-file', action: 'overwrite' },
+  ])
+  await click(wrapper, '确认安装')
+  expect(state.confirm).toHaveBeenCalledWith([{ conflictId: 'ccm-file', action: 'overwrite' }], [])
+})
+
+test('activation conflicts still require an explicit decision rather than installation overwrite defaults', async () => {
+  const state = service()
+  state.conflicts.value = [{ conflictId: 'activation-conflict' }] as never
+  state.prepare.mockImplementation(async () => {
+    state.activation.value = { activationId: 'activation' } as never
+  })
+  const wrapper = render(CampaignOperationModal, {
+    service: state as unknown as ReturnType<typeof useCampaign>,
+    request: null,
+  })
+  await wrapper.setProps({ request: { record, action: 'activate' } })
+  await flushPromises()
+  await click(wrapper, '确认执行')
+  expect(state.confirm).not.toHaveBeenCalled()
 })

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatFileSize } from '../formatFileSize'
 import type {
   ContentRecord,
   ConflictDecision,
@@ -58,12 +59,16 @@ watch(open, (value) => {
     decisions.value = []
   }
 })
-watch([mode, analysis], () => {
-  decisions.value = []
-})
-function size(bytes: number) {
-  return `${(bytes / 1024 / 1024).toFixed(2)} MiB`
-}
+watch(
+  [mode, analysis, conflicts, open],
+  () => {
+    decisions.value = conflicts.value.map((file) => ({
+      conflictId: file.conflictId,
+      action: 'overwrite',
+    }))
+  },
+  { immediate: true },
+)
 async function install() {
   if (!canInstall.value || busy.value || installing.value) return
   installing.value = true
@@ -113,7 +118,8 @@ function activate() {
           {{ installed.package.name }} · {{ installed.package.version || '—' }}
         </p>
         <p>
-          {{ installed.fileCount }} {{ t('campaign.files') }} · {{ size(installed.bytes) }} ·
+          {{ installed.fileCount }} {{ t('campaign.files') }} ·
+          {{ formatFileSize(installed.bytes) }} ·
           {{ installed.mode }}
         </p>
         <p class="break-all text-sm text-muted">{{ installed.managementDirectory }}</p>
@@ -217,13 +223,17 @@ function activate() {
           <USeparator />
           <section class="space-y-2 text-sm">
             <h3 class="font-semibold">{{ t('campaign.installFiles') }}</h3>
-            <p>{{ preview.fileCount }} {{ t('campaign.files') }} · {{ size(preview.bytes) }}</p>
+            <p>
+              {{ preview.fileCount }} {{ t('campaign.files') }} ·
+              {{ formatFileSize(preview.bytes) }}
+            </p>
             <p>
               {{ t('campaign.sourceStats') }}: {{ analysis.sourceStats.fileCount }}
-              {{ t('campaign.files') }} · {{ size(analysis.sourceStats.bytes) }}
+              {{ t('campaign.files') }} · {{ formatFileSize(analysis.sourceStats.bytes) }}
             </p>
             <p v-if="analysis.sourceStats.compressedBytes !== undefined">
-              {{ t('campaign.compressedSize') }}: {{ size(analysis.sourceStats.compressedBytes) }}
+              {{ t('campaign.compressedSize') }}:
+              {{ formatFileSize(analysis.sourceStats.compressedBytes) }}
             </p>
             <p class="break-all text-muted">{{ preview.descriptorPath }}</p>
           </section>
@@ -243,6 +253,9 @@ function activate() {
           </div>
           <section class="space-y-2">
             <h3 class="font-semibold">{{ t('campaign.conflicts') }} ({{ conflicts.length }})</h3>
+            <p v-if="conflicts.length" class="text-sm text-muted">
+              {{ t('campaign.defaultOverwriteHint') }}
+            </p>
             <ConflictChoices v-if="conflicts.length" v-model="decisions" :files="conflicts" />
             <p v-else class="text-sm text-muted">{{ t('campaign.noConflicts') }}</p>
           </section>

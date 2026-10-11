@@ -139,5 +139,9 @@
   "campaign.switchTarget": "切換目標",
   "campaign.archive": "壓縮檔",
   "campaign.progress.extracting": "正在解壓安裝檔案",
-  "campaign.extractionHint": "按清單一次解壓至隔離暫存目錄；解壓完成後仍需安裝與提交。"
+  "campaign.extractionHint": "按清單一次解壓至隔離暫存目錄；解壓完成後仍需安裝與提交。",
+  "campaign.applyAll": "統一設定",
+  "campaign.overwriteAll": "全部覆寫",
+  "campaign.keepAll": "全部保留",
+  "campaign.defaultOverwriteHint": "預設覆寫衝突檔案；可統一設定，或逐一切換為保留。"
 }

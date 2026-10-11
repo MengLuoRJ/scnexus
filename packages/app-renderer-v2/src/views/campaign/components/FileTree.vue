@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { formatFileSize } from '../formatFileSize'
 import type { FileTree } from '@scnexus/app-shared/types/content.type'
 defineOptions({ name: 'CampaignFileTree' })
 const props = defineProps<{ tree: FileTree }>()
@@ -13,7 +14,8 @@ const props = defineProps<{ tree: FileTree }>()
         </div>
       </details>
       <span v-else class="break-all"
-        >{{ props.tree.name }} <span class="text-muted">({{ props.tree.bytes }} B)</span></span
+        >{{ props.tree.name }}
+        <span class="text-muted">({{ formatFileSize(props.tree.bytes) }})</span></span
       >
     </li>
   </ul>

@@ -139,5 +139,9 @@
   "campaign.switchTarget": "切换目标",
   "campaign.archive": "压缩包",
   "campaign.progress.extracting": "正在解压安装文件",
-  "campaign.extractionHint": "按清单一次解压到隔离暂存目录；解压完成后还需安装与提交。"
+  "campaign.extractionHint": "按清单一次解压到隔离暂存目录；解压完成后还需安装与提交。",
+  "campaign.applyAll": "统一设置",
+  "campaign.overwriteAll": "全部覆盖",
+  "campaign.keepAll": "全部保留",
+  "campaign.defaultOverwriteHint": "默认覆盖冲突文件；可统一设置，或逐个切换为保留。"
 }

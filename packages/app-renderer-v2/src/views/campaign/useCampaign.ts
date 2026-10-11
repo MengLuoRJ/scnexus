@@ -15,6 +15,7 @@ import type {
   ActivationPreview,
   RemovalPreview,
   InstallMode,
+  InstallProgress,
   SourceInput,
   ContentRecord,
   ActiveCampaign,
@@ -22,6 +23,11 @@ import type {
   ConflictDecision,
   RemovalDecision,
 } from '@scnexus/app-shared/types/content.type'
+
+export type CampaignOperationRequest = {
+  record: ContentRecord
+  action: 'activate' | 'deactivate' | 'uninstall'
+}
 
 export function useCampaign() {
   const records = ref<ContentRecord[]>([])
@@ -31,6 +37,8 @@ export function useCampaign() {
   const removal = ref<RemovalPreview | null>(null)
   const mode = ref<InstallMode>('scnexus')
   const busy = ref(false)
+  const installProgress = ref<InstallProgress | null>(null)
+  let stopProgress: (() => void) | undefined
   const error = ref<AppErrorDto | null>(null)
   const diagnostics = ref<{ path: string; message: string }[]>([])
   let disposed = false
@@ -38,12 +46,12 @@ export function useCampaign() {
     if (!result.ok) throw result.error
     return result.data
   }
-  async function execute(run: () => Promise<void>) {
+  async function execute<T>(run: () => Promise<T>): Promise<T | undefined> {
     if (busy.value) return
     busy.value = true
     error.value = null
     try {
-      await run()
+      return await run()
     } catch (value) {
       error.value = isErrorDto(value) ? value : toErrorDto(normalizeError(value))
     } finally {
@@ -109,15 +117,24 @@ export function useCampaign() {
   }
   function confirm(decisions: ConflictDecision[], removals: RemovalDecision[]) {
     return execute(async () => {
-      if (analysis.value)
-        data(
-          await api.apiCampaignInstall({
-            analysisId: analysis.value.analysisId,
-            mode: mode.value,
-            decisions,
-          }),
-        )
-      else if (activation.value)
+      let installed: ContentRecord | null = null
+      if (analysis.value) {
+        const analysisId = analysis.value.analysisId
+        const taskId = crypto.randomUUID()
+        installProgress.value = null
+        stopProgress = api.apiCampaignOnInstallProgress((progress) => {
+          if (!disposed && progress.taskId === taskId && progress.analysisId === analysisId)
+            installProgress.value = progress
+        })
+        try {
+          installed = data(
+            await api.apiCampaignInstall({ analysisId, taskId, mode: mode.value, decisions }),
+          )
+        } finally {
+          stopProgress()
+          stopProgress = undefined
+        }
+      } else if (activation.value)
         data(await api.apiCampaignActivate(activation.value.activationId, decisions))
       else if (removal.value)
         data(
@@ -125,14 +142,21 @@ export function useCampaign() {
             ? api.apiCampaignDeactivate(removal.value.removalId, removals)
             : api.apiCampaignUninstall(removal.value.removalId, removals)),
         )
+      else return
       analysis.value = null
       activation.value = null
       removal.value = null
-      await refresh()
+      try {
+        await refresh()
+      } catch (value) {
+        error.value = isErrorDto(value) ? value : toErrorDto(normalizeError(value))
+      }
+      return { installed }
     })
   }
   onScopeDispose(() => {
     disposed = true
+    stopProgress?.()
     const id = previewId()
     if (id) void api.apiCampaignCancel(id)
   })
@@ -144,6 +168,7 @@ export function useCampaign() {
     removal,
     mode,
     busy,
+    installProgress,
     error,
     diagnostics,
     preview,

@@ -1,18 +1,24 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { effectScope } from 'vue'
-import type { AnalysisResult, ContentRecord } from '@scnexus/app-shared/types/content.type'
+import type {
+  AnalysisResult,
+  ContentRecord,
+  InstallProgress,
+} from '@scnexus/app-shared/types/content.type'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 const mocks = vi.hoisted(() => ({
-  list: vi.fn(),
-  active: vi.fn(),
-  analyze: vi.fn(),
-  cancel: vi.fn(),
-  install: vi.fn(),
-  prepare: vi.fn(),
-  activate: vi.fn(),
-  removePreview: vi.fn(),
-  remove: vi.fn(),
-  scan: vi.fn(),
+  list: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  active: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  analyze: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  cancel: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  install: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  progress: vi.fn<(listener: (progress: InstallProgress) => void) => () => void>(),
+  unsubscribe: vi.fn<() => void>(),
+  prepare: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  activate: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  removePreview: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  remove: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  scan: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }))
 vi.mock('../../../ipcs/scii-game-setting', () => ({
   apiGameSettingGet: async () => ({ ok: true, data: { gameRoot: 'D:\\Game', paths: {} } }),
@@ -23,6 +29,7 @@ vi.mock('../../../ipcs/campaign', () => ({
   apiCampaignAnalyze: mocks.analyze,
   apiCampaignCancel: mocks.cancel,
   apiCampaignInstall: mocks.install,
+  apiCampaignOnInstallProgress: mocks.progress,
   apiCampaignPrepareActivation: mocks.prepare,
   apiCampaignActivate: mocks.activate,
   apiCampaignPrepareDeactivation: mocks.removePreview,
@@ -41,6 +48,7 @@ function setup() {
   mocks.list.mockResolvedValue({ ok: true, data: { records: [] } })
   mocks.active.mockResolvedValue({ ok: true, data: { active: {} } })
   mocks.cancel.mockResolvedValue({ ok: true, data: undefined })
+  mocks.progress.mockReturnValue(mocks.unsubscribe)
   const scope = effectScope()
   scopes.push(scope)
   return scope.run(() => useCampaign())!
@@ -60,9 +68,11 @@ test('analysis selects recommendation, submits exact decisions and refreshes aft
   mocks.install.mockResolvedValue({ ok: true, data: record })
   await service.analyze({ kind: 'directory', path: 'D:\\Package' })
   expect(service.mode.value).toBe('ccm')
-  await service.confirm([{ conflictId: 'c', action: 'keep' }], [])
+  const result = await service.confirm([{ conflictId: 'c', action: 'keep' }], [])
+  expect(result?.installed).toEqual(record)
   expect(mocks.install).toHaveBeenCalledWith({
     analysisId: 'a',
+    taskId: expect.any(String),
     mode: 'ccm',
     decisions: [{ conflictId: 'c', action: 'keep' }],
   })
@@ -131,4 +141,58 @@ test('scan exposes diagnostics and deactivation refreshes active state', async (
   await service.confirm([], [])
   expect(mocks.remove).toHaveBeenCalledWith('off', [])
   expect(service.removal.value).toBeNull()
+})
+
+test('successful installation remains successful when the following list refresh fails', async () => {
+  const service = setup()
+  mocks.analyze.mockResolvedValue({ ok: true, data: analysis })
+  mocks.install.mockResolvedValue({ ok: true, data: record })
+  const error = toErrorDto(new AppError(ERRORS.TASK_CONFLICT))
+  mocks.list.mockResolvedValue({ ok: false, error })
+  await service.analyze({ kind: 'directory', path: 'D:\\Package' })
+  const result = await service.confirm([], [])
+  expect(result?.installed).toEqual(record)
+  expect(service.error.value).toEqual(error)
+  expect(service.analysis.value).toBeNull()
+  await service.confirm([], [])
+  expect(mocks.install).toHaveBeenCalledOnce()
+})
+
+test('install progress ignores other tasks and unsubscribes after completion', async () => {
+  const service = setup()
+  mocks.analyze.mockResolvedValue({ ok: true, data: analysis })
+  mocks.install.mockImplementation(async (selection) => {
+    const listener = mocks.progress.mock.calls[0]![0] as (value: InstallProgress) => void
+    const progress = {
+      taskId: (selection as { taskId: string }).taskId,
+      analysisId: 'a',
+      stage: 'copying',
+      completedFiles: 1,
+      totalFiles: 3,
+      currentFile: 'map.SC2Map',
+    } as InstallProgress
+    listener({ ...progress, taskId: 'other' })
+    expect(service.installProgress.value).toBeNull()
+    listener({ ...progress, analysisId: 'other' })
+    expect(service.installProgress.value).toBeNull()
+    listener(progress)
+    expect(service.installProgress.value).toEqual(progress)
+    return { ok: true, data: record }
+  })
+  await service.analyze({ kind: 'directory', path: 'D:\\Package' })
+  await service.confirm([], [])
+  expect(mocks.unsubscribe).toHaveBeenCalledOnce()
+})
+
+test('install failure unsubscribes without discarding its preview', async () => {
+  const service = setup()
+  mocks.analyze.mockResolvedValue({ ok: true, data: analysis })
+  mocks.install.mockResolvedValue({
+    ok: false,
+    error: toErrorDto(new AppError(ERRORS.TASK_CONFLICT)),
+  })
+  await service.analyze({ kind: 'directory', path: 'D:\\Package' })
+  expect(await service.confirm([], [])).toBeUndefined()
+  expect(mocks.unsubscribe).toHaveBeenCalledOnce()
+  expect(service.analysis.value?.analysisId).toBe('a')
 })

@@ -126,3 +126,38 @@ test('campaign reactive decisions are snapshotted before crossing contextBridge'
     { analysisId: 'a', mode: 'ccm', decisions: [{ conflictId: 'c', action: 'keep' }] },
   ])
 })
+
+test('campaign progress listener receives correlated DTOs and disposes with its scope', async () => {
+  const { apiCampaignOnInstallProgress } = await import('../../campaign')
+  const dispose = vi.fn()
+  let callback: (progress: unknown) => void = () => {}
+  vi.stubGlobal('window', {
+    scnexus: {
+      campaign: {
+        onInstallProgress: (listener: typeof callback) => {
+          callback = listener
+          return dispose
+        },
+      },
+    },
+  })
+  const listener = vi.fn()
+  const scope = effectScope()
+  let stop = () => {}
+  scope.run(() => {
+    stop = apiCampaignOnInstallProgress(listener)
+  })
+  const progress = {
+    taskId: 'client-task',
+    analysisId: 'analysis',
+    stage: 'copying',
+    completedFiles: 1,
+    totalFiles: 4,
+    currentFile: 'Maps/Campaign/Level.SC2Map',
+  }
+  callback(progress)
+  expect(listener).toHaveBeenCalledExactlyOnceWith(progress)
+  scope.stop()
+  stop()
+  expect(dispose).toHaveBeenCalledOnce()
+})

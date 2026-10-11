@@ -39,7 +39,9 @@ function date(value: number | null) {
           { label: t('campaign.keep'), value: 'keep' },
         ]"
         :model-value="decisions.find((item) => item.conflictId === file.conflictId)?.action"
-        @update:model-value="(value) => choose(file.conflictId, value as 'keep' | 'overwrite')"
+        @update:model-value="
+          (value: string) => choose(file.conflictId, value as 'keep' | 'overwrite')
+        "
       />
     </div>
   </div>

@@ -124,6 +124,14 @@ AppErrorDto 是共享契约，包含静态定义 code、name、可选 descriptio
 - 多个并行长任务的事件必须带 taskId。短操作不强制包装为任务。
 - 内部日志可记录诊断细节，面向 UI 的错误信息不包含令牌和不必要的敏感路径。
 
+### 战役安装进度（已实现）
+
+`campaign.install(selection)` 接受可选的 `InstallSelection.taskId`（非空字符串，最长 200 字符）；省略时使用 `analysisId`。调用前订阅 `campaign.onInstallProgress(listener)`，返回取消函数；v2 适配器为 `apiCampaignOnInstallProgress`，同时在 Vue scope 销毁时取消订阅。IPC 事件 `campaign:install-progress` 只发给发起调用的 renderer，不暴露 Electron event。
+
+共享 `InstallProgress` 包含 `taskId`、`analysisId`、`stage`、`completedFiles`、`totalFiles` 和 `currentFile`。阶段为 `preparing`、`copying`、`finalizing`、`completed` 或 `failed`。准备阶段总数尚未确定时为 0；复制开始后总数固定。每次真实文件写入成功后递增完成数，当前文件为相对游戏根目录的路径；阶段切换时当前文件为 null。
+
+总数计入 payload 复制、实际写入游戏目录的文件及描述文件/安装清单，不计冲突选择保留而未写入的目标，也不计事务内部备份。同一 CCM mod 的 payload 和游戏目录复制是两次独立写入。进度按文件数（非字节或时间）计算，UI 可在总数大于 0 时使用 `completedFiles / totalFiles`；全部文件写入不代表安装成功，只有持久化提交和事务清理完成后才发送 `completed`。失败/取消发送 `failed`，其中完成数保留已执行写入数，不代表回滚后的存留文件数；调用结果仍通过 `IpcResult` 返回，订阅不能代替结果处理。
+
 ## 6. 数据与本地操作
 
 ### 持久化

@@ -8,6 +8,7 @@ import type {
   RemovalPreview,
   RemovalDecision,
   InstallSelection,
+  InstallProgress,
   ActivationPreview,
   ConflictDecision,
   ActiveCampaign,
@@ -31,6 +32,7 @@ export interface ContentApi {
   uninstall(removalId: string, decisions: RemovalDecision[]): Promise<IpcResult<unknown>>
 }
 export interface CampaignApi extends ContentApi {
+  onInstallProgress(listener: (progress: InstallProgress) => void): () => void
   launch(): Promise<IpcResult<void>>
   prepareActivation(localId: string): Promise<IpcResult<ActivationPreview>>
   activate(activationId: string, decisions: ConflictDecision[]): Promise<IpcResult<ActiveCampaign>>

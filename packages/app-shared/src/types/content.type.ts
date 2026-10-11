@@ -125,8 +125,17 @@ export type RemovalPreview = {
 export type RemovalDecision = { conflictId: string; action: 'delete' | 'keep' }
 export type InstallSelection = {
   analysisId: string
+  taskId?: string
   mode: InstallMode
   decisions: ConflictDecision[]
+}
+export type InstallProgress = {
+  taskId: string
+  analysisId: string
+  stage: 'preparing' | 'copying' | 'finalizing' | 'completed' | 'failed'
+  completedFiles: number
+  totalFiles: number
+  currentFile: string | null
 }
 export type ActivationPreview = {
   activationId: string

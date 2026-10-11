@@ -3,7 +3,8 @@ export const analyze = (source: import('@scnexus/app-shared/types/content.type')
   contentService.analyze('campaign', source)
 export const install = (
   selection: import('@scnexus/app-shared/types/content.type').InstallSelection,
-) => contentService.install(selection, 'campaign')
+  onProgress?: (progress: import('@scnexus/app-shared/types/content.type').InstallProgress) => void,
+) => contentService.install(selection, 'campaign', onProgress)
 export const list = () => contentService.list('campaign')
 export const scan = () => contentService.scan()
 export const prepareUninstall = (id: string) =>

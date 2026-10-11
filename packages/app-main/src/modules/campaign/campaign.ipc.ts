@@ -1,3 +1,5 @@
+import type { IpcMainInvokeEvent } from 'electron'
+import type { InstallSelection } from '@scnexus/app-shared/types/content.type'
 import { runGameClient } from '../customize/client-launcher'
 import { ipcHandle } from '../../utils/ipc-util'
 import * as service from './campaign'
@@ -55,7 +57,14 @@ export function initCampaignIpc() {
   ipcHandle('campaign:prepare-deactivation', service.prepareDeactivation)
   ipcHandle('campaign:deactivate', service.deactivate)
   ipcHandle('campaign:analyze', service.analyze)
-  ipcHandle('campaign:install', service.install)
+  ipcHandle(
+    'campaign:install',
+    (event: IpcMainInvokeEvent, selection: InstallSelection) =>
+      service.install(selection, (progress) => {
+        if (!event.sender.isDestroyed()) event.sender.send('campaign:install-progress', progress)
+      }),
+    true,
+  )
   ipcHandle('campaign:list', service.list)
   ipcHandle('campaign:scan', service.scan)
   ipcHandle('campaign:prepare-uninstall', service.prepareUninstall)

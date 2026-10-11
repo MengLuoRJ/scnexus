@@ -25,6 +25,7 @@ declare global {
   const apiCampaignInstall: typeof import('./src/ipcs/campaign').apiCampaignInstall
   const apiCampaignLaunch: typeof import('./src/ipcs/campaign').apiCampaignLaunch
   const apiCampaignList: typeof import('./src/ipcs/campaign').apiCampaignList
+  const apiCampaignOnInstallProgress: typeof import('./src/ipcs/campaign').apiCampaignOnInstallProgress
   const apiCampaignPrepareActivation: typeof import('./src/ipcs/campaign').apiCampaignPrepareActivation
   const apiCampaignPrepareDeactivation: typeof import('./src/ipcs/campaign').apiCampaignPrepareDeactivation
   const apiCampaignPrepareUninstall: typeof import('./src/ipcs/campaign').apiCampaignPrepareUninstall
@@ -197,6 +198,7 @@ declare module 'vue' {
     readonly apiCampaignInstall: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignInstall']>
     readonly apiCampaignLaunch: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignLaunch']>
     readonly apiCampaignList: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignList']>
+    readonly apiCampaignOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignOnInstallProgress']>
     readonly apiCampaignPrepareActivation: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignPrepareActivation']>
     readonly apiCampaignPrepareDeactivation: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignPrepareDeactivation']>
     readonly apiCampaignPrepareUninstall: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignPrepareUninstall']>

@@ -2,7 +2,7 @@
 
 ## 1. 范围、状态与已确认决策
 
-本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现，renderer-v2 交互未在本轮开发；自动识别仍预留 null。实现与验证见第 12 节，不代表所有后续方向已落地。
+本文件记录 campaign/customize 的重构规则。main、preload、新标准公开导出及对应 Store 已按后述范围实现；renderer-v2 交互已在文末记录的后续迭代中接入，自动识别仍预留 null。实现与验证见第 12 节，不代表所有后续方向已落地。
 
 - campaign 与 customize 保持独立：前者管理战役包，后者管理自制作品。
 - campaign 提供 SCNexus、CCM、自动识别三种分析模式；customize 提供 SCNexus、自动识别两种。自动识别先保留接口位置，本阶段不实现。
@@ -505,7 +505,7 @@ CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store �
 
 本地闭环：选择压缩包/目录或拖放单个输入 → analyze → 独立展示模式、推荐、诊断、重复安装、源树/目标树 → 用户明确解决每个 Map/Mod 冲突 → install。auto 不可用时禁用，不模拟安装；已有相同内容时禁止重复确认。CCM 提示导入即安装 Mods，后续取消激活/卸载不管理这些 Mods。
 
-激活使用 prepareActivation/activate；取消激活与卸载分别使用 prepareDeactivation/deactivate、prepareUninstall/uninstall。同类型已有活动战役时禁止直接切换，先取消当前激活；活动包不能卸载。共享删除须逐文件明确保留/删除。模态框关闭或页面卸载清理预览；请求失败保留原错误码/errorId/taskId 和预览，允许取消后重新分析。文件树只展示，不从 renderer 操作游戏文件。
+激活使用 prepareActivation/activate；取消激活与卸载分别使用 prepareDeactivation/deactivate、prepareUninstall/uninstall。main 禁止在同类型仍有其他活动战役时直接激活、禁止直接卸载活动包；2026-10-11 的界面迭代提供先恢复再确认目标操作的连续流程，不绕过这些限制。共享删除须逐文件明确保留/删除。模态框关闭或页面卸载清理预览；安装失败保留预览以便重试，管理操作结束后关闭确认框并通过 toast 提示。文件树只展示，不从 renderer 操作游戏文件。
 
 刷新重读索引和活动状态，扫描按用户指令重建并显示扫描诊断；按 gameRoot 过滤列表，避免显示另一个游戏环境的数据。无 preload 时本地操作不可用；无有效游戏目录时提供设置入口。扫描返回类型补齐，不再使用 unknown。
 
@@ -526,3 +526,26 @@ CCM 分析检查目标目录存在后重新读取 metadata.txt，即使 Store �
 界面交互纠正：简略卡片激活/切换直接打开对应类别包选择弹窗，不跳转详情；活动包显示名称版本作者及恢复/卸载，官方状态仅标签，不虚构版本作者。详情左栏居中，Tabs 小 Logo 24px、左栏大 Logo 128px，开始按钮在左栏；简略开始位于底部。底部主体为整块可点击/可拖入的安装区域，目录选择保留辅助小按钮；标题模式切换 size=xs。浏览器模拟活动包确认操作可见、详情启动位置正确，类型/构建和7项回归通过。
 
 拖放与视觉修正：安装 drop 仅绑定安装区，非 Files 类型拖放与空路径忽略，所有界面图片禁止原生拖动；卡片横幅固定96px高，使用object-cover/object-top调整显示区域，不扩大卡片；详情Tabs使用缩略图，左侧面板单独使用大Logo。简略开始按钮独立居中高40px，不被安装区拉伸。安装区本地压缩包图标与两行文字，整体点击后选择压缩包或目录，删除旁边额外目录按钮。切换文案简化，恢复采用中性描边提高对比度，操作均带Tabler图标。生产浏览器确认四幅横幅未裁切、拖动标志false，内部图片/URI拖放没有P001；类型构建与9项回归通过。
+
+### 连续安装与操作确认（2026-10-11）
+
+CampaignView 只编排页面状态和通知，安装来源、详细管理、战役库、连续安装流程和操作确认分别由 CampaignSourcePicker、CampaignDetails、CampaignLibraryModal、CampaignInstallModal、CampaignOperationModal 承担。
+
+选择来源后立即打开安装对话框：读取中 → 三模式预览（名称/类型/作者/版本、安装与来源统计、源树/目标树、冲突与模式诊断）→ 确认安装 → 文件进度 → 实际返回的安装结果与“立即激活”。不可用模式禁用；模式切换清空冲突选择；重复安装和未明确处理的冲突阻止确认。安装期间禁止关闭或重复提交。完成后可关闭而不激活，或继续进入激活确认。结果区区分战役库导入与游戏资源处理：SCNexus 导入不直接写入游戏资源，CCM 的 copied/replaced/kept 仅统计本次 Mods 处理，不冒充全部导入文件数。
+
+真实进度通过 campaign.onInstallProgress 受控订阅返回。InstallSelection 的可选 taskId 用于关联本次请求；进度携带 analysisId、阶段、已完成/总文件数及当前路径，仅发给发起安装的 renderer。数量统计成功的文件写入，包含描述和清单、不含选择保留的目标；百分比表示文件写入进度，不代表字节进度或整个事务已提交。preparing/copying/finalizing/completed/failed 区分复制与提交；只有持久化与事务清理成功才报告完成。renderer 在成功、失败和页面卸载时取消订阅，并忽略其他 taskId/analysisId 的事件。
+
+激活、恢复、卸载均需二次确认，执行按钮显示 loading，成功或失败通过 toast 提示，结束后关闭确认框。切换已有活动战役或卸载活动包时，先确认恢复，再在恢复完成后生成目标操作预览并再次确认，避免使用恢复前的过期冲突信息；取消第二步不会重新激活旧包。共享删除仍须明确保留/删除。刷新/扫描及打开目录、网站、启动失败等操作反馈优先 toast，持久上下文警告与安装结果保留在对话框中。
+
+浏览器模拟验证了三模式切换、预览元数据/双树、数量与百分比进度、安装结果、立即激活的二次确认与 loading，以及恢复/刷新 toast；无桥接环境保持禁用。模拟不代替真实 Electron 对话框、拖放和 SC2 安装验收。
+
+本轮验证：
+
+| 检查 | 命令与结果 |
+| --- | --- |
+| main 战役、安装进度与内容回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__\content.test.ts src\modules\content-package\__test__\install-progress.test.ts src\modules\campaign\__test__\campaign.test.ts`：3 文件、23 项通过 |
+| renderer 流程、IPC 与语言回归 | `pnpm -w exec vitest run --config packages\app-renderer-v2\vitest.config.ts campaign.test campaign-dialogs pages.test ipcs.test`：4 文件、23 项通过 |
+| preload 订阅 | `pnpm --filter @scnexus/app-main exec vitest run -r ..\app-preload src\__test__\desktop.test.ts`：2 项通过 |
+| 类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：均通过 |
+| renderer 构建 | 包级 `pnpm --filter @scnexus/app-renderer-v2 build-only` 因本地失效 Vite shim 失败；使用已有根目录工具 `pnpm -w exec vite build --config packages\app-renderer-v2\vite.config.ts` 通过，未安装依赖或修改工具链 |
+| 静态检查 | 变更文件定向 ESLint、renderer campaign 定向 oxlint 和 `git diff --check` 通过 |

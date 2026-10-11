@@ -1,10 +1,14 @@
-import { desktop, request, ipcSnapshot } from './internal/ipc-common'
+import { desktop, request, ipcSnapshot, subscription } from './internal/ipc-common'
 import type {
   SourceInput,
   InstallSelection,
+  InstallProgress,
   RemovalDecision,
   ConflictDecision,
 } from '@scnexus/app-shared/types/content.type'
+
+export const apiCampaignOnInstallProgress = (listener: (progress: InstallProgress) => void) =>
+  subscription((handler) => desktop().campaign.onInstallProgress(handler), listener)
 
 export const apiCampaignCancel = (id: string) => request(() => desktop().campaign.cancel(id))
 export const apiCampaignAnalyze = (input: SourceInput) =>

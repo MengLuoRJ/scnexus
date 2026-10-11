@@ -22,6 +22,7 @@ import type {
   ActivationPreview,
   ContentStore,
   CampaignActiveStoreData,
+  InstallProgress,
 } from '@scnexus/app-shared/types/content.type'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { openSource, makeTree, type ContentSource } from './source'
@@ -471,18 +472,38 @@ export class ContentService {
   async install(
     selection: {
       analysisId: string
+      taskId?: string
       mode: string
       decisions: ConflictDecision[]
     },
     expectedType?: ContentType,
+    onProgress?: (progress: InstallProgress) => void,
   ): Promise<ContentRecord> {
     if (
       !selection ||
       typeof selection.analysisId !== 'string' ||
-      typeof selection.mode !== 'string'
+      typeof selection.mode !== 'string' ||
+      (selection.taskId !== undefined &&
+        (typeof selection.taskId !== 'string' ||
+          !selection.taskId.trim() ||
+          selection.taskId.length > 200))
     )
       throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    const progress: InstallProgress = {
+      taskId: selection.taskId ?? selection.analysisId,
+      analysisId: selection.analysisId,
+      stage: 'preparing',
+      completedFiles: 0,
+      totalFiles: 0,
+      currentFile: null,
+    }
+    const report = (stage: InstallProgress['stage'], currentFile: string | null = null) => {
+      progress.stage = stage
+      progress.currentFile = currentFile
+      onProgress?.({ ...progress })
+    }
     return this.operation(selection.analysisId, async () => {
+      report('preparing')
       this.prune()
       const context = this.analyses.get(selection?.analysisId)
       const mode = selection?.mode
@@ -599,8 +620,23 @@ export class ContentService {
         importedAt: Date.now(),
         gameRoot: paths.gameRoot,
       }
+      progress.totalFiles =
+        (payload ? preview.files.length : 0) +
+        (direct
+          ? actualFiles.filter(
+              (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
+            ).length
+          : 0) +
+        1 +
+        (mode === 'scnexus' ? 1 + (ccm ? 1 : 0) : 0)
+      report('copying')
       try {
-        return await this.transaction(paths, async (write) => {
+        return await this.transaction(paths, async (writeFile) => {
+          const write = async (path: string, data: Buffer | null) => {
+            await writeFile(path, data)
+            progress.completedFiles++
+            report(progress.stage, relative(paths.gameRoot, path).replaceAll('\\', '/'))
+          }
           if (payload) {
             await mkdir(payload, { recursive: true })
             for (const f of preview.files) {
@@ -629,6 +665,7 @@ export class ContentService {
             record.fileCount = record.installedFiles.length
             record.bytes = record.installedFiles.reduce((n, f) => n + f.bytes, 0)
           }
+          report('finalizing')
           await write(
             record.descriptorPath,
             mode === 'ccm'
@@ -653,6 +690,14 @@ export class ContentService {
         throw error
       }
     })
+      .then((record) => {
+        report('completed')
+        return record
+      })
+      .catch((error) => {
+        report('failed')
+        throw error
+      })
   }
   private find(localId: string): ContentRecord {
     for (const index of [this.campaign, this.customize]) {

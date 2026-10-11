@@ -73,6 +73,8 @@ Node 26 是开发工具链基线；主进程和 preload 以 Electron 内嵌运�
 
 页面优先使用 Nuxt UI 组件及其配套样式体系，不将旧 renderer 的 UnoCSS 作为 v2 默认要求；局部 CSS 使用 `<style scoped>`。Nuxt UI 以 Vue/Vite 集成方式使用，不因此引入 Nuxt 服务端。
 
+renderer-v2 各类操作完成后的成功、失败等结果提示优先使用 Nuxt UI toast；需要用户确认、决策或持续查看的流程使用对话框，持久性上下文警告使用内联提示，不用常驻页面提示替代短暂的操作反馈。
+
 使用 Vue 模板引用时，命名应以 `ref` 开头，例如 `refButton`、`refInput`；优先使用 `useTemplateRef`。需要显式类型时区分 DOM 元素、组件实例与组件 props，不用 props 类型标注实例引用，也不为简单引用额外引入类型辅助依赖。
 
 定义组件 props 时，优先以 `props.xxx` 访问，需要默认值时使用 `withDefaults`，保持项目内写法一致。

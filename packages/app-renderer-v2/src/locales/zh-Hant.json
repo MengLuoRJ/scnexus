@@ -94,7 +94,7 @@
   "campaign.author": "作者",
   "campaign.uninstallActiveHint": "先確認還原官方戰役，再確認移除戰役庫。",
   "campaign.switch": "切換",
-  "campaign.dropClick": "點擊選擇，或拖入壓縮檔 / 資料夾安裝",
+  "campaign.dropClick": "拖入或點擊選擇 {archive} / {folder} 進行安裝",
   "campaign.folder": "資料夾",
   "campaign.reading": "正在讀取並分析安裝來源…",
   "campaign.installComplete": "安裝完成",
@@ -136,5 +136,6 @@
   "campaign.progressCountHint": "進度統計實際寫入檔案（含描述和清單），不含選擇保留的目標檔案。",
   "campaign.libraryInstalled": "戰役庫匯入成功；遊戲地圖將在啟用後寫入。",
   "campaign.gameResourceResults": "遊戲資源處理結果",
-  "campaign.switchTarget": "切換目標"
+  "campaign.switchTarget": "切換目標",
+  "campaign.archive": "壓縮檔"
 }

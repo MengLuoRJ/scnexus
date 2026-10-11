@@ -94,7 +94,7 @@
   "campaign.author": "Author",
   "campaign.uninstallActiveHint": "Confirm deactivation first, then confirm library removal.",
   "campaign.switch": "Switch",
-  "campaign.dropClick": "Click to choose, or drop an archive / folder to install",
+  "campaign.dropClick": "Drag in or click to select an {archive} / {folder} to install",
   "campaign.folder": "Folder",
   "campaign.reading": "Reading and analyzing installation source…",
   "campaign.installComplete": "Installation complete",
@@ -136,5 +136,6 @@
   "campaign.progressCountHint": "Counts actual file writes (including descriptors and manifests), excluding targets kept unchanged.",
   "campaign.libraryInstalled": "Campaign library import succeeded. Game maps are written when activated.",
   "campaign.gameResourceResults": "Game resource results",
-  "campaign.switchTarget": "Switch target"
+  "campaign.switchTarget": "Switch target",
+  "campaign.archive": "archive"
 }

@@ -94,7 +94,7 @@
   "campaign.author": "作者",
   "campaign.uninstallActiveHint": "卸载前先确认恢复官方战役，成功后再确认移除战役库。",
   "campaign.switch": "切换",
-  "campaign.dropClick": "点击选择，或拖入压缩包 / 文件夹安装",
+  "campaign.dropClick": "拖入或点击选择 {archive} / {folder} 进行安装",
   "campaign.folder": "文件夹",
   "campaign.reading": "正在读取并分析安装来源…",
   "campaign.installComplete": "安装完成",
@@ -136,5 +136,6 @@
   "campaign.progressCountHint": "进度统计实际写入文件（含描述和清单），不含选择保留的目标文件。",
   "campaign.libraryInstalled": "战役库导入成功；游戏地图将在激活后写入。",
   "campaign.gameResourceResults": "游戏资源处理结果",
-  "campaign.switchTarget": "切换目标"
+  "campaign.switchTarget": "切换目标",
+  "campaign.archive": "压缩包"
 }

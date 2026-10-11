@@ -549,3 +549,11 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 | 类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：均通过 |
 | renderer 构建 | 包级 `pnpm --filter @scnexus/app-renderer-v2 build-only` 因本地失效 Vite shim 失败；使用已有根目录工具 `pnpm -w exec vite build --config packages\app-renderer-v2\vite.config.ts` 通过，未安装依赖或修改工具链 |
 | 静态检查 | 变更文件定向 ESLint、renderer campaign 定向 oxlint 和 `git diff --check` 通过 |
+
+### 安装入口与本地工具修正（2026-10-11）
+
+安装区文案为“拖入或点击选择 压缩包 / 文件夹 进行安装”，保留“选择”后、斜线两侧以及“进行安装”前的空格。其中“压缩包”和“文件夹”为带下划线、可键盘操作的两个独立按钮，直接打开对应文件/目录选择器。区域其余位置不再可点击，不显示来源选择弹窗；保留悬浮边框/阴影与单文件拖放。选择器打开期间与操作禁用状态下，不允许重复选择。简体、繁体与英文使用插值保持点击入口与文案顺序一致。
+
+包级 Vite/Vitest 失效源于切换到 `nodeLinker: hoisted` 后，包内残留旧 isolated 布局生成的 shim，遮蔽根目录有效命令。执行 `pnpm install --frozen-lockfile --offline --ignore-scripts` 恢复锁文件对应安装后，清理 renderer-v2 中仅指向不存在路径的 Vite/Vitest shim；未改构建脚本、依赖版本或锁文件。再次执行相同安装命令后，包级 Vite/Vitest 仍正常。该修复属于本地生成物清理，不需要提交 node_modules。
+
+验证：`pnpm --filter @scnexus/app-renderer-v2 exec vite --version` 与 `exec vitest --version` 成功；`pnpm --filter @scnexus/app-renderer-v2 test:unit --run source-picker pages.test`：8 项通过；`pnpm --filter @scnexus/app-renderer-v2 type-check` 与 `build-only` 通过。入口组件和测试定向 ESLint/oxlint 通过；包级 dev 服务响应 HTTP 200，浏览器模拟确认两个下划线入口分别调用 openFile/openDirectory，且不打开来源弹窗，其他区域点击不执行操作。

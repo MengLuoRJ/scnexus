@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { I18nT, useI18n } from 'vue-i18n'
 import { apiDialogShowOpenDialog, getPathForFile } from '../../../ipcs'
 import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
@@ -9,10 +9,9 @@ defineOptions({ name: 'CampaignSourcePicker' })
 const props = defineProps<{ disabled: boolean }>()
 const emit = defineEmits<{ select: [source: SourceInput]; error: [error: AppErrorDto] }>()
 const { t } = useI18n()
-const open = ref(false)
 const picking = ref(false)
 async function select(kind: SourceInput['kind']) {
-  open.value = false
+  if (props.disabled || picking.value) return
   picking.value = true
   try {
     const result = await apiDialogShowOpenDialog({
@@ -51,43 +50,46 @@ function drop(event: DragEvent) {
 </script>
 <template>
   <div
-    class="rounded border border-default bg-elevated/50 transition-colors hover:border-primary"
+    class="rounded border border-default bg-elevated/50 transition hover:border-primary hover:shadow-md"
     @dragover.prevent
     @drop.stop.prevent="drop"
   >
-    <button
-      type="button"
-      :disabled="props.disabled || picking"
-      class="flex min-h-20 w-full items-center justify-center gap-2 p-2 disabled:cursor-not-allowed disabled:opacity-50"
-      @click="open = true"
-    >
-      <UIcon name="i-tabler-file-zip" class="size-9 shrink-0" />
-      <span class="text-left"
-        ><span class="block text-sm text-default">{{ t('campaign.dropClick') }}</span
-        ><span class="block text-xs text-muted"
-          >ZIP · 7z · RAR · {{ t('campaign.folder') }}</span
-        ></span
-      >
-    </button>
-  </div>
-  <UModal v-model:open="open" :title="t('campaign.analyze')">
-    <template #body>
-      <div class="flex justify-center gap-2">
-        <UButton
-          icon="i-tabler-file-zip"
-          :disabled="props.disabled || picking"
-          @click="select('archive')"
-          >{{ t('campaign.importArchive') }}</UButton
+    <div class="flex min-h-20 items-center justify-center gap-2 p-2">
+      <UIcon
+        name="i-tabler-file-zip"
+        class="size-9 shrink-0"
+        :class="{ 'opacity-50': props.disabled || picking }"
+      />
+      <div class="text-left" :class="{ 'opacity-50': props.disabled || picking }">
+        <I18nT
+          keypath="campaign.dropClick"
+          tag="span"
+          scope="global"
+          class="block text-sm text-default"
         >
-        <UButton
-          icon="i-tabler-folder"
-          color="neutral"
-          variant="outline"
-          :disabled="props.disabled || picking"
-          @click="select('directory')"
-          >{{ t('campaign.importFolder') }}</UButton
-        >
+          <template #archive>
+            <button
+              type="button"
+              :disabled="props.disabled || picking"
+              class="cursor-pointer text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed"
+              @click.stop="select('archive')"
+            >
+              {{ t('campaign.archive') }}
+            </button>
+          </template>
+          <template #folder>
+            <button
+              type="button"
+              :disabled="props.disabled || picking"
+              class="cursor-pointer text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed"
+              @click.stop="select('directory')"
+            >
+              {{ t('campaign.folder') }}
+            </button>
+          </template>
+        </I18nT>
+        <span class="block text-xs text-muted">ZIP · 7z · RAR · {{ t('campaign.folder') }}</span>
       </div>
-    </template>
-  </UModal>
+    </div>
+  </div>
 </template>

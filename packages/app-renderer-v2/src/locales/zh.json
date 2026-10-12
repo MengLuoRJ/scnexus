@@ -161,5 +161,8 @@
   "customize.refreshComplete": "自制作品列表已刷新",
   "customize.scanComplete": "自制作品扫描完成",
   "customize.descriptorPresent": "来源中存在 package.json，不能启用自动识别",
-  "ui.warning": "操作警告"
+  "ui.warning": "操作警告",
+  "ui.modifyDirectory": "修改目录",
+  "ui.openDirectory": "打开目录",
+  "ui.logDirectory": "日志目录"
 }

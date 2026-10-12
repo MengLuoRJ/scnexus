@@ -161,5 +161,8 @@
   "customize.refreshComplete": "Custom content list refreshed",
   "customize.scanComplete": "Custom content scan completed",
   "customize.descriptorPresent": "A package.json is present; automatic recognition is unavailable",
-  "ui.warning": "Operation warning"
+  "ui.warning": "Operation warning",
+  "ui.modifyDirectory": "Change directory",
+  "ui.openDirectory": "Open directory",
+  "ui.logDirectory": "Log directory"
 }

@@ -1,7 +1,10 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from '@nuxt/ui/composables/useToast'
+import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import * as desktopIpc from '../ipcs'
+import SettingsDirectoryField from './components/SettingsDirectoryField.vue'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import type {
   SettingSnapshot,
@@ -11,16 +14,27 @@ import type {
 import type { IpcResult, AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 defineOptions({ name: 'SettingsView' })
 const { t } = useI18n()
+const toast = useToast()
 const settings = ref<SettingSnapshot | null>(null)
 const game = ref<GameSnapshot | null>(null)
-const downloadDirectory = ref('')
+const logDirectory = ref('')
 const version = ref('—')
 const updater = ref<desktopIpc.UpdaterStatus['state']>('unavailable')
 const progress = ref(0)
 const busy = ref(false)
 const error = ref<AppErrorDto | null>(null)
-const saved = ref(false)
 const available = Boolean(window.scnexus)
+watch(error, (value) => {
+  if (value)
+    toast.add({
+      color: 'error',
+      title: `${t('ui.error')} · ${value.code}`,
+      description: `${value.description}${value.message ? ` · ${value.message}` : ''} · ${value.errorId}`,
+    })
+})
+function notifySaved() {
+  toast.add({ color: 'success', title: t('ui.saved') })
+}
 const languages = computed(() => [
   { label: t('ui.system'), value: 'system' },
   { label: '简体中文', value: 'zh' },
@@ -38,19 +52,26 @@ function accept<T>(result: IpcResult<T>): T | undefined {
     error.value = result.error
     return
   }
+  for (const warning of result.warnings ?? [])
+    toast.add({
+      id: warning.errorId,
+      color: 'warning',
+      title: `${t('ui.warning')} · ${warning.code}`,
+      description: `${warning.description}${warning.message ? ` · ${warning.message}` : ''} · ${warning.errorId}`,
+    })
   return result.data
 }
 function sync(value: SettingSnapshot) {
   settings.value = value
-  downloadDirectory.value = value.downloadDirectory
 }
 async function run(action: () => Promise<void>) {
   if (busy.value) return
   busy.value = true
   error.value = null
-  saved.value = false
   try {
     await action()
+  } catch (value) {
+    error.value = toErrorDto(normalizeError(value))
   } finally {
     busy.value = false
   }
@@ -59,8 +80,8 @@ async function save(patch: Partial<SettingPreferences>) {
   await run(async () => {
     const result = await desktopIpc.apiSettingUpdate(patch)
     if (result.ok) {
-      sync(result.data)
-      saved.value = true
+      sync(accept(result)!)
+      notifySaved()
     } else {
       error.value = result.error
       const snapshot = await desktopIpc.apiSettingGetSnapshot()
@@ -79,15 +100,17 @@ async function choose(kind: 'game' | 'download') {
     if (!picked || picked.canceled || !picked.filePaths[0]) return
     if (kind === 'game') {
       const result = await desktopIpc.apiGameSettingConfigure(picked.filePaths[0])
-      if (result.ok) game.value = result.data
-      else error.value = result.error
+      if (result.ok) {
+        game.value = accept(result)!
+        notifySaved()
+      } else error.value = result.error
     } else {
       const result = await desktopIpc.apiSettingUpdate({
         downloadDirectory: picked.filePaths[0],
       })
       if (result.ok) {
-        sync(result.data)
-        saved.value = true
+        sync(accept(result)!)
+        notifySaved()
       } else error.value = result.error
     }
   })
@@ -95,8 +118,10 @@ async function choose(kind: 'game' | 'download') {
 async function detect() {
   await run(async () => {
     const result = await desktopIpc.apiGameSettingInitialize()
-    if (result.ok) game.value = result.data
-    else {
+    if (result.ok) {
+      game.value = accept(result)!
+      notifySaved()
+    } else {
       error.value = result.error
       const snapshot = await desktopIpc.apiGameSettingGet()
       if (snapshot.ok) game.value = snapshot.data
@@ -114,6 +139,15 @@ async function update(action: 'check' | 'download' | 'install') {
     )
     const status = await desktopIpc.apiUpdaterGetStatus()
     if (status.ok) updater.value = status.data.state
+  })
+}
+function openDirectory(path: string) {
+  if (!available || !path) return
+  return run(async () => {
+    const result = await desktopIpc.apiShellOpenPath(path)
+    const message = accept(result)
+    if (result.ok && message)
+      error.value = toErrorDto(new AppError(ERRORS.SHELL_OPEN_FAILED, { message }))
   })
 }
 function openLink(url: string) {
@@ -151,14 +185,17 @@ onMounted(async () => {
       desktopIpc.apiGameSettingGet(),
       desktopIpc.apiAppGetVersion(),
       desktopIpc.apiUpdaterGetStatus(),
+      desktopIpc.apiAppGetPath('logs'),
     ])
-    const [settingResult, gameResult, versionResult, statusResult] = results
+    const [settingResult, gameResult, versionResult, statusResult, logResult] = results
     if (settingResult.ok) sync(settingResult.data)
     else error.value = settingResult.error
     if (gameResult.ok) game.value = gameResult.data
     else error.value = gameResult.error
     if (versionResult.ok) version.value = versionResult.data
     if (statusResult.ok) updater.value = statusResult.data.state
+    const logs = accept(logResult)
+    if (logs) logDirectory.value = logs
   })
 })
 </script>
@@ -170,14 +207,6 @@ onMounted(async () => {
       icon="i-tabler-device-desktop"
       :title="t('ui.desktopOnly')"
     />
-    <UAlert
-      v-if="error"
-      color="error"
-      icon="i-tabler-alert-circle"
-      :title="`${t('ui.error')} · ${error.code}`"
-      :description="`${error.message || error.description} · ${error.errorId}`"
-    />
-    <UAlert v-if="saved" color="success" :title="t('ui.saved')" />
     <UTabs default-value="basic" :items="tabs" size="sm" class="w-full">
       <template #basic>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -200,31 +229,21 @@ onMounted(async () => {
                   "
                 />
               </UFormField>
-              <UFormField :ui="{ container: 'mt-1' }" :label="t('ui.downloadDir')">
-                <div class="flex flex-wrap gap-2">
-                  <UInput
-                    v-model="downloadDirectory"
-                    class="min-w-0 basis-full sm:flex-1"
-                    :disabled="!settings || busy"
-                  />
-                  <UButton
-                    color="neutral"
-                    variant="outline"
-                    :disabled="!available || busy"
-                    @click="choose('download')"
-                  >
-                    {{ t('ui.choose') }}
-                  </UButton>
-                  <UButton
-                    :disabled="
-                      !settings || busy || downloadDirectory === settings.downloadDirectory
-                    "
-                    @click="save({ downloadDirectory })"
-                  >
-                    {{ t('ui.save') }}
-                  </UButton>
-                </div>
-              </UFormField>
+              <SettingsDirectoryField
+                :label="t('ui.downloadDir')"
+                :path="settings?.downloadDirectory ?? ''"
+                :disabled="!available || busy"
+                @open="openDirectory"
+              >
+                <UButton
+                  icon="i-tabler-edit"
+                  color="neutral"
+                  variant="outline"
+                  :disabled="!available || busy"
+                  @click="choose('download')"
+                  >{{ t('ui.modifyDirectory') }}</UButton
+                >
+              </SettingsDirectoryField>
             </div>
           </UCard>
           <UCard :ui="{ header: 'p-2 sm:p-2', body: 'p-2 sm:p-2' }">
@@ -295,9 +314,12 @@ onMounted(async () => {
               </div>
             </template>
             <div class="space-y-2">
-              <UFormField :ui="{ container: 'mt-1' }" :label="t('ui.gameDir')">
-                <UInput :model-value="game?.gameRoot ?? ''" readonly class="w-full" />
-              </UFormField>
+              <SettingsDirectoryField
+                :label="t('ui.gameDir')"
+                :path="game?.gameRoot ?? ''"
+                :disabled="!available || busy"
+                @open="openDirectory"
+              />
               <div class="flex gap-2">
                 <UButton :disabled="!available || busy" @click="choose('game')">
                   {{ t('ui.choose') }}
@@ -311,16 +333,18 @@ onMounted(async () => {
                   {{ t('ui.detect') }}
                 </UButton>
               </div>
-              <UFormField :ui="{ container: 'mt-1' }" :label="t('ui.management')">
-                <UInput
-                  :model-value="game?.paths?.customizeDataRoot ?? ''"
-                  readonly
-                  class="w-full"
-                />
-              </UFormField>
-              <UFormField :ui="{ container: 'mt-1' }" :label="t('ui.ccm')">
-                <UInput :model-value="game?.paths?.ccmRoot ?? ''" readonly class="w-full" />
-              </UFormField>
+              <SettingsDirectoryField
+                :label="t('ui.management')"
+                :path="game?.paths?.customizeDataRoot ?? ''"
+                :disabled="!available || busy"
+                @open="openDirectory"
+              />
+              <SettingsDirectoryField
+                :label="t('ui.ccm')"
+                :path="game?.paths?.ccmRoot ?? ''"
+                :disabled="!available || busy"
+                @open="openDirectory"
+              />
             </div>
           </UCard>
         </div>
@@ -332,6 +356,12 @@ onMounted(async () => {
               <h2 class="font-semibold">{{ t('ui.logging') }}</h2>
             </template>
             <div class="space-y-2">
+              <SettingsDirectoryField
+                :label="t('ui.logDirectory')"
+                :path="logDirectory"
+                :disabled="!available || busy"
+                @open="openDirectory"
+              />
               <UFormField :ui="{ container: 'mt-1' }" :label="t('ui.logLevel')">
                 <USelect
                   :items="levels"

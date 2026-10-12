@@ -44,7 +44,7 @@
     "jiti": "^2.7.0",
     "jsdom": "^30.0.1",
     "npm-run-all2": "^9.0.3",
-    "rollup-plugin-visualizer": "^5.12.0",
+    "rollup-plugin-visualizer": "^7.1.1",
     "typescript": "~6.0.0",
     "unplugin-auto-import": "^0.18.6",
     "unplugin-vue-components": "^0.27.5",

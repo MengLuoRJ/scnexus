@@ -41,7 +41,7 @@
     "build:prepare": "pnpm run script:electron:targets && pnpm run build:standard",
     "script:electron:targets": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.js",
     "typecheck:shared": "tsc --noEmit -p packages/app-shared/tsconfig.json",
-    "test:build": "node --test scripts/__tests__/build-workflow.test.mjs"
+    "test:build": "node --test scripts/__tests__/build-workflow.test.mjs scripts/__tests__/sevenzip-platform.test.mjs"
   },
   "devDependencies": {
     "@scnexus/app-main": "workspace:*",

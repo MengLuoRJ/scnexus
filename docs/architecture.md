@@ -330,3 +330,12 @@ app-main 的 package.json 是唯一应用清单，main 字段仍为打包后的 
 
 
 最终 root 编排验收：`pnpm run build:app --config.directories.output=../../release/build-flow-final --config.win.signAndEditExecutable=false` 通过。完整 ASAR main 入口的隔离启动额外验证了模块初始化；发现 hoisted 布局下 electron-builder 错误收集旧 renderer 的 @sentry/browser 版本，包配置现显式保留 @sentry/electron 实际解析到的嵌套 browser SDK（不升级版本）。修正后以真实 Electron 加载 ASAR main、模拟打包标志/资源根并使用临时 userData，初始化无错误、页面与桥接成功，退出码 0。该冒烟不是安装器安装验收；签名、图标写入及真实自动更新仍未执行。构建产生的 standard 已跟踪产物仅有格式/source-map 差异，本轮不保留无关生成物改动。
+
+
+### 7z 目标平台过滤（2026-10-12）
+
+7z-bin 保持原包及 path7z 接口，开发环境依然保留全部平台二进制；仅 electron-builder 的平台 files 负向过滤规则裁剪应用副本。win/linux/mac 分别匹配 bin/win、bin/linux、bin/mac，Windows/Linux 用 electron-builder 的 ${arch} 宏选择目标架构，不使用构建机 process.platform/process.arch。对应平台的 License.txt、Windows 的 7z.exe/7z.dll 与现有 dist/package.json 保留，其他平台或 CPU 目录不收集到 ASAR，也不复制到 app.asar.unpacked。asarUnpack 与运行时路径替换保持不变。不删除源依赖、pnpm 缓存或在打包后留下失效 ASAR 文件引用。
+
+beforePack 先校验目标可执行文件、许可证和 Windows DLL，缺文件或不支持的平台/架构立即停止打包。当前支持 Windows/Linux x64、ia32、arm64；macOS x64、arm64、universal 共用包中经 Mach-O 头验证的 x64/arm64 universal 7zz。Linux ARM32 的包目录 arm 与 electron-builder armv7l 不同，本轮不默认兼容该别名，目标 armv7l 会明确拒绝，而非错误携带本机二进制。
+
+验证：`pnpm run test:build` 14 项通过（含 Windows/Linux/macOS 九种目标、实际 builder FileMatcher 规则、目标资源缺失及不支持目标）；`pnpm --filter @scnexus/app-main build:app --config.directories.output=../../release/sevenzip-filter-check --config.win.signAndEditExecutable=false` Windows x64 未封装打包通过。检查 ASAR 与 unpacked 都只存在 bin/win/x64 的 7z.exe/7z.dll 和 bin/win/License.txt，源依赖仍有 win/linux/mac。执行产物 7z.exe 创建 ZIP、列举与解压，并比对内容通过。定向 ESLint/oxlint 与 git diff --check 通过。Linux/macOS 的选择规则有测试，未在本机实际构建/执行这些平台的产物；未上传或发布安装器。临时打包与验证目录结束后清理。

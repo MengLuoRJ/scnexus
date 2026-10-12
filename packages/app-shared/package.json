@@ -31,6 +31,7 @@
     "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-shared"
   },
   "dependencies": {
-    "@scnexus/standard": "workspace:*"
+    "@scnexus/standard": "workspace:*",
+    "scnexus-standard": "^0.0.13"
   }
 }

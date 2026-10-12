@@ -10,7 +10,10 @@ import path from 'path'
 const electronRelease = process.versions
 
 const node = electronRelease.node.split('.')[0]
-const chrome = electronRelease.v8.split('.').splice(0, 2).join('')
+if (!electronRelease.electron || !electronRelease.chrome) {
+  throw new Error('Run this script with Electron and ELECTRON_RUN_AS_NODE=1')
+}
+const chrome = electronRelease.chrome.split('.')[0]
 
 const browserslistrcPath = path.resolve(process.cwd(), '.browserslistrc')
 

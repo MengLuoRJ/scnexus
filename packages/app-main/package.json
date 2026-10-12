@@ -16,19 +16,20 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build:app": "cross-env MODE=production && electron-builder build --config electron-builder.json --dir --config.asar=false",
-    "build:app:release": "cross-env MODE=production && electron-builder build --config electron-builder.json",
+    "build:app": "node scripts/verify-build.mjs && electron-builder build --config electron-builder.mjs --dir --publish never",
+    "build:app:release": "node scripts/verify-build.mjs && electron-builder build --config electron-builder.mjs --publish never",
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-main && pnpm -w exec eslint packages/app-main",
     "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-main",
     "lint:eslint": "pnpm -w exec eslint packages/app-main",
     "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-main --fix && pnpm -w exec eslint packages/app-main --fix",
     "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/app-main",
-    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-main"
+    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/app-main",
+    "build": "vite build"
   },
   "dependencies": {
     "7z-bin": "0.0.3",
     "@scnexus/standard": "workspace:*",
-    "@sentry/electron": "^8.0.0",
+    "@sentry/electron": "^8.1.0",
     "axios": "^1.20.0",
     "electron-log": "^5.4.4",
     "electron-store": "^11.0.2",

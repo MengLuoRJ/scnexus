@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-renderer-v2",
-  "version": "0.0.0",
+  "version": "0.0.21",
   "private": true,
   "type": "module",
   "scripts": {
@@ -28,7 +28,7 @@
     "pinia": "^4.0.3",
     "tailwindcss": "^4.3.3",
     "uuid": "^14.0.2",
-    "vue": "^3.5.42",
+    "vue": "^3.5.43",
     "vue-i18n": "10.0.5",
     "vue-router": "^5.3.1"
   },

@@ -6,7 +6,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
-const mainJsonFile = await readFile('./package.json', { encoding: 'utf8' })
+const mainJsonFile = await readFile(resolve(__dirname, '../package.json'), { encoding: 'utf8' })
 const { version } = JSON.parse(mainJsonFile)
 
 console.log('# Syncing App Packages Version to', version)
@@ -21,8 +21,8 @@ const appPackages = [
     path: 'packages/app-preload',
   },
   {
-    name: '@scnexus/app-renderer',
-    path: 'packages/app-renderer',
+    name: '@scnexus/app-renderer-v2',
+    path: 'packages/app-renderer-v2',
   },
   {
     name: '@scnexus/app-shared',
@@ -40,6 +40,6 @@ for (const { name, path } of appPackages) {
   if (packageJson.name === name) {
     console.log('\t-', name, packageJson.version, '->', version)
     packageJson.version = version
-    await writeFile(join(packagePath, 'package.json'), JSON.stringify(packageJson, null, 2))
+    await writeFile(join(packagePath, 'package.json'), JSON.stringify(packageJson, null, 2) + '\n')
   }
 }

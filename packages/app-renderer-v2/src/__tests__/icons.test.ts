@@ -8,7 +8,7 @@ import tabler from '@iconify-json/tabler/icons.json'
 test('every Nuxt UI default icon is a valid locally installed Tabler icon', () => {
   const config = readFileSync(resolve(import.meta.dirname, '../../vite.config.ts'), 'utf8')
   const mapping = config.match(/export const uiIcons = \{([\s\S]*?)\} as const/)![1]!
-  const names = [...mapping.matchAll(/"(i-tabler-[^"]+)"/g)].map((match) => match[1]!)
+  const names = [...mapping.matchAll(/['"](i-tabler-[^'"]+)['"]/g)].map((match) => match[1]!)
   expect(names.length).toBeGreaterThan(0)
   for (const name of names) {
     expect(name.startsWith('i-tabler-')).toBe(true)

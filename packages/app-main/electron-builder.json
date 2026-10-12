@@ -11,45 +11,50 @@
   "files": [
     "./package.json",
     {
-      "from": "./../../packages/app-main/dist/",
+      "from": "dist/",
       "to": "packages/app-main/dist/",
-      "filter": ["**/*"]
+      "filter": [
+        "**/*"
+      ]
     },
     {
-      "from": "./../../packages/app-preload/dist/",
+      "from": "../app-preload/dist/",
       "to": "packages/app-preload/dist/",
-      "filter": ["**/*"]
+      "filter": [
+        "**/*"
+      ]
     },
     {
-      "from": "./../../packages/app-renderer/dist/",
-      "to": "packages/app-renderer/dist/",
-      "filter": ["**/*"]
-    }
-  ],
-  "extraResources": [
-    {
-      "from": "./node_modules/regedit/vbs",
-      "to": "regedit/vbs",
-      "filter": ["**/*"]
+      "from": "../app-renderer-v2/dist/",
+      "to": "packages/app-renderer-v2/dist/",
+      "filter": [
+        "**/*"
+      ]
     }
   ],
   "protocols": [
     {
       "name": "SCNexus Protocol",
-      "schemes": ["scnexus"]
+      "schemes": [
+        "scnexus"
+      ]
     }
   ],
   "mac": {
     "icon": "buildResources/application_icon.png",
     "artifactName": "${productName}_${version}.${ext}",
-    "target": ["dmg"]
+    "target": [
+      "dmg"
+    ]
   },
   "win": {
     "icon": "buildResources/application_icon.ico",
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       }
     ],
     "artifactName": "${productName}_${version}.${ext}"
@@ -59,7 +64,10 @@
     "perMachine": true,
     "allowToChangeInstallationDirectory": true,
     "deleteAppDataOnUninstall": true,
-    "installerLanguages": ["zh_CN", "en_US"]
+    "installerLanguages": [
+      "zh_CN",
+      "en_US"
+    ]
   },
   "appx": {
     "applicationId": "SCNexus",
@@ -68,7 +76,10 @@
     "identityName": "3496AiurCovenant.SCNexus",
     "publisher": "CN=MengLuoRJ, O=AiurCovenant, C=CN",
     "publisherDisplayName": "AiurCovenant",
-    "languages": ["zh-CN", "en-US"]
+    "languages": [
+      "zh-CN",
+      "en-US"
+    ]
   },
   "publish": [
     {
@@ -76,5 +87,8 @@
       "url": "https://release.scnexus.net/release/",
       "useMultipleRangeRequest": false
     }
+  ],
+  "asarUnpack": [
+    "node_modules/7z-bin/**"
   ]
 }

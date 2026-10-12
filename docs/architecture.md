@@ -198,6 +198,9 @@ src/
 
 - pnpm 是目标统一包管理器；工作区使用根目录 pnpm-lock.yaml，不引入新的 npm/yarn 锁文件。
 - 依赖在使用它的包中声明，内部依赖使用 `workspace:*`；hoisted 布局不能代替依赖声明。
+- 根目录保留开发脚本及 postinstall 直接使用的 Electron；Tabler 图标依赖由 renderer 包声明，electron-builder 由 app-main 声明。旧 `scnexus-standard` 类型依赖由 main（已有 devDependency）、旧 renderer（devDependency）和 shared（公开类型依赖）各自声明，不由根目录兜底。应用打包目录为 app-main；根目录不保留另一套 electron-builder 配置。
+- `pnpm build` 先刷新 Electron Node/Chromium target、构建 standard，再进行 shared/main/preload/v2 类型检查，最后构建 main/preload/renderer-v2。`pnpm build:app` 和 `pnpm build:app:release` 先同步版本，再生产构建，由 app-main 执行 electron-builder；前者生成未封装目录，后者生成安装包，均默认 `--publish never`。包级打包检查三个产物及版本存在且同步，不代替根目录完整构建。
+- `pnpm test` 执行 standard 前置构建、构建配置契约测试、main/preload/v2 单元测试；删除把根级 Vitest 发现误称为 E2E 的 `test:e2e`。暂没有独立桌面 E2E 自动化。
 - 通过 pnpm 工作区过滤执行包命令。根目录命令负责应用编排，包级命令负责自身职责。
 - Vite 构建不代替 TypeScript 类型检查；两者都应作为验证步骤。
 - 测试逐步覆盖纯逻辑、服务临时目录测试、IPC 契约、Vue 组件和 Electron 启动冒烟。
@@ -208,7 +211,7 @@ src/
 
 ## 9. 当前差距与实施顺序
 
-当前仓库已存在 v2 包，但根目录 renderer 构建及主窗口仍指向旧 renderer。根目录 Node/Vite/electron-builder 声明也尚未对齐目标。v2 虽声明了 Nuxt UI 等依赖，但仅有依赖声明不等于插件、样式和业务已接入。原主进程已有功能应保留至相应迁移完成。
+开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 保留参考且不再进入应用产物。Node 26、Vite 8、Electron 44 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
 
 后续分阶段实施，每阶段独立验收：
 
@@ -315,3 +318,15 @@ renderer-v2 图标统一使用 Tabler。Vite 配置中的 ui.icons 覆盖 Nuxt U
 删除 v1/v2 独立配置和重复工具依赖。根 pnpm-lock.yaml 不再被 gitignore 忽略，应随 manifest 变更一起维护（本轮不自动暂存/提交）。工具安装禁用生命周期脚本，未执行业务代码自动修复或全量格式化。
 
 本轮验证：根配置与根 manifest 的 Oxfmt 检查通过；根 ESLint/Oxlint 配置可加载，包级 preload lint 委托生效；main/preload/v2 类型检查通过，git diff --check 通过。全仓库只读检查发现存量：Oxlint 137 项错误，ESLint 106 项错误，格式 320 个文件不符合规范，均退出 1；这是尚待第二阶段处理的真实问题，不声明全仓库 lint 通过。典型问题包括未使用导入、any 类型、重复键、测试 mock 类型、历史 Vue 代码规范。没有通过放宽所有规则使检查假通过。
+
+
+### 构建与打包入口对齐（2026-10-12）
+
+app-main 的 package.json 是唯一应用清单，main 字段仍为打包后的 packages/app-main/dist/index.js。electron-builder.mjs 基于包内 JSON 配置，并从实际安装的 Electron 包读取精确版本、通过 require.resolve 定位 regedit/vbs，兼容 hoisted 安装；生产 regedit 路径使用 process.resourcesPath。7z-bin 显式解包至 app.asar.unpacked。打包只包含 main/preload/v2 的 dist，旧 renderer 不进入产物。版本同步包含 v2，不再修改旧 renderer。Node/Chromium targets 直接读取 Electron process.versions.node/chrome，不再由 V8 推算。
+
+验证：`pnpm build` 通过；`pnpm test` 全链路通过（构建契约 3 项、main 174 项、preload 7 项、v2 93 项）。原 v2 图标测试仅匹配双引号的错误已修正为同时接受单/双引号，使根测试入口能真实验证现有页面。未升级任何依赖版本。
+
+未封装验收命令：`pnpm --filter @scnexus/app-main build:app --config.directories.output=../../release/build-flow-validation --config.win.signAndEditExecutable=false` 通过，使用 ASAR、未发布。真实 Electron 从该 ASAR 加载 v2 与 preload，window.scnexus 存在、欢迎页加载、打包的 7z.exe 执行成功；隔离 userData，不操作用户现有配置。此验收不包含 NSIS 安装器/图标签名、自动更新、macOS 或 Linux 打包。electron-builder 对其他平台 optional binding 给出提示，不影响本次 Windows x64 产物；跨平台需分别构建验证。
+
+
+最终 root 编排验收：`pnpm run build:app --config.directories.output=../../release/build-flow-final --config.win.signAndEditExecutable=false` 通过。完整 ASAR main 入口的隔离启动额外验证了模块初始化；发现 hoisted 布局下 electron-builder 错误收集旧 renderer 的 @sentry/browser 版本，包配置现显式保留 @sentry/electron 实际解析到的嵌套 browser SDK（不升级版本）。修正后以真实 Electron 加载 ASAR main、模拟打包标志/资源根并使用临时 userData，初始化无错误、页面与桥接成功，退出码 0。该冒烟不是安装器安装验收；签名、图标写入及真实自动更新仍未执行。构建产生的 standard 已跟踪产物仅有格式/source-map 差异，本轮不保留无关生成物改动。

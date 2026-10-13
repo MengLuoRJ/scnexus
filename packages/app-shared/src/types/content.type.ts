@@ -4,6 +4,7 @@ export type ContentType = 'campaign' | 'customize'
 export type InstallMode = 'scnexus' | 'ccm' | 'auto'
 export type ResourceType = 'map' | 'mod'
 export type SourceInput = { kind: 'archive' | 'directory'; path: string }
+export type SourceAnalysisChoice = 'package-json' | 'metadata-txt'
 export type FileInfo = {
   name: string
   path: string

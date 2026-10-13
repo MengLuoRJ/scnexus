@@ -76,6 +76,21 @@ test.each(['campaign', 'customize'] as const)(
   },
 )
 
+test('unified analysis forwards descriptor choice and preserves conflict failure DTO', async () => {
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+  const input = { kind: 'directory' as const, path: 'D:\\Source' }
+  const conflict = { ok: false, error: toErrorDto(new AppError(ERRORS.CONTENT_TYPE_CONFLICT)) }
+  mocks.invoke.mockResolvedValueOnce(conflict)
+  expect(await api.content.analyze(input)).toEqual(conflict)
+  expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:analyze', input, undefined)
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: { contentType: 'campaign' } })
+  expect(await api.content.analyze(input, 'metadata-txt')).toEqual({
+    ok: true,
+    data: { contentType: 'campaign' },
+  })
+  expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:analyze', input, 'metadata-txt')
+})
+
 test('transport rejection still produces P001 when forwarding a log also fails', async () => {
   const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
   mocks.invoke.mockRejectedValueOnce(new Error('IPC disconnected'))

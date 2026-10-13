@@ -330,6 +330,11 @@ export const ERRORS = {
     name: 'ARCHIVE-WARNING',
     description: '归档处理完成但有警告，请检查处理结果',
   },
+  CONTENT_TYPE_CONFLICT: {
+    code: 'M064',
+    name: 'CONTENT-TYPE-CONFLICT',
+    description: 'package.json 与 metadata.txt 的内容类型冲突，请选择描述文件后重新分析',
+  },
 } as const
 
 export type ErrorDefinition = (typeof ERRORS)[keyof typeof ERRORS]

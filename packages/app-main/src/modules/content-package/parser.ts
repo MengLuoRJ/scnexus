@@ -8,7 +8,7 @@ import type {
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { CAMPAIGNS, packagePath, logicalPath, officialMap, keyPath } from './paths'
 import { makeTree, type ContentSource } from './source'
-export function parsePackage(text: string, type: ContentType): Package {
+export function parsePackage(text: string, type?: ContentType): Package {
   let value: Package
   try {
     value = JSON.parse(text)
@@ -16,11 +16,11 @@ export function parsePackage(text: string, type: ContentType): Package {
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {}, { cause })
   }
   if (!isPackage(value)) throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
-  if (value.type !== type) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
+  if (type !== undefined && value.type !== type) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
   for (const key of ['name', 'description', 'version', 'author'] as const)
     if (typeof value[key] !== 'string' || (key === 'name' && !value[key].trim()))
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
-  if (type === 'campaign' && !CAMPAIGNS.includes(value.campaign!))
+  if (value.type === 'campaign' && !CAMPAIGNS.includes(value.campaign!))
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
   for (const category of ['maps', 'mods'] as const) {
     if (value[category] !== undefined && !Array.isArray(value[category]))

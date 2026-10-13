@@ -1,13 +1,15 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ContentImportDialog from '../../components/content/ContentImportDialog.vue'
+import { useContentImportStore } from '../../stores/content-import'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type {
   ContentRecord,
   PackageCampaignType,
-  SourceInput,
+  AnalysisResult,
 } from '@scnexus/app-shared/types/content.type'
 import {
   apiCampaignLaunch,
@@ -25,6 +27,8 @@ import CampaignOperationModal from './components/CampaignOperationModal.vue'
 defineOptions({ name: 'CampaignView' })
 const { t } = useI18n()
 const toast = useToast()
+const importStore = useContentImportStore()
+const refContentImport = useTemplateRef('refContentImport')
 const service = useCampaign()
 const { diagnostics, records, active, busy, error, warnings } = service
 const available = Boolean(window.scnexus)
@@ -34,7 +38,14 @@ const installOpen = ref(false)
 const viewMode = ref('overview')
 const category = ref<PackageCampaignType>('WOL')
 const operation = ref<CampaignOperationRequest | null>(null)
-const locked = computed(() => busy.value || installOpen.value || Boolean(operation.value))
+const locked = computed(
+  () =>
+    busy.value ||
+    importStore.busy ||
+    Boolean(importStore.conflict) ||
+    installOpen.value ||
+    Boolean(operation.value),
+)
 const current = computed(
   () =>
     records.value.find((record) => record.localId === active.value[category.value]?.localId) ??
@@ -69,10 +80,8 @@ function operate(record: ContentRecord, action: CampaignOperationRequest['action
   chooserOpen.value = false
   operation.value = { record, action }
 }
-async function analyze(source: SourceInput) {
-  if (locked.value) return
-  installOpen.value = true
-  await service.analyze(source)
+function analyzed(result: AnalysisResult) {
+  if (service.acceptAnalysis(result)) installOpen.value = true
 }
 async function external(run: () => Promise<{ ok: boolean; error?: AppErrorDto }>) {
   try {
@@ -190,7 +199,11 @@ onMounted(() => {
         >{{ t('campaign.start') }}</UButton
       >
     </div>
-    <CampaignSourcePicker :disabled="locked || !available" @select="analyze" @error="notifyError" />
+    <CampaignSourcePicker
+      :disabled="locked || !available"
+      @select="(source) => refContentImport?.analyze(source)"
+      @error="notifyError"
+    />
     <CampaignLibraryModal
       v-model:open="chooserOpen"
       :records="records"
@@ -200,6 +213,7 @@ onMounted(() => {
       @operate="operate"
       @folder="showFolder"
     />
+    <ContentImportDialog ref="refContentImport" content-type="campaign" @analyzed="analyzed" />
     <CampaignInstallModal
       v-model:open="installOpen"
       :service="service"

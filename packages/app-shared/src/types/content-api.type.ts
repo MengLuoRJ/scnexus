@@ -2,6 +2,7 @@ import type { IpcResult } from '../errors/app.error.js'
 import type {
   AnalysisResult,
   SourceInput,
+  SourceAnalysisChoice,
   ContentRecord,
   ContentStore,
   CampaignActiveStoreData,
@@ -15,6 +16,12 @@ import type {
   SciiGameSetting,
   GamePaths,
 } from './content.type.js'
+export interface ContentAnalysisApi {
+  analyze(
+    input: SourceInput,
+    descriptorChoice?: SourceAnalysisChoice,
+  ): Promise<IpcResult<AnalysisResult>>
+}
 export interface ContentApi {
   cancel(previewId: string): Promise<IpcResult<void>>
   analyze(input: SourceInput): Promise<IpcResult<AnalysisResult>>

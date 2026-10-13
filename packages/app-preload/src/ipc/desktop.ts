@@ -16,6 +16,9 @@ function contentApi(
   }
 }
 const api: DesktopApi = {
+  content: {
+    analyze: (input, choice) => invoke('content-package:analyze', input, choice),
+  },
   customize: {
     ...contentApi('customize'),
     onInstallProgress: (listener) => subscribeTyped('customize:install-progress', listener),

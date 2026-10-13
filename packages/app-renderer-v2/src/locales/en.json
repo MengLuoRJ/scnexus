@@ -164,5 +164,10 @@
   "ui.warning": "Operation warning",
   "ui.modifyDirectory": "Change directory",
   "ui.openDirectory": "Open directory",
-  "ui.logDirectory": "Log directory"
+  "ui.logDirectory": "Log directory",
+  "content.typeConflict": "Content type conflict",
+  "content.typeConflictHint": "package.json and metadata.txt specify different content types. Choose a descriptor to analyze again. Nothing will be installed automatically or silently ignored.",
+  "content.classifying": "Reading descriptors and directory layout to identify content type…",
+  "content.usePackage": "Use package.json",
+  "content.useMetadata": "Use metadata.txt (campaign)"
 }

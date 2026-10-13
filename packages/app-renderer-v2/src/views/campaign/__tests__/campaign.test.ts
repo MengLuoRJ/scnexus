@@ -237,3 +237,15 @@ test('cleanup warning preserves committed installation and is exposed to the pag
   await service.refresh()
   expect(service.warnings.value).toEqual([])
 })
+
+test('adopts classified preview without repeating IPC analysis and rejects wrong domain', () => {
+  const service = setup()
+  expect(service.acceptAnalysis({ ...analysis, contentType: 'campaign' } as AnalysisResult)).toBe(
+    true,
+  )
+  expect(service.analysis.value?.analysisId).toBe('a')
+  expect(mocks.analyze).not.toHaveBeenCalled()
+  expect(service.acceptAnalysis({ ...analysis, contentType: 'customize' } as AnalysisResult)).toBe(
+    false,
+  )
+})

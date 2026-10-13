@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ContentImportDialog from '../../components/content/ContentImportDialog.vue'
+import { useContentImportStore } from '../../stores/content-import'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
-import type { ContentRecord, SourceInput } from '@scnexus/app-shared/types/content.type'
+import type { ContentRecord, AnalysisResult } from '@scnexus/app-shared/types/content.type'
 import { apiShellShowItemInFolder } from '../../ipcs'
 import { useCustomize } from './useCustomize'
 import { formatFileSize } from '../campaign/formatFileSize'
@@ -15,6 +17,8 @@ import CustomizeUninstallModal from './components/CustomizeUninstallModal.vue'
 defineOptions({ name: 'CustomizeView' })
 const { t } = useI18n()
 const toast = useToast()
+const importStore = useContentImportStore()
+const refContentImport = useTemplateRef('refContentImport')
 const service = useCustomize()
 const { records, busy, error, warnings, diagnostics } = service
 const available = Boolean(window.scnexus)
@@ -22,7 +26,14 @@ const headerReady = ref(false)
 const installOpen = ref(false)
 const uninstall = ref<ContentRecord | null>(null)
 const selected = ref<ContentRecord | null>(null)
-const locked = computed(() => busy.value || installOpen.value || Boolean(uninstall.value))
+const locked = computed(
+  () =>
+    busy.value ||
+    importStore.busy ||
+    Boolean(importStore.conflict) ||
+    installOpen.value ||
+    Boolean(uninstall.value),
+)
 function notifyError(value: AppErrorDto) {
   toast.add({
     color: 'error',
@@ -43,10 +54,8 @@ watch(warnings, (values) => {
       duration: 10000,
     })
 })
-async function analyze(source: SourceInput) {
-  if (locked.value) return
-  installOpen.value = true
-  await service.analyze(source)
+function analyzed(result: AnalysisResult) {
+  if (service.acceptAnalysis(result)) installOpen.value = true
 }
 async function refresh(scan = false) {
   await (scan ? service.scan() : service.refresh())
@@ -106,7 +115,11 @@ onMounted(() => {
       ></Teleport
     >
     <p class="text-sm text-muted">{{ t('customize.directInstall') }}</p>
-    <CampaignSourcePicker :disabled="locked || !available" @select="analyze" @error="notifyError" />
+    <CampaignSourcePicker
+      :disabled="locked || !available"
+      @select="(source) => refContentImport?.analyze(source)"
+      @error="notifyError"
+    />
     <UAlert v-if="!records.length" color="neutral" :title="t('customize.empty')" />
     <div class="grid gap-3 sm:grid-cols-2">
       <UCard
@@ -153,6 +166,7 @@ onMounted(() => {
         </div>
       </UCard>
     </div>
+    <ContentImportDialog ref="refContentImport" content-type="customize" @analyzed="analyzed" />
     <CampaignInstallModal v-model:open="installOpen" :service="service" content-type="customize" />
     <CustomizeUninstallModal
       :service="service"

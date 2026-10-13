@@ -224,7 +224,11 @@ src/
 
 ## 10. campaign/customize 后续业务设计
 
-campaign 战役包与 customize 自制作品保持独立。统一压缩包/文件夹分析，campaign 提供 SCNexus、CCM、自动识别三种模式，customize 提供 SCNexus、自动识别两种模式。campaign auto 要求所有层级均无 package.json 与 metadata.txt；customize auto 仅要求所有层级无 package.json（大小写不敏感，包含资源内部及同名目录）。customize metadata.txt 不是描述文件，不阻止 auto，不读取或保留为 CCM 原文。customize auto 接受唯一共同包装根下标准 Maps/Mods 层级的全部资源与 components，保留 Maps 任意子路径，不推断 campaign。
+campaign 战役包与 customize 自制作品保持独立。统一压缩包/文件夹分析，campaign 提供 SCNexus、CCM、自动识别三种模式，customize 提供 SCNexus、自动识别两种模式。campaign auto 要求所有层级均无 package.json 与 metadata.txt；customize auto 仅要求所有层级无 package.json（大小写不敏感，包含资源内部及同名目录）。旧 customize 领域 analyze 中 metadata.txt 不是描述文件，不阻止 auto，不读取或保留为 CCM 原文；新统一入口会先按外部 metadata.txt 分类或报告类型冲突。customize auto 接受唯一共同包装根下标准 Maps/Mods 层级的全部资源与 components，保留 Maps 任意子路径，不推断 campaign。
+
+统一导入入口 `window.scnexus.content.analyze(input, descriptorChoice?)`（`content-package:analyze`，renderer `apiContentAnalyze`）直接返回分类后的 `IpcResult<AnalysisResult>`。资源外部 metadata.txt 表示 campaign，package.json 按内部 type；二者冲突返回 `M064/CONTENT_TYPE_CONFLICT`，界面选择 `package-json` 或 `metadata-txt` 后重发同一来源重新分析，并先切换至对应 `/campaign` 或 `/customize` 再预览。choice 仅在冲突时合法，未选描述文件不参与类型或预览解析；旧领域 analyze 保留兼容。坏头部、同名描述目录、多最外层有效根返回业务错误，不静默忽略或自动兜底。无外部描述文件时，任何资源外部标准 Maps/Campaign 目录（大小写不敏感、包装根、目录/归档空目录均计入，WOL 父目录含四类子树）分类 campaign，否则 customize；无有效内容或歧义仍按该类型诊断，不重新分类。components 内部描述文件不参与分类，但仍受上述严格 auto 门槛约束。一次分析复用同一源及哈希快照、缓存描述正文，不提前解压资源。
+
+renderer 的 `useContentImportStore`（Pinia）持有统一分析请求、描述文件冲突和跨路由待接收结果；`M064` 时等待明确选择，再携带 choice 调用统一 API。成功后根据 `AnalysisResult.contentType` 导航，目标页面通过 `service.acceptAnalysis(result)` 一次接收现有完整结果，路由切换不重复 analyze。重新分析的成功 warnings 继续传给反馈层；取消和过期结果通过既有领域 cancel 清理共享主进程分析上下文。2026-10-13 的 Pinia + router 回归及 1000×660 mock browser 验证了 campaign 页面冲突选择 package-json 后切换 `/customize`、正确预览并允许安装；完整 renderer 16 文件 102 项测试及 renderer/main/preload 包级构建通过，renderer 类型检查仍有既有 `src/main.ts:19` Nuxt UI/Vue Plugin 类型不匹配。详细命令和分类矩阵见设计文档本次验证记录。
 
 战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 已迁为 scii-game-setting，路径信息与内容业务已在 main/preload 实现；游戏版本检测仍未实现。customize 只提供 analyze/install/list/scan/prepareUninstall/uninstall（以及共享取消与进度订阅），直接安装到游戏目录，无激活或移动生命周期，不建立完整 payload/本地库副本或持久化原文件备份。保留冲突标记为 kept，不取得删除所有权；卸载跳过 kept，共享引用继续要求明确保留/删除选择。campaign 同一安装清单的 kept 也不取得删除所有权。
 

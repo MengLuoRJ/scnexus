@@ -71,6 +71,12 @@ export function useCustomize() {
     () => analysis.value?.conflicts.find((group) => group.mode === mode.value)?.files ?? [],
   )
   const existing = computed(() => analysis.value?.existingInstallations[mode.value] ?? [])
+  function acceptAnalysis(result: AnalysisResult) {
+    if (result.contentType !== 'customize') return false
+    analysis.value = result
+    mode.value = result.recommendedMode ?? (result.modes.scnexus ? 'scnexus' : 'auto')
+    return true
+  }
   function analyze(input: SourceInput) {
     return execute(async () => {
       await close()
@@ -142,6 +148,7 @@ export function useCustomize() {
     conflicts,
     existing,
     analyze,
+    acceptAnalysis,
     prepare,
     confirm,
     close: () => execute(close),

@@ -164,5 +164,10 @@
   "ui.warning": "操作警告",
   "ui.modifyDirectory": "修改目录",
   "ui.openDirectory": "打开目录",
-  "ui.logDirectory": "日志目录"
+  "ui.logDirectory": "日志目录",
+  "content.typeConflict": "内容类型冲突",
+  "content.typeConflictHint": "package.json 与 metadata.txt 的内容类型不一致。请选择使用哪个描述文件，然后重新分析；不会自动安装或忽略冲突。",
+  "content.classifying": "正在读取描述与目录结构，识别内容类型…",
+  "content.usePackage": "使用 package.json",
+  "content.useMetadata": "使用 metadata.txt（战役）"
 }

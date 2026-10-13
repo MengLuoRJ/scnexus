@@ -162,6 +162,28 @@ test('campaign progress listener receives correlated DTOs and disposes with its 
   expect(dispose).toHaveBeenCalledOnce()
 })
 
+test('unified content adapter snapshots input and preserves conflict/reanalysis responses', async () => {
+  const { reactive, isProxy } = await import('vue')
+  const { apiContentAnalyze } = await import('../../content')
+  const conflict = { ok: false, error: toErrorDto(new AppError(ERRORS.CONTENT_TYPE_CONFLICT)) }
+  const analyze = vi
+    .fn<(...args: unknown[]) => Promise<unknown>>()
+    .mockResolvedValueOnce(conflict)
+    .mockResolvedValueOnce({ ok: true, data: { contentType: 'campaign' } })
+  vi.stubGlobal('window', { scnexus: { content: { analyze } } })
+  const input = reactive({ kind: 'directory' as const, path: 'D:\\Source' })
+  expect(await apiContentAnalyze(input)).toEqual(conflict)
+  expect(isProxy(analyze.mock.calls[0]![0])).toBe(false)
+  expect(await apiContentAnalyze(input, 'metadata-txt')).toEqual({
+    ok: true,
+    data: { contentType: 'campaign' },
+  })
+  expect(analyze).toHaveBeenLastCalledWith(
+    { kind: 'directory', path: 'D:\\Source' },
+    'metadata-txt',
+  )
+})
+
 test('success warnings survive renderer adapter validation without turning into errors', async () => {
   const warning = toErrorDto(
     new AppError(ERRORS.CONTENT_CLEANUP_WARNING, { message: 'cleanup busy' }),

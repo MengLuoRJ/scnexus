@@ -18,6 +18,7 @@ import type {
   AnalysisResult,
   ExistingInstallation,
   SourceInput,
+  SourceAnalysisChoice,
   ContentType,
   InstallPreview,
   Conflict,
@@ -47,6 +48,7 @@ import {
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
 import { isContentDiagnostic } from './diagnostics'
 import { detectCampaign, detectCustomize } from './auto-detector'
+import { classifySource, type SourceClassification } from './classification'
 import {
   campaignRoots,
   CAMPAIGNS,
@@ -124,6 +126,7 @@ type Context = {
   gameRevision: number
   hashes: Map<string, string>
   expires: number
+  descriptorChoice?: SourceAnalysisChoice
 }
 type Activation = {
   record: ContentRecord
@@ -284,11 +287,43 @@ export class ContentService {
     }
     return result
   }
+  async analyzeContent(input: SourceInput, choice?: SourceAnalysisChoice): Promise<AnalysisResult> {
+    this.prune()
+    const paths = await this.paths()
+    const source = await openSource(input)
+    const read = source.read
+    const descriptors = new Map<string, Buffer>()
+    source.read = async (path) => {
+      if (!descriptors.has(path)) descriptors.set(path, await read(path))
+      return descriptors.get(path)!
+    }
+    const classification = await classifySource(source, choice)
+    const descriptorHashes = new Map([...descriptors].map(([path, data]) => [path, hash(data)]))
+    return this.analyzeSource(
+      classification.type,
+      input,
+      paths,
+      source,
+      classification,
+      choice,
+      descriptorHashes,
+    )
+  }
   async analyze(type: ContentType, input: SourceInput): Promise<AnalysisResult> {
     if (!['campaign', 'customize'].includes(type)) throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
     this.prune()
     const paths = await this.paths()
-    const source = await openSource(input)
+    return this.analyzeSource(type, input, paths, await openSource(input))
+  }
+  private async analyzeSource(
+    type: ContentType,
+    input: SourceInput,
+    paths: GamePaths,
+    source: ContentSource,
+    classification?: SourceClassification,
+    descriptorChoice?: SourceAnalysisChoice,
+    descriptorHashes = new Map<string, string>(),
+  ): Promise<AnalysisResult> {
     const result: AnalysisResult = {
       analysisId: randomUUID(),
       contentType: type,
@@ -308,7 +343,11 @@ export class ContentService {
     const discover = async (name: string, ccm: boolean) => {
       const found: InstallPreview[] = []
       for (const entry of source.entries
-        .filter((e) => e.path.split('/').at(-1)?.toLowerCase() === name)
+        .filter((e) =>
+          classification
+            ? e.path === classification.descriptors[ccm ? 'metadata-txt' : 'package-json']
+            : e.path.split('/').at(-1)?.toLowerCase() === name,
+        )
         .filter(
           (e) =>
             !e.path
@@ -375,7 +414,7 @@ export class ContentService {
         : undefined
     const mode = recommended === 'SCNexus' ? 'scnexus' : recommended === 'CCM' ? 'ccm' : null
     if (mode && result.modes[mode]) result.recommendedMode = mode
-    const hashes = new Map<string, string>()
+    const hashes = new Map<string, string>(input.kind === 'directory' ? descriptorHashes : [])
     for (const mode of ['scnexus', 'ccm', 'auto'] as const) {
       const preview = result.modes[mode]
       if (!preview) continue
@@ -397,19 +436,27 @@ export class ContentService {
           for (const file of preview.files)
             if (!hashes.has(file.source))
               hashes.set(file.source, await hashFile(await safePath(input.path, file.source)))
-        hashes.set(
-          preview.descriptorPath,
-          await hashFile(await safePath(input.path, preview.descriptorPath)),
-        )
+        if (!hashes.has(preview.descriptorPath))
+          hashes.set(
+            preview.descriptorPath,
+            await hashFile(await safePath(input.path, preview.descriptorPath)),
+          )
       }
     }
     for (const group of result.conflicts)
       for (const file of group.files)
         hashes.set('local:' + file.local.path, await hashFile(file.local.path))
     if (input.kind === 'archive') await verifyArchive(source)
+    else
+      for (const [path, digest] of descriptorHashes)
+        if ((await hashFile(await safePath(input.path, path))) !== digest)
+          throw new AppError(ERRORS.TASK_CONFLICT, {
+            message: 'Descriptor changed during analysis',
+          })
     this.analyses.set(result.analysisId, {
       source,
       result,
+      descriptorChoice,
       root: paths.gameRoot,
       gameRevision: paths._revision,
       hashes,
@@ -559,7 +606,10 @@ export class ContentService {
         context.source.input.kind === 'archive'
           ? context.source
           : await openSource(context.source.input)
-      if (JSON.stringify(source.entries) !== JSON.stringify(context.source.entries))
+      if (
+        JSON.stringify(source.entries) !== JSON.stringify(context.source.entries) ||
+        JSON.stringify(source.directories) !== JSON.stringify(context.source.directories)
+      )
         throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source layout changed' })
       for (const [path, digest] of context.hashes)
         if (
@@ -615,7 +665,9 @@ export class ContentService {
       const staging = await mkdtemp(join(paths.gameRoot, '.scnexus-stage-'))
       try {
         const originalCcmPath =
-          type === 'customize' || preview.origin === 'auto-detected'
+          type === 'customize' ||
+          preview.origin === 'auto-detected' ||
+          context.descriptorChoice === 'package-json'
             ? undefined
             : preview.origin !== 'package-json'
               ? preview.descriptorPath

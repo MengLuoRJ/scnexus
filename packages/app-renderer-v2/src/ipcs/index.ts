@@ -1,6 +1,7 @@
 export * from './app'
 export * from './window'
 export * from './campaign'
+export * from './content'
 export * from './customize'
 export * from './scii-game-setting'
 export * from './setting'

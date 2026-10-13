@@ -1,4 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import type { Plugin } from 'vue'
 import { mount } from '@vue/test-utils'
@@ -41,6 +42,7 @@ test.each(['campaign', 'customize'] as const)(
     const wrapper = mount(domain === 'campaign' ? CampaignView : CustomizeView, {
       global: {
         plugins: [
+          createPinia(),
           createI18n({
             legacy: false,
             flatJson: true,
@@ -54,6 +56,7 @@ test.each(['campaign', 'customize'] as const)(
           CampaignSourcePicker: true,
           CampaignLibraryModal: true,
           CampaignInstallModal: true,
+          ContentImportDialog: true,
           CampaignOperationModal: true,
           CustomizeUninstallModal: true,
           FileTree: true,

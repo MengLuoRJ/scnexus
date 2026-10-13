@@ -35,6 +35,7 @@ export type ContentSource = {
   tree: FileTree
   archiveHash?: string
   descriptorPaths?: string[]
+  directories?: string[]
   read(path: string): Promise<Buffer>
 }
 export async function hashFile(path: string): Promise<string> {
@@ -170,6 +171,7 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
   if (info.isSymbolicLink() || (input.kind === 'directory' ? !info.isDirectory() : !info.isFile()))
     throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
   const entries: Entry[] = []
+  const directories: string[] = []
   const descriptorPaths: string[] = []
   const noteDescriptor = (path: string) => {
     const parts = path.split('/')
@@ -186,8 +188,10 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
         noteDescriptor(path)
         const absolute = await safePath(input.path, path)
         const stat = await lstat(absolute)
-        if (stat.isDirectory()) await walk(absolute, path + '/')
-        else if (stat.isFile())
+        if (stat.isDirectory()) {
+          directories.push(path)
+          await walk(absolute, path + '/')
+        } else if (stat.isFile())
           entries.push({
             path,
             bytes: stat.size,
@@ -215,7 +219,8 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
         /(?:^|\s)l[rwx-]{9}(?:\s|$)/.test(entry.attributes ?? '')
       )
         throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
-      if (!entry.isDirectory)
+      if (entry.isDirectory) directories.push(path)
+      else
         entries.push({
           path,
           bytes: entry.size ?? 0,
@@ -256,6 +261,7 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
     read,
     archiveHash,
     descriptorPaths: [...new Set(descriptorPaths)].sort(),
+    directories: [...new Set(directories)].sort(),
     tree: makeTree(entries, basename(input.path)),
   }
 }

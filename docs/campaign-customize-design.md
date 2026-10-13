@@ -19,6 +19,17 @@
 
 最新 CCM 决策替代早期“所有安装都生成 package.json”的设想。Package 可以作为内部统一信息模型，但内部转换不意味着向 CCM 安装目录写入 SCNexus 清单。
 
+## 1.1 统一来源分类与描述文件冲突
+
+新导入入口为 `window.scnexus.content.analyze(input, descriptorChoice?)`，对应 `content-package:analyze` 与 renderer IPC 适配器 `apiContentAnalyze`。`SourceAnalysisChoice` 仅包含 `package-json` / `metadata-txt`；返回 `IpcResult<AnalysisResult>`，成功结果的 `contentType` 是主进程分类结果。界面应先切换至 `/campaign` 或 `/customize`，再展示该结果的安装预览；旧领域 analyze 保留兼容，不用于新统一入口的类型选择。
+
+- 外部有效 `metadata.txt` 表示 campaign；`package.json` 按其内部 `type` 分类。二者同类型时保留独立 SCNexus/CCM 模式。二者类型冲突时返回失败 DTO `M064`（`CONTENT_TYPE_CONFLICT`），不返回可安装预览；界面明确让用户选择描述文件，并携带原 `SourceInput` 和 choice **重新分析**。不冲突时传 choice 是非法参数。
+- 选 metadata 后，package.json 不参与类型及预览解析；选 package 后，metadata 不参与类型及预览解析（包括 customize），也不保留为 CCM 原文。选择仅解决已验证的类型冲突，不能绕过坏描述文件或伪造类型。
+- 描述文件仍按各自最外层有效安装计划确定逻辑根；同深度多个有效根返回业务错误。统一入口的 JSON/CCM 头部必须有效，坏描述文件、同名描述目录及无法确定根的输入直接返回业务错误，不能静默忽略或自动识别兜底。有效头部但没有可安装内容时，保留分类并返回现有模式诊断，不伪造预览。
+- `.SC2Map` / `.SC2Mod` components 内部的描述文件是资源元数据，不作为来源分类描述文件。**既有 auto 门槛不变**：campaign 所有层级的 package.json/metadata.txt（含资源内部及同名目录）都会阻止 auto；customize 仅 package.json 阻止 auto。因此内部 metadata 不改变类型，但仍可能阻止 campaign auto。
+- 无外部描述文件时，只要存在任何资源外部的标准 `Maps/Campaign` 目录就分类 campaign；WOL 父目录涵盖 swarm、swarm/evolution、void、voidprologue、nova。匹配大小写不敏感，支持包装根，目录输入和归档显式目录条目中的空目录都计入；资源内部或普通名为 Campaign 的目录不计入。无官方目录才分类 customize。含多个战役、歧义布局或空官方目录的输入仍是 campaign，并由后端诊断不可安装，不退回 customize。
+- 一次统一分析复用同一 `openSource`、归档哈希快照和描述文件内存缓存；分类不解压资源。目录描述文件在分析结束复核；安装继续复核源文件及目录布局、内容哈希与归档哈希。资源只在用户确认模式和冲突决策后批量解压。
+
 ## 2. 现有实现提取
 
 | 现有源码                         | 已有行为                                                                          | 重构时的变化                                                                   |
@@ -699,3 +710,46 @@ customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`
 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run error-normalization content-notifications campaign.test campaign-dialogs customize.test uninstall-dialog ipcs.test pages.test` | 8 文件、58 项通过。 |
 | `pnpm run test:preload` | 7 项通过。 |
 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run` | 全量 84 项中 83 项通过、1 项失败：既有 `icons.test` 正则仅识别双引号 `i-tabler` 字符串，而 `vite.config.ts` 使用单引号；两文件均无本次 diff。不得将全量 v2 测试描述为全部通过。 |
+
+### 统一来源分类与跨页面导入验证（2026-10-13）
+
+统一导入由 `useContentImportStore`（Pinia）管理请求、`M064` 冲突和跨路由待接收结果。用户明确选择描述文件后，使用原 `SourceInput` 加 `SourceAnalysisChoice` 重新调用 `apiContentAnalyze`；成功时先按主进程 `contentType` 导航到 `/campaign` 或 `/customize`，目标页面通过 `service.acceptAnalysis(result)` 一次接收完整分析结果，不因导航再调用 analyze。Pinia + router 测试验证单次交接；取消与过期结果通过既有共享 cancel 清理主进程上下文。重新分析的成功 warnings 保留并交给反馈层，主进程进度回调和警告收集机制不变。
+
+以下命令均从仓库根执行。renderer 全量、构建及 browser 联调结果由父任务回传；后端、preload 和 renderer IPC 结果由分类实施任务执行。
+
+| 精确命令或验证 | 结果 |
+| --- | --- |
+| `pnpm --filter @scnexus/app-main test src/modules/content-package src/utils/__test__/ipc-util.test.ts --reporter=dot --testTimeout=30000` | 11 文件、164 项通过；其中新分类及分类 IPC 32 项。默认 5 秒下既有 solid 7z 大清单测试曾超时，30 秒复跑全部通过，失败 fixture 已清理。 |
+| `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__ src\modules\customize\__test__ src\utils\__test__\ipc-util.test.ts` | 父任务最终扩大回归：14 文件、170 项通过，包含领域 campaign/customize 与 IPC 工具。 |
+| `pnpm --filter @scnexus/app-main exec vitest run -r ..\app-preload --reporter=dot` | 1 文件、8 项通过。根 `pnpm test:preload --reporter=dot` 因根目录未提供 vitest 可执行文件失败；使用已声明于 app-main 的 Vitest 执行上述 preload 命令通过，未安装新依赖。 |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run src/ipcs/internal/__tests__/ipcs.test.ts --reporter=dot` | 1 文件、9 项通过，含冲突失败 DTO、choice 转发及响应式输入快照。 |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run` | 16 文件、102 项通过（父任务最终全量结果）。 |
+| `pnpm --filter @scnexus/app-renderer-v2 build-only` | 通过（父任务）。不代替类型检查。 |
+| `pnpm --filter @scnexus/app-main build` | 通过（父任务最终包级构建）。 |
+| `pnpm --filter @scnexus/app-preload build` | 通过（父任务最终包级构建）。 |
+| `pnpm run typecheck:shared` | 通过。 |
+| `pnpm run typecheck:main` | 通过。 |
+| `pnpm run typecheck:preload` | 通过。 |
+| `pnpm --filter @scnexus/app-renderer-v2 type-check` | 未通过；仅既有 `src/main.ts(19)` 的 `app.use(ui)` Plugin 类型不匹配（Nuxt UI/Vue 类型版本），未修改无关入口或依赖。新增 IPC 测试的索引类型问题已修复。 |
+| `pnpm exec oxlint -c .oxlintrc.json packages\app-main\src\modules\content-package\classification.ts packages\app-main\src\modules\content-package\__test__\classification.test.ts packages\app-main\src\modules\content-package\__test__\classification-ipc.test.ts` | 通过。其他精确指定的本次实现文件检查同样通过；扩大到既有整个 content-package/renderer IPC 目录会遇到旧 mock 类型等 lint 基线，不宣称全仓 lint 清洁。 |
+| `pnpm exec eslint packages\app-main\src\modules\content-package\classification.ts packages\app-main\src\modules\content-package\__test__\classification.test.ts packages\app-main\src\modules\content-package\__test__\classification-ipc.test.ts` | 通过。 |
+| `git diff --check` | 通过。 |
+| 1000×660 mock browser | 从 campaign 页面选择来源收到 M064，选择 package-json 后带 choice 重新分析、导航 `/customize` 并打开正确且可安装的预览；路由后没有重复分析。通过（父任务），不是真实游戏验收。 |
+
+分类/重新分析矩阵：
+
+| 来源情况 | 期望与已验证结果 |
+| --- | --- |
+| 仅 package.json | 按内部 campaign/customize 分类；即使 customize 声明了官方路径也不改变描述类型。 |
+| 仅 metadata.txt | campaign；正常提供 CCM 与转换后的 SCNexus 计划。 |
+| 双描述、同为 campaign | 正常独立多模式分析，不允许 choice 强行覆盖无冲突结果。 |
+| package customize + metadata campaign | 首次失败 M064；package-json 重分析只提供 customize SCNexus 计划且无 CCM 原文；metadata-txt 重分析只解析 CCM 资源并提供 campaign 计划。目录和 solid 7z 的两种选择及实际安装均通过。 |
+| 坏 JSON、坏 CCM 字段、描述文件同名目录、多个最外层有效包根 | M034 业务失败，不静默忽略或回退 auto。 |
+| 无外部描述、有标准官方地图 | campaign；WOL、HOTS、evolution、LOTV、prologue、NCO、包装根及大小写变体通过。 |
+| 无描述、仅空官方目录 | 目录/归档显式目录条目均分类 campaign；没有唯一可安装战役时 auto 预览为空并返回 `AUTO_CAMPAIGN_NOT_FOUND`，不重分类 customize，不伪造可安装内容。 |
+| 无描述、多战役/歧义布局 | 保持 campaign，返回不可用预览及对应诊断。 |
+| 无描述、无官方目录 | customize；标准普通资源可 auto，完全空来源仅诊断不可安装。 |
+| Campaign 位于资源 components 内或仅为普通目录名 | 不作为官方目录分类证据；components 内描述文件不作外部分类描述，但严格既有 auto 阻断规则仍有效。 |
+| 来源修改与提前提取 | 分析中的归档修改、预览后的描述修改均拒绝；每次 dual 分析仅一次 list、每个描述正文读取一次，确认前没有资源 extractExact。 |
+
+上述结果不承诺实机 StarCraft II 启动、不同平台文件系统或超大型真实归档已经验收；本次未提交 Git commit。

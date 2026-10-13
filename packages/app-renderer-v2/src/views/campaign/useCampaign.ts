@@ -90,6 +90,14 @@ export function useCampaign() {
       [],
   )
   const existing = computed(() => analysis.value?.existingInstallations[mode.value] ?? [])
+  function acceptAnalysis(result: AnalysisResult) {
+    if (result.contentType !== 'campaign') return false
+    analysis.value = result
+    mode.value =
+      result.recommendedMode ??
+      (result.modes.scnexus ? 'scnexus' : result.modes.ccm ? 'ccm' : 'auto')
+    return true
+  }
   function analyze(input: SourceInput) {
     return execute(async () => {
       await close()
@@ -179,6 +187,7 @@ export function useCampaign() {
     conflicts,
     existing,
     analyze,
+    acceptAnalysis,
     prepare,
     confirm,
     refresh: () => execute(refresh),

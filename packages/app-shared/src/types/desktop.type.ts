@@ -29,6 +29,7 @@ export type SettingSnapshot = SettingData & {
 }
 
 export interface DesktopApi {
+  content: import('./content-api.type.js').ContentAnalysisApi
   campaign: import('./content-api.type.js').CampaignApi
   customize: import('./content-api.type.js').CustomizeApi
   gameSetting: import('./content-api.type.js').GameSettingApi

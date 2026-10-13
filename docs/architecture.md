@@ -198,6 +198,7 @@ src/
 
 - pnpm 是目标统一包管理器；工作区使用根目录 pnpm-lock.yaml，不引入新的 npm/yarn 锁文件。
 - 依赖在使用它的包中声明，内部依赖使用 `workspace:*`；hoisted 布局不能代替依赖声明。
+- `@nuxt/ui@4.11.3` 的发布清单缺少插件类型声明所需的 Vue peer；在 `pnpm-workspace.yaml` 用版本限定的 `packageExtensions` 补充 `vue: ^3.5.0`，让其绑定 renderer-v2 的 Vue，避免严格依赖布局下回退解析到旧 renderer 的 Vue 类型。升级 Nuxt UI 时检查上游是否已补齐，再调整或移除该扩展；不使用插件类型断言或全局 Vue 版本覆盖规避问题。
 - 根目录保留开发脚本及 postinstall 直接使用的 Electron；Tabler 图标依赖由 renderer 包声明，electron-builder 由 app-main 声明。旧 `scnexus-standard` 类型依赖由 main（已有 devDependency）、旧 renderer（devDependency）和 shared（公开类型依赖）各自声明，不由根目录兜底。应用打包目录为 app-main；根目录不保留另一套 electron-builder 配置。
 - `pnpm build` 先刷新 Electron Node/Chromium target、构建 standard，再进行 shared/main/preload/v2 类型检查，最后构建 main/preload/renderer-v2。`pnpm build:app` 和 `pnpm build:app:release` 先同步版本，再生产构建，由 app-main 执行 electron-builder；前者生成未封装目录，后者生成安装包，均默认 `--publish never`。包级打包检查三个产物及版本存在且同步，不代替根目录完整构建。
 - `pnpm test` 执行 standard 前置构建、构建配置契约测试、main/preload/v2 单元测试；删除把根级 Vitest 发现误称为 E2E 的 `test:e2e`。暂没有独立桌面 E2E 自动化。
@@ -210,6 +211,8 @@ src/
 - 修复使用最小相关验证；不为文档修改安装依赖或运行完整打包。
 
 ## 9. 当前差距与实施顺序
+
+当前 pnpm isolated 布局下，Sentry 依赖由 electron-builder 的生产依赖收集器保留，不再手工复制 browser SDK。`@sentry/electron@8.1.0` 使用 conventions 0.23，而其 browser 11.4 使用 conventions 0.25；将 browser 强行复制到 electron 的 node_modules 会令它误解析到上层 0.23，导致启动时报 `SENTRY_IS_LOCALHOST` 导出缺失。两份 conventions 共存是正常的，不能只按包名去重。修复验证：`pnpm run test:build` 14 项通过；`pnpm --filter @scnexus/app-main build:app --config.directories.output="C:\Users\mengl\.copilot\session-state\6824866d-f5c6-422c-871a-abc5e0e6fc35\files\sentry-package-validation" --config.win.signAndEditExecutable=false` 通过，ASAR 中 browser 位于顶层并使用 conventions 0.25，electron 自身保留嵌套 conventions 0.23。真实 Electron 加载该 ASAR main（临时 userData、模拟打包标志及资源根）成功显示首页和 preload 桥接，无错误对话框、退出码 0；未执行 NSIS 安装、签名或真实遥测发送。
 
 开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 保留参考且不再进入应用产物。Node 26、Vite 8、Electron 44 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
 
@@ -229,6 +232,8 @@ campaign 战役包与 customize 自制作品保持独立。统一压缩包/文�
 统一导入入口 `window.scnexus.content.analyze(input, descriptorChoice?)`（`content-package:analyze`，renderer `apiContentAnalyze`）直接返回分类后的 `IpcResult<AnalysisResult>`。资源外部 metadata.txt 表示 campaign，package.json 按内部 type；二者冲突返回 `M064/CONTENT_TYPE_CONFLICT`，界面选择 `package-json` 或 `metadata-txt` 后重发同一来源重新分析，并先切换至对应 `/campaign` 或 `/customize` 再预览。choice 仅在冲突时合法，未选描述文件不参与类型或预览解析；旧领域 analyze 保留兼容。坏头部、同名描述目录、多最外层有效根返回业务错误，不静默忽略或自动兜底。无外部描述文件时，任何资源外部标准 Maps/Campaign 目录（大小写不敏感、包装根、目录/归档空目录均计入，WOL 父目录含四类子树）分类 campaign，否则 customize；无有效内容或歧义仍按该类型诊断，不重新分类。components 内部描述文件不参与分类，但仍受上述严格 auto 门槛约束。一次分析复用同一源及哈希快照、缓存描述正文，不提前解压资源。
 
 renderer 的 `useContentImportStore`（Pinia）持有统一分析请求、描述文件冲突和跨路由待接收结果；`M064` 时等待明确选择，再携带 choice 调用统一 API。成功后根据 `AnalysisResult.contentType` 导航，目标页面通过 `service.acceptAnalysis(result)` 一次接收现有完整结果，路由切换不重复 analyze。重新分析的成功 warnings 继续传给反馈层；取消和过期结果通过既有领域 cancel 清理共享主进程分析上下文。2026-10-13 的 Pinia + router 回归及 1000×660 mock browser 验证了 campaign 页面冲突选择 package-json 后切换 `/customize`、正确预览并允许安装；完整 renderer 16 文件 102 项测试及 renderer/main/preload 包级构建通过，renderer 类型检查仍有既有 `src/main.ts:19` Nuxt UI/Vue Plugin 类型不匹配。详细命令和分类矩阵见设计文档本次验证记录。
+
+后续已通过上述 Nuxt UI Vue peer 扩展修复 `src/main.ts:19` 的 Plugin 类型冲突，入口代码不需要类型断言。验证：`pnpm --filter @scnexus/app-renderer-v2 type-check` 和 `pnpm --filter @scnexus/app-renderer-v2 build` 均通过；插件声明与应用解析到相同的 Vue 3.5.43。`pnpm install --frozen-lockfile --prefer-offline --ignore-scripts` 通过；纯离线安装因本地缺少 `@nuxt/devtools-kit` 的供应链检查元数据失败，允许补查元数据后通过，未升级依赖版本。VS Code 测试工具定向执行图标与内容导入对话框测试，3 项通过。
 
 战役导入与激活分离。输入中的 package.json/metadata.txt 独立定位最外层有效包根并分别提供模式；CCM 来源也可转换为 SCNexus 安装。选 CCM 模式时保留 metadata.txt、不生成 package.json；选 SCNexus/自动模式时使用 SCNexusCustomizeData 管理目录，战役激活另写主地图 package.json。AnalysisResult 返回可为空的作者推荐模式及按模式分组、逐文件携带 conflictId 的 Map/Mod 冲突，用户决定覆盖/保留/取消。manager 仅推荐，manager_mode 已移除。新模型参考 standard 的 Package 类型，profile Store 已迁为 scii-game-setting，路径信息与内容业务已在 main/preload 实现；游戏版本检测仍未实现。customize 只提供 analyze/install/list/scan/prepareUninstall/uninstall（以及共享取消与进度订阅），直接安装到游戏目录，无激活或移动生命周期，不建立完整 payload/本地库副本或持久化原文件备份。保留冲突标记为 kept，不取得删除所有权；卸载跳过 kept，共享引用继续要求明确保留/删除选择。campaign 同一安装清单的 kept 也不取得删除所有权。
 
@@ -333,7 +338,7 @@ app-main 的 package.json 是唯一应用清单，main 字段仍为打包后的 
 未封装验收命令：`pnpm --filter @scnexus/app-main build:app --config.directories.output=../../release/build-flow-validation --config.win.signAndEditExecutable=false` 通过，使用 ASAR、未发布。真实 Electron 从该 ASAR 加载 v2 与 preload，window.scnexus 存在、欢迎页加载、打包的 7z.exe 执行成功；隔离 userData，不操作用户现有配置。此验收不包含 NSIS 安装器/图标签名、自动更新、macOS 或 Linux 打包。electron-builder 对其他平台 optional binding 给出提示，不影响本次 Windows x64 产物；跨平台需分别构建验证。
 
 
-最终 root 编排验收：`pnpm run build:app --config.directories.output=../../release/build-flow-final --config.win.signAndEditExecutable=false` 通过。完整 ASAR main 入口的隔离启动额外验证了模块初始化；发现 hoisted 布局下 electron-builder 错误收集旧 renderer 的 @sentry/browser 版本，包配置现显式保留 @sentry/electron 实际解析到的嵌套 browser SDK（不升级版本）。修正后以真实 Electron 加载 ASAR main、模拟打包标志/资源根并使用临时 userData，初始化无错误、页面与桥接成功，退出码 0。该冒烟不是安装器安装验收；签名、图标写入及真实自动更新仍未执行。构建产生的 standard 已跟踪产物仅有格式/source-map 差异，本轮不保留无关生成物改动。
+最终 root 编排验收：`pnpm run build:app --config.directories.output=../../release/build-flow-final --config.win.signAndEditExecutable=false` 通过。完整 ASAR main 入口的隔离启动额外验证了模块初始化；发现 hoisted 布局下 electron-builder 错误收集旧 renderer 的 @sentry/browser 版本，当时包配置显式保留 @sentry/electron 实际解析到的嵌套 browser SDK（不升级版本；该临时补丁在后续切回 isolated 布局后已移除，见下文）。修正后以真实 Electron 加载 ASAR main、模拟打包标志/资源根并使用临时 userData，初始化无错误、页面与桥接成功，退出码 0。该冒烟不是安装器安装验收；签名、图标写入及真实自动更新仍未执行。构建产生的 standard 已跟踪产物仅有格式/source-map 差异，本轮不保留无关生成物改动。
 
 
 ### 7z 目标平台过滤（2026-10-12）

@@ -7,9 +7,6 @@ const config = require('./electron-builder.json')
 const builderRequire = createRequire(require.resolve('electron-builder'))
 const { Arch } = builderRequire('builder-util')
 const sevenZipRoot = dirname(require.resolve('7z-bin/package.json'))
-const sentryRequire = createRequire(require.resolve('@sentry/electron/main'))
-// Preserve the SDK's nested version instead of the legacy renderer's hoisted browser SDK.
-const sentryBrowser = dirname(sentryRequire.resolve('@sentry/browser/package.json'))
 
 export default {
   ...config,
@@ -20,14 +17,6 @@ export default {
   async beforePack(context) {
     await verifySevenZipTarget(sevenZipRoot, context.electronPlatformName, Arch[context.arch])
   },
-  files: [
-    ...config.files,
-    {
-      from: sentryBrowser,
-      to: 'node_modules/@sentry/electron/node_modules/@sentry/browser',
-      filter: ['**/*'],
-    },
-  ],
   extraResources: [
     {
       from: join(dirname(require.resolve('regedit/package.json')), 'vbs'),

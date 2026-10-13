@@ -40,12 +40,10 @@ test('app-main is the sole packaging application and includes v2 and external to
   assert.ok(config.asarUnpack.includes('node_modules/7z-bin/**'))
   const require = createRequire(new URL('packages/app-main/package.json', root))
   assert.equal(config.electronVersion, require('electron/package.json').version)
-  const sentryRequire = createRequire(require.resolve('@sentry/electron/main'))
-  assert.equal(
-    config.files.find(
-      (file) => file.to === 'node_modules/@sentry/electron/node_modules/@sentry/browser',
-    ).from,
-    dirname(sentryRequire.resolve('@sentry/browser/package.json')),
+  assert.deepEqual(config.files, (await json('packages/app-main/electron-builder.json')).files)
+  assert.ok(
+    !config.files.some((file) => typeof file === 'object' && file.to?.includes('node_modules/@sentry')),
+    'Let the dependency collector preserve Sentry versions; manual copies break nested resolution',
   )
   assert.equal(
     config.extraResources[0].from,

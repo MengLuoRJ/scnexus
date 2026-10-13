@@ -1,3 +1,8 @@
+packageExtensions:
+  # Nuxt UI 4.11.3 omits the Vue peer used by its plugin type declarations.
+  '@nuxt/ui@4.11.3':
+    peerDependencies:
+      vue: '^3.5.0'
 allowBuilds:
   electron: true
   electron-winstaller: true

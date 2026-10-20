@@ -34,6 +34,7 @@ import type {
   RemovalPreview,
   RemovalDecision,
   ActivationPreview,
+  ActiveCampaign,
   ContentStore,
   CampaignActiveStoreData,
   InstallProgress,
@@ -110,6 +111,55 @@ export function validateRecordPaths(record: ContentRecord, paths: GamePaths) {
       (record.package.campaign && !officialScope(f.target, record.package.campaign))
     )
       throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+  }
+}
+export function validateActiveResources(
+  record: ContentRecord,
+  active: ActiveCampaign,
+  paths: GamePaths,
+) {
+  if (
+    active.localId !== record.localId ||
+    active.gameRoot !== paths.gameRoot ||
+    active.mode !== record.mode ||
+    active.campaign !== record.package.campaign ||
+    active.descriptorPath !==
+      join(
+        paths.gameRoot,
+        campaignRoots[active.campaign][0],
+        active.mode === 'ccm' ? 'metadata.txt' : 'package.json',
+      )
+  )
+    throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+  validateRecordPaths({ ...record, installedFiles: active.installedFiles }, paths)
+  const allowed = new Map(
+    resourceGroups(record.files).map((group) => [keyPath(group.target), group.files[0]!.type]),
+  )
+  for (const file of active.installedFiles) {
+    const root = resourcePath(logicalPath(file.target))
+    if (
+      !(file.type === 'map' ? /^Maps\/.+\.sc2map$/i : /^Mods\/.+\.sc2mod$/i).test(root) ||
+      allowed.get(keyPath(root)) !== file.type ||
+      file.absolutePath !== join(paths.gameRoot, logicalPath(file.target))
+    )
+      throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+  }
+  const seen = new Set<string>()
+  for (const backup of active.resourceBackups ?? []) {
+    const target = logicalPath(backup.target)
+    const key = keyPath(target)
+    if (
+      record.mode !== 'scnexus' ||
+      target !== resourcePath(target) ||
+      !allowed.has(key) ||
+      seen.has(key) ||
+      !active.installedFiles.some(
+        (file) => keyPath(resourcePath(file.target)) === key && file.result !== 'kept',
+      ) ||
+      dirname(backup.path) !== join(record.managementDirectory, '.activation-backup')
+    )
+      throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+    seen.add(key)
   }
 }
 const hash = (data: Buffer) => createHash('sha256').update(data).digest('hex')
@@ -1098,7 +1148,7 @@ export class ContentService {
       }
       return this.transaction(paths, async (write) => {
         const resourceBackups: { target: string; path: string }[] = []
-        for (const group of resourceGroups(preview.files)) {
+        for (const group of record.mode === 'scnexus' ? resourceGroups(preview.files) : []) {
           const target = await safePath(paths.gameRoot, group.target)
           if (choices.get(keyPath(target)) === 'keep' || !(await existing(target))) continue
           const backup = await safePath(
@@ -1159,7 +1209,7 @@ export class ContentService {
           activatedAt: Date.now(),
           gameRoot: paths.gameRoot,
         }
-        if (record.mode === 'scnexus' || resourceBackups.length)
+        if (record.mode === 'scnexus')
           await write(
             join(record.managementDirectory, 'active-manifest.json'),
             Buffer.from(JSON.stringify(active, null, 2)),
@@ -1199,6 +1249,15 @@ export class ContentService {
       })
     if (operation === 'deactivate' && active?.localId !== localId)
       throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    if (operation === 'deactivate')
+      validateActiveResources(
+        record,
+        {
+          ...active!,
+          resourceBackups: record.mode === 'ccm' ? undefined : active!.resourceBackups,
+        },
+        paths,
+      )
     const files = operation === 'deactivate' ? active!.installedFiles : record.installedFiles
     const others = [
       ...this.customize
@@ -1296,6 +1355,15 @@ export class ContentService {
         })
       const state = this.active.getSnapshot()
       const active = state.active[record.package.campaign!]
+      if (context.active)
+        validateActiveResources(
+          record,
+          {
+            ...active!,
+            resourceBackups: record.mode === 'ccm' ? undefined : active!.resourceBackups,
+          },
+          paths,
+        )
       const files = context.active ? active!.installedFiles : record.installedFiles
       for (const [target, digest] of context.hashes) {
         if (
@@ -1319,7 +1387,9 @@ export class ContentService {
             if (choices.get(group.target) === 'keep') continue
             await write(await safePath(paths.gameRoot, group.target), null)
           }
-          for (const backup of context.active ? (active?.resourceBackups ?? []) : []) {
+          for (const backup of context.active && record.mode === 'scnexus'
+            ? (active?.resourceBackups ?? [])
+            : []) {
             const target = await safePath(paths.gameRoot, backup.target)
             if (
               !resourceGroups(removable).some(
@@ -1355,7 +1425,7 @@ export class ContentService {
               ),
               null,
             )
-            if (record.mode === 'scnexus' || active?.resourceBackups?.length)
+            if (record.mode === 'scnexus')
               await write(join(record.managementDirectory, 'active-manifest.json'), null)
             const next = { ...state.active }
             delete next[record.package.campaign!]
@@ -1380,7 +1450,11 @@ export class ContentService {
     return this.lock(async () => {
       const paths = await this.paths()
       const { scanContent } = await import('./scanner')
-      const result = await scanContent(paths, this.campaign.getSnapshot().records)
+      const result = await scanContent(
+        paths,
+        this.campaign.getSnapshot().records,
+        this.active.getSnapshot().active,
+      )
       const previous = [this.campaign.getSnapshot(), this.customize.getSnapshot()]
       const oldActive = this.active.getSnapshot()
       const stamp = Date.now()

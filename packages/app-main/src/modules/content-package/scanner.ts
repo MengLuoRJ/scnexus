@@ -1,7 +1,7 @@
 import { validateCampaignRecord } from '../../stores/campaign'
 import { validateCustomizeRecord } from '../../stores/customize'
 import { validateActive } from '../../stores/campaign-active'
-import { validateRecordPaths } from './content-package'
+import { validateRecordPaths, validateActiveResources } from './content-package'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -14,7 +14,9 @@ import type {
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
 import { isContentDiagnostic } from './diagnostics'
 import { openSource, makeTree } from './source'
-import { campaignRoots, CAMPAIGNS, safePath, officialMap } from './paths'
+import { campaignRoots, CAMPAIGNS, safePath, officialMap, keyPath } from './paths'
+import { resourceGroups } from './resources'
+import { resourcePath } from '@scnexus/app-shared/utils/content-files'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 function parseManifest(raw: Buffer) {
   try {
@@ -35,7 +37,11 @@ async function optional(path: string) {
     throw error
   }
 }
-export async function scanContent(paths: GamePaths, previousRecords: ContentRecord[] = []) {
+export async function scanContent(
+  paths: GamePaths,
+  previousRecords: ContentRecord[] = [],
+  previousActive: Partial<Record<PackageCampaignType, ActiveCampaign>> = {},
+) {
   const records: ContentRecord[] = []
   const active: Partial<Record<PackageCampaignType, ActiveCampaign>> = {}
   const diagnostics: { path: string; message: string }[] = []
@@ -196,7 +202,19 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
           r.package.author === pkg.author &&
           r.package.version === pkg.version,
       )
-      let record = matches.length === 1 ? matches[0] : undefined
+      const prior = previousActive[campaign]
+      const priorMatch =
+        !json && prior?.gameRoot === paths.gameRoot && prior.mode === 'ccm'
+          ? matches.find((match) => match.localId === prior.localId)
+          : undefined
+      let record = priorMatch ?? (matches.length === 1 ? matches[0] : undefined)
+      if (!json && matches.length > 1 && !priorMatch) {
+        diagnostics.push({
+          path: directory,
+          message: 'Ambiguous CCM campaign; activation ownership cannot be rebuilt safely',
+        })
+        continue
+      }
       if (json && matches.length > 1) {
         const marked = []
         for (const match of matches)
@@ -205,7 +223,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         if (marked.length === 1) record = marked[0]
       }
       let saved: ActiveCampaign | undefined
-      if (record) {
+      if (record && json) {
         const raw = await optional(join(record.managementDirectory, 'active-manifest.json'))
         if (raw) {
           saved = parseManifest(raw)
@@ -215,6 +233,10 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
               message: 'Invalid active manifest',
             })
         }
+      }
+      if (!json && record && prior?.localId === record.localId) {
+        saved = { ...prior, resourceBackups: undefined }
+        validateActiveResources(record, saved, paths)
       }
       if (!record) {
         const source = gameSource
@@ -268,16 +290,30 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         }
         records.push(record)
       }
+      if (saved) validateActiveResources(record, saved, paths)
       const installed = saved?.installedFiles ?? []
       if (!saved) {
-        for (const file of record.files.filter((f) => json || f.type === 'map')) {
+        const planned = json
+          ? record.files
+          : resourceGroups(record.files.filter((file) => file.type === 'map')).flatMap((group) =>
+              gameSource.entries
+                .filter((entry) => keyPath(resourcePath(entry.path)) === keyPath(group.target))
+                .map((entry) => ({
+                  ...group.files[0]!,
+                  source: entry.path,
+                  target: entry.path,
+                  bytes: entry.bytes,
+                  modifiedAt: entry.modifiedAt,
+                })),
+            )
+        for (const file of planned) {
           const target = await safePath(paths.gameRoot, file.target)
           const data = await optional(target)
           if (data)
             installed.push({
               ...file,
               absolutePath: target,
-              result: 'copied',
+              result: !json && !record.external ? 'kept' : 'copied',
               hash: createHash('sha256').update(data).digest('hex'),
             })
         }

@@ -2,7 +2,8 @@ import { test, expect, afterEach, vi } from 'vitest'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
 import { mkdtemp, mkdir, writeFile, readFile, rm, stat, symlink } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ContentService, validateRecordPaths } from '../content-package'
+import { ContentService, validateRecordPaths, validateActiveResources } from '../content-package'
+import { scanContent } from '../scanner'
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
 import type {
   ContentStore,
@@ -563,7 +564,7 @@ test.each(['scnexus', 'ccm'] as const)(
     ).rejects.toMatchObject({ code: 'ENOENT' })
   },
 )
-test('CCM grouped map activation retains complete recovery data through scanning', async () => {
+test('CCM grouped map activation uses only the index and no persistent package backup', async () => {
   const f = await fixture()
   const target = join(f.paths.mapsRoot, 'Campaign', 'Mission.SC2Map')
   await mkdir(join(f.paths.mapsRoot, 'Campaign'), { recursive: true })
@@ -583,10 +584,16 @@ test('CCM grouped map activation retains complete recovery data through scanning
     activation.activationId,
     activation.conflicts.map((item) => ({ conflictId: item.conflictId, action: 'overwrite' })),
   )
+  await expect(
+    stat(join(installed.managementDirectory, 'active-manifest.json')),
+  ).rejects.toMatchObject({ code: 'ENOENT' })
+  await expect(
+    stat(join(installed.managementDirectory, '.activation-backup')),
+  ).rejects.toMatchObject({ code: 'ENOENT' })
   await f.service.scan()
   const removal = await f.service.prepareRemoval(installed.localId, 'deactivate')
   await f.service.remove(removal.removalId, [])
-  expect(await readFile(target, 'utf8')).toBe('original')
+  await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
 })
 test('direct group replacement removes stale members, detects removal changes and uninstalls the resource', async () => {
   const f = await fixture()
@@ -719,6 +726,175 @@ test.each([
     else await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
   },
 )
+test.each(['single', 'group'] as const)(
+  'CCM scan preserves kept local ownership for %s sources even with duplicate metadata',
+  async (shape) => {
+    const f = await fixture()
+    const target = join(f.paths.mapsRoot, 'Campaign', 'Mission.SC2Map')
+    await mkdir(join(f.paths.mapsRoot, 'Campaign'), { recursive: true })
+    await writeFile(target, 'user map')
+    const input = await source(f.root, {
+      'metadata.txt': 'title=Kept\ncampaign=WOL',
+      ...(shape === 'group'
+        ? { 'Mission.SC2Map/a': 'incoming' }
+        : { 'Mission.SC2Map': 'incoming' }),
+    })
+    const analysis = await f.service.analyze('campaign', input)
+    const record = await f.service.install({
+      analysisId: analysis.analysisId,
+      mode: 'ccm',
+      decisions: [],
+    })
+    const activation = await f.service.prepareActivation(record.localId)
+    await f.service.activate(
+      activation.activationId,
+      activation.conflicts.map((item) => ({ conflictId: item.conflictId, action: 'keep' })),
+    )
+    const duplicate = join(f.paths.ccmRoot, 'wrapper', 'Kept')
+    await mkdir(duplicate, { recursive: true })
+    await writeFile(join(duplicate, 'metadata.txt'), 'title=Kept\ncampaign=WOL')
+    await writeFile(join(duplicate, 'Mission.SC2Map'), 'duplicate')
+    const scanned = await f.service.scan()
+    expect(scanned.active.WOL?.localId).toBe(record.localId)
+    expect(scanned.active.WOL?.installedFiles.every((file) => file.result === 'kept')).toBe(true)
+    const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
+    await f.service.remove(removal.removalId, [])
+    expect(await readFile(target, 'utf8')).toBe('user map')
+  },
+)
+test('CCM scan diagnoses ambiguous identity without trusting package-side activation markers', async () => {
+  const f = await fixture()
+  for (const name of ['First', 'Second']) {
+    const directory = join(f.paths.ccmRoot, name)
+    await mkdir(directory, { recursive: true })
+    await writeFile(join(directory, 'metadata.txt'), 'title=Same\ncampaign=WOL')
+    await writeFile(join(directory, 'M.SC2Map'), 'map')
+    await writeFile(join(directory, 'active-manifest.json'), 'malformed untrusted JSON')
+  }
+  const activeRoot = join(f.paths.mapsRoot, 'Campaign')
+  await mkdir(activeRoot, { recursive: true })
+  await writeFile(join(activeRoot, 'metadata.txt'), 'title=Same\ncampaign=WOL')
+  await writeFile(join(activeRoot, 'M.SC2Map'), 'map')
+  const result = await f.service.scan()
+  expect(result.active.WOL).toBeUndefined()
+  expect(result.diagnostics).toContainEqual(
+    expect.objectContaining({ message: expect.stringContaining('Ambiguous CCM') }),
+  )
+})
+test('CCM without trusted activation index conservatively preserves discovered maps', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'metadata.txt': 'title=Indexed\ncampaign=WOL',
+    'M.SC2Map': 'map',
+  })
+  const analysis = await f.service.analyze('campaign', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'ccm',
+    decisions: [],
+  })
+  const activation = await f.service.prepareActivation(record.localId)
+  await f.service.activate(activation.activationId, [])
+  const rebuilt = await scanContent(f.paths, f.campaign.getSnapshot().records)
+  expect(rebuilt.active.WOL?.installedFiles[0].result).toBe('kept')
+})
+test.each(['ccm', 'scnexus'] as const)(
+  '%s rejects executable targets from forged active metadata without modifying game files',
+  async (mode) => {
+    const f = await fixture()
+    const input = await source(f.root, {
+      'metadata.txt': 'title=Untrusted\ncampaign=WOL',
+      'M.SC2Map': 'map',
+    })
+    const analysis = await f.service.analyze('campaign', input)
+    const record = await f.service.install({ analysisId: analysis.analysisId, mode, decisions: [] })
+    const activation = await f.service.prepareActivation(record.localId)
+    const active = await f.service.activate(activation.activationId, [])
+    const target = join(f.paths.gameRoot, 'Support64', 'SC2Switcher_x64.exe')
+    await mkdir(join(f.paths.gameRoot, 'Support64'), { recursive: true })
+    await writeFile(target, 'original executable')
+    const backup = join(record.managementDirectory, '.activation-backup', 'forged')
+    await mkdir(join(record.managementDirectory, '.activation-backup'), { recursive: true })
+    await writeFile(backup, 'untrusted replacement')
+    const forged = {
+      ...active,
+      installedFiles: [
+        {
+          ...active.installedFiles[0],
+          target: 'Support64/SC2Switcher_x64.exe',
+          absolutePath: target,
+        },
+      ],
+      resourceBackups: [{ target: 'Support64/SC2Switcher_x64.exe', path: backup }],
+    }
+    await writeFile(
+      join(record.managementDirectory, 'active-manifest.json'),
+      JSON.stringify(forged),
+    )
+    if (mode === 'ccm') {
+      const scanned = await f.service.scan()
+      expect(scanned.active.WOL?.installedFiles[0].target).toBe('Maps/Campaign/M.SC2Map')
+      expect(scanned.active.WOL?.resourceBackups).toBeUndefined()
+      const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
+      await f.service.remove(removal.removalId, [])
+      expect(await readFile(backup, 'utf8')).toBe('untrusted replacement')
+    } else {
+      const scanned = await scanContent(f.paths, f.campaign.getSnapshot().records)
+      expect(scanned.active.WOL).toBeUndefined()
+      expect(scanned.diagnostics.length).toBeGreaterThan(0)
+      f.active.update({ ...f.active.getSnapshot(), active: { WOL: forged } } as never)
+      await expect(f.service.prepareRemoval(record.localId, 'deactivate')).rejects.toMatchObject({
+        code: 'M031',
+      })
+    }
+    expect(await readFile(target, 'utf8')).toBe('original executable')
+  },
+)
+test('SCNexus active authorization rejects undeclared resources, incorrect scope and invalid backup associations', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'metadata.txt': 'title=Authorization\ncampaign=WOL',
+    'M.SC2Map': 'map',
+  })
+  const analysis = await f.service.analyze('campaign', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  const preview = await f.service.prepareActivation(record.localId)
+  const active = await f.service.activate(preview.activationId, [])
+  for (const target of [
+    'Maps/Campaign/Other.SC2Map',
+    'Maps/Campaign/swarm/M.SC2Map',
+    'Mods/Other.SC2Mod',
+  ]) {
+    const forged = {
+      ...active,
+      installedFiles: [
+        { ...active.installedFiles[0]!, target, absolutePath: join(f.paths.gameRoot, target) },
+      ],
+    }
+    expect(() => validateActiveResources(record, forged, f.paths)).toThrow(
+      expect.objectContaining({ code: 'M031' }),
+    )
+  }
+  for (const backup of [
+    {
+      target: 'Maps/Campaign/Other.SC2Map',
+      path: join(record.managementDirectory, '.activation-backup', 'item'),
+    },
+    { target: 'Maps/Campaign/M.SC2Map', path: join(f.root, 'outside') },
+    {
+      target: 'Maps/Campaign/M.SC2Map',
+      path: join(record.managementDirectory, '.activation-backup', 'nested', 'item'),
+    },
+  ]) {
+    expect(() =>
+      validateActiveResources(record, { ...active, resourceBackups: [backup] }, f.paths),
+    ).toThrow(expect.objectContaining({ code: 'M031' }))
+  }
+})
 test('cancelled preview cannot install or leave a successful record', async () => {
   const f = await fixture()
   const input = await source(f.root, {

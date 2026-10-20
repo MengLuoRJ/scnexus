@@ -77,7 +77,11 @@ export function validateRecordPaths(record: ContentRecord, paths: GamePaths) {
     throw new AppError(ERRORS.STORE_DATA_INVALID)
   const expected = join(
     record.mode === 'ccm' ? paths.ccmRoot : paths.customizeDataRoot,
-    record.mode === 'ccm' ? basename(record.managementDirectory) : record.localId,
+    record.mode === 'ccm'
+      ? record.external
+        ? basename(record.managementDirectory)
+        : logicalPath(relative(paths.ccmRoot, record.managementDirectory))
+      : record.localId,
   )
   if (record.external) {
     if (

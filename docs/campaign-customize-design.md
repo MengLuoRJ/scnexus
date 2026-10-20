@@ -404,6 +404,7 @@ localInfo
 **扫描重建流程**：用户发起 → 锁定游戏环境快照 → 发现管理目录与活动/CCM库标记 → 独立解析 → 实际文件核实与统计 → 生成候选集合和 diagnostics → 原子更新各 Store。
 
 - 首先扫描 SCNexusCustomizeData 和 Maps/CustomCampaigns 的包目录，再核实四类活动目录；也支持发现允许游戏目录中的 package.json/metadata.txt 作为外部记录。
+- CCM 扫描兼容其他管理器产生的多层包装目录，例如 `Maps/CustomCampaigns/战役名/战役名/metadata.txt`：在未找到 metadata.txt 的目录中继续向下查找，以标记所在目录作为管理和地图源根目录；找到标记后不再拆分其子目录。激活、取消激活和卸载均使用实际包根，卸载不删除外层包装目录或兄弟包；目录边界和符号链接限制保持不变。
 - 不进入 SC2Map/SC2Mod components 内部把同名 JSON 当成包，也不把安装清单附带的 CCM 副本再识别为独立包。
 - 管理目录清单帮助恢复 localId、完整资源映射；孤立 Package 可以恢复部分信息，但不能凭空重建原归档来源或隐式地图原始归属。
 - CCM 解析 metadata.txt 与该战役地图布局重建记录，不恢复 Mod 清单，也不设置额外 Mod 归属状态；这项限制由前端说明，不属于扫描恢复目标。

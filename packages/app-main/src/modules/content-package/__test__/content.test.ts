@@ -1,8 +1,8 @@
 import { test, expect, afterEach, vi } from 'vitest'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat, symlink } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ContentService } from '../content-package'
+import { ContentService, validateRecordPaths } from '../content-package'
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
 import type {
   ContentStore,
@@ -175,6 +175,96 @@ test('CCM import installs mods immediately, activation and removal never remove 
   const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
   await f.service.remove(uninstall.removalId, [])
   expect(await readFile(join(f.paths.modsRoot, 'Sub/Core.SC2Mod'), 'utf8')).toBe('mod')
+})
+test.each([
+  ['远征军之遗vs星系舰队混合体2'],
+  ['远征军之遗vs星系舰队混合体2', '远征军之遗vs星系舰队混合体2'],
+  ['Other CCM', 'Campaigns', '远征军之遗vs星系舰队混合体2'],
+])(
+  'scans CCM package depth %#: activation, rescan and uninstall use the actual package root',
+  async (...parts) => {
+    const f = await fixture()
+    const directory = join(f.paths.ccmRoot, ...parts)
+    await mkdir(directory, { recursive: true })
+    const metadata = 'title=远征军之遗vs星系舰队混合体2\ndesc=d\nauthor=A\nversion=1\ncampaign=WOL'
+    await writeFile(join(directory, 'metadata.txt'), metadata)
+    await writeFile(join(directory, 'M.SC2Map'), 'nested map')
+    const sibling = join(f.paths.ccmRoot, 'Unrelated.txt')
+    await writeFile(sibling, 'keep')
+
+    const scanned = await f.service.scan()
+    expect(scanned.diagnostics).toEqual([])
+    expect(scanned.records).toHaveLength(1)
+    const record = scanned.records[0]
+    expect(record).toMatchObject({
+      mode: 'ccm',
+      managementDirectory: directory,
+      descriptorPath: join(directory, 'metadata.txt'),
+      payloadDirectory: directory,
+      files: [expect.objectContaining({ source: 'M.SC2Map', target: 'Maps/Campaign/M.SC2Map' })],
+    })
+    expect(f.campaign.getSnapshot().records[0]).toEqual(record)
+    expect(() => validateRecordPaths(record, f.paths)).not.toThrow()
+    for (const rejected of [
+      f.paths.ccmRoot,
+      join(f.paths.mapsRoot, 'Outside'),
+      join(f.root, 'outside'),
+    ]) {
+      expect(() =>
+        validateRecordPaths(
+          {
+            ...record,
+            managementDirectory: rejected,
+            descriptorPath: join(rejected, 'metadata.txt'),
+            payloadDirectory: rejected,
+          },
+          f.paths,
+        ),
+      ).toThrow(expect.objectContaining({ code: 'M031' }))
+    }
+
+    const preview = await f.service.prepareActivation(record.localId)
+    await f.service.activate(preview.activationId, [])
+    const map = join(f.paths.mapsRoot, 'Campaign', 'M.SC2Map')
+    expect(await readFile(map, 'utf8')).toBe('nested map')
+    const rescanned = await f.service.scan()
+    expect(rescanned.records).toHaveLength(1)
+    expect(rescanned.records[0].localId).toBe(record.localId)
+    expect(rescanned.active.WOL?.localId).toBe(record.localId)
+    const deactivate = await f.service.prepareRemoval(record.localId, 'deactivate')
+    await f.service.remove(deactivate.removalId, [])
+    await expect(stat(map)).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readFile(record.descriptorPath, 'utf8')).toBe(metadata)
+    const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
+    await f.service.remove(uninstall.removalId, [])
+    await expect(stat(directory)).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readFile(sibling, 'utf8')).toBe('keep')
+    expect(f.campaign.getSnapshot().records).toEqual([])
+  },
+)
+test('CCM scan finds sibling packages but does not split a marked package or follow directory links', async () => {
+  const f = await fixture()
+  const directories = [
+    join(f.paths.ccmRoot, 'Wrapper', 'First'),
+    join(f.paths.ccmRoot, 'Wrapper', 'Second'),
+    join(f.paths.ccmRoot, 'Wrapper', 'First', 'Nested'),
+    join(f.root, 'Outside'),
+  ]
+  for (const [i, directory] of directories.entries()) {
+    await mkdir(directory, { recursive: true })
+    await writeFile(join(directory, 'metadata.txt'), `title=Campaign ${i}\ncampaign=WOL`)
+    await writeFile(join(directory, 'M.SC2Map'), 'map')
+  }
+  const link = join(f.paths.ccmRoot, 'Linked')
+  await symlink(directories[3], link, 'junction')
+  await expect(f.service.scan()).rejects.toMatchObject({ code: 'M031' })
+  expect(f.campaign.getSnapshot().records).toEqual([])
+  await rm(link)
+  const result = await f.service.scan()
+  expect(result.diagnostics).toEqual([])
+  expect(result.records.map((record) => record.managementDirectory).sort()).toEqual(
+    directories.slice(0, 2).sort(),
+  )
 })
 test('customize resolves map and mod conflicts independently and shares removal references', async () => {
   const f = await fixture()

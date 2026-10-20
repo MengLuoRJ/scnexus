@@ -3,7 +3,7 @@ import { validateCustomizeRecord } from '../../stores/customize'
 import { validateActive } from '../../stores/campaign-active'
 import { validateRecordPaths } from './content-package'
 import { readdir, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { createHash } from 'node:crypto'
 import type {
   ContentRecord,
@@ -101,11 +101,19 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
       })
     }
   }
-  for (const dir of await readDirectories(paths.ccmRoot)) {
-    if (!dir.isDirectory() || dir.isSymbolicLink()) continue
-    const directory = await safePath(paths.gameRoot, 'Maps/CustomCampaigns/' + dir.name)
-    const raw = await optional(join(directory, 'metadata.txt'))
-    if (!raw) continue
+  async function* ccmDirectories(root: string): AsyncGenerator<{ directory: string; raw: Buffer }> {
+    for (const dir of await readDirectories(root)) {
+      if (!dir.isDirectory() || dir.isSymbolicLink()) continue
+      const directory = await safePath(
+        paths.gameRoot,
+        relative(paths.gameRoot, join(root, dir.name)),
+      )
+      const raw = await optional(join(directory, 'metadata.txt'))
+      if (raw) yield { directory, raw }
+      else yield* ccmDirectories(directory)
+    }
+  }
+  for await (const { directory, raw } of ccmDirectories(paths.ccmRoot)) {
     try {
       const decoded = decodeCcm(raw)
       const pkg = parseCcm(decoded.text)

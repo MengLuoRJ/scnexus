@@ -13,7 +13,7 @@ export function initTray() {
   const iconPath = join(
     app.getAppPath(),
     'packages',
-    'app-renderer',
+    'app-renderer-v2',
     app.isPackaged ? 'dist' : 'public',
     'application_icon.png',
   )

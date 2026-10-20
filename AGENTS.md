@@ -49,8 +49,8 @@ Node 26 是开发工具链基线；主进程和 preload 以 Electron 内嵌运�
 
 - `packages/app-main`：应用生命周期、窗口、本地服务、文件与游戏进程、持久化、日志及 IPC handler。
 - `packages/app-preload`：通过 contextBridge 暴露受控 IPC API；不承载业务或直接操作游戏文件。
-- `packages/app-renderer-v2`：后续界面开发入口，负责页面、路由、界面状态和 HTTP 请求。
-- `packages/app-renderer`：暂时保留参考，非必要不增加新功能；迁移时不直接破坏旧运行入口。
+- `packages/app-renderer-v2`：唯一 renderer 运行与维护入口，负责页面、路由、界面状态和 HTTP 请求。
+- 旧 `packages/app-renderer`（v1）已从当前分支移除；历史实现通过 Git 历史或 `v001` 分支查看，不恢复其依赖和运行入口。
 - `packages/app-shared`：共享类型、DTO、错误码和纯契约逻辑，不依赖 Electron、Node 文件系统或 Vue。
 
 运行包之间不导入彼此源码。跨进程使用 IPC，共享契约通过辅助包公开导出使用。不要复制旧 renderer 的隐式依赖或未经验证的实现。
@@ -67,7 +67,7 @@ Node 26 是开发工具链基线；主进程和 preload 以 Electron 内嵌运�
 
 ## Vue.js 代码编写和页面开发
 
-新界面在 `packages/app-renderer-v2` 中使用 Vue 3（组合式 API）和 TypeScript 开发；旧 renderer 不要求在本阶段按新规范重写。
+所有界面在 `packages/app-renderer-v2` 中使用 Vue 3（组合式 API）和 TypeScript 开发，不再维护 v1 renderer。
 
 所有 Vue 文件（`.vue`）和单文件组件（SFC）**必须**使用组合式 API（Composition API）进行开发，并使用 `<script lang="ts" setup>` 标签。
 

@@ -7,7 +7,6 @@
 dist
 
 # Analyze File
-packages/app-renderer/stats.html
 packages/app-renderer-v2/stats.html
 
 # Logs
@@ -36,3 +35,7 @@ release
 # lockfile
 package-lock.json
 yarn.lock
+
+
+# Local Docs References
+/docs/server

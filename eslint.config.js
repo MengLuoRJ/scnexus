@@ -36,11 +36,7 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
-    files: [
-      'packages/app-preload/src/**',
-      'packages/app-renderer/src/**',
-      'packages/app-renderer-v2/src/**',
-    ],
+    files: ['packages/app-preload/src/**', 'packages/app-renderer-v2/src/**'],
     languageOptions: { globals: globals.browser },
   },
   {
@@ -55,8 +51,8 @@ export default tseslint.config(
     ...vitest.configs.recommended,
     files: [
       'packages/app-main/**/*.test.ts',
-      'packages/app-renderer*/**/*.test.ts',
-      'packages/app-renderer*/**/*.spec.ts',
+      'packages/app-renderer-v2/**/*.test.ts',
+      'packages/app-renderer-v2/**/*.spec.ts',
       'test/**/*.test.ts',
     ],
   },

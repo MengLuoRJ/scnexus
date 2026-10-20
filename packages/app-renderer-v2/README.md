@@ -1,14 +1,14 @@
 # app-renderer-v2
 
-SCNexus 新版桌面界面，后续页面与功能在此包开发。旧 `app-renderer` 暂时保留作为参考。
+SCNexus 唯一桌面界面，后续页面与功能均在此包维护。旧 `app-renderer`（v1）已移除，历史实现可通过 Git 历史或 `v001` 分支查看。
 
 ## 架构定位与当前状态
 
 - 目标技术栈：Vue 3、Vue Router 5、Pinia、Axios、Nuxt UI（`@nuxt/ui`）、VueUse，使用 Vite 8 / Rolldown 构建。
 - 开发环境目标：Node.js 26、pnpm monorepo。本文不代表依赖与工具链升级已完成。
 - 本包负责页面、路由、界面状态和 HTTP 请求；本地游戏操作通过 app-preload 的受控 IPC API 交由 app-main 执行。
-- 当前根目录应用构建和主窗口仍使用旧 renderer；单独运行本包的 Vite 开发服务不等于已接入 Electron。
-- 当前配置尚未完成 Nuxt UI 插件及样式接入，也不能仅因安装依赖就认为桌面桥接和业务迁移已完成。
+- 根目录开发、构建、类型检查和测试脚本以及主窗口均使用本包；单独运行 Vite 开发服务不等于完整 Electron 环境。
+- 已接入 Nuxt UI 插件、样式及受控桌面桥接；业务可用范围以当前页面和 IPC 实现为准。
 - 自动导入、Pinia 持久化和旧权限指令不默认可用；按当前包实际配置使用。
 
 参见 [目标架构](../../docs/architecture.md) 与 [开发规范](../../AGENTS.md)。

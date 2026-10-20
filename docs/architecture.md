@@ -40,7 +40,7 @@
 | `packages/app-preload`     | 通过 contextBridge 暴露受控 IPC API，封装调用和订阅                         | 游戏业务逻辑、直接操作文件、保存业务状态     |
 | `packages/app-renderer-v2` | 页面、路由、Pinia、HTTP 请求、用户交互与任务状态展示                        | 直接使用 Node/Electron、直接修改本地游戏文件 |
 
-`packages/app-renderer` 保留为旧实现参考。新增页面与功能在 v2 开发；迁移时按业务行为重建，不复制旧实现中的隐式依赖。旧 renderer 暂不删除，也不自动从当前构建入口移除。
+`packages/app-renderer-v2` 是唯一 renderer 运行与维护入口。旧 `packages/app-renderer`（v1）已删除，其代码保留在 Git 历史及 `v001` 分支；不再保留旧包依赖、工具链或运行入口。
 
 `packages/app-shared` 是三个运行包可复用的契约辅助包，不是第四个应用进程。可放 IPC 类型、DTO、错误码及不依赖运行环境的纯校验逻辑；不能引入 Electron、Node 文件系统或 Vue。
 
@@ -111,7 +111,7 @@ type IpcResult<T> = { ok: true; data: T } | { ok: false; error: AppErrorDto }
 
 AppErrorDto 是共享契约，包含静态定义 code、name、可选 description，以及本次抛出的 errorId、可选 message、可选业务 taskId。code 采用责任进程前缀和三位编号（M/P/R），name 使用全大写连字符名称；定义和全局码表见 [日志与错误规范](./logging-and-errors.md)。
 
-契约迁移必须同步更新 main、preload、v2 与测试。旧 renderer 仍被使用时，不直接破坏旧契约；兼容适配应集中放置并在迁移结束后删除。
+契约变更必须同步更新 main、preload、renderer-v2 与测试；不再为已移除的 v1 renderer 提供新兼容适配。
 
 ### 通信规则
 
@@ -199,7 +199,7 @@ src/
 - pnpm 是目标统一包管理器；工作区使用根目录 pnpm-lock.yaml，不引入新的 npm/yarn 锁文件。
 - 依赖在使用它的包中声明，内部依赖使用 `workspace:*`；hoisted 布局不能代替依赖声明。
 - `@nuxt/ui@4.11.3` 的发布清单缺少插件类型声明所需的 Vue peer；在 `pnpm-workspace.yaml` 用版本限定的 `packageExtensions` 补充 `vue: ^3.5.0`，让其绑定 renderer-v2 的 Vue，避免严格依赖布局下回退解析到旧 renderer 的 Vue 类型。升级 Nuxt UI 时检查上游是否已补齐，再调整或移除该扩展；不使用插件类型断言或全局 Vue 版本覆盖规避问题。
-- 根目录保留开发脚本及 postinstall 直接使用的 Electron；Tabler 图标依赖由 renderer 包声明，electron-builder 由 app-main 声明。旧 `scnexus-standard` 类型依赖由 main（已有 devDependency）、旧 renderer（devDependency）和 shared（公开类型依赖）各自声明，不由根目录兜底。应用打包目录为 app-main；根目录不保留另一套 electron-builder 配置。
+- 根目录保留开发脚本及 postinstall 直接使用的 Electron；Tabler 图标依赖由 renderer 包声明，electron-builder 由 app-main 声明。旧 `scnexus-standard` 类型依赖由 main（已有 devDependency）和 shared（公开类型依赖）各自声明，不由根目录兜底。应用打包目录为 app-main；根目录不保留另一套 electron-builder 配置。
 - `pnpm build` 先刷新 Electron Node/Chromium target、构建 standard，再进行 shared/main/preload/v2 类型检查，最后构建 main/preload/renderer-v2。`pnpm build:app` 和 `pnpm build:app:release` 先同步版本，再生产构建，由 app-main 执行 electron-builder；前者生成未封装目录，后者生成安装包，均默认 `--publish never`。包级打包检查三个产物及版本存在且同步，不代替根目录完整构建。
 - `pnpm test` 执行 standard 前置构建、构建配置契约测试、main/preload/v2 单元测试；删除把根级 Vitest 发现误称为 E2E 的 `test:e2e`。暂没有独立桌面 E2E 自动化。
 - 通过 pnpm 工作区过滤执行包命令。根目录命令负责应用编排，包级命令负责自身职责。
@@ -214,12 +214,12 @@ src/
 
 当前 pnpm isolated 布局下，Sentry 依赖由 electron-builder 的生产依赖收集器保留，不再手工复制 browser SDK。`@sentry/electron@8.1.0` 使用 conventions 0.23，而其 browser 11.4 使用 conventions 0.25；将 browser 强行复制到 electron 的 node_modules 会令它误解析到上层 0.23，导致启动时报 `SENTRY_IS_LOCALHOST` 导出缺失。两份 conventions 共存是正常的，不能只按包名去重。修复验证：`pnpm run test:build` 14 项通过；`pnpm --filter @scnexus/app-main build:app --config.directories.output="C:\Users\mengl\.copilot\session-state\6824866d-f5c6-422c-871a-abc5e0e6fc35\files\sentry-package-validation" --config.win.signAndEditExecutable=false` 通过，ASAR 中 browser 位于顶层并使用 conventions 0.25，electron 自身保留嵌套 conventions 0.23。真实 Electron 加载该 ASAR main（临时 userData、模拟打包标志及资源根）成功显示首页和 preload 桥接，无错误对话框、退出码 0；未执行 NSIS 安装、签名或真实遥测发送。
 
-开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 保留参考且不再进入应用产物。Node 26、Vite 8、Electron 44 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
+开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 已移除，应用只使用 renderer-v2。Node 26、Vite 8、Electron 44 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
 
 后续分阶段实施，每阶段独立验收：
 
 1. **工具链对齐**：Node 26、pnpm、Vite 8、Electron 44、electron-builder 36；确认插件、类型、开发启动及构建兼容。
-2. **三包运行闭环**：开发和生产入口接入 v2，preload 可用，打包后静态页面正常加载；旧 renderer 仅保留参考。
+2. **三包运行闭环**：开发和生产入口接入 v2，preload 可用，打包后静态页面正常加载；旧 renderer 已移除，历史代码通过 Git 查看。
 3. **基础主进程与桥接**：electron-store、electron-log、配置生命周期、受控 API 及错误契约。
 4. **逐业务迁移**：先游戏配置与基础页面，再内容导入、安装/激活，最后工坊等扩展；同时补正确性和失败恢复测试。
 

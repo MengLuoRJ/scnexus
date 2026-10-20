@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { readFile, access } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { createRequire } from 'node:module'
 const root = new URL('../../', import.meta.url)
@@ -42,13 +42,34 @@ test('app-main is the sole packaging application and includes v2 and external to
   assert.equal(config.electronVersion, require('electron/package.json').version)
   assert.deepEqual(config.files, (await json('packages/app-main/electron-builder.json')).files)
   assert.ok(
-    !config.files.some((file) => typeof file === 'object' && file.to?.includes('node_modules/@sentry')),
+    !config.files.some(
+      (file) => typeof file === 'object' && file.to?.includes('node_modules/@sentry'),
+    ),
     'Let the dependency collector preserve Sentry versions; manual copies break nested resolution',
   )
   assert.equal(
     config.extraResources[0].from,
     join(dirname(require.resolve('regedit/package.json')), 'vbs'),
   )
+})
+
+test('renderer-v2 is the only renderer package and owns the application icons', async () => {
+  await assert.rejects(access(new URL('packages/app-renderer/package.json', root)), {
+    code: 'ENOENT',
+  })
+  const lock = await readFile(new URL('pnpm-lock.yaml', root), 'utf8')
+  assert.ok(!lock.includes('  packages/app-renderer:'))
+  const tray = await readFile(new URL('packages/app-main/src/modules/tray/tray.ts', root), 'utf8')
+  assert.ok(tray.includes("'app-renderer-v2'"))
+  assert.ok(!tray.includes("'app-renderer'"))
+  for (const extension of ['png', 'ico'])
+    await access(new URL(`packages/app-renderer-v2/public/application_icon.${extension}`, root))
+  for (const name of ['README.md', 'README.english.md']) {
+    const text = await readFile(new URL(name, root), 'utf8')
+    assert.ok(text.includes('./packages/app-renderer-v2/public/application_icon.png'))
+  }
+  const targets = await readFile(new URL('scripts/update-electron-vendors.js', root), 'utf8')
+  assert.ok(!targets.includes("'./packages/app-renderer'"))
 })
 
 test('version sync targets renderer-v2 and Electron targets use Chromium rather than V8', async () => {

@@ -24,10 +24,6 @@ if (existsSync('./packages/app-main')) {
   )
 }
 
-if (existsSync('./packages/app-renderer')) {
-  writeFileSync('./packages/app-renderer/.browserslistrc', `Chrome ${chrome}`, 'utf8')
-}
-
 if (existsSync('./packages/app-renderer-v2')) {
   writeFileSync('./packages/app-renderer-v2/.browserslistrc', `Chrome ${chrome}`, 'utf8')
 }

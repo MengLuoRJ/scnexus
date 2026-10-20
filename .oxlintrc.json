@@ -30,11 +30,7 @@
       "env": { "node": true }
     },
     {
-      "files": [
-        "packages/app-preload/src/**",
-        "packages/app-renderer/src/**",
-        "packages/app-renderer-v2/src/**"
-      ],
+      "files": ["packages/app-preload/src/**", "packages/app-renderer-v2/src/**"],
       "env": { "browser": true }
     },
     {

@@ -895,6 +895,105 @@ test('SCNexus active authorization rejects undeclared resources, incorrect scope
     ).toThrow(expect.objectContaining({ code: 'M031' }))
   }
 })
+test('scanning missing legacy kept members never grants whole-group deletion ownership', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('customize', {
+        mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+      }),
+    ),
+    'Mods/Core.SC2Mod/a': 'a',
+    'Mods/Core.SC2Mod/b': 'b',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  record.installedFiles[0].result = 'kept'
+  await writeFile(join(record.managementDirectory, 'install-manifest.json'), JSON.stringify(record))
+  await rm(record.installedFiles[0].absolutePath)
+  const added = join(f.paths.modsRoot, 'Core.SC2Mod', 'user-added')
+  await writeFile(added, 'user content')
+  for (let i = 0; i < 2; i++) {
+    await f.service.scan()
+    const scanned = f.customize.getSnapshot().records[0]
+    expect(scanned.installedFiles).toHaveLength(1)
+    expect(scanned.installedFiles[0].result).toBe('kept')
+  }
+  const removal = await f.service.prepareRemoval(record.localId, 'uninstall')
+  await f.service.remove(removal.removalId, [])
+  expect(await readFile(added, 'utf8')).toBe('user content')
+  expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod', 'b'), 'utf8')).toBe('b')
+})
+test.each(['file-to-directory', 'directory-to-file'] as const)(
+  'scan isolates externally changed %s resource shapes and retains records',
+  async (shape) => {
+    const f = await fixture()
+    const grouped = shape === 'directory-to-file'
+    const input = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', {
+          mods: [
+            {
+              name: 'Core.SC2Mod',
+              source_path: '/Mods/Core.SC2Mod',
+              ...(grouped ? { components: true } : {}),
+            },
+          ],
+        }),
+      ),
+      ...(grouped ? { 'Mods/Core.SC2Mod/a': 'group' } : { 'Mods/Core.SC2Mod': 'packed' }),
+    })
+    const analysis = await f.service.analyze('customize', input)
+    const record = await f.service.install({
+      analysisId: analysis.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    const target = join(f.paths.modsRoot, 'Core.SC2Mod')
+    await rm(target, { recursive: true })
+    if (grouped) await writeFile(target, 'external packed')
+    else {
+      await mkdir(target)
+      await writeFile(join(target, 'a'), 'external group')
+    }
+    const valid = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', {
+          name: 'Other',
+          mods: [{ name: 'Other.SC2Mod', source_path: '/Mods/Other.SC2Mod' }],
+        }),
+      ),
+      'Mods/Other.SC2Mod': 'valid',
+    })
+    const validAnalysis = await f.service.analyze('customize', valid)
+    const other = await f.service.install({
+      analysisId: validAnalysis.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    for (let i = 0; i < 2; i++) {
+      const scan = await f.service.scan()
+      expect(scan.diagnostics).toContainEqual({
+        path: target,
+        message: 'Installed resource shape changed; retained installation record',
+      })
+      expect(scan.records.map((item) => item.localId)).toEqual(
+        expect.arrayContaining([record.localId, other.localId]),
+      )
+      expect(
+        f.customize.getSnapshot().records.find((item) => item.localId === record.localId)
+          ?.installedFiles,
+      ).toEqual(record.installedFiles)
+    }
+    expect(await readFile(grouped ? target : join(target, 'a'), 'utf8')).toBe(
+      grouped ? 'external packed' : 'external group',
+    )
+  },
+)
 test('cancelled preview cannot install or leave a successful record', async () => {
   const f = await fixture()
   const input = await source(f.root, {

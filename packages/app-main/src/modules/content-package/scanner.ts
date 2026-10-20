@@ -2,7 +2,7 @@ import { validateCampaignRecord } from '../../stores/campaign'
 import { validateCustomizeRecord } from '../../stores/customize'
 import { validateActive } from '../../stores/campaign-active'
 import { validateRecordPaths, validateActiveResources } from './content-package'
-import { readdir, readFile } from 'node:fs/promises'
+import { readdir, readFile, lstat } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import { createHash } from 'node:crypto'
 import type {
@@ -83,6 +83,32 @@ export async function scanContent(
           throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Manifest path mismatch' })
       }
       if (record.package.type === 'customize') {
+        let shapeChanged = false
+        for (const group of resourceGroups(record.installedFiles)) {
+          const root = await safePath(paths.gameRoot, group.target)
+          let info
+          try {
+            info = await lstat(root)
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+          }
+          const directory = group.files.some(
+            (file) => keyPath(file.target) !== keyPath(group.target),
+          )
+          if (info && info.isDirectory() !== directory) {
+            shapeChanged = true
+            diagnostics.push({
+              path: root,
+              message: 'Installed resource shape changed; retained installation record',
+            })
+          }
+          if (group.files.some((file) => file.result === 'kept'))
+            for (const file of group.files) file.result = 'kept'
+        }
+        if (shapeChanged) {
+          records.push(record)
+          continue
+        }
         const present = []
         for (const file of record.installedFiles) {
           const data = await optional(await safePath(paths.gameRoot, file.target))

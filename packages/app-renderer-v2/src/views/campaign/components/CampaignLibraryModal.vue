@@ -39,7 +39,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
   >
     <template #body>
       <div class="space-y-2">
-        <UAlert v-if="!list.length" :title="t('campaign.empty')" color="neutral" />
+        <UAlert v-if="!list.length" :title="t('campaign.empty')" color="neutral" variant="subtle" />
         <UCard v-for="record in list" :key="record.localId" :ui="{ body: 'p-2 sm:p-2' }">
           <div class="flex flex-wrap items-center gap-2">
             <img

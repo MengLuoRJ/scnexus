@@ -19,6 +19,7 @@ import {
 import { useCampaign } from './useCampaign'
 import type { CampaignOperationRequest } from './useCampaign'
 import CampaignOverview from './components/CampaignOverview.vue'
+import CampaignManagement from './components/CampaignManagement.vue'
 import CampaignDetails from './components/CampaignDetails.vue'
 import CampaignSourcePicker from './components/CampaignSourcePicker.vue'
 import CampaignLibraryModal from './components/CampaignLibraryModal.vue'
@@ -146,6 +147,7 @@ onMounted(() => {
         :items="[
           { label: t('campaign.overview'), value: 'overview' },
           { label: t('campaign.detailMode'), value: 'detail' },
+          { label: t('campaign.libraryManagement'), value: 'management' },
         ]"
         :content="false"
       />
@@ -178,7 +180,7 @@ onMounted(() => {
       @uninstall="(record) => operate(record, 'uninstall')"
     />
     <CampaignDetails
-      v-else
+      v-else-if="viewMode === 'detail'"
       v-model="category"
       :current="current"
       :busy="locked"
@@ -188,6 +190,14 @@ onMounted(() => {
       @launch="launch"
       @folder="showFolder"
       @website="openWebsite"
+    />
+    <CampaignManagement
+      v-else
+      :records="records"
+      :active="active"
+      :busy="locked || !available"
+      @operate="operate"
+      @folder="showFolder"
     />
     <div v-if="viewMode === 'overview'" class="flex justify-center">
       <UButton

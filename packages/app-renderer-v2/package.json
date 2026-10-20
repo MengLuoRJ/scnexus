@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.3",
-    "@nuxt/ui": "^4.11.3",
+    "@nuxt/ui": "^4.12.0",
     "@scnexus/app-shared": "workspace:*",
     "@vueuse/core": "^15.0.0",
     "axios": "^1.20.0",

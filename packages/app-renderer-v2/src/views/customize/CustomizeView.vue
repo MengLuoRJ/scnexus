@@ -120,7 +120,7 @@ onMounted(() => {
       @select="(source) => refContentImport?.analyze(source)"
       @error="notifyError"
     />
-    <UAlert v-if="!records.length" color="neutral" :title="t('customize.empty')" />
+    <UAlert v-if="!records.length" color="neutral" variant="subtle" :title="t('customize.empty')" />
     <div class="grid gap-3 sm:grid-cols-2">
       <UCard
         v-for="record in records"

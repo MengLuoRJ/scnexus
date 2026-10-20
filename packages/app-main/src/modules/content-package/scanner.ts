@@ -78,7 +78,17 @@ export async function scanContent(
         record.package.type as 'campaign' | 'customize',
       )
       for (const file of record.installedFiles) {
-        const target = await safePath(paths.gameRoot, file.target)
+        let target: string
+        try {
+          target = await safePath(paths.gameRoot, file.target)
+        } catch (error) {
+          if (
+            record.package.type !== 'customize' ||
+            (error as NodeJS.ErrnoException).code !== 'ENOTDIR'
+          )
+            throw error
+          target = join(paths.gameRoot, file.target)
+        }
         if (target !== file.absolutePath)
           throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Manifest path mismatch' })
       }
@@ -105,6 +115,34 @@ export async function scanContent(
           if (group.files.some((file) => file.result === 'kept'))
             for (const file of group.files) file.result = 'kept'
         }
+        for (const file of record.installedFiles) {
+          let changed = false
+          try {
+            const parts = file.target.replaceAll('\\', '/').split('/')
+            for (let index = 1; index < parts.length; index++) {
+              const parent = await safePath(paths.gameRoot, parts.slice(0, index).join('/'))
+              if (!(await lstat(parent)).isDirectory()) {
+                changed = true
+                break
+              }
+            }
+            if (!changed) {
+              const target = await safePath(paths.gameRoot, file.target)
+              changed = !(await lstat(target)).isFile()
+            }
+          } catch (error) {
+            const code = (error as NodeJS.ErrnoException).code
+            if (code === 'ENOTDIR') changed = true
+            else if (code !== 'ENOENT') throw error
+          }
+          if (changed) {
+            shapeChanged = true
+            diagnostics.push({
+              path: file.absolutePath,
+              message: 'Installed resource entry shape changed; retained installation record',
+            })
+          }
+        }
         if (shapeChanged) {
           records.push(record)
           continue
@@ -123,6 +161,19 @@ export async function scanContent(
             })
         }
         record.installedFiles = present
+        record.files = present.map(
+          ({ absolutePath: _absolutePath, result: _result, hash: _hash, ...file }) => file,
+        )
+        record.fileCount = present.length
+        record.bytes = present.reduce((total, file) => total + file.bytes, 0)
+        record.targetTree = makeTree(
+          present.map((file) => ({
+            path: file.target,
+            bytes: file.bytes,
+            modifiedAt: file.modifiedAt,
+          })),
+          'GameRoot',
+        )
       }
       records.push(record)
     } catch (error) {

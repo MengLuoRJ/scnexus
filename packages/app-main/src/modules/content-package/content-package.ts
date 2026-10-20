@@ -1308,7 +1308,11 @@ export class ContentService {
           })
       }
     const hashes = new Map<string, string | null>()
-    for (const group of resourceGroups(files)) {
+    for (const group of resourceGroups(files).filter(
+      (group) =>
+        group.files.every((file) => file.result !== 'kept') &&
+        (record.mode !== 'ccm' || group.files[0]!.type === 'map'),
+    )) {
       const target = await safePath(paths.gameRoot, group.target)
       hashes.set(group.target, (await resourceState(target))?.hash ?? null)
     }
@@ -1366,6 +1370,7 @@ export class ContentService {
         )
       const files = context.active ? active!.installedFiles : record.installedFiles
       for (const [target, digest] of context.hashes) {
+        if (choices.get(target) === 'keep') continue
         if (
           ((await resourceState(await safePath(paths.gameRoot, target)))?.hash ?? null) !== digest
         )

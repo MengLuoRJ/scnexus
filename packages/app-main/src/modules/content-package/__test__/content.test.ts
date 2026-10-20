@@ -994,6 +994,193 @@ test.each(['file-to-directory', 'directory-to-file'] as const)(
     )
   },
 )
+test.each(['entry-to-directory', 'parent-to-file'] as const)(
+  'scan isolates component %s changes without losing records or modifying files',
+  async (shape) => {
+    const f = await fixture()
+    const input = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', {
+          mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+        }),
+      ),
+      'Mods/Core.SC2Mod/DocumentInfo': 'metadata',
+      'Mods/Core.SC2Mod/Base.SC2Data/a': 'data',
+    })
+    const analysis = await f.service.analyze('customize', input)
+    const record = await f.service.install({
+      analysisId: analysis.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    const target = join(
+      f.paths.modsRoot,
+      'Core.SC2Mod',
+      shape === 'entry-to-directory' ? 'DocumentInfo' : 'Base.SC2Data',
+    )
+    await rm(target, { recursive: true })
+    if (shape === 'entry-to-directory') {
+      await mkdir(target)
+      await writeFile(join(target, 'user-content'), 'external edit')
+    } else await writeFile(target, 'external edit')
+    const otherInput = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', {
+          name: 'Other',
+          mods: [{ name: 'Other.SC2Mod', source_path: '/Mods/Other.SC2Mod' }],
+        }),
+      ),
+      'Mods/Other.SC2Mod': 'valid',
+    })
+    const otherAnalysis = await f.service.analyze('customize', otherInput)
+    const other = await f.service.install({
+      analysisId: otherAnalysis.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    for (let i = 0; i < 2; i++) {
+      const result = await f.service.scan()
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          message: 'Installed resource entry shape changed; retained installation record',
+        }),
+      )
+      expect(result.records.map((item) => item.localId)).toEqual(
+        expect.arrayContaining([record.localId, other.localId]),
+      )
+      expect(
+        f.customize.getSnapshot().records.find((item) => item.localId === record.localId)
+          ?.installedFiles,
+      ).toEqual(record.installedFiles)
+    }
+    expect(
+      await readFile(
+        shape === 'entry-to-directory' ? join(target, 'user-content') : target,
+        'utf8',
+      ),
+    ).toBe('external edit')
+    expect(await readFile(join(f.paths.modsRoot, 'Other.SC2Mod'), 'utf8')).toBe('valid')
+  },
+)
+test('scan synchronizes current customize file plans, counts, sizes and target tree', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('customize', {
+        mods: [
+          { name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true },
+          { name: 'Other.SC2Mod', source_path: '/Mods/Other.SC2Mod' },
+        ],
+      }),
+    ),
+    'Mods/Core.SC2Mod/a': 'aaa',
+    'Mods/Core.SC2Mod/b': 'bbbb',
+    'Mods/Other.SC2Mod': 'other',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  await rm(join(f.paths.modsRoot, 'Core.SC2Mod', 'a'))
+  await rm(join(f.paths.modsRoot, 'Other.SC2Mod'))
+  await writeFile(join(f.paths.modsRoot, 'Core.SC2Mod', 'b'), 'changed content')
+  for (let i = 0; i < 2; i++) {
+    await f.service.scan()
+    const scanned = f.customize
+      .getSnapshot()
+      .records.find((item) => item.localId === record.localId)!
+    expect(scanned.fileCount).toBe(1)
+    expect(scanned.bytes).toBe(Buffer.byteLength('changed content'))
+    expect(scanned.files.map((file) => file.target)).toEqual(['Mods/Core.SC2Mod/b'])
+    expect(scanned.installedFiles).toHaveLength(1)
+    expect(JSON.stringify(scanned.targetTree)).not.toContain('Other.SC2Mod')
+    expect(scanned.targetTree.bytes).toBe(scanned.bytes)
+  }
+  await rm(join(f.paths.modsRoot, 'Core.SC2Mod', 'b'))
+  await f.service.scan()
+  const empty = f.customize.getSnapshot().records.find((item) => item.localId === record.localId)!
+  expect(empty.fileCount).toBe(0)
+  expect(empty.bytes).toBe(0)
+  expect(empty.files).toEqual([])
+  expect(empty.targetTree.children).toEqual([])
+})
+test.each(['modify', 'delete', 'shape'] as const)(
+  'kept resource %s after preview does not prevent uninstalling metadata',
+  async (change) => {
+    const f = await fixture()
+    await mkdir(f.paths.modsRoot, { recursive: true })
+    const target = join(f.paths.modsRoot, 'Core.SC2Mod')
+    await writeFile(target, 'local')
+    const input = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', { mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod' }] }),
+      ),
+      'Mods/Core.SC2Mod': 'incoming',
+    })
+    const analysis = await f.service.analyze('customize', input)
+    const record = await f.service.install({
+      analysisId: analysis.analysisId,
+      mode: 'scnexus',
+      decisions: decisions(analysis, 'scnexus', 'keep'),
+    })
+    const removal = await f.service.prepareRemoval(record.localId, 'uninstall')
+    if (change === 'modify') await writeFile(target, 'user edit')
+    else {
+      await rm(target)
+      if (change === 'shape') {
+        await mkdir(target)
+        await writeFile(join(target, 'a'), 'user edit')
+      }
+    }
+    await f.service.remove(removal.removalId, [])
+    expect(f.customize.getSnapshot().records).toEqual([])
+    if (change === 'delete') await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
+    else
+      expect(await readFile(change === 'shape' ? join(target, 'a') : target, 'utf8')).toBe(
+        'user edit',
+      )
+  },
+)
+test.each(['keep', 'delete'] as const)(
+  'changed shared resource removal follows %s decision',
+  async (action) => {
+    const f = await fixture()
+    const make = (name: string) =>
+      source(f.root, {
+        'package.json': JSON.stringify(
+          pkg('customize', {
+            name,
+            mods: [{ name: 'Shared.SC2Mod', source_path: '/Mods/Shared.SC2Mod' }],
+          }),
+        ),
+        'Mods/Shared.SC2Mod': name,
+      })
+    const first = await f.service.analyze('customize', await make('First'))
+    const owner = await f.service.install({
+      analysisId: first.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    const second = await f.service.analyze('customize', await make('Second'))
+    await f.service.install({
+      analysisId: second.analysisId,
+      mode: 'scnexus',
+      decisions: decisions(second, 'scnexus', 'keep'),
+    })
+    const removal = await f.service.prepareRemoval(owner.localId, 'uninstall')
+    expect(removal.files).toHaveLength(1)
+    const target = join(f.paths.modsRoot, 'Shared.SC2Mod')
+    await writeFile(target, 'user edit')
+    const run = f.service.remove(removal.removalId, [
+      { conflictId: removal.files[0].conflictId, action },
+    ])
+    if (action === 'delete') await expect(run).rejects.toMatchObject({ code: 'M051' })
+    else await run
+    expect(await readFile(target, 'utf8')).toBe('user edit')
+  },
+)
 test('cancelled preview cannot install or leave a successful record', async () => {
   const f = await fixture()
   const input = await source(f.root, {

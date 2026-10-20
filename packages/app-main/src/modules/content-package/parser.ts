@@ -113,6 +113,16 @@ export function buildPreview(
         message: 'Conflicting package targets',
       })
     }
+    if (
+      files.some(
+        (file) =>
+          keyPath(file.target).startsWith(keyPath(target) + '/') ||
+          keyPath(target).startsWith(keyPath(file.target) + '/'),
+      )
+    )
+      throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
+        message: 'Resource file/directory target collision',
+      })
     files.push({
       source: path,
       target,

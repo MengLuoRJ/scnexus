@@ -380,7 +380,7 @@ test('WOL excludes other campaigns, traversal and ambiguous roots are unavailabl
   })
   expect((await f.service.analyze('campaign', twin)).modes.scnexus).toBeNull()
 })
-test('components report conflicts for each physical file and mixed choices', async () => {
+test('components report one resource conflict and keep the complete local group', async () => {
   const f = await fixture()
   const input = await source(f.root, {
     'package.json': JSON.stringify(
@@ -402,18 +402,323 @@ test('components report conflicts for each physical file and mixed choices', asy
   await writeFile(join(f.paths.modsRoot, 'Core.SC2Mod/b'), 'old b')
   const result = await f.service.analyze('customize', input)
   const files = result.conflicts[0].files
-  expect(files).toHaveLength(2)
+  expect(files).toHaveLength(1)
+  expect(files[0].local.path).toBe(join(f.paths.modsRoot, 'Core.SC2Mod'))
   await f.service.install({
     analysisId: result.analysisId,
     mode: 'scnexus',
-    decisions: files.map((f, i) => ({
+    decisions: files.map((f) => ({
       conflictId: f.conflictId,
-      action: i === 0 ? 'keep' : 'overwrite',
+      action: 'keep',
     })),
   })
   expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod/a'), 'utf8')).toBe('old a')
-  expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod/b'), 'utf8')).toBe('b')
+  expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod/b'), 'utf8')).toBe('old b')
 })
+test.each(['file-to-directory', 'directory-to-file', 'directory-to-directory'])(
+  'campaign resource %s replaces the whole target, survives scan and restores the original',
+  async (shape) => {
+    const f = await fixture()
+    const target = join(f.paths.mapsRoot, 'Campaign', 'Mission.SC2Map')
+    await mkdir(join(f.paths.mapsRoot, 'Campaign'), { recursive: true })
+    if (shape === 'file-to-directory') await writeFile(target, 'official archive')
+    else {
+      await mkdir(join(target, 'Empty'), { recursive: true })
+      await writeFile(join(target, 'old-only'), 'official component')
+    }
+    const input = await source(f.root, {
+      'metadata.txt': 'title=Grouped\ncampaign=WOL',
+      ...(shape === 'directory-to-file'
+        ? { 'Mission.SC2Map': 'custom archive' }
+        : {
+            'Mission.SC2Map/DocumentInfo': 'custom info',
+            'Mission.SC2Map/Base.SC2Data/a': 'custom component',
+          }),
+    })
+    if (shape !== 'directory-to-file')
+      await mkdir(join(input.path, 'Mission.SC2Map', 'IncomingEmpty'))
+    const analysis = await f.service.analyze('campaign', input)
+    const installed = await f.service.install({
+      analysisId: analysis.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    const preview = await f.service.prepareActivation(installed.localId)
+    expect(preview.conflicts).toHaveLength(1)
+    expect(preview.conflicts[0].local.path).toBe(target)
+    await f.service.activate(
+      preview.activationId,
+      preview.conflicts.map((conflict) => ({
+        conflictId: conflict.conflictId,
+        action: 'overwrite',
+      })),
+    )
+    if (shape === 'directory-to-file') expect(await readFile(target, 'utf8')).toBe('custom archive')
+    else {
+      expect(await readFile(join(target, 'DocumentInfo'), 'utf8')).toBe('custom info')
+      expect((await stat(join(target, 'IncomingEmpty'))).isDirectory()).toBe(true)
+      await expect(stat(join(target, 'old-only'))).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    const scanned = await f.service.scan()
+    expect(scanned.active.WOL?.resourceBackups).toHaveLength(1)
+    if (shape === 'file-to-directory') {
+      const failing = new ContentService(
+        async () => f.paths,
+        f.campaign,
+        f.customize,
+        {
+          getSnapshot: f.active.getSnapshot,
+          update() {
+            throw Error('restore state failed')
+          },
+        },
+        async (run) => run(),
+      )
+      const removal = await failing.prepareRemoval(installed.localId, 'deactivate')
+      await expect(failing.remove(removal.removalId, [])).rejects.toThrow('restore state failed')
+      expect(await readFile(join(target, 'DocumentInfo'), 'utf8')).toBe('custom info')
+      expect(await readFile(scanned.active.WOL!.resourceBackups![0]!.path, 'utf8')).toBe(
+        'official archive',
+      )
+    }
+    const removal = await f.service.prepareRemoval(installed.localId, 'deactivate')
+    await f.service.remove(removal.removalId, [])
+    if (shape === 'file-to-directory')
+      expect(await readFile(target, 'utf8')).toBe('official archive')
+    else {
+      expect(await readFile(join(target, 'old-only'), 'utf8')).toBe('official component')
+      expect((await stat(join(target, 'Empty'))).isDirectory()).toBe(true)
+      await expect(stat(join(target, 'DocumentInfo'))).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    const uninstall = await f.service.prepareRemoval(installed.localId, 'uninstall')
+    await f.service.remove(uninstall.removalId, [])
+    await expect(stat(installed.managementDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
+  },
+)
+test('component changes anywhere in a resource invalidate the conflict preview', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('customize', {
+        mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+      }),
+    ),
+    'Mods/Core.SC2Mod/a': 'incoming',
+  })
+  const target = join(f.paths.modsRoot, 'Core.SC2Mod')
+  await mkdir(target, { recursive: true })
+  await writeFile(join(target, 'a'), 'old')
+  const preview = await f.service.analyze('customize', input)
+  await writeFile(join(target, 'new-unlisted'), 'added after preview')
+  await expect(
+    f.service.install({
+      analysisId: preview.analysisId,
+      mode: 'scnexus',
+      decisions: decisions(preview, 'scnexus'),
+    }),
+  ).rejects.toMatchObject({ code: 'M051' })
+  expect(await readFile(join(target, 'a'), 'utf8')).toBe('old')
+})
+test.each(['scnexus', 'ccm'] as const)(
+  '%s activation rollback preserves a complete original resource when saving state fails',
+  async (mode) => {
+    const f = await fixture()
+    const target = join(f.paths.mapsRoot, 'Campaign', 'Mission.SC2Map')
+    await mkdir(target, { recursive: true })
+    await writeFile(join(target, 'old-only'), 'original')
+    const input = await source(f.root, {
+      'metadata.txt': 'title=Rollback\ncampaign=WOL',
+      'Mission.SC2Map': 'archive',
+    })
+    const preview = await f.service.analyze('campaign', input)
+    const installed = await f.service.install({
+      analysisId: preview.analysisId,
+      mode,
+      decisions: [],
+    })
+    const failing = new ContentService(
+      async () => f.paths,
+      f.campaign,
+      f.customize,
+      {
+        getSnapshot: f.active.getSnapshot,
+        update() {
+          throw Error('state failed')
+        },
+      },
+      async (run) => run(),
+    )
+    const activation = await failing.prepareActivation(installed.localId)
+    await expect(
+      failing.activate(
+        activation.activationId,
+        activation.conflicts.map((item) => ({ conflictId: item.conflictId, action: 'overwrite' })),
+      ),
+    ).rejects.toThrow('state failed')
+    expect((await stat(target)).isDirectory()).toBe(true)
+    expect(await readFile(join(target, 'old-only'), 'utf8')).toBe('original')
+    expect(f.active.getSnapshot().active.WOL).toBeUndefined()
+    await expect(
+      stat(join(installed.managementDirectory, 'active-manifest.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' })
+  },
+)
+test('CCM grouped map activation retains complete recovery data through scanning', async () => {
+  const f = await fixture()
+  const target = join(f.paths.mapsRoot, 'Campaign', 'Mission.SC2Map')
+  await mkdir(join(f.paths.mapsRoot, 'Campaign'), { recursive: true })
+  await writeFile(target, 'original')
+  const input = await source(f.root, {
+    'metadata.txt': 'title=CCM Group\ncampaign=WOL',
+    'Mission.SC2Map/a': 'group',
+  })
+  const analysis = await f.service.analyze('campaign', input)
+  const installed = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'ccm',
+    decisions: [],
+  })
+  const activation = await f.service.prepareActivation(installed.localId)
+  await f.service.activate(
+    activation.activationId,
+    activation.conflicts.map((item) => ({ conflictId: item.conflictId, action: 'overwrite' })),
+  )
+  await f.service.scan()
+  const removal = await f.service.prepareRemoval(installed.localId, 'deactivate')
+  await f.service.remove(removal.removalId, [])
+  expect(await readFile(target, 'utf8')).toBe('original')
+})
+test('direct group replacement removes stale members, detects removal changes and uninstalls the resource', async () => {
+  const f = await fixture()
+  const target = join(f.paths.modsRoot, 'Core.SC2Mod')
+  await mkdir(target, { recursive: true })
+  await writeFile(join(target, 'old-only'), 'old')
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('customize', {
+        mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+      }),
+    ),
+    'Mods/Core.SC2Mod/a': 'new',
+    'Mods/Core.SC2Mod/b': 'new b',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  const installed = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'scnexus',
+    decisions: decisions(analysis, 'scnexus'),
+  })
+  await expect(stat(join(target, 'old-only'))).rejects.toMatchObject({ code: 'ENOENT' })
+  expect(await readFile(join(target, 'a'), 'utf8')).toBe('new')
+  const removal = await f.service.prepareRemoval(installed.localId, 'uninstall')
+  await writeFile(join(target, 'changed'), 'added')
+  await expect(f.service.remove(removal.removalId, [])).rejects.toMatchObject({ code: 'M051' })
+  const retry = await f.service.prepareRemoval(installed.localId, 'uninstall')
+  await f.service.remove(retry.removalId, [])
+  await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
+})
+test('shared components produce one removal decision for the whole resource', async () => {
+  const f = await fixture()
+  const make = async (name: string, member: string) =>
+    source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', {
+          name,
+          mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+        }),
+      ),
+      ['Mods/Core.SC2Mod/' + member]: name,
+    })
+  const first = await f.service.analyze('customize', await make('First', 'a'))
+  const record = await f.service.install({
+    analysisId: first.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  const second = await f.service.analyze('customize', await make('Second', 'b'))
+  await f.service.install({
+    analysisId: second.analysisId,
+    mode: 'scnexus',
+    decisions: decisions(second, 'scnexus', 'keep'),
+  })
+  const preview = await f.service.prepareRemoval(record.localId, 'uninstall')
+  expect(preview.files).toHaveLength(1)
+  expect(preview.files[0].file.target).toBe('Mods/Core.SC2Mod')
+  await f.service.remove(preview.removalId, [
+    { conflictId: preview.files[0].conflictId, action: 'keep' },
+  ])
+  expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod', 'a'), 'utf8')).toBe('First')
+})
+test('CCM scan retains all source resource plans for consistent dual counts without claiming installed Mods', async () => {
+  const f = await fixture()
+  const directory = join(f.paths.ccmRoot, 'Grouped')
+  await mkdir(join(directory, 'Mission.SC2Map'), { recursive: true })
+  await mkdir(join(directory, 'Mods', 'Core.SC2Mod'), { recursive: true })
+  await writeFile(join(directory, 'metadata.txt'), 'title=Grouped\ncampaign=WOL')
+  await writeFile(join(directory, 'Mission.SC2Map', 'a'), 'a')
+  await writeFile(join(directory, 'Mods', 'Core.SC2Mod', 'a'), 'a')
+  await writeFile(join(directory, 'Mods', 'Core.SC2Mod', 'b'), 'b')
+  const scanned = await f.service.scan()
+  const record = scanned.records[0]
+  expect(record.fileCount).toBe(3)
+  expect(record.files).toHaveLength(3)
+  expect(record.files.filter((file) => file.type === 'mod')).toHaveLength(2)
+  expect(record.installedFiles).toEqual([])
+  const activation = await f.service.prepareActivation(record.localId)
+  expect(activation.files).toHaveLength(1)
+})
+test.each([
+  ['file', 'overwrite'],
+  ['directory', 'overwrite'],
+  ['file', 'keep'],
+  ['directory', 'keep'],
+] as const)(
+  'customize replaces or keeps the complete %s resource with %s',
+  async (shape, action) => {
+    const f = await fixture()
+    const target = join(f.paths.modsRoot, 'Core.SC2Mod')
+    await mkdir(f.paths.modsRoot, { recursive: true })
+    if (shape === 'file') await writeFile(target, 'old archive')
+    else {
+      await mkdir(target)
+      await writeFile(join(target, 'old-only'), 'old group')
+    }
+    const component = shape === 'file'
+    const input = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('customize', {
+          mods: [
+            {
+              name: 'Core.SC2Mod',
+              source_path: '/Mods/Core.SC2Mod',
+              ...(component ? { components: true } : {}),
+            },
+          ],
+        }),
+      ),
+      ...(component
+        ? { 'Mods/Core.SC2Mod/new': 'new group' }
+        : { 'Mods/Core.SC2Mod': 'new archive' }),
+    })
+    const preview = await f.service.analyze('customize', input)
+    expect(preview.conflicts[0].files).toHaveLength(1)
+    const installed = await f.service.install({
+      analysisId: preview.analysisId,
+      mode: 'scnexus',
+      decisions: decisions(preview, 'scnexus', action),
+    })
+    if (action === 'keep') {
+      if (shape === 'file') expect(await readFile(target, 'utf8')).toBe('old archive')
+      else expect(await readFile(join(target, 'old-only'), 'utf8')).toBe('old group')
+      expect(installed.installedFiles.every((file) => file.result === 'kept')).toBe(true)
+    } else if (component) expect(await readFile(join(target, 'new'), 'utf8')).toBe('new group')
+    else expect(await readFile(target, 'utf8')).toBe('new archive')
+    const removal = await f.service.prepareRemoval(installed.localId, 'uninstall')
+    await f.service.remove(removal.removalId, [])
+    if (action === 'keep') expect(await stat(target)).toBeDefined()
+    else await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
+  },
+)
 test('cancelled preview cannot install or leave a successful record', async () => {
   const f = await fixture()
   const input = await source(f.root, {

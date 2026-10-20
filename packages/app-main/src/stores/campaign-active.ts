@@ -41,6 +41,13 @@ export function validateActive(value: unknown): asserts value is ActiveCampaign 
     typeof value.activatedAt !== 'number'
   )
     invalidData('Invalid active campaign')
+  if (value.resourceBackups !== undefined) {
+    if (!Array.isArray(value.resourceBackups)) invalidData('Invalid resource backups')
+    for (const backup of value.resourceBackups) {
+      if (!isRecord(backup) || !string(backup.target) || !string(backup.path))
+        invalidData('Invalid resource backup')
+    }
+  }
 }
 export function createActiveRepository() {
   return createRepository<CampaignActiveStoreData>({

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import type {
   ContentRecord,
   ActiveCampaign,
@@ -34,9 +35,10 @@ const totals = computed(() =>
     (total, record) => ({
       count: total.count + 1,
       files: total.files + record.fileCount,
+      recognizedFiles: total.recognizedFiles + countRecognizedFiles(record.files),
       bytes: total.bytes + record.bytes,
     }),
-    { count: 0, files: 0, bytes: 0 },
+    { count: 0, files: 0, recognizedFiles: 0, bytes: 0 },
   ),
 )
 const statistics = computed(() =>
@@ -46,6 +48,7 @@ const statistics = computed(() =>
       campaign,
       count: records.length,
       files: records.reduce((sum, record) => sum + record.fileCount, 0),
+      recognizedFiles: records.reduce((sum, record) => sum + countRecognizedFiles(record.files), 0),
       bytes: records.reduce((sum, record) => sum + record.bytes, 0),
       modes: (['scnexus', 'ccm'] as const).map((mode) => ({
         mode,
@@ -66,11 +69,15 @@ function isActive(record: ContentRecord) {
 
 <template>
   <section class="space-y-3" :aria-label="t('campaign.libraryManagement')">
-    <div class="grid gap-2 sm:grid-cols-3">
+    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
       <UCard
         v-for="item in [
           { label: t('campaign.totalPackages'), value: totals.count.toLocaleString() },
           { label: t('campaign.totalFiles'), value: totals.files.toLocaleString() },
+          {
+            label: t('campaign.totalRecognizedFiles'),
+            value: totals.recognizedFiles.toLocaleString(),
+          },
           { label: t('campaign.totalBytes'), value: formatFileSize(totals.bytes) },
         ]"
         :key="item.label"
@@ -87,8 +94,9 @@ function isActive(record: ContentRecord) {
           <div class="flex flex-wrap items-baseline justify-between gap-1 text-sm">
             <span class="font-medium">{{ t(`campaign.${item.campaign}`) }}</span>
             <span class="text-muted"
-              >{{ item.count }} {{ t('campaign.packages') }} · {{ item.files }}
-              {{ t('campaign.files') }} · {{ formatFileSize(item.bytes) }}</span
+              >{{ item.count }} {{ t('campaign.packages') }} · {{ t('campaign.standardFiles') }}:
+              {{ item.files }} · {{ t('campaign.recognizedFiles') }}: {{ item.recognizedFiles }} ·
+              {{ formatFileSize(item.bytes) }}</span
             >
           </div>
           <UProgress
@@ -136,7 +144,9 @@ function isActive(record: ContentRecord) {
             {{ record.package.author || '—' }}
           </p>
           <p class="text-xs text-muted">
-            {{ record.fileCount }} {{ t('campaign.files') }} · {{ formatFileSize(record.bytes) }}
+            {{ t('campaign.standardFiles') }}: {{ record.fileCount }} ·
+            {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(record.files) }} ·
+            {{ formatFileSize(record.bytes) }}
           </p>
         </div>
         <div class="flex flex-wrap gap-1">
@@ -228,8 +238,12 @@ function isActive(record: ContentRecord) {
             <dd>{{ selected.package.author || '—' }}</dd>
           </div>
           <div>
-            <dt class="text-muted">{{ t('campaign.files') }}</dt>
+            <dt class="text-muted">{{ t('campaign.standardFiles') }}</dt>
             <dd>{{ selected.fileCount.toLocaleString() }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ t('campaign.recognizedFiles') }}</dt>
+            <dd>{{ countRecognizedFiles(selected.files).toLocaleString() }}</dd>
           </div>
           <div>
             <dt class="text-muted">{{ t('campaign.contentSize') }}</dt>

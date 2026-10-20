@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import { formatFileSize } from '../formatFileSize'
 import type {
   ContentRecord,
@@ -21,7 +22,8 @@ const emit = defineEmits<{
   folder: [record: ContentRecord]
 }>()
 const { t } = useI18n()
-const selected = ref<ContentRecord | null>(null)
+const selectedId = ref<string | null>(null)
+const selected = computed(() => props.records.find((record) => record.localId === selectedId.value))
 const list = computed(() =>
   props.records.filter((record) => record.package.campaign === props.category),
 )
@@ -63,7 +65,9 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
                 </UBadge>
               </div>
               <p class="text-xs text-muted">
-                {{ record.package.author }} · {{ record.fileCount }} {{ t('campaign.files') }} ·
+                {{ record.package.author }} · {{ t('campaign.standardFiles') }}:
+                {{ record.fileCount }} · {{ t('campaign.recognizedFiles') }}:
+                {{ countRecognizedFiles(record.files) }} ·
                 {{ formatFileSize(record.bytes) }}
               </p>
             </div>
@@ -72,7 +76,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
                 icon="i-tabler-info-circle"
                 color="neutral"
                 variant="ghost"
-                @click="selected = record"
+                @click="selectedId = record.localId"
               >
                 {{ t('campaign.details') }}
               </UButton>
@@ -118,13 +122,18 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
     :ui="{ title: 'min-w-0 break-words', body: 'min-h-0 break-words p-4 sm:p-4' }"
     @update:open="
       (value: boolean) => {
-        if (!value) selected = null
+        if (!value) selectedId = null
       }
     "
   >
     <template #body>
       <div v-if="selected" class="space-y-2 text-sm">
         <p class="whitespace-pre-wrap">{{ selected.package.description }}</p>
+        <p>
+          {{ t('campaign.standardFiles') }}: {{ selected.fileCount }} ·
+          {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(selected.files) }} ·
+          {{ formatFileSize(selected.bytes) }}
+        </p>
         <p class="break-all">{{ selected.managementDirectory }}</p>
         <UButton
           icon="i-tabler-folder"

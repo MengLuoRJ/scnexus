@@ -1,3 +1,5 @@
+import { resourcePath } from '@scnexus/app-shared/utils/content-files'
+import { resourceGroups, resourceState } from './resources'
 import { fileTransaction, type WriteData } from './transaction'
 import { notifyOperation, reportOperationWarning } from '../../utils/operation-warnings'
 import { randomUUID, createHash } from 'node:crypto'
@@ -8,10 +10,10 @@ import {
   mkdir,
   rm,
   lstat,
-  rmdir,
   mkdtemp,
   rename,
   copyFile,
+  cp,
 } from 'node:fs/promises'
 import { join, dirname, basename, relative } from 'node:path'
 import type {
@@ -145,6 +147,7 @@ type Removal = {
   active: boolean
   gameRevision: number
   stamp: string
+  hashes: Map<string, string | null>
   expires: number
 }
 export class ContentService {
@@ -266,25 +269,28 @@ export class ContentService {
   }
   private async conflicts(files: PlannedFile[], paths: GamePaths): Promise<Conflict[]> {
     const result: Conflict[] = []
-    for (const file of files) {
-      const target = await safePath(paths.gameRoot, file.target)
-      const info = await existing(target)
+    for (const group of resourceGroups(files)) {
+      const file = group.files[0]!
+      const target = await safePath(paths.gameRoot, group.target)
+      const info = await resourceState(target)
       if (info) {
-        if (!info.isFile()) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
         result.push({
           conflictId: randomUUID(),
           type: file.type,
           incoming: {
-            name: basename(file.source),
-            path: file.source,
-            bytes: file.bytes,
+            name: basename(group.target),
+            path: file.source.slice(
+              0,
+              file.source.length - (file.target.length - group.target.length),
+            ),
+            bytes: group.files.reduce((sum, item) => sum + item.bytes, 0),
             modifiedAt: file.modifiedAt,
           },
           local: {
             name: basename(target),
             path: target,
-            bytes: info.size,
-            modifiedAt: info.mtimeMs,
+            bytes: info.bytes,
+            modifiedAt: info.modifiedAt,
           },
         })
       }
@@ -449,7 +455,7 @@ export class ContentService {
     }
     for (const group of result.conflicts)
       for (const file of group.files)
-        hashes.set('local:' + file.local.path, await hashFile(file.local.path))
+        hashes.set('local:' + file.local.path, (await resourceState(file.local.path))!.hash)
     if (input.kind === 'archive') await verifyArchive(source)
     else
       for (const [path, digest] of descriptorHashes)
@@ -492,22 +498,16 @@ export class ContentService {
     paths: GamePaths,
     hashes: Map<string, string>,
   ) {
-    for (const f of files) {
-      const target = await safePath(paths.gameRoot, f.target)
-      const actual = await existing(target)
+    for (const group of resourceGroups(files)) {
+      const target = await safePath(paths.gameRoot, group.target)
+      const actual = await resourceState(target)
       const old = conflicts.find((c) => keyPath(c.local.path) === keyPath(target))
       if (
         !!actual !== !!old ||
-        (actual &&
-          old &&
-          (actual.size !== old.local.bytes || actual.mtimeMs !== old.local.modifiedAt))
+        (actual && old && actual.hash !== hashes.get('local:' + old.local.path))
       )
         throw new AppError(ERRORS.TASK_CONFLICT, {
-          message: 'Target changed; request a new preview',
-        })
-      if (actual && old && (await hashFile(target)) !== hashes.get('local:' + old.local.path))
-        throw new AppError(ERRORS.TASK_CONFLICT, {
-          message: 'Target contents changed',
+          message: 'Target resource changed; request a new preview',
         })
     }
   }
@@ -536,26 +536,71 @@ export class ContentService {
     paths: GamePaths,
     choices: Map<string, string>,
     write: (path: string, data: WriteData) => Promise<void>,
+    sourceDirectories: string[] = [],
   ) {
     const installed: InstalledFile[] = []
-    for (const f of files) {
-      const target = await safePath(paths.gameRoot, f.target)
-      const local = await existing(target)
-      const keep = choices.get(keyPath(target)) === 'keep'
-      const source = keep ? target : await read(f.source)
-      const digest = await hashFile(source)
-      if (!keep) {
-        await write(target, { file: source })
-        if ((await hashFile(target)) !== digest)
-          throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Payload changed while copying' })
+    for (const group of resourceGroups(files)) {
+      const root = await safePath(paths.gameRoot, group.target)
+      const local = await existing(root)
+      if (choices.get(keyPath(root)) === 'keep') {
+        const entries = local?.isDirectory()
+          ? (await openSource({ kind: 'directory', path: root })).entries.map((entry) => ({
+              ...entry,
+              path: group.target + '/' + entry.path,
+            }))
+          : [{ path: group.target, bytes: local!.size, modifiedAt: local!.mtimeMs }]
+        for (const entry of entries) {
+          const absolutePath = await safePath(paths.gameRoot, entry.path)
+          installed.push({
+            ...group.files[0]!,
+            source: entry.path,
+            target: entry.path,
+            absolutePath,
+            bytes: entry.bytes,
+            result: 'kept',
+            hash: await hashFile(absolutePath),
+          })
+        }
+        continue
       }
-      installed.push({
-        ...f,
-        bytes: (await lstat(source)).size,
-        absolutePath: target,
-        result: keep ? 'kept' : local ? 'replaced' : 'copied',
-        hash: digest,
-      })
+      const stage = await mkdtemp(join(paths.gameRoot, '.scnexus-resource-'))
+      try {
+        const directory = group.files.some((file) => keyPath(file.target) !== keyPath(group.target))
+        const payload = join(stage, 'payload')
+        if (directory) {
+          await mkdir(payload)
+          const file = group.files[0]!
+          const sourceRoot = file.source.slice(
+            0,
+            file.source.length - (file.target.length - group.target.length),
+          )
+          for (const entry of sourceDirectories)
+            if (entry.startsWith(sourceRoot + '/'))
+              await mkdir(await safePath(payload, entry.slice(sourceRoot.length + 1)), {
+                recursive: true,
+              })
+        }
+        for (const f of group.files) {
+          const source = await read(f.source)
+          const digest = await hashFile(source)
+          const destination = directory
+            ? await safePath(payload, f.target.slice(group.target.length + 1))
+            : payload
+          await mkdir(dirname(destination), { recursive: true })
+          await copyFile(source, destination)
+          if ((await hashFile(destination)) !== digest)
+            throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Payload changed while copying' })
+          installed.push({
+            ...f,
+            absolutePath: join(paths.gameRoot, f.target),
+            result: local ? 'replaced' : 'copied',
+            hash: digest,
+          })
+        }
+        await write(root, directory ? { directory: payload } : { file: payload })
+      } finally {
+        await rm(stage, { recursive: true, force: true })
+      }
     }
     return installed
   }
@@ -685,7 +730,8 @@ export class ContentService {
           ...(payload
             ? preview.files
             : actualFiles.filter(
-                (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
+                (file) =>
+                  choices.get(keyPath(join(paths.gameRoot, resourcePath(file.target)))) !== 'keep',
               )
           ).map((file) => file.source),
           ...(preview.descriptorPath ? [preview.descriptorPath] : []),
@@ -786,7 +832,8 @@ export class ContentService {
           (payload ? preview.files.length : 0) +
           (direct
             ? actualFiles.filter(
-                (file) => choices.get(keyPath(join(paths.gameRoot, file.target))) !== 'keep',
+                (file) =>
+                  choices.get(keyPath(join(paths.gameRoot, resourcePath(file.target)))) !== 'keep',
               ).length
             : 0) +
           1 +
@@ -817,6 +864,20 @@ export class ContentService {
             stagedFiles.set(f.source, destination)
             payloadPaths.push(join(payload, logical))
           }
+          for (const group of resourceGroups(preview.files)) {
+            const file = group.files[0]!
+            const tailLength = file.target.length - group.target.length
+            if (!tailLength) continue
+            const sourceRoot = file.source.slice(0, -tailLength)
+            const stored = files.find((item) => item.target === file.target)!
+            const storedRoot = stored.source.slice(0, -tailLength)
+            for (const directory of source.directories ?? [])
+              if (directory.startsWith(sourceRoot + '/'))
+                await mkdir(
+                  await safePath(stagedPayload, storedRoot + directory.slice(sourceRoot.length)),
+                  { recursive: true },
+                )
+          }
         }
         const metadataFiles: { path: string; data: Buffer }[] = [
           {
@@ -844,31 +905,24 @@ export class ContentService {
             this.checkCancelled(selection.analysisId)
           }
           if (direct) {
-            for (const f of actualFiles) {
-              this.checkCancelled(selection.analysisId)
-              const target = await safePath(paths.gameRoot, f.target)
-              const local = await existing(target)
-              const keep = choices.get(keyPath(target)) === 'keep'
-              const file = keep ? target : stagedFiles.get(f.source)!
-              const digest = await hashFile(file)
-              if (!keep) {
-                if (source.input.kind === 'directory' && digest !== context.hashes.get(f.source))
+            record.installedFiles = await this.copy(
+              actualFiles,
+              async (path) => {
+                const file = stagedFiles.get(path)!
+                if (
+                  source.input.kind === 'directory' &&
+                  (await hashFile(file)) !== context.hashes.get(path)
+                )
                   throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source changed' })
-                await write(target, { file })
-                if ((await hashFile(target)) !== digest)
-                  throw new AppError(ERRORS.TASK_CONFLICT, {
-                    message: 'Source changed while copying',
-                  })
-                completed(target)
-              }
-              record.installedFiles.push({
-                ...f,
-                bytes: (await lstat(file)).size,
-                absolutePath: target,
-                result: keep ? 'kept' : local ? 'replaced' : 'copied',
-                hash: digest,
-              })
-            }
+                return file
+              },
+              paths,
+              choices,
+              write,
+              source.directories,
+            )
+            for (const file of record.installedFiles)
+              if (file.result !== 'kept') completed(file.absolutePath)
           }
           if (type === 'customize') {
             record.targetTree = makeTree(
@@ -895,6 +949,7 @@ export class ContentService {
             const current = await openSource(source.input)
             if (
               JSON.stringify(current.entries) !== JSON.stringify(source.entries) ||
+              JSON.stringify(current.directories) !== JSON.stringify(source.directories) ||
               (selectedMode === 'auto' && !detector(type)(current).preview)
             )
               throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Source layout changed' })
@@ -980,7 +1035,18 @@ export class ContentService {
     for (const f of files)
       hashes.set(f.source, await hashFile(await safePath(record.payloadDirectory, f.source)))
     for (const file of preview.conflicts)
-      hashes.set('local:' + file.local.path, await hashFile(file.local.path))
+      hashes.set('local:' + file.local.path, (await resourceState(file.local.path))!.hash)
+    for (const group of resourceGroups(files)) {
+      const file = group.files[0]!
+      const sourceRoot = file.source.slice(
+        0,
+        file.source.length - (file.target.length - group.target.length),
+      )
+      hashes.set(
+        'resource:' + sourceRoot,
+        (await resourceState(await safePath(record.payloadDirectory, sourceRoot)))!.hash,
+      )
+    }
     hashes.set('descriptor', await hashFile(record.descriptorPath))
     this.activations.set(preview.activationId, {
       record,
@@ -1006,7 +1072,7 @@ export class ContentService {
       await safePath(paths.gameRoot, relative(paths.gameRoot, record.managementDirectory))
       const state = this.active.getSnapshot()
       const previous = state.active[record.package.campaign!]
-      if (previous && previous.localId !== record.localId)
+      if (previous)
         throw new AppError(ERRORS.TASK_CONFLICT, {
           message: 'Deactivate current campaign first',
         })
@@ -1016,6 +1082,12 @@ export class ContentService {
         throw new AppError(ERRORS.TASK_CONFLICT, {
           message: 'Descriptor changed',
         })
+      for (const [key, digest] of context.hashes) {
+        if (!key.startsWith('resource:')) continue
+        const sourceRoot = await safePath(record.payloadDirectory!, key.slice('resource:'.length))
+        if ((await resourceState(sourceRoot))?.hash !== digest)
+          throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Payload resource changed' })
+      }
       const read = async (path: string) => {
         const file = await safePath(record.payloadDirectory!, path)
         if ((await hashFile(file)) !== context.hashes.get(path))
@@ -1025,7 +1097,42 @@ export class ContentService {
         return file
       }
       return this.transaction(paths, async (write) => {
-        const installedFiles = await this.copy(preview.files, read, paths, choices, write)
+        const resourceBackups: { target: string; path: string }[] = []
+        for (const group of resourceGroups(preview.files)) {
+          const target = await safePath(paths.gameRoot, group.target)
+          if (choices.get(keyPath(target)) === 'keep' || !(await existing(target))) continue
+          const backup = await safePath(
+            paths.gameRoot,
+            relative(
+              paths.gameRoot,
+              join(record.managementDirectory, '.activation-backup', randomUUID()),
+            ),
+          )
+          await mkdir(dirname(backup), { recursive: true })
+          const state = await resourceState(target)
+          if (state?.directory) {
+            const stage = await mkdtemp(join(paths.gameRoot, '.scnexus-backup-'))
+            try {
+              await cp(target, join(stage, 'resource'), { recursive: true })
+              await write(backup, { directory: join(stage, 'resource') })
+            } finally {
+              await rm(stage, { recursive: true, force: true })
+            }
+          } else await write(backup, { file: target })
+          resourceBackups.push({ target: group.target, path: backup })
+        }
+        const payloadSource = await openSource({
+          kind: 'directory',
+          path: record.payloadDirectory!,
+        })
+        const installedFiles = await this.copy(
+          preview.files,
+          read,
+          paths,
+          choices,
+          write,
+          payloadSource.directories,
+        )
         const root = campaignRoots[record.package.campaign!][0]
         const descriptor = await safePath(
           paths.gameRoot,
@@ -1048,10 +1155,11 @@ export class ContentService {
             record.mode === 'ccm'
               ? [...installedFiles, ...record.installedFiles.filter((f) => f.type === 'mod')]
               : installedFiles,
+          resourceBackups,
           activatedAt: Date.now(),
           gameRoot: paths.gameRoot,
         }
-        if (record.mode === 'scnexus')
+        if (record.mode === 'scnexus' || resourceBackups.length)
           await write(
             join(record.managementDirectory, 'active-manifest.json'),
             Buffer.from(JSON.stringify(active, null, 2)),
@@ -1120,15 +1228,35 @@ export class ContentService {
       files: [],
     }
     if (record.mode === 'scnexus')
-      for (const file of files.filter((f) => !f.official && f.result !== 'kept')) {
+      for (const group of resourceGroups(files.filter((f) => !f.official && f.result !== 'kept'))) {
         const usedBy = others
-          .filter((o) => o.files.some((f) => keyPath(f.target) === keyPath(file.target)))
+          .filter((o) =>
+            resourceGroups(o.files).some(
+              (other) => keyPath(other.target) === keyPath(group.target),
+            ),
+          )
           .map(({ files: _files, ...o }) => o)
-        if (usedBy.length) preview.files.push({ conflictId: randomUUID(), file, usedBy })
+        if (usedBy.length)
+          preview.files.push({
+            conflictId: randomUUID(),
+            file: {
+              ...group.files[0]!,
+              target: group.target,
+              absolutePath: await safePath(paths.gameRoot, group.target),
+              bytes: group.files.reduce((sum, file) => sum + file.bytes, 0),
+            },
+            usedBy,
+          })
       }
+    const hashes = new Map<string, string | null>()
+    for (const group of resourceGroups(files)) {
+      const target = await safePath(paths.gameRoot, group.target)
+      hashes.set(group.target, (await resourceState(target))?.hash ?? null)
+    }
     this.removals.set(preview.removalId, {
       preview,
       record,
+      hashes,
       active: operation === 'deactivate',
       gameRevision: paths._revision,
       stamp: this.stamp(),
@@ -1169,38 +1297,53 @@ export class ContentService {
       const state = this.active.getSnapshot()
       const active = state.active[record.package.campaign!]
       const files = context.active ? active!.installedFiles : record.installedFiles
-      const removable = files.filter(
-        (f) => f.result !== 'kept' && (record.mode !== 'ccm' || f.type === 'map'),
-      )
+      for (const [target, digest] of context.hashes) {
+        if (
+          ((await resourceState(await safePath(paths.gameRoot, target)))?.hash ?? null) !== digest
+        )
+          throw new AppError(ERRORS.TASK_CONFLICT, {
+            message: 'Removal resource changed; request a new preview',
+          })
+      }
+      const removable = resourceGroups(files)
+        .filter(
+          (group) =>
+            group.files.every((file) => file.result !== 'kept') &&
+            (record.mode !== 'ccm' || group.files[0]!.type === 'map'),
+        )
+        .flatMap((group) => group.files)
       await this.transaction(
         paths,
         async (write) => {
-          for (const f of removable) {
-            if (choices.get(f.target) === 'keep') continue
-            await write(await safePath(paths.gameRoot, f.target), null)
+          for (const group of resourceGroups(removable)) {
+            if (choices.get(group.target) === 'keep') continue
+            await write(await safePath(paths.gameRoot, group.target), null)
           }
-          const directories = new Set<string>()
-          for (const file of removable) {
-            const match = file.target.match(/^(.*?\.sc2(?:map|mod))\//i)
-            if (!match) continue
-            let path = dirname(file.target).replaceAll('\\', '/')
-            while (path.length >= match[1].length) {
-              directories.add(path)
-              if (path === match[1]) break
-              path = dirname(path).replaceAll('\\', '/')
-            }
-          }
-          for (const logical of [...directories].sort((a, b) => b.length - a.length)) {
-            try {
-              await rmdir(await safePath(paths.gameRoot, logical))
-            } catch (error) {
-              if (
-                !['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(
-                  (error as NodeJS.ErrnoException).code ?? '',
-                )
-              )
-                throw error
-            }
+          for (const backup of context.active ? (active?.resourceBackups ?? []) : []) {
+            const target = await safePath(paths.gameRoot, backup.target)
+            if (
+              !resourceGroups(removable).some(
+                (group) => keyPath(group.target) === keyPath(backup.target),
+              ) ||
+              choices.get(backup.target) === 'keep'
+            )
+              continue
+            const backupRoot = join(record.managementDirectory, '.activation-backup')
+            if (!below(backupRoot, backup.path) || backup.path === backupRoot)
+              throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+            await safePath(paths.gameRoot, relative(paths.gameRoot, backup.path))
+            const saved = await resourceState(backup.path)
+            if (!saved) throw new AppError(ERRORS.CAMPAIGN_RECOVERY_FAILED)
+            if (saved.directory) {
+              const stage = await mkdtemp(join(paths.gameRoot, '.scnexus-restore-'))
+              try {
+                await cp(backup.path, join(stage, 'resource'), { recursive: true })
+                await write(target, { directory: join(stage, 'resource') })
+              } finally {
+                await rm(stage, { recursive: true, force: true })
+              }
+            } else await write(target, { file: backup.path })
+            await write(backup.path, null)
           }
           if (context.active) {
             await write(
@@ -1212,7 +1355,7 @@ export class ContentService {
               ),
               null,
             )
-            if (record.mode === 'scnexus')
+            if (record.mode === 'scnexus' || active?.resourceBackups?.length)
               await write(join(record.managementDirectory, 'active-manifest.json'), null)
             const next = { ...state.active }
             delete next[record.package.campaign!]

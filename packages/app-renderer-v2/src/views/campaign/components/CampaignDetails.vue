@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import { formatFileSize } from '../formatFileSize'
 import type { ContentRecord, PackageCampaignType } from '@scnexus/app-shared/types/content.type'
 import wolLogo from '../../../assets/campaign/Campaign_WOL_LOGO.png'
@@ -110,7 +111,8 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
         <template v-if="props.current">
           <p>SCNID: {{ props.current.package.scnid ?? '—' }}</p>
           <p>
-            {{ props.current.fileCount }} {{ t('campaign.files') }} ·
+            {{ t('campaign.standardFiles') }}: {{ props.current.fileCount }} ·
+            {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(props.current.files) }} ·
             {{ formatFileSize(props.current.bytes) }}
           </p>
           <p class="break-all">{{ props.current.managementDirectory }}</p>

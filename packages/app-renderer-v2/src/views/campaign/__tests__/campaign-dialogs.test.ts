@@ -31,7 +31,12 @@ const record = {
     version: '1.2',
   },
   mode: 'scnexus',
-  fileCount: 1,
+  fileCount: 3,
+  files: [
+    { target: 'Maps/A.SC2Map/a' },
+    { target: 'Maps/A.SC2Map/b' },
+    { target: 'Mods/B.SC2Mod' },
+  ],
   bytes: 12,
   managementDirectory: 'D:\\Game\\Library',
   payloadDirectory: 'D:\\Game\\Library\\Payload',
@@ -40,7 +45,12 @@ const record = {
 } as unknown as ContentRecord
 const preview = {
   package: record.package,
-  fileCount: 1,
+  fileCount: 3,
+  files: [
+    { target: 'Maps/A.SC2Map/a' },
+    { target: 'Maps/A.SC2Map/b' },
+    { target: 'Mods/B.SC2Mod' },
+  ],
   bytes: 12,
   origin: 'package-json',
   targetTree: tree,
@@ -49,12 +59,23 @@ const preview = {
 const analysis = {
   analysisId: 'analysis',
   source: { kind: 'directory', path: 'D:\\Package' },
-  sourceTree: tree,
+  sourceTree: {
+    ...tree,
+    children: [
+      { ...tree, kind: 'file', path: 'Maps/A.SC2Map/a', name: 'a' },
+      { ...tree, kind: 'file', path: 'Maps/A.SC2Map/b', name: 'b' },
+    ],
+  },
   sourceStats: { fileCount: 2, bytes: 24 },
   recommendedMode: 'scnexus',
   modes: {
     scnexus: preview,
-    ccm: { ...preview, package: { ...record.package, name: 'CCM campaign' } },
+    ccm: {
+      ...preview,
+      fileCount: 1,
+      files: [{ target: 'Maps/C.SC2Map' }],
+      package: { ...record.package, name: 'CCM campaign' },
+    },
     auto: null,
   },
   diagnostics: [],
@@ -153,11 +174,14 @@ test('installation previews metadata and mode-specific files before confirmation
   expect(state.confirm).not.toHaveBeenCalled()
   expect(wrapper.text()).toContain('Test campaign')
   expect(wrapper.text()).toContain('Author')
+  expect(wrapper.text()).toContain('标准文件数量: 3 · 识别文件数量: 2')
+  expect(wrapper.text()).toContain('来源文件 · 标准文件数量: 2 · 识别文件数量: 1')
   expect(wrapper.text()).toContain('1.2')
   state.mode.value = 'ccm'
   state.preview.value = analysis.modes.ccm as unknown as typeof preview
   await nextTick()
   expect(wrapper.text()).toContain('CCM campaign')
+  expect(wrapper.text()).toContain('标准文件数量: 1 · 识别文件数量: 1')
   await click(wrapper, '确认安装')
   expect(wrapper.find('u-modal-stub').exists()).toBe(false)
   expect(wrapper.find('button[data-loading="true"]').exists()).toBe(true)
@@ -169,6 +193,7 @@ test('installation previews metadata and mode-specific files before confirmation
   complete({ installed: record })
   await flushPromises()
   expect(wrapper.text()).toContain('安装完成')
+  expect(wrapper.text()).toContain('标准文件数量: 3 · 识别文件数量: 2')
   expect(wrapper.text()).toContain('Test campaign')
   await click(wrapper, '立即激活')
   expect(wrapper.emitted('activate')?.[0]).toEqual([record])
@@ -325,6 +350,7 @@ test('extraction progress is separate from file commit counts and never implies 
   finish({ installed: record })
   await flushPromises()
   expect(wrapper.text()).toContain('安装完成')
+  expect(wrapper.text()).toContain('标准文件数量: 3 · 识别文件数量: 2')
 })
 
 test('mode changes and reopening installation reset conflicts to overwrite without submitting stale IDs', async () => {

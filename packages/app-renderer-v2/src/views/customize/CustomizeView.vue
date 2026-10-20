@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import ContentImportDialog from '../../components/content/ContentImportDialog.vue'
 import { useContentImportStore } from '../../stores/content-import'
 import { useToast } from '@nuxt/ui/composables/useToast'
@@ -25,7 +26,8 @@ const available = Boolean(window.scnexus)
 const headerReady = ref(false)
 const installOpen = ref(false)
 const uninstall = ref<ContentRecord | null>(null)
-const selected = ref<ContentRecord | null>(null)
+const selectedId = ref<string | null>(null)
+const selected = computed(() => records.value.find((record) => record.localId === selectedId.value))
 const locked = computed(
   () =>
     busy.value ||
@@ -139,7 +141,9 @@ onMounted(() => {
           {{ t('campaign.version') }}: {{ record.package.version || '—' }}
         </p>
         <p class="text-sm">
-          {{ record.fileCount }} {{ t('campaign.files') }} · {{ formatFileSize(record.bytes) }}
+          {{ t('campaign.standardFiles') }}: {{ record.fileCount }} ·
+          {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(record.files) }} ·
+          {{ formatFileSize(record.bytes) }}
         </p>
         <p
           v-if="record.package.description"
@@ -153,7 +157,7 @@ onMounted(() => {
             color="neutral"
             variant="outline"
             :disabled="locked"
-            @click="selected = record"
+            @click="selectedId = record.localId"
             >{{ t('campaign.details') }}</UButton
           ><UButton
             icon="i-tabler-trash"
@@ -184,14 +188,15 @@ onMounted(() => {
       }"
       @update:open="
         (value: boolean) => {
-          if (!value) selected = null
+          if (!value) selectedId = null
         }
       "
       ><template #body
         ><div v-if="selected" class="space-y-3 text-sm">
           <p class="whitespace-pre-wrap">{{ selected.package.description }}</p>
           <p>
-            {{ selected.fileCount }} {{ t('campaign.files') }} ·
+            {{ t('campaign.standardFiles') }}: {{ selected.fileCount }} ·
+            {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(selected.files) }} ·
             {{ formatFileSize(selected.bytes) }}
           </p>
           <p class="break-all">{{ selected.managementDirectory }}</p>

@@ -136,7 +136,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         descriptorPath: join(directory, 'metadata.txt'),
         payloadDirectory: directory,
         ccmOriginal: decoded,
-        files: preview.files.filter((f) => f.type === 'map'),
+        files: preview.files,
         installedFiles: [],
         sourceTree: source.tree,
         targetTree: preview.targetTree,
@@ -205,7 +205,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         if (marked.length === 1) record = marked[0]
       }
       let saved: ActiveCampaign | undefined
-      if (record?.mode === 'scnexus') {
+      if (record) {
         const raw = await optional(join(record.managementDirectory, 'active-manifest.json'))
         if (raw) {
           saved = parseManifest(raw)
@@ -293,6 +293,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         mode: json ? 'scnexus' : 'ccm',
         descriptorPath: join(directory, json ? 'package.json' : 'metadata.txt'),
         installedFiles: installed,
+        resourceBackups: saved?.resourceBackups,
         activatedAt: saved?.activatedAt ?? Date.now(),
         gameRoot: paths.gameRoot,
       }
@@ -401,7 +402,7 @@ export async function scanContent(paths: GamePaths, previousRecords: ContentReco
         descriptorPath: join(paths.gameRoot, entry.path),
         payloadDirectory: null,
         ccmOriginal: decoded,
-        files: preview.files.filter((f) => f.type === 'map'),
+        files: preview.files,
         installedFiles: [],
         sourceTree: null,
         targetTree: preview.targetTree,

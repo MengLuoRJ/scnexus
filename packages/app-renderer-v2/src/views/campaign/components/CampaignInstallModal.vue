@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import { formatFileSize } from '../formatFileSize'
 import type {
   ContentRecord,
@@ -10,6 +11,7 @@ import type {
 } from '@scnexus/app-shared/types/content.type'
 import type { useCampaign } from '../useCampaign'
 import FileTree from './FileTree.vue'
+import { countSourceRecognizedFiles } from '../countSourceRecognizedFiles'
 import ConflictChoices from './ConflictChoices.vue'
 defineOptions({ name: 'CampaignInstallModal' })
 type InstallService = Pick<
@@ -142,7 +144,8 @@ function activate() {
           {{ installed.package.name }} · {{ installed.package.version || '—' }}
         </p>
         <p>
-          {{ installed.fileCount }} {{ t('campaign.files') }} ·
+          {{ t('campaign.standardFiles') }}: {{ installed.fileCount }} ·
+          {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(installed.files) }} ·
           {{ formatFileSize(installed.bytes) }} ·
           {{ installed.mode }}
         </p>
@@ -273,12 +276,15 @@ function activate() {
           <section class="space-y-2 text-sm">
             <h3 class="font-semibold">{{ t('campaign.installFiles') }}</h3>
             <p>
-              {{ preview.fileCount }} {{ t('campaign.files') }} ·
+              {{ t('campaign.standardFiles') }}: {{ preview.fileCount }} ·
+              {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(preview.files) }} ·
               {{ formatFileSize(preview.bytes) }}
             </p>
             <p>
-              {{ t('campaign.sourceStats') }}: {{ analysis.sourceStats.fileCount }}
-              {{ t('campaign.files') }} · {{ formatFileSize(analysis.sourceStats.bytes) }}
+              {{ t('campaign.sourceStats') }} · {{ t('campaign.standardFiles') }}:
+              {{ analysis.sourceStats.fileCount }} · {{ t('campaign.recognizedFiles') }}:
+              {{ countSourceRecognizedFiles(analysis.sourceTree) }} ·
+              {{ formatFileSize(analysis.sourceStats.bytes) }}
             </p>
             <p v-if="analysis.sourceStats.compressedBytes !== undefined">
               {{ t('campaign.compressedSize') }}:

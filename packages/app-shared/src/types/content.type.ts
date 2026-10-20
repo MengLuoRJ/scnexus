@@ -110,6 +110,7 @@ export type ActiveCampaign = {
   mode: 'scnexus' | 'ccm'
   descriptorPath: string
   installedFiles: InstalledFile[]
+  resourceBackups?: { target: string; path: string }[]
   activatedAt: number
   gameRoot: string
 }

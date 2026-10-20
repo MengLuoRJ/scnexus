@@ -19,6 +19,11 @@ const records = [
     },
     mode: 'scnexus',
     fileCount: 3,
+    files: [
+      { target: 'Maps/A.SC2Map/a' },
+      { target: 'Maps/A.SC2Map/b' },
+      { target: 'Mods/B.SC2Mod' },
+    ],
     bytes: 1024,
     payloadDirectory: 'D:\\Game\\First',
     targetTree: { children: [] },
@@ -34,6 +39,7 @@ const records = [
     },
     mode: 'ccm',
     fileCount: 2,
+    files: [{ target: 'Maps/C.SC2Map/a' }, { target: 'maps/c.sc2map/b' }],
     bytes: 2048,
     payloadDirectory: 'D:\\Game\\Second',
     targetTree: { children: [] },
@@ -44,6 +50,7 @@ const records = [
     mode: 'ccm',
     external: true,
     fileCount: 1,
+    files: [{ target: 'Maps/D.SC2Map' }],
     bytes: 1024,
     payloadDirectory: null,
     targetTree: { children: [] },
@@ -99,14 +106,17 @@ function render() {
 test('statistics aggregate all records by campaign and format, and react to removal', async () => {
   const wrapper = render()
   expect(wrapper.text()).toContain('战役包总数3')
-  expect(wrapper.text()).toContain('文件总数6')
+  expect(wrapper.text()).toContain('标准文件总数6')
+  expect(wrapper.text()).toContain('识别文件总数4')
+  expect(wrapper.text()).toContain('标准文件数量: 3 · 识别文件数量: 2')
   expect(wrapper.text()).toContain('内容总大小4.1 kB')
   expect(wrapper.text()).toContain('SCNexus: 1 · 1.02 kB')
   expect(wrapper.text()).toContain('CCM: 1 · 2.05 kB')
   expect(wrapper.text()).toContain('不代表实际磁盘占用')
   await wrapper.setProps({ records: records.slice(0, 1) })
   expect(wrapper.text()).toContain('战役包总数1')
-  expect(wrapper.text()).toContain('文件总数3')
+  expect(wrapper.text()).toContain('标准文件总数3')
+  expect(wrapper.text()).toContain('识别文件总数2')
   expect(wrapper.text()).toContain('内容总大小1.02 kB')
   expect(wrapper.findAll('h3').map((node) => node.text())).toEqual(['First'])
 })
@@ -165,7 +175,8 @@ test('details show the selected package and close when its record disappears', a
     '安装模式SCNexus',
     '类型自由之翼',
     '作者Author',
-    '文件3',
+    '标准文件数量3',
+    '识别文件数量2',
     '内容大小1.02 kB',
   ])
   expect(wrapper.text()).toContain('描述介绍Description')
@@ -173,4 +184,20 @@ test('details show the selected package and close when its record disappears', a
   expect(wrapper.findAll('h2').some((node) => node.text() === 'First')).toBe(false)
   expect(wrapper.text()).toContain('战役包总数0')
   expect(wrapper.text()).toContain('内容总大小0 B')
+})
+
+test('both counts update when a record changes in place, including open details', async () => {
+  const wrapper = render()
+  await wrapper
+    .findAll('button')
+    .find((node) => node.text() === '详情')!
+    .trigger('click')
+  await wrapper.setProps({
+    records: [{ ...records[0]!, fileCount: 1, files: [records[0]!.files[0]!] }],
+  })
+  expect(wrapper.text()).toContain('标准文件总数1')
+  expect(wrapper.text()).toContain('识别文件总数1')
+  expect(wrapper.text()).toContain('标准文件数量: 1 · 识别文件数量: 1')
+  expect(wrapper.findAll('dl > div').map((node) => node.text())).toContain('标准文件数量1')
+  expect(wrapper.findAll('dl > div').map((node) => node.text())).toContain('识别文件数量1')
 })

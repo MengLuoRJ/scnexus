@@ -1,5 +1,5 @@
 import { copyFile, mkdir, mkdtemp, lstat, rm, rename, writeFile } from 'node:fs/promises'
-import { join, dirname } from 'node:path'
+import { join, dirname, basename } from 'node:path'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { reportOperationWarning } from '../../utils/operation-warnings'
 export type WriteData = Buffer | null | { file: string } | { directory: string }
@@ -19,24 +19,29 @@ export async function fileTransaction<T>(
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
     }
-    if (info && (!info.isFile() || info.isSymbolicLink() || (data && 'directory' in data)))
+    if (
+      info &&
+      (info.isSymbolicLink() ||
+        (!info.isFile() && !info.isDirectory()) ||
+        (info.isDirectory() &&
+          !(data && 'directory' in data) &&
+          !/\.sc2(?:map|mod)$/i.test(path) &&
+          basename(dirname(path)) !== '.activation-backup'))
+    )
       throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+    const prior = info ? join(backup, String(undo.length)) : null
+    if (prior) await rename(path, prior)
+    undo.push({ path, backup: prior })
     if (data && 'directory' in data) {
       await mkdir(dirname(path), { recursive: true })
       await rename(data.directory, path)
-      undo.push({ path, backup: null })
-      return
-    }
-    const prior = info ? join(backup, String(undo.length)) : null
-    if (prior) await copyFile(path, prior)
-    undo.push({ path, backup: prior })
-    if (data) {
+    } else if (data) {
       await mkdir(dirname(path), { recursive: true })
       const staged = join(backup, 'write-' + undo.length)
       if ('file' in data) await copyFile(data.file, staged)
       else await writeFile(staged, data)
       await rename(staged, path)
-    } else await rm(path, { force: true })
+    }
   }
   try {
     for (const path of removeDirectories) {
@@ -49,10 +54,11 @@ export async function fileTransaction<T>(
     const failures: unknown[] = []
     for (const item of undo.reverse()) {
       try {
+        await rm(item.path, { recursive: true, force: true })
         if (item.backup) {
           await mkdir(dirname(item.path), { recursive: true })
-          await copyFile(item.backup, item.path)
-        } else await rm(item.path, { recursive: true, force: true })
+          await rename(item.backup, item.path)
+        }
       } catch (error) {
         failures.push(error)
       }

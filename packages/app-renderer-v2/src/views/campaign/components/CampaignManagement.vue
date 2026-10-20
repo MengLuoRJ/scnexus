@@ -135,9 +135,6 @@ function isActive(record: ContentRecord) {
             {{ t(`campaign.${record.package.campaign}`) }} · {{ t('campaign.author') }}:
             {{ record.package.author || '—' }}
           </p>
-          <p class="whitespace-pre-wrap break-words text-sm text-muted">
-            {{ record.package.description }}
-          </p>
           <p class="text-xs text-muted">
             {{ record.fileCount }} {{ t('campaign.files') }} · {{ formatFileSize(record.bytes) }}
           </p>
@@ -213,7 +210,36 @@ function isActive(record: ContentRecord) {
   >
     <template #body>
       <template v-if="selected">
-        <p class="whitespace-pre-wrap text-sm">{{ selected.package.description }}</p>
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <div>
+            <dt class="text-muted">{{ t('campaign.version') }}</dt>
+            <dd>{{ selected.package.version || '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ t('campaign.installMode') }}</dt>
+            <dd>{{ selected.mode === 'scnexus' ? 'SCNexus' : 'CCM' }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ t('campaign.type') }}</dt>
+            <dd>{{ t(`campaign.${selected.package.campaign}`) }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ t('campaign.author') }}</dt>
+            <dd>{{ selected.package.author || '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ t('campaign.files') }}</dt>
+            <dd>{{ selected.fileCount.toLocaleString() }}</dd>
+          </div>
+          <div>
+            <dt class="text-muted">{{ t('campaign.contentSize') }}</dt>
+            <dd>{{ formatFileSize(selected.bytes) }}</dd>
+          </div>
+        </dl>
+        <div class="text-sm">
+          <p class="text-muted">{{ t('campaign.description') }}</p>
+          <p class="whitespace-pre-wrap">{{ selected.package.description || '—' }}</p>
+        </div>
         <p class="break-all text-xs text-muted">{{ selected.managementDirectory }}</p>
         <FileTree :tree="selected.targetTree" />
       </template>

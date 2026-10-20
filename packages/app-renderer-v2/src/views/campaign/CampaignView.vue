@@ -210,6 +210,7 @@ onMounted(() => {
       >
     </div>
     <CampaignSourcePicker
+      v-if="viewMode !== 'management'"
       :disabled="locked || !available"
       @select="(source) => refContentImport?.analyze(source)"
       @error="notifyError"

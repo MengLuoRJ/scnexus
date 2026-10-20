@@ -152,12 +152,23 @@ test('management emits operations and folder requests, disables busy and externa
 
 test('details show the selected package and close when its record disappears', async () => {
   const wrapper = render()
+  expect(wrapper.text()).not.toContain('Description')
+  expect(wrapper.text()).not.toContain('Other')
   await wrapper
     .findAll('button')
     .find((node) => node.text() === '详情')!
     .trigger('click')
   expect(wrapper.find('h2').exists()).toBe(true)
   expect(wrapper.findAll('h2').some((node) => node.text() === 'First')).toBe(true)
+  expect(wrapper.findAll('dl > div').map((node) => node.text())).toEqual([
+    '版本1',
+    '安装模式SCNexus',
+    '类型自由之翼',
+    '作者Author',
+    '文件3',
+    '内容大小1.02 kB',
+  ])
+  expect(wrapper.text()).toContain('描述介绍Description')
   await wrapper.setProps({ records: [] })
   expect(wrapper.findAll('h2').some((node) => node.text() === 'First')).toBe(false)
   expect(wrapper.text()).toContain('战役包总数0')

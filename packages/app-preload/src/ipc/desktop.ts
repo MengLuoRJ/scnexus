@@ -16,6 +16,17 @@ function contentApi(
   }
 }
 const api: DesktopApi = {
+  auth: {
+    getSnapshot: () => invoke('auth:getSnapshot'),
+    login: (input) => invoke('auth:login', input),
+    register: (input) => invoke('auth:register', input),
+    completeMfa: (input) => invoke('auth:completeMfa', input),
+    requestChallenge: (input) => invoke('auth:requestChallenge', input),
+    resetPassword: (input) => invoke('auth:resetPassword', input),
+    refresh: () => invoke('auth:refresh'),
+    logout: () => invoke('auth:logout'),
+    onChanged: (listener) => subscribeTyped('auth:changed', listener),
+  },
   content: {
     analyze: (input, choice) => invoke('content-package:analyze', input, choice),
   },
@@ -39,7 +50,10 @@ const api: DesktopApi = {
     configure: (path) => invoke('scii-game-setting:configure', path),
     refresh: () => invoke('scii-game-setting:refresh'),
   },
-  app: { getVersion: () => invoke('app:get-version-v2') },
+  app: {
+    getVersion: () => invoke('app:get-version-v2'),
+    getDeviceName: () => invoke('app:get-device-name'),
+  },
   window: {
     getStatus: () => invoke('window:get-status'),
     show: () => invoke('window:show'),

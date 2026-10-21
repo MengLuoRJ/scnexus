@@ -1,5 +1,6 @@
 import { ipcDesktop, ipcRequest } from './internal/ipc-common'
 
+export const ipcAppGetDeviceName = () => ipcRequest(() => ipcDesktop().app.getDeviceName())
 export const ipcAppGetVersion = () => ipcRequest(() => ipcDesktop().app.getVersion())
 
 import { ipcBridgeRequest } from './internal/bridge'

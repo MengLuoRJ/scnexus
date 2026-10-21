@@ -1,3 +1,4 @@
+export * from './auth'
 export * from './app'
 export * from './window'
 export * from './campaign'

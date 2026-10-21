@@ -6,6 +6,11 @@ test('logger redacts tokens, bearer authorization and authentication URLs', () =
     'authorization: Bearer secret-value',
     'access_token=secret-value',
     'refresh_token: secret-value',
+    'accessToken=secret-value',
+    'refreshToken: secret-value',
+    'proof=secret-value',
+    'recoveryCode=secret-value',
+    'otpauthUri=secret-value',
     'password=secret-value',
     'scnexus://authentication?access_token=secret-value',
   ]) {

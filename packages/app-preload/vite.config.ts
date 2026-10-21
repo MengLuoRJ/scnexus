@@ -28,14 +28,13 @@ const config: UserConfig = {
     minify: process.env.MODE !== 'development',
     lib: {
       entry: 'src/index.ts',
-      formats: ['es'],
+      formats: ['cjs'],
     },
     rollupOptions: {
       external: ['electron'],
       output: {
-        // ESM preload scripts must have the .mjs extension
-        // https://www.electronjs.org/docs/latest/tutorial/esm#esm-preload-scripts-must-have-the-mjs-extension
-        entryFileNames: '[name].mjs',
+        // Sandboxed Electron preloads use a bundled CommonJS entry.
+        entryFileNames: '[name].cjs',
       },
     },
     emptyOutDir: true,

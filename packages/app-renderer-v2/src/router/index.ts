@@ -3,6 +3,11 @@ export default createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      path: '/account',
+      name: 'account',
+      component: () => import('../views/account/AccountView.vue'),
+    },
+    {
       path: '/campaign',
       name: 'campaign',
       component: () => import('../views/campaign/CampaignView.vue'),

@@ -31,6 +31,10 @@ vi.mock('../setting', () => ({
   initSettingModule: mock.setting,
   disposeSetting: vi.fn<typeof import('../setting').disposeSetting>(),
 }))
+vi.mock('../auth', () => ({
+  initAuthModule: vi.fn<() => void>(),
+  disposeAuth: vi.fn<() => void>(),
+}))
 vi.mock('../app', () => ({ initAppModule: vi.fn<typeof import('../app').initAppModule>() }))
 vi.mock('../dialog', () => ({
   initDialogModule: vi.fn<typeof import('../dialog').initDialogModule>(),

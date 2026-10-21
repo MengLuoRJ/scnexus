@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '../stores/auth'
 import { useI18n } from 'vue-i18n'
 import { RouterView, useRoute } from 'vue-router'
 import { ipcSettingGetSnapshot, ipcSettingOnChanged, ipcWindowReady } from '../ipcs'
@@ -8,12 +9,15 @@ import AppSidebar from './components/AppSidebar.vue'
 defineOptions({ name: 'AppLayout' })
 const { t, locale } = useI18n()
 const route = useRoute()
+const auth = useAuthStore()
+onUnmounted(() => auth.dispose())
 function syncLanguage(value: SettingSnapshot) {
   locale.value = value.effectiveLanguage
   document.documentElement.lang = value.effectiveLanguage
 }
 if (window.scnexus) ipcSettingOnChanged(syncLanguage)
 onMounted(async () => {
+  void auth.initialize()
   if (window.scnexus) {
     const result = await ipcSettingGetSnapshot()
     if (result.ok) syncLanguage(result.data)
@@ -37,7 +41,9 @@ onMounted(async () => {
                   ? 'customize.title'
                   : route.name === 'settings'
                     ? 'ui.settings'
-                    : 'ui.home',
+                    : route.name === 'account'
+                      ? 'account.title'
+                      : 'ui.home',
             )
           }}
         </h1>
@@ -46,8 +52,13 @@ onMounted(async () => {
           class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1"
         />
       </header>
-      <main class="min-h-0 flex-1 overflow-y-auto p-3">
-        <div class="mx-auto flex min-h-full min-w-0 max-w-5xl flex-col"><RouterView /></div>
+      <main class="min-h-0 flex-1 overflow-y-auto" :class="route.name === 'account' ? '' : 'p-3'">
+        <div
+          class="flex min-h-full min-w-0 flex-col"
+          :class="route.name === 'account' ? 'w-full' : 'mx-auto max-w-5xl'"
+        >
+          <RouterView />
+        </div>
       </main>
     </div>
   </div>

@@ -12,7 +12,7 @@
     "url": "https://github.com/MengLuoRJ/scnexus"
   },
   "type": "module",
-  "main": "dist/index.mjs",
+  "main": "dist/index.cjs",
   "scripts": {
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-preload && pnpm -w exec eslint packages/app-preload",
     "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/app-preload",

@@ -1,3 +1,4 @@
+import { registerApplicationScheme, installApplicationProtocol } from './modules/window/protocol'
 import { isInstallingUpdate } from './modules/updater'
 import { app, dialog, Menu } from 'electron'
 import { initLoggingModule, reportError } from './modules/logging'
@@ -10,6 +11,7 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0)
 }
 
+registerApplicationScheme()
 initLoggingModule()
 
 process.on('uncaughtException', (error) => {
@@ -69,6 +71,7 @@ app.on('before-quit', (event) => {
 void app
   .whenReady()
   .then(async () => {
+    installApplicationProtocol()
     Menu.setApplicationMenu(null)
     const failures = await initModules()
     await restoreOrCreateWindow()

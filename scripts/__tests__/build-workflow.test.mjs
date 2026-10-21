@@ -20,6 +20,16 @@ test('root builds current runtime packages after standard and verifies their typ
   assert.match(pkg.scripts['build:renderer'], /app-renderer-v2/)
   assert.match(pkg.scripts['typecheck:renderer'], /app-renderer-v2/)
   assert.match(pkg.scripts['test:renderer'], /app-renderer-v2.*--run/)
+  const preload = await json('packages/app-preload/package.json')
+  assert.equal(preload.main, 'dist/index.cjs')
+  const preloadConfig = await readFile(new URL('packages/app-preload/vite.config.ts', root), 'utf8')
+  assert.match(preloadConfig, /formats: \['cjs'\]/)
+  const window = await readFile(
+    new URL('packages/app-main/src/modules/window/window.ts', root),
+    'utf8',
+  )
+  assert.match(window, /sandbox: true/)
+  assert.match(window, /'index\.cjs'/)
   assert.ok(!pkg.scripts['test:e2e'], 'Do not label unit-test discovery as E2E')
 })
 

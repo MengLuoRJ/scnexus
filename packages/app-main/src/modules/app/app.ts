@@ -1,4 +1,7 @@
 import { app } from 'electron'
+import { hostname } from 'node:os'
+
+export const getDeviceName = () => hostname().trim().slice(0, 80) || 'SCNexus Desktop'
 
 export const getVersion = () => app.getVersion()
 export const isPackaged = () => app.isPackaged

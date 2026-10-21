@@ -91,6 +91,47 @@ test('unified analysis forwards descriptor choice and preserves conflict failure
   expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:analyze', input, 'metadata-txt')
 })
 
+test('auth bridge only exposes bounded operations and strips event metadata', async () => {
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  expect(Object.keys(api.auth).sort()).toEqual(
+    [
+      'getSnapshot',
+      'login',
+      'register',
+      'completeMfa',
+      'requestChallenge',
+      'resetPassword',
+      'refresh',
+      'logout',
+      'onChanged',
+    ].sort(),
+  )
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: {} })
+  await api.auth.refresh()
+  expect(mocks.invoke).toHaveBeenLastCalledWith('auth:refresh')
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: {} })
+  await api.auth.login({ subject: 'user@example.test', password: 'password', deviceName: 'Test' })
+  expect(mocks.invoke).toHaveBeenLastCalledWith('auth:login', {
+    subject: 'user@example.test',
+    password: 'password',
+    deviceName: 'Test',
+  })
+  const listener = vi.fn<(value: unknown) => void>()
+  const stop = api.auth.onChanged(listener)
+  const [channel, callback] = mocks.on.mock.calls.at(-1)!
+  callback({ sender: 'private' }, { status: 'signed-out' })
+  expect(listener).toHaveBeenCalledExactlyOnceWith({ status: 'signed-out' })
+  stop()
+  expect(mocks.removeListener).toHaveBeenCalledWith(channel, callback)
+})
+
+test('device name lookup is a bounded app bridge without renderer-supplied identity', async () => {
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: 'Player PC' })
+  expect(await api.app.getDeviceName()).toEqual({ ok: true, data: 'Player PC' })
+  expect(mocks.invoke).toHaveBeenLastCalledWith('app:get-device-name')
+})
+
 test('transport rejection still produces P001 when forwarding a log also fails', async () => {
   const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
   mocks.invoke.mockRejectedValueOnce(new Error('IPC disconnected'))

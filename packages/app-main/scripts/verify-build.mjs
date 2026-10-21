@@ -7,7 +7,7 @@ const manifest = JSON.parse(await readFile(resolve(packageRoot, 'package.json'),
 const rootManifest = JSON.parse(await readFile(resolve(packageRoot, '../../package.json'), 'utf8'))
 for (const [name, entry] of [
   ['app-main', 'dist/index.js'],
-  ['app-preload', '../app-preload/dist/index.mjs'],
+  ['app-preload', '../app-preload/dist/index.cjs'],
   ['app-renderer-v2', '../app-renderer-v2/dist/index.html'],
 ]) {
   try {

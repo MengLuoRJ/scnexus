@@ -2,6 +2,7 @@ import { ipcHandle } from '@/utils/ipc-util'
 import * as application from './app'
 
 export function initAppIpc() {
+  ipcHandle('app:get-device-name', application.getDeviceName)
   ipcHandle('app:get-version-v2', application.getVersion)
   ipcHandle('app:get-version', application.getVersion)
   ipcHandle('app:is-packaged', application.isPackaged)

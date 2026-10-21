@@ -2,6 +2,7 @@ import { initAllStores, initContentStores } from '../stores'
 import { settingRepository } from '../stores/setting'
 import { onGameConfigured } from './scii-game-setting'
 import { initAppModule } from './app'
+import { initAuthModule, disposeAuth } from './auth'
 import { initWindowModule, onWindowReady } from './window'
 import { initDialogModule } from './dialog'
 import { initShellModule } from './shell'
@@ -43,6 +44,7 @@ export async function initModules() {
       },
     ],
     ['app', initAppModule],
+    ['auth', initAuthModule],
     ['dialog', initDialogModule],
     ['shell', initShellModule],
     ['deep-link', initDeepLinkModule],
@@ -69,6 +71,7 @@ export async function initModules() {
 export async function disposeModules() {
   onGameConfigured(undefined)
   cleanup.splice(0).forEach((dispose) => dispose())
+  disposeAuth()
   disposeSetting()
   destroyTray()
   await disableTelemetry().catch((error) => reportError(error, 'telemetry'))

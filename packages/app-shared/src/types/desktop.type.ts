@@ -29,11 +29,12 @@ export type SettingSnapshot = SettingData & {
 }
 
 export interface DesktopApi {
+  auth: import('./auth.type.js').AuthApi
   content: import('./content-api.type.js').ContentAnalysisApi
   campaign: import('./content-api.type.js').CampaignApi
   customize: import('./content-api.type.js').CustomizeApi
   gameSetting: import('./content-api.type.js').GameSettingApi
-  app: { getVersion(): Promise<IpcResult<string>> }
+  app: { getVersion(): Promise<IpcResult<string>>; getDeviceName(): Promise<IpcResult<string>> }
   window: {
     getStatus(): Promise<IpcResult<WindowStatus>>
     show(): Promise<IpcResult<WindowStatus>>

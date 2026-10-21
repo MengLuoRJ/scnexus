@@ -8,7 +8,9 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const AccountError: typeof import('./src/apis/index').AccountError
   const EffectScope: typeof import('vue').EffectScope
+  const accountErrorKey: typeof import('./src/apis/index').accountErrorKey
   const apiAppGetLocale: typeof import('./src/ipcs/app').apiAppGetLocale
   const apiAppGetLocaleCountryCode: typeof import('./src/ipcs/app').apiAppGetLocaleCountryCode
   const apiAppGetPath: typeof import('./src/ipcs/app').apiAppGetPath
@@ -51,6 +53,8 @@ declare global {
   const apiLoggingGetConfig: typeof import('./src/ipcs/logging').apiLoggingGetConfig
   const apiLoggingSetLevel: typeof import('./src/ipcs/logging').apiLoggingSetLevel
   const apiLoggingWrite: typeof import('./src/ipcs/logging').apiLoggingWrite
+  const apiRegistrationPolicy: typeof import('./src/apis/account').apiRegistrationPolicy
+  const apiRequest: typeof import('./src/apis/client').apiRequest
   const apiSettingGetKey: typeof import('./src/ipcs/setting').apiSettingGetKey
   const apiSettingGetSnapshot: typeof import('./src/ipcs/setting').apiSettingGetSnapshot
   const apiSettingOnChanged: typeof import('./src/ipcs/setting').apiSettingOnChanged
@@ -74,6 +78,8 @@ declare global {
   const apiUpdaterOnUpdateDownloaded: typeof import('./src/ipcs/updater').apiUpdaterOnUpdateDownloaded
   const apiUpdaterOnUpdateNotAvailable: typeof import('./src/ipcs/updater').apiUpdaterOnUpdateNotAvailable
   const apiUpdaterQuitAndInstall: typeof import('./src/ipcs/updater').apiUpdaterQuitAndInstall
+  const apiUserAuthorization: typeof import('./src/apis/account').apiUserAuthorization
+  const apiUserMe: typeof import('./src/apis/account').apiUserMe
   const apiWindowClose: typeof import('./src/ipcs/window').apiWindowClose
   const apiWindowGetStatus: typeof import('./src/ipcs/window').apiWindowGetStatus
   const apiWindowMinimize: typeof import('./src/ipcs/window').apiWindowMinimize
@@ -90,17 +96,18 @@ declare global {
   const customRef: typeof import('vue').customRef
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
-  const defineLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').defineLocale
-  const defineShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').defineShortcuts
+  const defineLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').defineLocale
+  const defineShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').defineShortcuts
   const effectScope: typeof import('vue').effectScope
-  const extendLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').extendLocale
-  const extractShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').extractShortcuts
+  const extendLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').extendLocale
+  const extractShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').extractShortcuts
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getPathForFile: typeof import('./src/ipcs/files').getPathForFile
   const h: typeof import('vue').h
   const inject: typeof import('vue').inject
+  const ipcAppGetDeviceName: typeof import('./src/ipcs/app').ipcAppGetDeviceName
   const ipcAppGetLocale: typeof import('./src/ipcs/app').ipcAppGetLocale
   const ipcAppGetLocaleCountryCode: typeof import('./src/ipcs/app').ipcAppGetLocaleCountryCode
   const ipcAppGetPath: typeof import('./src/ipcs/app').ipcAppGetPath
@@ -109,6 +116,15 @@ declare global {
   const ipcAppGetSystemLocale: typeof import('./src/ipcs/app').ipcAppGetSystemLocale
   const ipcAppGetVersion: typeof import('./src/ipcs/app').ipcAppGetVersion
   const ipcAppIsPackaged: typeof import('./src/ipcs/app').ipcAppIsPackaged
+  const ipcAuthCompleteMfa: typeof import('./src/ipcs/auth').ipcAuthCompleteMfa
+  const ipcAuthGetSnapshot: typeof import('./src/ipcs/auth').ipcAuthGetSnapshot
+  const ipcAuthLogin: typeof import('./src/ipcs/auth').ipcAuthLogin
+  const ipcAuthLogout: typeof import('./src/ipcs/auth').ipcAuthLogout
+  const ipcAuthOnChanged: typeof import('./src/ipcs/auth').ipcAuthOnChanged
+  const ipcAuthRefresh: typeof import('./src/ipcs/auth').ipcAuthRefresh
+  const ipcAuthRegister: typeof import('./src/ipcs/auth').ipcAuthRegister
+  const ipcAuthRequestChallenge: typeof import('./src/ipcs/auth').ipcAuthRequestChallenge
+  const ipcAuthResetPassword: typeof import('./src/ipcs/auth').ipcAuthResetPassword
   const ipcCampaignActivate: typeof import('./src/ipcs/campaign').ipcCampaignActivate
   const ipcCampaignActive: typeof import('./src/ipcs/campaign').ipcCampaignActive
   const ipcCampaignAnalyze: typeof import('./src/ipcs/campaign').ipcCampaignAnalyze
@@ -215,29 +231,30 @@ declare global {
   const toValue: typeof import('vue').toValue
   const triggerRef: typeof import('vue').triggerRef
   const unref: typeof import('vue').unref
-  const useAppConfig: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js').useAppConfig
+  const useAppConfig: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js').useAppConfig
   const useAttrs: typeof import('vue').useAttrs
+  const useAuthStore: typeof import('./src/stores/auth').useAuthStore
   const useContentImportStore: typeof import('./src/stores/content-import').useContentImportStore
-  const useContentSearch: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch').useContentSearch
+  const useContentSearch: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch').useContentSearch
   const useCounterStore: typeof import('./src/stores/counter').useCounterStore
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
-  const useFileUpload: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload').useFileUpload
-  const useFormField: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').useFormField
+  const useFileUpload: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload').useFileUpload
+  const useFormField: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').useFormField
   const useId: typeof import('vue').useId
-  const useKbd: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useKbd').useKbd
+  const useKbd: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useKbd').useKbd
   const useLink: typeof import('vue-router').useLink
   const useModel: typeof import('vue').useModel
-  const useOverlay: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
-  const useResizable: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useResizable').useResizable
+  const useOverlay: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
+  const useResizable: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useResizable').useResizable
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
-  const useScrollShadow: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow').useScrollShadow
-  const useScrollspy: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy').useScrollspy
+  const useScrollShadow: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow').useScrollShadow
+  const useScrollspy: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy').useScrollspy
   const useSlots: typeof import('vue').useSlots
   const useTemplateRef: typeof import('vue').useTemplateRef
-  const useToast: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useToast').useToast
-  const useTour: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
+  const useToast: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useToast').useToast
+  const useTour: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
@@ -254,6 +271,9 @@ declare global {
   // @ts-ignore
   export type { UpdaterStatus } from './src/ipcs/updater'
   import('./src/ipcs/updater')
+  // @ts-ignore
+  export type { RegistrationPolicy, AccountUser, AccountAuthorization } from './src/apis/account'
+  import('./src/apis/account')
 }
 
 // for vue template auto import
@@ -261,22 +281,28 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
+    readonly AccountError: UnwrapRef<typeof import('./src/apis/index')['AccountError']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly accountErrorKey: UnwrapRef<typeof import('./src/apis/index')['accountErrorKey']>
+    readonly apiRegistrationPolicy: UnwrapRef<typeof import('./src/apis/account')['apiRegistrationPolicy']>
+    readonly apiUserAuthorization: UnwrapRef<typeof import('./src/apis/account')['apiUserAuthorization']>
+    readonly apiUserMe: UnwrapRef<typeof import('./src/apis/account')['apiUserMe']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
-    readonly defineLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['defineLocale']>
-    readonly defineShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['defineShortcuts']>
+    readonly defineLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['defineLocale']>
+    readonly defineShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['defineShortcuts']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
-    readonly extendLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['extendLocale']>
-    readonly extractShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['extractShortcuts']>
+    readonly extendLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['extendLocale']>
+    readonly extractShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['extractShortcuts']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
+    readonly ipcAppGetDeviceName: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetDeviceName']>
     readonly ipcAppGetLocale: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetLocale']>
     readonly ipcAppGetLocaleCountryCode: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetLocaleCountryCode']>
     readonly ipcAppGetPath: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetPath']>
@@ -285,6 +311,15 @@ declare module 'vue' {
     readonly ipcAppGetSystemLocale: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetSystemLocale']>
     readonly ipcAppGetVersion: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetVersion']>
     readonly ipcAppIsPackaged: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppIsPackaged']>
+    readonly ipcAuthCompleteMfa: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthCompleteMfa']>
+    readonly ipcAuthGetSnapshot: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthGetSnapshot']>
+    readonly ipcAuthLogin: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthLogin']>
+    readonly ipcAuthLogout: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthLogout']>
+    readonly ipcAuthOnChanged: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthOnChanged']>
+    readonly ipcAuthRefresh: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthRefresh']>
+    readonly ipcAuthRegister: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthRegister']>
+    readonly ipcAuthRequestChallenge: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthRequestChallenge']>
+    readonly ipcAuthResetPassword: UnwrapRef<typeof import('./src/ipcs/auth')['ipcAuthResetPassword']>
     readonly ipcCampaignActivate: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignActivate']>
     readonly ipcCampaignActive: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignActive']>
     readonly ipcCampaignAnalyze: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignAnalyze']>
@@ -391,29 +426,30 @@ declare module 'vue' {
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
-    readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js')['useAppConfig']>
+    readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js')['useAppConfig']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
+    readonly useAuthStore: UnwrapRef<typeof import('./src/stores/auth')['useAuthStore']>
     readonly useContentImportStore: UnwrapRef<typeof import('./src/stores/content-import')['useContentImportStore']>
-    readonly useContentSearch: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch')['useContentSearch']>
+    readonly useContentSearch: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch')['useContentSearch']>
     readonly useCounterStore: UnwrapRef<typeof import('./src/stores/counter')['useCounterStore']>
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
-    readonly useFileUpload: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload')['useFileUpload']>
-    readonly useFormField: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['useFormField']>
+    readonly useFileUpload: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload')['useFileUpload']>
+    readonly useFormField: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['useFormField']>
     readonly useId: UnwrapRef<typeof import('vue')['useId']>
-    readonly useKbd: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useKbd')['useKbd']>
+    readonly useKbd: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useKbd')['useKbd']>
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
-    readonly useOverlay: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
-    readonly useResizable: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useResizable')['useResizable']>
+    readonly useOverlay: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
+    readonly useResizable: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useResizable')['useResizable']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
-    readonly useScrollShadow: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow')['useScrollShadow']>
-    readonly useScrollspy: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy')['useScrollspy']>
+    readonly useScrollShadow: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow')['useScrollShadow']>
+    readonly useScrollspy: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy')['useScrollspy']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useTemplateRef: UnwrapRef<typeof import('vue')['useTemplateRef']>
-    readonly useToast: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useToast')['useToast']>
-    readonly useTour: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
+    readonly useToast: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useToast')['useToast']>
+    readonly useTour: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchEffect: UnwrapRef<typeof import('vue')['watchEffect']>
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>

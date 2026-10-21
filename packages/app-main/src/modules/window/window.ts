@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { APPLICATION_ENTRY } from './origin'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type { WindowStatus } from '@scnexus/app-shared/types/desktop.type'
 import { reportError } from '../logging/logging'
@@ -81,10 +81,10 @@ async function createMainWindow(): Promise<BrowserWindow> {
       minHeight: 700,
       autoHideMenuBar: true,
       webPreferences: {
-        preload: join(app.getAppPath(), 'packages', 'app-preload', 'dist', 'index.mjs'),
+        preload: join(app.getAppPath(), 'packages', 'app-preload', 'dist', 'index.cjs'),
         nodeIntegration: false,
         contextIsolation: true,
-        sandbox: false,
+        sandbox: true,
       },
     })
   } catch (cause) {
@@ -125,11 +125,10 @@ async function createMainWindow(): Promise<BrowserWindow> {
     state = 'failed'
     reportError(new AppError(ERRORS.WINDOW_RENDERER_FAILED), 'window')
   })
-  const file = join(app.getAppPath(), 'packages', 'app-renderer-v2', 'dist', 'index.html')
   const target =
     import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL
       ? import.meta.env.VITE_DEV_SERVER_URL
-      : pathToFileURL(file).href
+      : APPLICATION_ENTRY
   window.webContents.on('will-navigate', (event, url) => {
     if (url.split('#')[0] !== target.split('#')[0]) event.preventDefault()
   })
@@ -140,8 +139,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     return { action: 'deny' }
   })
   try {
-    if (target.startsWith('file:')) await window.loadFile(file)
-    else await window.loadURL(target)
+    await window.loadURL(target)
     return window
   } catch (cause) {
     window.destroy()

@@ -55,6 +55,7 @@ test('window singleton, reload handshake, renderer failure and recreation', asyn
   expect(a).toBe(b)
   expect(instances).toHaveLength(1)
   expect(instances[0].options).toMatchObject({
+    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
     width: 1000,
     height: 700,
     minWidth: 1000,
@@ -87,7 +88,7 @@ test('window singleton, reload handshake, renderer failure and recreation', asyn
 
 test('load failure includes underlying Electron reason and permits later recreation', async () => {
   const failure = vi
-    .spyOn(FakeWindow.prototype, 'loadFile')
+    .spyOn(FakeWindow.prototype, 'loadURL')
     .mockRejectedValueOnce(new Error('ERR_CONNECTION_REFUSED (-102)'))
   await expect(service.restoreOrCreateWindow()).rejects.toMatchObject({
     code: 'M017',

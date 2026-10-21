@@ -97,7 +97,7 @@ export default defineConfig({
       },
       autoImport: {
         imports: ['vue', 'vue-router'],
-        dirs: ['src/composables', 'src/stores', 'src/ipcs'],
+        dirs: ['src/composables', 'src/stores', 'src/ipcs', 'src/apis', 'src/utils'],
         resolvers: [],
         vueTemplate: true,
       },

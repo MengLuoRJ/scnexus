@@ -13,6 +13,10 @@ SCNexus 唯一桌面界面，后续页面与功能均在此包维护。旧 `app-
 
 参见 [目标架构](../../docs/architecture.md) 与 [开发规范](../../AGENTS.md)。
 
+## 后端账号接入
+
+账号入口为 `/account`，模块名称为“个人中心”。侧边栏底部仅显示占位头像与服务器昵称，未登录显示空头像与“未登录”；折叠后保留头像和悬停提示。个人中心不再使用外层卡片或全局最大宽度限制，铺满内容区域。未登录时使用独立登录/注册/找回密码布局，登录后显示基于真实用户、会话和权限信息的 dashboard，不展示未接入的统计。支持邮箱登录、MFA 登录、注册邀请策略、注册挑战、忘记密码、用户/权限自查和退出。本地游戏功能不要求登录。HTTP 业务适配在 `src/apis/`，认证操作通过 `src/ipcs/auth.ts` 交主进程完成；Access 仅在内存，Refresh 不进入 renderer。生产目标固定为 `https://api.scnexus.net`，尚未部署；开发目标为 `http://127.0.0.1:3000`。完整架构、契约来源及验收边界见 [后端接入方案](../../docs/server-integration.md)。
+
 ## IPC 调用约定
 
 桌面 IPC 请求、单向发送与事件订阅统一放在 `src/ipcs/`，按业务模块封装并从 `index.ts` 导出。所有导出函数均以 `ipcXXX` 命名，例如 `ipcCustomizeList`、`ipcCampaignOnInstallProgress`，不使用 `apiXXX`。桥接访问、DTO 快照、结果校验与订阅清理放在 `src/ipcs/internal/`；页面、Store 和 composable 只调用封装，不直接调用 preload 桥接。环境可用性检查不属于 IPC 请求。HTTP 请求与此目录分开维护。

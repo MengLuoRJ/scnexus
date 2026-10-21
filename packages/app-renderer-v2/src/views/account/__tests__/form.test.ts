@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isStrongPassword } from '@scnexus/app-shared/utils/auth-password'
-import { challengeState, validSubject, validateAccount } from '../form'
+import { nicknameSchema, challengeState, validSubject, validateAccount } from '../form'
 import type { AccountFields, AccountMode, ChallengeState } from '../form'
 
 const now = 1000
@@ -214,5 +214,34 @@ describe('challenge response handling remains separate', () => {
         'Invalid challenge',
       )
     }
+  })
+})
+
+describe('nickname input contract', () => {
+  it.each([
+    'Nexus_123',
+    '星际枢纽玩家一号',
+    'ひらがなカタカナ',
+    '가나다라마바사아',
+    'Àbcdef12',
+    'Русский_1',
+  ])('accepts supported characters: %s', (nickname) => {
+    expect(nicknameSchema.safeParse(nickname).success).toBe(true)
+  })
+  it.each([
+    'short',
+    'x'.repeat(17),
+    ' Nexus_123',
+    'Nexus_123 ',
+    'Nexus-123',
+    'Nexus😀123',
+    '１２３４５６７８',
+    '𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀',
+    'Nexus_12\n',
+  ])('rejects unsupported nickname without trimming: %s', (nickname) => {
+    expect(nicknameSchema.safeParse(nickname).success).toBe(false)
+  })
+  it('normalizes NFC before checking code-point length', () => {
+    expect(nicknameSchema.parse('Cafe\u0301_123')).toBe('Café_123')
   })
 })

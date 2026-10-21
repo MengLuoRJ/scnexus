@@ -59,7 +59,20 @@ function validSnapshot(value: AuthSnapshot): boolean {
           (typeof value.mfaExpiresAt === 'number' && Number.isFinite(value.mfaExpiresAt)))
 }
 function unwrap<T>(result: IpcResult<T>): T {
-  if (!result.ok) throw new AccountError('desktop')
+  if (!result.ok) {
+    const reasons: Record<string, import('../apis/internal/client').ApiErrorKind> = {
+      'Account operation failed: network': 'network',
+      'Account operation failed: response': 'invalidResponse',
+      'Account operation failed: storage': 'credentialStorage',
+      'Account operation failed: http400': 'registrationRejected',
+      'Account operation failed: http401': 'unauthorized',
+      'Account operation failed: http403': 'forbidden',
+      'Account operation failed: http409': 'registrationRejected',
+      'Account operation failed: http429': 'rateLimited',
+      'Account operation failed: http503': 'unavailable',
+    }
+    throw new AccountError(reasons[result.error?.message ?? ''] ?? 'desktop')
+  }
   return result.data
 }
 export const useAuthStore = defineStore('auth', () => {
@@ -73,10 +86,14 @@ export const useAuthStore = defineStore('auth', () => {
     () => snapshot.value.status === 'signed-in' || snapshot.value.status === 'refreshing',
   )
   let profileGeneration = 0
+  let nicknameRevision = 0
+  let updatedNickname: string | null = null
   let invalidatedEpoch = -1
   let stop: (() => void) | undefined
   function clearProfile() {
     profileGeneration++
+    nicknameRevision = 0
+    updatedNickname = null
     user.value = null
     authorization.value = null
     profileError.value = null
@@ -119,12 +136,9 @@ export const useAuthStore = defineStore('auth', () => {
     unwrap(await ipcAuthLogout())
     await synchronize()
   }
-  async function loadAccount() {
-    if (!signedIn.value) return
-    const generation = ++profileGeneration
-    const epoch = snapshot.value.epoch
-    const sessionId = snapshot.value.sessionId
-    const httpAuth = {
+  const httpAuth = computed(() => {
+    const { epoch, sessionId } = snapshot.value
+    return {
       getSnapshot: () => snapshot.value,
       refresh,
       async invalidate() {
@@ -132,12 +146,27 @@ export const useAuthStore = defineStore('auth', () => {
         await expireSession()
       },
     }
+  })
+  function updateNickname(nickname: string, epoch: number, sessionId: string | null) {
+    if (!signedIn.value || epoch !== snapshot.value.epoch || sessionId !== snapshot.value.sessionId)
+      return
+    nicknameRevision++
+    updatedNickname = nickname
+    if (user.value) user.value = { ...user.value, nickname }
+  }
+  async function loadAccount() {
+    if (!signedIn.value) return
+    const generation = ++profileGeneration
+    const revision = nicknameRevision
+    const epoch = snapshot.value.epoch
+    const sessionId = snapshot.value.sessionId
+    const accountAuth = httpAuth.value
     profileBusy.value = true
     profileError.value = null
     try {
-      const [nextUser, nextAuthorization] = await Promise.all([
-        apiUserMe(httpAuth),
-        apiUserAuthorization(httpAuth),
+      const [nextUser, nextAuthorization] = await Promise.allSettled([
+        apiUserMe(accountAuth),
+        apiUserAuthorization(accountAuth),
       ])
       if (
         generation !== profileGeneration ||
@@ -145,9 +174,19 @@ export const useAuthStore = defineStore('auth', () => {
         sessionId !== snapshot.value.sessionId
       )
         return
-      if (nextUser.sessionId !== sessionId) throw new AccountError('invalidResponse')
-      user.value = nextUser
-      authorization.value = nextAuthorization
+      if (nextUser.status === 'rejected') throw nextUser.reason
+      if (nextUser.value.sessionId !== sessionId) throw new AccountError('invalidResponse')
+      user.value =
+        revision !== nicknameRevision && updatedNickname !== null
+          ? { ...nextUser.value, nickname: updatedNickname }
+          : nextUser.value
+      authorization.value =
+        nextAuthorization.status === 'fulfilled' ? nextAuthorization.value : null
+      if (nextAuthorization.status === 'rejected')
+        profileError.value =
+          nextAuthorization.reason instanceof AccountError
+            ? nextAuthorization.reason
+            : new AccountError('network')
     } catch (error) {
       if (generation === profileGeneration) {
         user.value = null
@@ -220,6 +259,8 @@ export const useAuthStore = defineStore('auth', () => {
     profileBusy,
     busy,
     signedIn,
+    httpAuth,
+    updateNickname,
     initialize,
     dispose,
     login,

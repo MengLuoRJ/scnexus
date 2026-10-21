@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { failure } from './validation'
+import { failure, type AuthFailureReason } from './validation'
 
 export type AuthOperation =
   | 'login'
@@ -55,8 +55,17 @@ export function createAuthTransport(): AuthTransport {
           },
         })
         return result.data
-      } catch {
-        throw failure()
+      } catch (error) {
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined
+        const reasons: Record<number, AuthFailureReason> = {
+          400: 'http400',
+          401: 'http401',
+          403: 'http403',
+          409: 'http409',
+          429: 'http429',
+          503: 'http503',
+        }
+        throw failure(status ? (reasons[status] ?? 'network') : 'network')
       }
     },
   }

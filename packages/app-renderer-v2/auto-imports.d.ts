@@ -79,7 +79,10 @@ declare global {
   const apiUpdaterOnUpdateNotAvailable: typeof import('./src/ipcs/updater').apiUpdaterOnUpdateNotAvailable
   const apiUpdaterQuitAndInstall: typeof import('./src/ipcs/updater').apiUpdaterQuitAndInstall
   const apiUserAuthorization: typeof import('./src/apis/account').apiUserAuthorization
+  const apiUserCheckIn: typeof import('./src/apis/personal-center').apiUserCheckIn
+  const apiUserExperience: typeof import('./src/apis/personal-center').apiUserExperience
   const apiUserMe: typeof import('./src/apis/account').apiUserMe
+  const apiUserNickname: typeof import('./src/apis/personal-center').apiUserNickname
   const apiWindowClose: typeof import('./src/ipcs/window').apiWindowClose
   const apiWindowGetStatus: typeof import('./src/ipcs/window').apiWindowGetStatus
   const apiWindowMinimize: typeof import('./src/ipcs/window').apiWindowMinimize
@@ -274,6 +277,9 @@ declare global {
   // @ts-ignore
   export type { RegistrationPolicy, AccountUser, AccountAuthorization } from './src/apis/account'
   import('./src/apis/account')
+  // @ts-ignore
+  export type { Experience } from './src/apis/personal-center'
+  import('./src/apis/personal-center')
 }
 
 // for vue template auto import
@@ -286,7 +292,10 @@ declare module 'vue' {
     readonly accountErrorKey: UnwrapRef<typeof import('./src/apis/index')['accountErrorKey']>
     readonly apiRegistrationPolicy: UnwrapRef<typeof import('./src/apis/account')['apiRegistrationPolicy']>
     readonly apiUserAuthorization: UnwrapRef<typeof import('./src/apis/account')['apiUserAuthorization']>
+    readonly apiUserCheckIn: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserCheckIn']>
+    readonly apiUserExperience: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserExperience']>
     readonly apiUserMe: UnwrapRef<typeof import('./src/apis/account')['apiUserMe']>
+    readonly apiUserNickname: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserNickname']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>

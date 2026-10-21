@@ -6,7 +6,9 @@ import { useAuthStore } from '../../stores/auth'
 import { ipcAppGetDeviceName } from '../../ipcs/app'
 import logo from '../../assets/logo.png'
 import { apiRegistrationPolicy, accountErrorKey } from '../../apis'
+import { usePersonalCenter } from './usePersonalCenter'
 import {
+  nicknameSchema,
   challengeState,
   validSubject,
   validFactor,
@@ -18,6 +20,57 @@ defineOptions({ name: 'AccountView' })
 const { t } = useI18n()
 const toast = useToast()
 const auth = useAuthStore()
+const center = usePersonalCenter()
+const { experience, loading: experienceLoading, saving, checking, error: experienceError } = center
+const editingNickname = ref(false)
+const nicknameForm = reactive({ nickname: '' })
+const nicknameError = ref('')
+function editNickname() {
+  nicknameForm.nickname = auth.user?.nickname ?? ''
+  nicknameError.value = ''
+  editingNickname.value = true
+}
+async function saveNickname() {
+  if (saving.value || !auth.signedIn) return
+  const result = nicknameSchema.safeParse(nicknameForm.nickname)
+  if (!result.success) {
+    nicknameError.value = t('account.nicknameInvalid')
+    return
+  }
+  nicknameError.value = ''
+  try {
+    await center.saveNickname(result.data)
+    editingNickname.value = false
+    success('account.nicknameSaved')
+  } catch (error) {
+    notify(error)
+  }
+}
+async function checkIn() {
+  if (checking.value || !auth.signedIn || experience.value?.checkedIn) return
+  try {
+    const result = await center.checkIn()
+    if (result)
+      toast.add({
+        color: 'success',
+        title: t(result.awardedExperience > 0 ? 'account.checkInDone' : 'account.alreadyCheckedIn'),
+        description: t('account.experienceAward', { amount: result.awardedExperience }),
+      })
+  } catch (error) {
+    notify(error)
+  }
+}
+watch(experienceError, (error) => {
+  if (error) notify(error)
+})
+watch(
+  () => auth.snapshot.epoch,
+  () => {
+    editingNickname.value = false
+    nicknameForm.nickname = ''
+    nicknameError.value = ''
+  },
+)
 const available = Boolean(window.scnexus)
 const mode = ref<AccountMode>('login')
 const fields = reactive({
@@ -217,130 +270,176 @@ async function logout() {
 }
 </script>
 <template>
-  <section
-    v-if="auth.signedIn"
-    class="w-full space-y-5 p-4 sm:p-6"
-    :aria-label="t('account.dashboard')"
-  >
-    <div
-      class="relative overflow-hidden rounded-2xl border border-default bg-elevated/50 p-6 sm:p-8"
-    >
+  <section v-if="auth.signedIn" class="w-full space-y-3 p-3" :aria-label="t('account.dashboard')">
+    <div class="relative overflow-hidden rounded-xl border border-default bg-elevated/50 p-4">
       <div
         aria-hidden="true"
         class="pointer-events-none absolute -right-12 -top-20 size-72 rounded-full bg-primary/10 blur-3xl"
       />
-      <div class="relative flex flex-wrap items-center justify-between gap-5">
-        <div class="flex min-w-0 items-center gap-4">
-          <UAvatar icon="i-tabler-user" size="3xl" class="shrink-0 ring-4 ring-default" />
-          <div class="min-w-0 space-y-2">
+      <div class="relative flex items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <UAvatar icon="i-tabler-user" size="xl" class="shrink-0 ring-4 ring-default" />
+          <div class="min-w-0 space-y-1">
             <p class="text-xs font-medium uppercase tracking-widest text-primary">
               SCNEXUS ACCOUNT
             </p>
-            <h2 class="text-2xl font-semibold tracking-tight">
+            <h2 class="text-xl font-semibold tracking-tight">
               {{ auth.user?.nickname || t('account.dashboard') }}
             </h2>
-            <p class="text-sm text-muted">{{ t('account.dashboardHint') }}</p>
           </div>
         </div>
         <UBadge color="success" variant="subtle" size="lg">{{ t('account.signedIn') }}</UBadge>
       </div>
     </div>
-    <div class="grid gap-4 sm:grid-cols-3">
-      <UCard :ui="{ body: 'space-y-2' }">
-        <div class="flex items-center gap-2 text-sm text-muted">
-          <UIcon name="i-tabler-shield-check" />{{ t('account.security') }}
+    <div class="grid grid-cols-2 items-start gap-3">
+      <UCard
+        class="min-w-0"
+        :ui="{
+          header: 'px-4 py-3 sm:px-4 sm:py-3',
+          body: 'p-4 sm:p-4',
+          footer: 'px-4 py-3 sm:px-4 sm:py-3',
+        }"
+      >
+        <template #header
+          ><h3 class="font-semibold">{{ t('account.profile') }}</h3></template
+        >
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm text-muted">{{ t('account.nickname') }}</p>
+              <UButton
+                v-if="!editingNickname"
+                icon="i-tabler-pencil"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                :disabled="locked || !auth.user"
+                @click="editNickname"
+                >{{ t('account.editNickname') }}</UButton
+              >
+            </div>
+            <UForm
+              v-if="editingNickname"
+              :state="nicknameForm"
+              class="space-y-2"
+              @submit="saveNickname"
+            >
+              <UFormField
+                name="nickname"
+                :error="nicknameError || undefined"
+                :description="t('account.nicknameHint')"
+              >
+                <UInput
+                  v-model="nicknameForm.nickname"
+                  class="w-full"
+                  :disabled="saving"
+                  :aria-label="t('account.nickname')"
+                  autocomplete="off"
+                />
+              </UFormField>
+              <div class="flex gap-2">
+                <UButton type="submit" :loading="saving" :disabled="locked">{{
+                  t('ui.save')
+                }}</UButton
+                ><UButton
+                  color="neutral"
+                  variant="ghost"
+                  :disabled="saving"
+                  @click="editingNickname = false"
+                  >{{ t('campaign.cancel') }}</UButton
+                >
+              </div>
+            </UForm>
+            <p v-else class="break-words font-medium">
+              {{ auth.user?.nickname ?? t('account.loading') }}
+            </p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-sm text-muted">{{ t('account.email') }}</p>
+            <p class="break-all font-medium">
+              {{
+                auth.user?.email ?? (auth.user ? t('account.emailUnbound') : t('account.loading'))
+              }}
+            </p>
+          </div>
         </div>
-        <p class="text-lg font-semibold">
-          {{
-            auth.user
-              ? t(auth.user.twoFactorEnabled ? 'account.mfaEnabled' : 'account.mfaDisabled')
-              : t('account.loading')
-          }}
-        </p>
-        <p class="text-xs text-muted">{{ t('account.mfaSummary') }}</p>
+        <template #footer>
+          <div class="flex flex-wrap justify-between gap-2">
+            <UButton
+              icon="i-tabler-logout"
+              :disabled="locked || saving || checking"
+              color="error"
+              variant="soft"
+              @click="logout"
+              >{{ t('account.logout') }}</UButton
+            >
+          </div>
+        </template>
       </UCard>
-      <UCard :ui="{ body: 'space-y-2' }">
-        <div class="flex items-center gap-2 text-sm text-muted">
-          <UIcon name="i-tabler-devices" />{{ t('account.currentSession') }}
+      <UCard
+        class="min-w-0"
+        :ui="{
+          header: 'px-4 py-3 sm:px-4 sm:py-3',
+          body: 'p-4 sm:p-4',
+          footer: 'px-4 py-3 sm:px-4 sm:py-3',
+        }"
+      >
+        <template #header
+          ><h3 class="font-semibold">{{ t('account.growth') }}</h3></template
+        >
+        <div v-if="experience" class="space-y-3">
+          <div class="flex items-end justify-between gap-3">
+            <span class="text-3xl font-semibold text-primary">LV{{ experience.level }}</span
+            ><span class="text-sm text-muted">{{
+              t('account.experienceTotal', { amount: experience.experience })
+            }}</span>
+          </div>
+          <div class="space-y-2">
+            <UProgress
+              :model-value="experience.nextLevelExperience === null ? 100 : experience.experience"
+              :max="experience.nextLevelExperience ?? 100"
+              :aria-label="t('account.growth')"
+            />
+            <p class="text-xs text-muted">
+              {{
+                experience.nextLevelExperience === null
+                  ? t('account.maxLevel')
+                  : t('account.toNextLevel', { amount: experience.experienceToNextLevel })
+              }}
+            </p>
+          </div>
+          <div class="space-y-2 border-t border-default pt-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="text-sm font-medium">{{ t('account.dailyCheckIn') }}</h4>
+              <UBadge v-if="experience.checkedIn" color="success" variant="subtle">{{
+                t('account.alreadyCheckedIn')
+              }}</UBadge>
+            </div>
+            <p class="text-xs text-muted">{{ t('account.checkInHint') }}</p>
+            <UButton
+              block
+              icon="i-tabler-calendar-check"
+              :loading="checking"
+              :disabled="locked || checking || experienceLoading || experience.checkedIn"
+              @click="checkIn"
+              >{{
+                t(experience.checkedIn ? 'account.alreadyCheckedIn' : 'account.checkIn')
+              }}</UButton
+            >
+          </div>
         </div>
-        <p class="text-lg font-semibold">{{ t('account.desktopSession') }}</p>
-        <p class="text-xs text-muted">{{ t('account.sessionSummary') }}</p>
-      </UCard>
-      <UCard :ui="{ body: 'space-y-2' }">
-        <div class="flex items-center gap-2 text-sm text-muted">
-          <UIcon name="i-tabler-key" />{{ t('account.permissions') }}
+        <div v-else class="space-y-3">
+          <p class="text-sm text-muted">
+            {{ t(experienceLoading ? 'account.loading' : 'account.experienceUnavailable') }}
+          </p>
         </div>
-        <p class="text-lg font-semibold">
-          {{ auth.authorization ? auth.authorization.permissions.length : '—' }}
-        </p>
-        <p class="text-xs text-muted">{{ t('account.permissionSummary') }}</p>
       </UCard>
     </div>
-    <UCard>
-      <template #header
-        ><h3 class="font-semibold">{{ t('account.profile') }}</h3></template
-      >
-      <dl class="grid gap-5 text-sm sm:grid-cols-2">
-        <div class="min-w-0 space-y-1">
-          <dt class="text-muted">{{ t('account.userId') }}</dt>
-          <dd class="break-all font-mono text-xs">{{ auth.user?.id ?? '—' }}</dd>
-        </div>
-        <div class="min-w-0 space-y-1">
-          <dt class="text-muted">{{ t('account.sessionId') }}</dt>
-          <dd class="break-all font-mono text-xs">{{ auth.user?.sessionId ?? '—' }}</dd>
-        </div>
-        <div class="space-y-2">
-          <dt class="text-muted">{{ t('account.roles') }}</dt>
-          <dd class="flex flex-wrap gap-1">
-            <UBadge
-              v-for="role in auth.authorization?.roles"
-              :key="role"
-              color="neutral"
-              variant="subtle"
-              >{{ role }}</UBadge
-            ><span v-if="!auth.authorization?.roles.length">{{ t('account.none') }}</span>
-          </dd>
-        </div>
-        <div class="space-y-2">
-          <dt class="text-muted">{{ t('account.permissions') }}</dt>
-          <dd class="flex flex-wrap gap-1">
-            <UBadge
-              v-for="permission in auth.authorization?.permissions"
-              :key="permission"
-              color="neutral"
-              variant="outline"
-              >{{ permission }}</UBadge
-            ><span v-if="!auth.authorization?.permissions.length">{{ t('account.none') }}</span>
-          </dd>
-        </div>
-      </dl>
-      <template #footer>
-        <div class="flex flex-wrap justify-between gap-2">
-          <UButton
-            icon="i-tabler-refresh"
-            :loading="auth.profileBusy"
-            :disabled="locked"
-            color="neutral"
-            variant="outline"
-            @click="auth.loadAccount()"
-            >{{ t('account.reload') }}</UButton
-          >
-          <UButton
-            icon="i-tabler-logout"
-            :disabled="locked"
-            color="error"
-            variant="soft"
-            @click="logout"
-            >{{ t('account.logout') }}</UButton
-          >
-        </div>
-      </template>
-    </UCard>
   </section>
   <section v-else class="flex flex-1">
-    <div class="grid min-h-full w-full bg-default lg:grid-cols-[0.85fr_1.15fr]">
+    <div class="grid min-h-full w-full bg-default grid-cols-[0.85fr_1.15fr]">
       <aside
-        class="relative hidden flex-col justify-between overflow-hidden border-r border-default bg-elevated/50 p-8 lg:flex"
+        class="relative flex flex-col justify-between overflow-hidden border-r border-default bg-elevated/50 p-8"
       >
         <div
           aria-hidden="true"

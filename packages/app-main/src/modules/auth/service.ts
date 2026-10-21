@@ -12,6 +12,7 @@ import {
   uuid,
   clientUuid,
   tokenPair,
+  authFailure,
 } from './validation'
 
 export interface AuthDependencies {
@@ -77,7 +78,7 @@ export function createAuthService(deps: AuthDependencies) {
     try {
       deps.storage.clear()
     } catch {
-      throw failure()
+      throw failure('storage')
     }
   }
   function invalidate() {
@@ -92,8 +93,8 @@ export function createAuthService(deps: AuthDependencies) {
       const result = await deps.transport.request(operation, body, controller.signal)
       current(epoch)
       return result
-    } catch {
-      throw failure()
+    } catch (error) {
+      throw authFailure(error)
     } finally {
       controllers.delete(controller)
     }
@@ -123,13 +124,18 @@ export function createAuthService(deps: AuthDependencies) {
   }
   function commit(value: unknown, epoch: number) {
     current(epoch)
-    const pair = tokenPair(value, now())
+    let pair
+    try {
+      pair = tokenPair(value, now())
+    } catch {
+      throw failure('response')
+    }
     try {
       deps.storage.save(pair.refreshToken)
     } catch {
       invalidate()
       void revoke(pair.accessToken)
-      throw failure()
+      throw failure('storage')
     }
     current(epoch)
     secret = pair.refreshToken
@@ -191,9 +197,9 @@ export function createAuthService(deps: AuthDependencies) {
         return { ...snapshot }
       }
       return commit(result, epoch)
-    } catch {
+    } catch (error) {
       if (!disposed && snapshot.epoch === epoch) invalidate()
-      throw failure()
+      throw authFailure(error)
     }
   }
   function rotate(epoch: number): Promise<AuthSnapshot> {
@@ -225,9 +231,9 @@ export function createAuthService(deps: AuthDependencies) {
         )
           throw failure()
         return commit(pair, epoch)
-      } catch {
+      } catch (error) {
         if (!disposed && snapshot.epoch === epoch) invalidate()
-        throw failure()
+        throw authFailure(error)
       }
     })()
     flight = pending
@@ -294,9 +300,9 @@ export function createAuthService(deps: AuthDependencies) {
           await request('mfa', { ...factor, challengeId, clientType: 'DESKTOP' }, epoch),
           epoch,
         )
-      } catch {
+      } catch (error) {
         if (!disposed && snapshot.epoch === epoch) invalidate()
-        throw failure()
+        throw authFailure(error)
       }
     },
     async requestChallenge(value: unknown): Promise<AuthChallenge> {

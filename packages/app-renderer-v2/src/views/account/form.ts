@@ -25,6 +25,23 @@ const newPasswordSchema = z.string().refine(isStrongPassword)
 const invitationSchema = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/)
 const errorNames = ['subject', 'password', 'deviceName', 'proof', 'challenge', 'invitationCode']
 
+export const nicknameSchema = z
+  .string()
+  .transform((value) => value.normalize('NFC'))
+  .refine(
+    (value) => {
+      const length = [...value].length
+      return (
+        length >= 8 &&
+        length <= 16 &&
+        /^[\u4e00-\u9fff\u3041-\u3096\u30a1-\u30fa\uac00-\ud7a3A-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u00ff\u0152\u0153\u0178\u0410-\u044f\u0401\u04510-9_]+$/u.test(
+          value,
+        )
+      )
+    },
+    { message: 'account.nicknameInvalid' },
+  )
+
 export function validFactor(type: string, value: string): boolean {
   return (
     type === 'otp' ? z.string().regex(/^[0-9]{6}$/) : z.string().regex(/^[a-fA-F0-9]{32}$/)

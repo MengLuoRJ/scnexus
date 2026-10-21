@@ -1,8 +1,28 @@
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { isStrongPassword } from '@scnexus/app-shared/utils/auth-password'
 
-export function failure() {
-  return new AppError(ERRORS.IPC_TRANSPORT_FAILED, { message: 'Account operation failed' })
+export type AuthFailureReason =
+  | 'network'
+  | 'response'
+  | 'storage'
+  | 'http400'
+  | 'http401'
+  | 'http403'
+  | 'http409'
+  | 'http429'
+  | 'http503'
+export class AuthFailure extends AppError {
+  constructor(reason?: AuthFailureReason) {
+    super(ERRORS.IPC_TRANSPORT_FAILED, {
+      message: reason ? `Account operation failed: ${reason}` : 'Account operation failed',
+    })
+  }
+}
+export function failure(reason?: AuthFailureReason) {
+  return new AuthFailure(reason)
+}
+export function authFailure(value: unknown) {
+  return value instanceof AuthFailure ? value : failure()
 }
 export function invalid(): never {
   throw new AppError(ERRORS.IPC_INVALID_ARGUMENT, { message: 'Invalid account input' })
@@ -78,6 +98,7 @@ export type TokenPair = {
   refreshToken: string
   expiresIn: number
   sessionId: string
+  isPublicDevice?: boolean
   clientId?: string | null
   sessionExpiresAt: string
 }
@@ -85,7 +106,7 @@ export function tokenPair(value: unknown, now: number): TokenPair {
   const data = object(
     value,
     ['accessToken', 'refreshToken', 'expiresIn', 'sessionId', 'sessionExpiresAt'],
-    ['clientId'],
+    ['clientId', 'isPublicDevice'],
     false,
   )
   const expiry = typeof data.sessionExpiresAt === 'string' ? Date.parse(data.sessionExpiresAt) : NaN
@@ -96,6 +117,7 @@ export function tokenPair(value: unknown, now: number): TokenPair {
     !/^[A-Za-z0-9_-]{43}$/.test(data.refreshToken) ||
     data.expiresIn !== 600 ||
     !uuid(data.sessionId) ||
+    ('isPublicDevice' in data && data.isPublicDevice !== false) ||
     ('clientId' in data && data.clientId !== null && !clientUuid(data.clientId)) ||
     !Number.isFinite(expiry) ||
     expiry <= now ||

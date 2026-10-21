@@ -10,8 +10,32 @@ import { useAuthStore } from '../../../stores/auth'
 const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
   deviceName: vi.fn<() => Promise<{ ok: true; data: string }>>(),
+  saveNickname: vi.fn<(nickname: string) => Promise<string>>(),
+  checkIn: vi.fn<() => Promise<unknown>>(),
+  loadExperience: vi.fn<() => Promise<void>>(),
   policy: vi.fn<() => Promise<unknown>>(),
 }))
+vi.mock('../usePersonalCenter', async () => {
+  const { ref } = await import('vue')
+  return {
+    usePersonalCenter: () => ({
+      experience: ref({
+        experience: 90,
+        level: 0,
+        nextLevelExperience: 100,
+        experienceToNextLevel: 10,
+        checkedIn: false,
+      }),
+      loading: ref(false),
+      saving: ref(false),
+      checking: ref(false),
+      error: ref(null),
+      saveNickname: mocks.saveNickname,
+      checkIn: mocks.checkIn,
+      loadExperience: mocks.loadExperience,
+    }),
+  }
+})
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('../../../ipcs/app', () => ({ ipcAppGetDeviceName: mocks.deviceName }))
 vi.mock('../../../apis/account', () => ({ apiRegistrationPolicy: mocks.policy }))
@@ -82,6 +106,7 @@ async function render() {
         Button: button,
         Form: form,
         Alert: true,
+        Progress: true,
         Badge: true,
       },
     },
@@ -276,16 +301,25 @@ test('signed-in dashboard shows real account data instead of login forms or cred
     email: null,
   }
   store.authorization = { roles: ['USER'], permissions: ['sessions.read-self'] }
-  const reload = vi.spyOn(store, 'loadAccount').mockResolvedValue()
   const wrapper = await render()
   expect(wrapper.find('form').exists()).toBe(false)
-  expect(wrapper.text()).toContain('account.dashboard')
-  expect(wrapper.text()).toContain('user-id')
-  expect(wrapper.text()).toContain('session-id')
-  expect(wrapper.text()).toContain('account.mfaEnabled')
+  expect(wrapper.get('section').attributes('aria-label')).toBe('account.dashboard')
+  expect(wrapper.get('section > .grid').classes()).toContain('grid-cols-2')
+  expect(wrapper.text()).toContain('Nexus_123')
+  expect(wrapper.text()).not.toContain('user-id')
+  expect(wrapper.text()).not.toContain('session-id')
+  expect(wrapper.text()).not.toContain('sessions.read-self')
+  expect(wrapper.text()).not.toContain('USER')
+  expect(wrapper.text()).toContain('account.emailUnbound')
+  expect(wrapper.text()).toContain('LV0')
+  expect(wrapper.text()).toContain('account.dailyCheckIn')
   expect(wrapper.text()).not.toContain('must-not-render')
-  await namedButton(wrapper, 'reload').trigger('click')
-  expect(reload).toHaveBeenCalledOnce()
+  expect(wrapper.text()).not.toContain('account.dashboardHint')
+  expect(
+    wrapper
+      .findAll('button')
+      .some((button) => ['account.reload', 'account.reloadExperience'].includes(button.text())),
+  ).toBe(false)
   expect(namedButton(wrapper, 'logout').exists()).toBe(true)
   store.snapshot = { ...store.snapshot, status: 'signed-out', accessToken: null }
   await nextTick()
@@ -311,4 +345,56 @@ test('late device detection does not overwrite player input', async () => {
   finish({ ok: true, data: 'Detected PC' })
   await flushPromises()
   expect((fieldInput(wrapper, 'deviceName').element as HTMLInputElement).value).toBe('Custom name')
+})
+
+test('nickname editor validates input and sends normalized nickname only', async () => {
+  const store = useAuthStore()
+  store.snapshot = {
+    ...store.snapshot,
+    status: 'signed-in',
+    accessToken: 'token',
+    sessionId: 'session',
+  }
+  store.user = {
+    id: 'private-id',
+    sessionId: 'session',
+    clientType: 'DESKTOP',
+    twoFactorEnabled: false,
+    nickname: 'Nexus_123',
+    email: 'player@example.test',
+  }
+  mocks.saveNickname.mockResolvedValue('Nexus_456')
+  const wrapper = await render()
+  expect(wrapper.text()).toContain('player@example.test')
+  await namedButton(wrapper, 'editNickname').trigger('click')
+  await fieldInput(wrapper, 'nickname').setValue('bad name')
+  await wrapper.get('form').trigger('submit')
+  expect(mocks.saveNickname).not.toHaveBeenCalled()
+  await fieldInput(wrapper, 'nickname').setValue('Nexus_456')
+  await wrapper.get('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.saveNickname).toHaveBeenCalledExactlyOnceWith('Nexus_456')
+  expect(wrapper.find('form').exists()).toBe(false)
+})
+test('daily check-in uses returned award instead of adding experience in the page', async () => {
+  const store = useAuthStore()
+  store.snapshot = {
+    ...store.snapshot,
+    status: 'signed-in',
+    accessToken: 'token',
+    sessionId: 'session',
+  }
+  mocks.checkIn.mockResolvedValue({
+    experience: 100,
+    level: 1,
+    awardedExperience: 10,
+    checkedIn: true,
+  })
+  const wrapper = await render()
+  await namedButton(wrapper, 'checkIn').trigger('click')
+  await flushPromises()
+  expect(mocks.checkIn).toHaveBeenCalledOnce()
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ color: 'success', title: 'account.checkInDone' }),
+  )
 })

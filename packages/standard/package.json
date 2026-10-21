@@ -15,11 +15,12 @@
     "type": "git",
     "url": "git+https://github.com/MengLuoRJ/scnexus.git"
   },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
   "typesVersions": {
     "*": {
-      ".": [
-        "./dist/index.d.ts"
-      ],
       "metadata": [
         "./dist/metadata/index.d.ts"
       ],
@@ -30,23 +31,15 @@
   },
   "exports": {
     "./metadata": {
-      "require": {
+      "import": {
         "types": "./dist/metadata/index.d.ts",
         "default": "./dist/metadata/index.js"
-      },
-      "import": {
-        "types": "./dist/metadata/index.d.mts",
-        "default": "./dist/metadata/index.mjs"
       }
     },
     "./package": {
-      "require": {
+      "import": {
         "types": "./dist/package/index.d.ts",
         "default": "./dist/package/index.js"
-      },
-      "import": {
-        "types": "./dist/package/index.d.mts",
-        "default": "./dist/package/index.mjs"
       }
     }
   },

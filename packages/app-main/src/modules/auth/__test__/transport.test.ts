@@ -6,7 +6,13 @@ const { request, create } = vi.hoisted(() => {
     create: vi.fn<(config: unknown) => { request: typeof request }>(() => ({ request })),
   }
 })
-vi.mock('axios', () => ({ default: { create } }))
+vi.mock('axios', () => ({
+  default: {
+    create,
+    isAxiosError: (value: unknown) =>
+      Boolean(value && typeof value === 'object' && 'isAxiosError' in value),
+  },
+}))
 import { createAuthTransport } from '../transport'
 beforeEach(() => request.mockReset())
 it('uses a fixed Node transport with no cookies redirects proxy or renderer URL', async () => {
@@ -47,7 +53,7 @@ it('never propagates Axios config response body URL or credentials and never ret
       { refreshToken: 'secret', clientType: 'DESKTOP' },
       new AbortController().signal,
     ),
-  ).rejects.toMatchObject({ message: 'Account operation failed' })
+  ).rejects.toMatchObject({ message: 'Account operation failed: network' })
   expect(request).toHaveBeenCalledOnce()
 })
 it('revokes only the current session via bounded DELETE bearer with no body', async () => {
@@ -64,3 +70,18 @@ it('revokes only the current session via bounded DELETE bearer with no body', as
     }),
   )
 })
+
+it.each([400, 401, 403, 409, 429, 503])(
+  'reports safe HTTP %s without leaking response details or retrying',
+  async (status) => {
+    request.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status, data: { password: 'secret' } },
+      config: { authorization: 'secret' },
+    })
+    await expect(
+      createAuthTransport().request('register', {}, new AbortController().signal),
+    ).rejects.toMatchObject({ message: `Account operation failed: http${status}` })
+    expect(request).toHaveBeenCalledOnce()
+  },
+)

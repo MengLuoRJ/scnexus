@@ -42,7 +42,7 @@ describe('account HTTP boundary', () => {
         baseURL: 'http://127.0.0.1:3000',
         withCredentials: false,
         adapter: 'fetch',
-        fetchOptions: { redirect: 'error', credentials: 'omit' },
+        fetchOptions: { redirect: 'error', credentials: 'omit', cache: 'no-store' },
       }),
     )
   })

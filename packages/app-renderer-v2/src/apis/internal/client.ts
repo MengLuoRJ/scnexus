@@ -12,6 +12,8 @@ export type ApiErrorKind =
   | 'invalidResponse'
   | 'stale'
   | 'desktop'
+  | 'credentialStorage'
+  | 'registrationRejected'
 export class AccountError extends Error {
   constructor(readonly kind: ApiErrorKind) {
     super(kind)
@@ -29,7 +31,7 @@ export type ApiAuth = {
 const http = axios.create({
   baseURL: resolveServerApiBase(import.meta.env.DEV),
   adapter: 'fetch',
-  fetchOptions: { redirect: 'error', credentials: 'omit' },
+  fetchOptions: { redirect: 'error', credentials: 'omit', cache: 'no-store' },
   withCredentials: false,
   timeout: 15000,
 })
@@ -49,6 +51,7 @@ export async function apiRequest<T>(
   validate: (value: unknown) => T,
   auth?: ApiAuth,
   method: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET',
+  body?: unknown,
 ): Promise<T> {
   // Only application-relative paths may receive a Bearer token; reject URL parser normalization tricks.
   if (!/^\/[A-Za-z0-9_/-]+$/.test(path) || path.includes('//') || path.includes('..'))
@@ -69,6 +72,7 @@ export async function apiRequest<T>(
     const config: AxiosRequestConfig = {
       url: path,
       method,
+      data: body,
       withCredentials: false,
       headers: snapshot?.accessToken ? { Authorization: `Bearer ${snapshot.accessToken}` } : {},
     }

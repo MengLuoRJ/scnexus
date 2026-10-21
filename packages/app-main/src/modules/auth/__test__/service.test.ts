@@ -415,3 +415,37 @@ describe('desktop account service', () => {
     expect(service.getSnapshot().status).toBe('signed-out')
   })
 })
+
+it('register accepts the current ordinary-session response including isPublicDevice=false', async () => {
+  const f = setup()
+  f.request.mockResolvedValueOnce({ ...f.pair(), isPublicDevice: false, clientId: null })
+  const result = await f.service.register({
+    ...input,
+    password: 'Strong1!',
+    challengeId: id,
+    proof: '012345',
+  })
+  expect(result.status).toBe('signed-in')
+  expect(f.storage.save).toHaveBeenCalledOnce()
+})
+it('registration response failure is distinct from credential storage failure', async () => {
+  const malformed = setup()
+  malformed.request.mockResolvedValueOnce({ ...malformed.pair(), isPublicDevice: 'false' })
+  await expect(
+    malformed.service.register({
+      ...input,
+      password: 'Strong1!',
+      challengeId: id,
+      proof: '012345',
+    }),
+  ).rejects.toMatchObject({ message: 'Account operation failed: response' })
+  expect(malformed.storage.save).not.toHaveBeenCalled()
+  const storage = setup()
+  storage.storage.save.mockImplementationOnce(() => {
+    throw Error('private storage details')
+  })
+  await expect(
+    storage.service.register({ ...input, password: 'Strong1!', challengeId: id, proof: '012345' }),
+  ).rejects.toMatchObject({ message: 'Account operation failed: storage' })
+  expect(storage.service.getSnapshot().status).toBe('signed-out')
+})

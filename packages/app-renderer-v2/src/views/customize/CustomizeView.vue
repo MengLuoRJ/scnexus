@@ -8,7 +8,7 @@ import { useToast } from '@nuxt/ui/composables/useToast'
 import { normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { ContentRecord, AnalysisResult } from '@scnexus/app-shared/types/content.type'
-import { apiShellShowItemInFolder } from '../../ipcs'
+import { ipcShellShowItemInFolder } from '../../ipcs'
 import { useCustomize } from './useCustomize'
 import { formatFileSize } from '../campaign/formatFileSize'
 import CampaignSourcePicker from '../campaign/components/CampaignSourcePicker.vue'
@@ -69,7 +69,7 @@ async function refresh(scan = false) {
 }
 async function folder(record: ContentRecord) {
   try {
-    const result = await apiShellShowItemInFolder(record.descriptorPath)
+    const result = await ipcShellShowItemInFolder(record.descriptorPath)
     if (!result.ok) notifyError(result.error)
   } catch (value) {
     notifyError(toErrorDto(normalizeError(value)))

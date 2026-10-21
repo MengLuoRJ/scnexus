@@ -1,16 +1,17 @@
-import { desktop, request } from './internal/ipc-common'
+import { ipcDesktop, ipcRequest } from './internal/ipc-common'
 
-export const apiAppGetVersion = () => request(() => desktop().app.getVersion())
+export const ipcAppGetVersion = () => ipcRequest(() => ipcDesktop().app.getVersion())
 
-import { bridgeRequest } from './internal/bridge'
-export const apiAppIsPackaged = () => bridgeRequest<boolean>('app:is-packaged')
-export const apiAppGetLocale = () => bridgeRequest<string>('app:get-locale')
-export const apiAppGetSystemLocale = () => bridgeRequest<string>('app:get-system-locale')
-export const apiAppGetLocaleCountryCode = () => bridgeRequest<string>('app:get-locale-country-code')
-export const apiAppGetPreferredSystemLanguages = () =>
-  bridgeRequest<string[]>('app:get-preferred-system-languages')
-export const apiAppGetPath = (name: string) => bridgeRequest<string>('app:get-path', name)
-export const apiAppGetPaths = () =>
-  bridgeRequest<
+import { ipcBridgeRequest } from './internal/bridge'
+export const ipcAppIsPackaged = () => ipcBridgeRequest<boolean>('app:is-packaged')
+export const ipcAppGetLocale = () => ipcBridgeRequest<string>('app:get-locale')
+export const ipcAppGetSystemLocale = () => ipcBridgeRequest<string>('app:get-system-locale')
+export const ipcAppGetLocaleCountryCode = () =>
+  ipcBridgeRequest<string>('app:get-locale-country-code')
+export const ipcAppGetPreferredSystemLanguages = () =>
+  ipcBridgeRequest<string[]>('app:get-preferred-system-languages')
+export const ipcAppGetPath = (name: string) => ipcBridgeRequest<string>('app:get-path', name)
+export const ipcAppGetPaths = () =>
+  ipcBridgeRequest<
     Record<'home' | 'userData' | 'appData' | 'documents' | 'logs' | 'crashDumps', string>
   >('app:get-paths')

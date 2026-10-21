@@ -1,5 +1,5 @@
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
-import { request, subscription, ipcSnapshot } from './ipc-common'
+import { ipcRequest, ipcSubscription, ipcSnapshot } from './ipc-common'
 
 type Channel =
   | 'app:is-packaged'
@@ -38,15 +38,15 @@ function bridge(name: Channel | Event): (...args: unknown[]) => unknown {
     })
   return method as (...args: unknown[]) => unknown
 }
-export const bridgeRequest = <T>(name: Channel, ...args: unknown[]) =>
-  request<T>(
+export const ipcBridgeRequest = <T>(name: Channel, ...args: unknown[]) =>
+  ipcRequest<T>(
     async () =>
       (await bridge(name)(
         ...args.map((value) => ipcSnapshot(value)),
       )) as import('@scnexus/app-shared/errors/app.error').IpcResult<T>,
   )
-export function bridgeSubscription<T>(name: Event, listener: (data: T) => void) {
-  return subscription<T>((callback) => {
+export function ipcBridgeSubscription<T>(name: Event, listener: (data: T) => void) {
+  return ipcSubscription<T>((callback) => {
     const stop = bridge(name)((_event: object, data: T) => callback(data))
     if (typeof stop !== 'function') throw new AppError(ERRORS.IPC_RESULT_INVALID)
     return stop as () => void

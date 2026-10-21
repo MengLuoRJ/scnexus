@@ -1,4 +1,4 @@
-import { bridgeRequest } from './internal/bridge'
+import { ipcBridgeRequest } from './internal/bridge'
 export type OpenDialogOptions = {
   title?: string
   defaultPath?: string
@@ -18,10 +18,10 @@ export type OpenDialogOptions = {
   message?: string
   securityScopedBookmarks?: boolean
 }
-export const apiDialogShowOpenDialog = (options: OpenDialogOptions) =>
-  bridgeRequest<{ canceled: boolean; filePaths: string[]; bookmarks?: string[] }>(
+export const ipcDialogShowOpenDialog = (options: OpenDialogOptions) =>
+  ipcBridgeRequest<{ canceled: boolean; filePaths: string[]; bookmarks?: string[] }>(
     'dialog:show-open-dialog',
     options,
   )
-export const apiDialogShowOpenDialogSync = (options: OpenDialogOptions) =>
-  bridgeRequest<string[] | undefined>('dialog:show-open-dialog-sync', options)
+export const ipcDialogShowOpenDialogSync = (options: OpenDialogOptions) =>
+  ipcBridgeRequest<string[] | undefined>('dialog:show-open-dialog-sync', options)

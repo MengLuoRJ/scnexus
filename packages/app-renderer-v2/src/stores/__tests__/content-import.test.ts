@@ -6,8 +6,8 @@ const mocks = vi.hoisted(() => ({
   analyze: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cancel: vi.fn<(id: string) => Promise<unknown>>(),
 }))
-vi.mock('../../ipcs/content', () => ({ apiContentAnalyze: mocks.analyze }))
-vi.mock('../../ipcs/campaign', () => ({ apiCampaignCancel: mocks.cancel }))
+vi.mock('../../ipcs/content', () => ({ ipcContentAnalyze: mocks.analyze }))
+vi.mock('../../ipcs/campaign', () => ({ ipcCampaignCancel: mocks.cancel }))
 import { useContentImportStore } from '../content-import'
 beforeEach(() => {
   setActivePinia(createPinia())

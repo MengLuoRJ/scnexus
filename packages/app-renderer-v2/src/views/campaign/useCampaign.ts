@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, ref } from 'vue'
-import { apiGameSettingGet } from '../../ipcs/scii-game-setting'
-import * as api from '../../ipcs/campaign'
+import { ipcGameSettingGet } from '../../ipcs/scii-game-setting'
+import * as ipc from '../../ipcs/campaign'
 import {
   isErrorDto,
   normalizeError,
@@ -62,9 +62,9 @@ export function useCampaign() {
     }
   }
   async function refresh() {
-    const game = data(await apiGameSettingGet())
+    const game = data(await ipcGameSettingGet())
     if (!game.paths) throw new AppError(ERRORS.PROFILE_NOT_READY)
-    const [list, current] = await Promise.all([api.apiCampaignList(), api.apiCampaignActive()])
+    const [list, current] = await Promise.all([ipc.ipcCampaignList(), ipc.ipcCampaignActive()])
     records.value = data(list).records.filter((record) => record.gameRoot === game.gameRoot)
     active.value = Object.fromEntries(
       Object.entries(data(current).active).filter(
@@ -77,7 +77,7 @@ export function useCampaign() {
   }
   async function close() {
     const id = previewId()
-    if (id) data(await api.apiCampaignCancel(id))
+    if (id) data(await ipc.ipcCampaignCancel(id))
     analysis.value = null
     activation.value = null
     removal.value = null
@@ -101,9 +101,9 @@ export function useCampaign() {
   function analyze(input: SourceInput) {
     return execute(async () => {
       await close()
-      const result = data(await api.apiCampaignAnalyze(input))
+      const result = data(await ipc.ipcCampaignAnalyze(input))
       if (disposed) {
-        await api.apiCampaignCancel(result.analysisId)
+        await ipc.ipcCampaignCancel(result.analysisId)
         return
       }
       analysis.value = result
@@ -116,12 +116,12 @@ export function useCampaign() {
     return execute(async () => {
       await close()
       if (action === 'activate')
-        activation.value = data(await api.apiCampaignPrepareActivation(record.localId))
+        activation.value = data(await ipc.ipcCampaignPrepareActivation(record.localId))
       else
         removal.value = data(
           await (action === 'deactivate'
-            ? api.apiCampaignPrepareDeactivation(record.localId)
-            : api.apiCampaignPrepareUninstall(record.localId)),
+            ? ipc.ipcCampaignPrepareDeactivation(record.localId)
+            : ipc.ipcCampaignPrepareUninstall(record.localId)),
         )
       if (disposed) await close()
     })
@@ -133,25 +133,25 @@ export function useCampaign() {
         const analysisId = analysis.value.analysisId
         const taskId = crypto.randomUUID()
         installProgress.value = null
-        stopProgress = api.apiCampaignOnInstallProgress((progress) => {
+        stopProgress = ipc.ipcCampaignOnInstallProgress((progress) => {
           if (!disposed && progress.taskId === taskId && progress.analysisId === analysisId)
             installProgress.value = progress
         })
         try {
           installed = data(
-            await api.apiCampaignInstall({ analysisId, taskId, mode: mode.value, decisions }),
+            await ipc.ipcCampaignInstall({ analysisId, taskId, mode: mode.value, decisions }),
           )
         } finally {
           stopProgress()
           stopProgress = undefined
         }
       } else if (activation.value)
-        data(await api.apiCampaignActivate(activation.value.activationId, decisions))
+        data(await ipc.ipcCampaignActivate(activation.value.activationId, decisions))
       else if (removal.value)
         data(
           await (removal.value.operation === 'deactivate'
-            ? api.apiCampaignDeactivate(removal.value.removalId, removals)
-            : api.apiCampaignUninstall(removal.value.removalId, removals)),
+            ? ipc.ipcCampaignDeactivate(removal.value.removalId, removals)
+            : ipc.ipcCampaignUninstall(removal.value.removalId, removals)),
         )
       else return
       analysis.value = null
@@ -169,7 +169,7 @@ export function useCampaign() {
     disposed = true
     stopProgress?.()
     const id = previewId()
-    if (id) void api.apiCampaignCancel(id)
+    if (id) void ipc.ipcCampaignCancel(id)
   })
   return {
     records,
@@ -194,7 +194,7 @@ export function useCampaign() {
     close: () => execute(close),
     scan: () =>
       execute(async () => {
-        diagnostics.value = data(await api.apiCampaignScan()).diagnostics
+        diagnostics.value = data(await ipc.ipcCampaignScan()).diagnostics
         await refresh()
       }),
   }

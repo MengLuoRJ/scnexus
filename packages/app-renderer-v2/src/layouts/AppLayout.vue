@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterView, useRoute } from 'vue-router'
-import { apiSettingGetSnapshot, apiSettingOnChanged, apiWindowReady } from '../ipcs'
+import { ipcSettingGetSnapshot, ipcSettingOnChanged, ipcWindowReady } from '../ipcs'
 import type { SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
 import AppSidebar from './components/AppSidebar.vue'
 defineOptions({ name: 'AppLayout' })
@@ -12,12 +12,12 @@ function syncLanguage(value: SettingSnapshot) {
   locale.value = value.effectiveLanguage
   document.documentElement.lang = value.effectiveLanguage
 }
-if (window.scnexus) apiSettingOnChanged(syncLanguage)
+if (window.scnexus) ipcSettingOnChanged(syncLanguage)
 onMounted(async () => {
   if (window.scnexus) {
-    const result = await apiSettingGetSnapshot()
+    const result = await ipcSettingGetSnapshot()
     if (result.ok) syncLanguage(result.data)
-    await apiWindowReady()
+    await ipcWindowReady()
   }
 })
 </script>

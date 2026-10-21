@@ -14,8 +14,8 @@ const mocks = vi.hoisted(() => ({
   cancel: vi.fn<(id: string) => Promise<unknown>>(),
   toast: vi.fn<(value: unknown) => void>(),
 }))
-vi.mock('../../ipcs/content', () => ({ apiContentAnalyze: mocks.analyze }))
-vi.mock('../../ipcs/campaign', () => ({ apiCampaignCancel: mocks.cancel }))
+vi.mock('../../ipcs/content', () => ({ ipcContentAnalyze: mocks.analyze }))
+vi.mock('../../ipcs/campaign', () => ({ ipcCampaignCancel: mocks.cancel }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 const modal = defineComponent({
   props: ['open'],

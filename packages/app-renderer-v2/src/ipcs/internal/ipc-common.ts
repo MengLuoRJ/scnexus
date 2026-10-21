@@ -9,13 +9,13 @@ import {
 } from '@scnexus/app-shared/errors/app.error'
 import type { DesktopApi } from '@scnexus/app-shared/types/desktop.type'
 
-export function desktop(): DesktopApi {
+export function ipcDesktop(): DesktopApi {
   if (!window.scnexus)
     throw new AppError(ERRORS.IPC_TRANSPORT_FAILED, { message: 'Desktop bridge is unavailable' })
   return window.scnexus
 }
 
-export async function request<T>(run: () => Promise<IpcResult<T>>): Promise<IpcResult<T>> {
+export async function ipcRequest<T>(run: () => Promise<IpcResult<T>>): Promise<IpcResult<T>> {
   try {
     const result = await run()
     if (
@@ -33,13 +33,13 @@ export async function request<T>(run: () => Promise<IpcResult<T>>): Promise<IpcR
   }
 }
 
-export async function unwrap<T>(result: Promise<IpcResult<T>>): Promise<T> {
+export async function ipcUnwrap<T>(result: Promise<IpcResult<T>>): Promise<T> {
   const response = await result
   if (response.ok) return response.data
   throw response.error
 }
 
-export function subscription<T>(
+export function ipcSubscription<T>(
   subscribe: (listener: (data: T) => void) => () => void,
   listener: (data: T) => void,
 ): () => void {

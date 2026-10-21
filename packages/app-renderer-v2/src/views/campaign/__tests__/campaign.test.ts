@@ -21,22 +21,22 @@ const mocks = vi.hoisted(() => ({
   scan: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }))
 vi.mock('../../../ipcs/scii-game-setting', () => ({
-  apiGameSettingGet: async () => ({ ok: true, data: { gameRoot: 'D:\\Game', paths: {} } }),
+  ipcGameSettingGet: async () => ({ ok: true, data: { gameRoot: 'D:\\Game', paths: {} } }),
 }))
 vi.mock('../../../ipcs/campaign', () => ({
-  apiCampaignList: mocks.list,
-  apiCampaignActive: mocks.active,
-  apiCampaignAnalyze: mocks.analyze,
-  apiCampaignCancel: mocks.cancel,
-  apiCampaignInstall: mocks.install,
-  apiCampaignOnInstallProgress: mocks.progress,
-  apiCampaignPrepareActivation: mocks.prepare,
-  apiCampaignActivate: mocks.activate,
-  apiCampaignPrepareDeactivation: mocks.removePreview,
-  apiCampaignPrepareUninstall: mocks.removePreview,
-  apiCampaignDeactivate: mocks.remove,
-  apiCampaignUninstall: mocks.remove,
-  apiCampaignScan: mocks.scan,
+  ipcCampaignList: mocks.list,
+  ipcCampaignActive: mocks.active,
+  ipcCampaignAnalyze: mocks.analyze,
+  ipcCampaignCancel: mocks.cancel,
+  ipcCampaignInstall: mocks.install,
+  ipcCampaignOnInstallProgress: mocks.progress,
+  ipcCampaignPrepareActivation: mocks.prepare,
+  ipcCampaignActivate: mocks.activate,
+  ipcCampaignPrepareDeactivation: mocks.removePreview,
+  ipcCampaignPrepareUninstall: mocks.removePreview,
+  ipcCampaignDeactivate: mocks.remove,
+  ipcCampaignUninstall: mocks.remove,
+  ipcCampaignScan: mocks.scan,
 }))
 import { useCampaign } from '../useCampaign'
 const scopes: ReturnType<typeof effectScope>[] = []

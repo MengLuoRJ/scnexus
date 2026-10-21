@@ -1,9 +1,9 @@
-import { desktop, request, subscription } from './internal/ipc-common'
+import { ipcDesktop, ipcRequest, ipcSubscription } from './internal/ipc-common'
 import type { DesktopApi } from '@scnexus/app-shared/types/desktop.type'
 
-export const apiTelemetryGetStatus = () => request(() => desktop().telemetry.getStatus())
-export const apiTelemetrySetEnabled = (value: boolean) =>
-  request(() => desktop().telemetry.setEnabled(value))
-export const apiTelemetryOnStatus = (
+export const ipcTelemetryGetStatus = () => ipcRequest(() => ipcDesktop().telemetry.getStatus())
+export const ipcTelemetrySetEnabled = (value: boolean) =>
+  ipcRequest(() => ipcDesktop().telemetry.setEnabled(value))
+export const ipcTelemetryOnStatus = (
   listener: Parameters<DesktopApi['telemetry']['onStatus']>[0],
-) => subscription((callback) => desktop().telemetry.onStatus(callback), listener)
+) => ipcSubscription((callback) => ipcDesktop().telemetry.onStatus(callback), listener)

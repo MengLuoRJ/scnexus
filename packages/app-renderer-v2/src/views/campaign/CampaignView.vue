@@ -12,9 +12,9 @@ import type {
   AnalysisResult,
 } from '@scnexus/app-shared/types/content.type'
 import {
-  apiCampaignLaunch,
-  apiShellOpenExternalWebsite,
-  apiShellShowItemInFolder,
+  ipcCampaignLaunch,
+  ipcShellOpenExternalWebsite,
+  ipcShellShowItemInFolder,
 } from '../../ipcs'
 import { useCampaign } from './useCampaign'
 import type { CampaignOperationRequest } from './useCampaign'
@@ -96,16 +96,16 @@ async function launch() {
   if (locked.value) return
   busy.value = true
   try {
-    await external(apiCampaignLaunch)
+    await external(ipcCampaignLaunch)
   } finally {
     busy.value = false
   }
 }
 function showFolder(record: ContentRecord) {
-  void external(() => apiShellShowItemInFolder(record.descriptorPath))
+  void external(() => ipcShellShowItemInFolder(record.descriptorPath))
 }
 function openWebsite(url: string) {
-  void external(() => apiShellOpenExternalWebsite(url))
+  void external(() => ipcShellOpenExternalWebsite(url))
 }
 function completed(action: CampaignOperationRequest['action']) {
   toast.add({ color: 'success', title: t(`campaign.${action}Complete`) })

@@ -12,8 +12,8 @@ const mocks = vi.hoisted(() => ({
   path: vi.fn<(file: File) => string>(),
 }))
 vi.mock('../../../ipcs', () => ({
-  apiDialogShowOpenDialog: mocks.dialog,
-  getPathForFile: mocks.path,
+  ipcDialogShowOpenDialog: mocks.dialog,
+  ipcGetPathForFile: mocks.path,
 }))
 const wrappers: { unmount: () => void }[] = []
 afterEach(() => {

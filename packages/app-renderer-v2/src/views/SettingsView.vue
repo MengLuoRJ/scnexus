@@ -78,13 +78,13 @@ async function run(action: () => Promise<void>) {
 }
 async function save(patch: Partial<SettingPreferences>) {
   await run(async () => {
-    const result = await desktopIpc.apiSettingUpdate(patch)
+    const result = await desktopIpc.ipcSettingUpdate(patch)
     if (result.ok) {
       sync(accept(result)!)
       notifySaved()
     } else {
       error.value = result.error
-      const snapshot = await desktopIpc.apiSettingGetSnapshot()
+      const snapshot = await desktopIpc.ipcSettingGetSnapshot()
       if (snapshot.ok) sync(snapshot.data)
     }
   })
@@ -92,20 +92,20 @@ async function save(patch: Partial<SettingPreferences>) {
 async function choose(kind: 'game' | 'download') {
   await run(async () => {
     const picked = accept(
-      await desktopIpc.apiDialogShowOpenDialog({
+      await desktopIpc.ipcDialogShowOpenDialog({
         properties: ['openDirectory'],
         title: t(kind === 'game' ? 'ui.gameDir' : 'ui.downloadDir'),
       }),
     )
     if (!picked || picked.canceled || !picked.filePaths[0]) return
     if (kind === 'game') {
-      const result = await desktopIpc.apiGameSettingConfigure(picked.filePaths[0])
+      const result = await desktopIpc.ipcGameSettingConfigure(picked.filePaths[0])
       if (result.ok) {
         game.value = accept(result)!
         notifySaved()
       } else error.value = result.error
     } else {
-      const result = await desktopIpc.apiSettingUpdate({
+      const result = await desktopIpc.ipcSettingUpdate({
         downloadDirectory: picked.filePaths[0],
       })
       if (result.ok) {
@@ -117,13 +117,13 @@ async function choose(kind: 'game' | 'download') {
 }
 async function detect() {
   await run(async () => {
-    const result = await desktopIpc.apiGameSettingInitialize()
+    const result = await desktopIpc.ipcGameSettingInitialize()
     if (result.ok) {
       game.value = accept(result)!
       notifySaved()
     } else {
       error.value = result.error
-      const snapshot = await desktopIpc.apiGameSettingGet()
+      const snapshot = await desktopIpc.ipcGameSettingGet()
       if (snapshot.ok) game.value = snapshot.data
     }
   })
@@ -132,19 +132,19 @@ async function update(action: 'check' | 'download' | 'install') {
   await run(async () => {
     accept(
       await (action === 'check'
-        ? desktopIpc.apiUpdaterCheckForUpdates()
+        ? desktopIpc.ipcUpdaterCheckForUpdates()
         : action === 'download'
-          ? desktopIpc.apiUpdaterDownloadUpdate()
-          : desktopIpc.apiUpdaterQuitAndInstall()),
+          ? desktopIpc.ipcUpdaterDownloadUpdate()
+          : desktopIpc.ipcUpdaterQuitAndInstall()),
     )
-    const status = await desktopIpc.apiUpdaterGetStatus()
+    const status = await desktopIpc.ipcUpdaterGetStatus()
     if (status.ok) updater.value = status.data.state
   })
 }
 function openDirectory(path: string) {
   if (!available || !path) return
   return run(async () => {
-    const result = await desktopIpc.apiShellOpenPath(path)
+    const result = await desktopIpc.ipcShellOpenPath(path)
     const message = accept(result)
     if (result.ok && message)
       error.value = toErrorDto(new AppError(ERRORS.SHELL_OPEN_FAILED, { message }))
@@ -152,7 +152,7 @@ function openDirectory(path: string) {
 }
 function openLink(url: string) {
   return run(async () => {
-    accept(await desktopIpc.apiShellOpenExternalWebsite(url))
+    accept(await desktopIpc.ipcShellOpenExternalWebsite(url))
   })
 }
 const links = [
@@ -163,16 +163,16 @@ const links = [
   { key: 'sponsor', url: 'https://scnexus.net/sponsor.html' },
 ]
 if (available) {
-  desktopIpc.apiSettingOnChanged(sync)
-  desktopIpc.apiUpdaterOnCheckingForUpdate(() => (updater.value = 'checking'))
-  desktopIpc.apiUpdaterOnUpdateAvailable(() => (updater.value = 'available'))
-  desktopIpc.apiUpdaterOnUpdateNotAvailable(() => (updater.value = 'idle'))
-  desktopIpc.apiUpdaterOnDownloadProgress((value) => {
+  desktopIpc.ipcSettingOnChanged(sync)
+  desktopIpc.ipcUpdaterOnCheckingForUpdate(() => (updater.value = 'checking'))
+  desktopIpc.ipcUpdaterOnUpdateAvailable(() => (updater.value = 'available'))
+  desktopIpc.ipcUpdaterOnUpdateNotAvailable(() => (updater.value = 'idle'))
+  desktopIpc.ipcUpdaterOnDownloadProgress((value) => {
     updater.value = 'downloading'
     progress.value = value.percent
   })
-  desktopIpc.apiUpdaterOnUpdateDownloaded(() => (updater.value = 'downloaded'))
-  desktopIpc.apiUpdaterOnError((value) => {
+  desktopIpc.ipcUpdaterOnUpdateDownloaded(() => (updater.value = 'downloaded'))
+  desktopIpc.ipcUpdaterOnError((value) => {
     updater.value = 'failed'
     error.value = value
   })
@@ -181,11 +181,11 @@ onMounted(async () => {
   if (!available) return
   await run(async () => {
     const results = await Promise.all([
-      desktopIpc.apiSettingGetSnapshot(),
-      desktopIpc.apiGameSettingGet(),
-      desktopIpc.apiAppGetVersion(),
-      desktopIpc.apiUpdaterGetStatus(),
-      desktopIpc.apiAppGetPath('logs'),
+      desktopIpc.ipcSettingGetSnapshot(),
+      desktopIpc.ipcGameSettingGet(),
+      desktopIpc.ipcAppGetVersion(),
+      desktopIpc.ipcUpdaterGetStatus(),
+      desktopIpc.ipcAppGetPath('logs'),
     ])
     const [settingResult, gameResult, versionResult, statusResult, logResult] = results
     if (settingResult.ok) sync(settingResult.data)

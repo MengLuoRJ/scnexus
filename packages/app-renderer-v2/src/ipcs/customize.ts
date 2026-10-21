@@ -1,4 +1,4 @@
-import { desktop, request, ipcSnapshot, subscription } from './internal/ipc-common'
+import { ipcDesktop, ipcRequest, ipcSnapshot, ipcSubscription } from './internal/ipc-common'
 import type {
   SourceInput,
   InstallSelection,
@@ -6,17 +6,18 @@ import type {
   RemovalDecision,
 } from '@scnexus/app-shared/types/content.type'
 
-export const apiCustomizeOnInstallProgress = (listener: (progress: InstallProgress) => void) =>
-  subscription((handler) => desktop().customize.onInstallProgress(handler), listener)
+export const ipcCustomizeOnInstallProgress = (listener: (progress: InstallProgress) => void) =>
+  ipcSubscription((handler) => ipcDesktop().customize.onInstallProgress(handler), listener)
 
-export const apiCustomizeCancel = (id: string) => request(() => desktop().customize.cancel(id))
-export const apiCustomizeAnalyze = (input: SourceInput) =>
-  request(() => desktop().customize.analyze(ipcSnapshot(input)))
-export const apiCustomizeInstall = (selection: InstallSelection) =>
-  request(() => desktop().customize.install(ipcSnapshot(selection)))
-export const apiCustomizeList = () => request(() => desktop().customize.list())
-export const apiCustomizeScan = () => request(() => desktop().customize.scan())
-export const apiCustomizePrepareUninstall = (id: string) =>
-  request(() => desktop().customize.prepareUninstall(id))
-export const apiCustomizeUninstall = (id: string, decisions: RemovalDecision[]) =>
-  request(() => desktop().customize.uninstall(id, ipcSnapshot(decisions)))
+export const ipcCustomizeCancel = (id: string) =>
+  ipcRequest(() => ipcDesktop().customize.cancel(id))
+export const ipcCustomizeAnalyze = (input: SourceInput) =>
+  ipcRequest(() => ipcDesktop().customize.analyze(ipcSnapshot(input)))
+export const ipcCustomizeInstall = (selection: InstallSelection) =>
+  ipcRequest(() => ipcDesktop().customize.install(ipcSnapshot(selection)))
+export const ipcCustomizeList = () => ipcRequest(() => ipcDesktop().customize.list())
+export const ipcCustomizeScan = () => ipcRequest(() => ipcDesktop().customize.scan())
+export const ipcCustomizePrepareUninstall = (id: string) =>
+  ipcRequest(() => ipcDesktop().customize.prepareUninstall(id))
+export const ipcCustomizeUninstall = (id: string, decisions: RemovalDecision[]) =>
+  ipcRequest(() => ipcDesktop().customize.uninstall(id, ipcSnapshot(decisions)))

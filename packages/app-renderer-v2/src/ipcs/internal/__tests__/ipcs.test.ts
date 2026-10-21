@@ -1,45 +1,51 @@
 import { afterEach, expect, test, vi } from 'vitest'
+import * as ipcExports from '../../index'
 import { effectScope } from 'vue'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
-import { request, subscription, unwrap } from '../ipc-common'
+import { ipcRequest, ipcSubscription, ipcUnwrap } from '../ipc-common'
 import {
-  apiGameSettingInitialize,
-  apiSettingUpdateKey,
-  apiShellOpenExternalWebsite,
-  apiUpdaterOnError,
+  ipcGameSettingInitialize,
+  ipcSettingUpdateKey,
+  ipcShellOpenExternalWebsite,
+  ipcUpdaterOnError,
 } from '../../index'
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
+test('public IPC functions consistently use the ipc prefix', () => {
+  const functions = Object.entries(ipcExports).filter(([, value]) => typeof value === 'function')
+  expect(functions.length).toBeGreaterThan(0)
+  for (const [name] of functions) expect(name).toMatch(/^ipc[A-Z]/)
+})
 test('preserves error code, errorId and taskId; validates malformed replies', async () => {
   const error = toErrorDto(new AppError(ERRORS.TASK_CONFLICT, { taskId: 'install' }))
-  expect(await request(async () => ({ ok: false, error }))).toEqual({ ok: false, error })
-  expect(await request(async () => ({ ok: false, error }))).toEqual({
+  expect(await ipcRequest(async () => ({ ok: false, error }))).toEqual({ ok: false, error })
+  expect(await ipcRequest(async () => ({ ok: false, error }))).toEqual({
     ok: false,
     error,
   })
-  expect(await request(async () => null as never)).toMatchObject({
+  expect(await ipcRequest(async () => null as never)).toMatchObject({
     ok: false,
     error: { code: 'R001' },
   })
-  expect(await request(async () => ({}) as never)).toMatchObject({
+  expect(await ipcRequest(async () => ({}) as never)).toMatchObject({
     ok: false,
     error: { code: 'R001' },
   })
   expect(
-    await request(async () => {
+    await ipcRequest(async () => {
       throw new Error('disconnected')
     }),
   ).toMatchObject({ ok: false, error: { code: 'P001' } })
-  await expect(unwrap(Promise.resolve({ ok: false, error }))).rejects.toEqual(error)
-  expect(await request(async () => ({ ok: true, data: undefined }))).toEqual({
+  await expect(ipcUnwrap(Promise.resolve({ ok: false, error }))).rejects.toEqual(error)
+  expect(await ipcRequest(async () => ({ ok: true, data: undefined }))).toEqual({
     ok: true,
     data: undefined,
   })
 })
 test('imports outside Electron and returns a structured missing-bridge error', async () => {
-  expect(await apiGameSettingInitialize()).toMatchObject({ ok: false, error: { code: 'P001' } })
+  expect(await ipcGameSettingInitialize()).toMatchObject({ ok: false, error: { code: 'P001' } })
 })
 test('forwards current typed and bridge APIs without changing parameters', async () => {
   const initialize = vi.fn(async () => ({ ok: true, data: {} }))
@@ -49,11 +55,11 @@ test('forwards current typed and bridge APIs without changing parameters', async
     scnexus: { gameSetting: { initialize }, setting: { updateKey } },
     'shell:open-external-website': shell,
   })
-  await apiGameSettingInitialize('D:\\Game')
+  await ipcGameSettingInitialize('D:\\Game')
   expect(initialize).toHaveBeenCalledWith('D:\\Game')
-  await apiSettingUpdateKey('logLevel', 'debug')
+  await ipcSettingUpdateKey('logLevel', 'debug')
   expect(updateKey).toHaveBeenCalledWith('logLevel', 'debug')
-  await apiShellOpenExternalWebsite('https://example.test')
+  await ipcShellOpenExternalWebsite('https://example.test')
   expect(shell).toHaveBeenCalledWith('https://example.test')
 })
 test('subscriptions auto-dispose in scope and allow idempotent manual disposal', () => {
@@ -61,7 +67,7 @@ test('subscriptions auto-dispose in scope and allow idempotent manual disposal',
   const scope = effectScope()
   let stop: () => void = () => {}
   scope.run(() => {
-    stop = subscription(
+    stop = ipcSubscription(
       () => dispose,
       () => {},
     )
@@ -70,7 +76,7 @@ test('subscriptions auto-dispose in scope and allow idempotent manual disposal',
   scope.stop()
   expect(dispose).toHaveBeenCalledOnce()
   const manual = vi.fn()
-  const unsubscribe = subscription(
+  const unsubscribe = ipcSubscription(
     () => manual,
     () => {},
   )
@@ -88,7 +94,7 @@ test('bridge events discard the Electron event and retain typed error details', 
     },
   })
   const listener = vi.fn()
-  const stop = apiUpdaterOnError(listener)
+  const stop = ipcUpdaterOnError(listener)
   const error = toErrorDto(new AppError(ERRORS.UPDATER_CHECK_FAILED))
   callback({}, error)
   expect(listener).toHaveBeenCalledWith(error)
@@ -98,7 +104,7 @@ test('bridge events discard the Electron event and retain typed error details', 
 
 test('campaign reactive decisions are snapshotted before crossing contextBridge', async () => {
   const { reactive, isProxy } = await import('vue')
-  const { apiCampaignInstall, apiCampaignActivate, apiCampaignUninstall, apiCampaignDeactivate } =
+  const { ipcCampaignInstall, ipcCampaignActivate, ipcCampaignUninstall, ipcCampaignDeactivate } =
     await import('../../index')
   const received: unknown[] = []
   const capture = async (...args: unknown[]) => {
@@ -111,10 +117,10 @@ test('campaign reactive decisions are snapshotted before crossing contextBridge'
     },
   })
   const decisions = reactive([{ conflictId: 'c', action: 'keep' as const }])
-  await apiCampaignInstall({ analysisId: 'a', mode: 'ccm', decisions })
-  await apiCampaignActivate('a', decisions)
-  await apiCampaignUninstall('r', decisions)
-  await apiCampaignDeactivate('r', decisions)
+  await ipcCampaignInstall({ analysisId: 'a', mode: 'ccm', decisions })
+  await ipcCampaignActivate('a', decisions)
+  await ipcCampaignUninstall('r', decisions)
+  await ipcCampaignDeactivate('r', decisions)
   function assertPlain(value: unknown) {
     expect(isProxy(value)).toBe(false)
     if (value && typeof value === 'object')
@@ -128,7 +134,7 @@ test('campaign reactive decisions are snapshotted before crossing contextBridge'
 })
 
 test('campaign progress listener receives correlated DTOs and disposes with its scope', async () => {
-  const { apiCampaignOnInstallProgress } = await import('../../campaign')
+  const { ipcCampaignOnInstallProgress } = await import('../../campaign')
   const dispose = vi.fn()
   let callback: (progress: unknown) => void = () => {}
   vi.stubGlobal('window', {
@@ -145,7 +151,7 @@ test('campaign progress listener receives correlated DTOs and disposes with its 
   const scope = effectScope()
   let stop = () => {}
   scope.run(() => {
-    stop = apiCampaignOnInstallProgress(listener)
+    stop = ipcCampaignOnInstallProgress(listener)
   })
   const progress = {
     taskId: 'client-task',
@@ -164,7 +170,7 @@ test('campaign progress listener receives correlated DTOs and disposes with its 
 
 test('unified content adapter snapshots input and preserves conflict/reanalysis responses', async () => {
   const { reactive, isProxy } = await import('vue')
-  const { apiContentAnalyze } = await import('../../content')
+  const { ipcContentAnalyze } = await import('../../content')
   const conflict = { ok: false, error: toErrorDto(new AppError(ERRORS.CONTENT_TYPE_CONFLICT)) }
   const analyze = vi
     .fn<(...args: unknown[]) => Promise<unknown>>()
@@ -172,9 +178,9 @@ test('unified content adapter snapshots input and preserves conflict/reanalysis 
     .mockResolvedValueOnce({ ok: true, data: { contentType: 'campaign' } })
   vi.stubGlobal('window', { scnexus: { content: { analyze } } })
   const input = reactive({ kind: 'directory' as const, path: 'D:\\Source' })
-  expect(await apiContentAnalyze(input)).toEqual(conflict)
+  expect(await ipcContentAnalyze(input)).toEqual(conflict)
   expect(isProxy(analyze.mock.calls[0]![0])).toBe(false)
-  expect(await apiContentAnalyze(input, 'metadata-txt')).toEqual({
+  expect(await ipcContentAnalyze(input, 'metadata-txt')).toEqual({
     ok: true,
     data: { contentType: 'campaign' },
   })
@@ -189,8 +195,8 @@ test('success warnings survive renderer adapter validation without turning into 
     new AppError(ERRORS.CONTENT_CLEANUP_WARNING, { message: 'cleanup busy' }),
   )
   const response = { ok: true as const, data: { localId: 'record' }, warnings: [warning] }
-  expect(await request(async () => response)).toEqual(response)
+  expect(await ipcRequest(async () => response)).toEqual(response)
   expect(
-    await request(async () => ({ ok: true, data: {}, warnings: [{ code: 'M062' }] }) as never),
+    await ipcRequest(async () => ({ ok: true, data: {}, warnings: [{ code: 'M062' }] }) as never),
   ).toMatchObject({ ok: false, error: { code: 'R001' } })
 })

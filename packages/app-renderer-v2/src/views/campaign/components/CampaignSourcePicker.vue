@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
-import { apiDialogShowOpenDialog, getPathForFile } from '../../../ipcs'
+import { ipcDialogShowOpenDialog, ipcGetPathForFile } from '../../../ipcs'
 import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { SourceInput } from '@scnexus/app-shared/types/content.type'
@@ -14,7 +14,7 @@ async function select(kind: SourceInput['kind']) {
   if (props.disabled || picking.value) return
   picking.value = true
   try {
-    const result = await apiDialogShowOpenDialog({
+    const result = await ipcDialogShowOpenDialog({
       properties: [kind === 'directory' ? 'openDirectory' : 'openFile'],
       filters:
         kind === 'archive' ? [{ name: 'Archives', extensions: ['zip', '7z', 'rar'] }] : undefined,
@@ -40,7 +40,7 @@ function drop(event: DragEvent) {
     return
   }
   try {
-    const path = getPathForFile(files[0]!)
+    const path = ipcGetPathForFile(files[0]!)
     if (path)
       emit('select', { kind: /\.(zip|7z|rar)$/i.test(path) ? 'archive' : 'directory', path })
   } catch (value) {

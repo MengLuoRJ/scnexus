@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, ref } from 'vue'
-import * as api from '../../ipcs/customize'
-import { apiGameSettingGet } from '../../ipcs/scii-game-setting'
+import * as ipc from '../../ipcs/customize'
+import { ipcGameSettingGet } from '../../ipcs/scii-game-setting'
 import {
   AppError,
   ERRORS,
@@ -51,9 +51,9 @@ export function useCustomize() {
     }
   }
   async function refresh() {
-    const game = data(await apiGameSettingGet())
+    const game = data(await ipcGameSettingGet())
     if (!game.paths) throw new AppError(ERRORS.PROFILE_NOT_READY)
-    records.value = data(await api.apiCustomizeList()).records.filter(
+    records.value = data(await ipc.ipcCustomizeList()).records.filter(
       (record) => record.gameRoot === game.gameRoot,
     )
   }
@@ -62,7 +62,7 @@ export function useCustomize() {
   }
   async function close() {
     const id = previewId()
-    if (id) data(await api.apiCustomizeCancel(id))
+    if (id) data(await ipc.ipcCustomizeCancel(id))
     analysis.value = null
     removal.value = null
   }
@@ -80,9 +80,9 @@ export function useCustomize() {
   function analyze(input: SourceInput) {
     return execute(async () => {
       await close()
-      const result = data(await api.apiCustomizeAnalyze(input))
+      const result = data(await ipc.ipcCustomizeAnalyze(input))
       if (disposed) {
-        await api.apiCustomizeCancel(result.analysisId)
+        await ipc.ipcCustomizeCancel(result.analysisId)
         return
       }
       analysis.value = result
@@ -92,7 +92,7 @@ export function useCustomize() {
   function prepare(record: ContentRecord) {
     return execute(async () => {
       await close()
-      removal.value = data(await api.apiCustomizePrepareUninstall(record.localId))
+      removal.value = data(await ipc.ipcCustomizePrepareUninstall(record.localId))
       if (disposed) await close()
     })
   }
@@ -103,20 +103,20 @@ export function useCustomize() {
         const analysisId = analysis.value.analysisId
         const taskId = crypto.randomUUID()
         installProgress.value = null
-        stopProgress = api.apiCustomizeOnInstallProgress((progress) => {
+        stopProgress = ipc.ipcCustomizeOnInstallProgress((progress) => {
           if (!disposed && progress.taskId === taskId && progress.analysisId === analysisId)
             installProgress.value = progress
         })
         try {
           installed = data(
-            await api.apiCustomizeInstall({ analysisId, taskId, mode: mode.value, decisions }),
+            await ipc.ipcCustomizeInstall({ analysisId, taskId, mode: mode.value, decisions }),
           )
         } finally {
           stopProgress()
           stopProgress = undefined
         }
       } else if (removal.value)
-        data(await api.apiCustomizeUninstall(removal.value.removalId, removals))
+        data(await ipc.ipcCustomizeUninstall(removal.value.removalId, removals))
       else return
       analysis.value = null
       removal.value = null
@@ -132,7 +132,7 @@ export function useCustomize() {
     disposed = true
     stopProgress?.()
     const id = previewId()
-    if (id) void api.apiCustomizeCancel(id)
+    if (id) void ipc.ipcCustomizeCancel(id)
   })
   return {
     records,
@@ -155,7 +155,7 @@ export function useCustomize() {
     refresh: () => execute(refresh),
     scan: () =>
       execute(async () => {
-        diagnostics.value = data(await api.apiCustomizeScan()).diagnostics
+        diagnostics.value = data(await ipc.ipcCustomizeScan()).diagnostics
         await refresh()
       }),
   }

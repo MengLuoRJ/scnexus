@@ -18,17 +18,17 @@ const mocks = vi.hoisted(() => ({
   scan: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }))
 vi.mock('../../../ipcs/scii-game-setting', () => ({
-  apiGameSettingGet: async () => ({ ok: true, data: { gameRoot: 'D:\\Game', paths: {} } }),
+  ipcGameSettingGet: async () => ({ ok: true, data: { gameRoot: 'D:\\Game', paths: {} } }),
 }))
 vi.mock('../../../ipcs/customize', () => ({
-  apiCustomizeList: mocks.list,
-  apiCustomizeAnalyze: mocks.analyze,
-  apiCustomizeCancel: mocks.cancel,
-  apiCustomizeInstall: mocks.install,
-  apiCustomizeOnInstallProgress: mocks.progress,
-  apiCustomizePrepareUninstall: mocks.prepare,
-  apiCustomizeUninstall: mocks.uninstall,
-  apiCustomizeScan: mocks.scan,
+  ipcCustomizeList: mocks.list,
+  ipcCustomizeAnalyze: mocks.analyze,
+  ipcCustomizeCancel: mocks.cancel,
+  ipcCustomizeInstall: mocks.install,
+  ipcCustomizeOnInstallProgress: mocks.progress,
+  ipcCustomizePrepareUninstall: mocks.prepare,
+  ipcCustomizeUninstall: mocks.uninstall,
+  ipcCustomizeScan: mocks.scan,
 }))
 import { useCustomize } from '../useCustomize'
 const scopes: ReturnType<typeof effectScope>[] = []

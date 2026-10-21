@@ -119,6 +119,9 @@ appStore.setAppReady(true)
 
 ## IPC 与本地操作
 
+- renderer-v2 的桌面 IPC 调用及事件订阅统一封装在 `packages/app-renderer-v2/src/ipcs/`，按业务模块组织，由 `index.ts` 统一导出；桥接和结果校验辅助逻辑放在 `ipcs/internal/`。
+- IPC 层导出的函数统一以 `ipcXXX` 命名（例如 `ipcCustomizeList`），不使用 `apiXXX`；页面、Store 和 composable 通过这些封装调用，不在目录外直接调用 preload 桥接。HTTP API 与 IPC 分开，不混用命名或适配层。
+
 - preload 只暴露明确的业务方法与订阅，不暴露任意 channel 调用或原始 ipcRenderer。
 - main 校验参数和调用来源；共享 TypeScript 类型不能替代运行时校验。
 - 通过可序列化 DTO 和统一错误码返回结果，不把 Error 当作成功 data。

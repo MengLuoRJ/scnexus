@@ -1,8 +1,8 @@
-import { desktop, request } from './internal/ipc-common'
+import { ipcDesktop, ipcRequest } from './internal/ipc-common'
 
-export const apiGameSettingGet = () => request(() => desktop().gameSetting.get())
-export const apiGameSettingInitialize = (path?: string) =>
-  request(() => desktop().gameSetting.initialize(path))
-export const apiGameSettingConfigure = (path: string) =>
-  request(() => desktop().gameSetting.configure(path))
-export const apiGameSettingRefresh = () => request(() => desktop().gameSetting.refresh())
+export const ipcGameSettingGet = () => ipcRequest(() => ipcDesktop().gameSetting.get())
+export const ipcGameSettingInitialize = (path?: string) =>
+  ipcRequest(() => ipcDesktop().gameSetting.initialize(path))
+export const ipcGameSettingConfigure = (path: string) =>
+  ipcRequest(() => ipcDesktop().gameSetting.configure(path))
+export const ipcGameSettingRefresh = () => ipcRequest(() => ipcDesktop().gameSetting.refresh())

@@ -13,6 +13,10 @@ SCNexus 唯一桌面界面，后续页面与功能均在此包维护。旧 `app-
 
 参见 [目标架构](../../docs/architecture.md) 与 [开发规范](../../AGENTS.md)。
 
+## IPC 调用约定
+
+桌面 IPC 请求、单向发送与事件订阅统一放在 `src/ipcs/`，按业务模块封装并从 `index.ts` 导出。所有导出函数均以 `ipcXXX` 命名，例如 `ipcCustomizeList`、`ipcCampaignOnInstallProgress`，不使用 `apiXXX`。桥接访问、DTO 快照、结果校验与订阅清理放在 `src/ipcs/internal/`；页面、Store 和 composable 只调用封装，不直接调用 preload 桥接。环境可用性检查不属于 IPC 请求。HTTP 请求与此目录分开维护。
+
 ## 战役库管理
 
 战役页面顶部的“战役库管理”视图展示当前游戏目录下的全部战役安装记录，支持按四类战役筛选、查看包详情与文件树、定位目录、激活 / 切换、取消激活和卸载。文件操作复用现有预览、冲突决策及确认对话框；无地图源的外部记录不可激活。

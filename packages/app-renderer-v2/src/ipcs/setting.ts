@@ -1,18 +1,18 @@
-import { desktop, request, ipcSnapshot, subscription } from './internal/ipc-common'
+import { ipcDesktop, ipcRequest, ipcSnapshot, ipcSubscription } from './internal/ipc-common'
 import type { DesktopApi } from '@scnexus/app-shared/types/desktop.type'
 import type { SettingData } from '@scnexus/app-shared/stores/setting.store'
 import type { SettingPreferences } from '@scnexus/app-shared/types/desktop.type'
 
-export const apiSettingGetSnapshot = () => request(() => desktop().setting.getSnapshot())
-export const apiSettingGetKey = <K extends keyof SettingData>(key: K) =>
-  request(() => desktop().setting.getKey(key))
-export const apiSettingUpdateKey = <K extends keyof SettingPreferences>(
+export const ipcSettingGetSnapshot = () => ipcRequest(() => ipcDesktop().setting.getSnapshot())
+export const ipcSettingGetKey = <K extends keyof SettingData>(key: K) =>
+  ipcRequest(() => ipcDesktop().setting.getKey(key))
+export const ipcSettingUpdateKey = <K extends keyof SettingPreferences>(
   key: K,
   value: SettingPreferences[K],
-) => request(() => desktop().setting.updateKey(key, value))
-export const apiSettingUpdate = (patch: Partial<SettingPreferences>) =>
-  request(() => desktop().setting.update(ipcSnapshot(patch)))
-export const apiSettingReplace = (preferences: SettingPreferences) =>
-  request(() => desktop().setting.replace(ipcSnapshot(preferences)))
-export const apiSettingOnChanged = (listener: Parameters<DesktopApi['setting']['onChanged']>[0]) =>
-  subscription((callback) => desktop().setting.onChanged(callback), listener)
+) => ipcRequest(() => ipcDesktop().setting.updateKey(key, value))
+export const ipcSettingUpdate = (patch: Partial<SettingPreferences>) =>
+  ipcRequest(() => ipcDesktop().setting.update(ipcSnapshot(patch)))
+export const ipcSettingReplace = (preferences: SettingPreferences) =>
+  ipcRequest(() => ipcDesktop().setting.replace(ipcSnapshot(preferences)))
+export const ipcSettingOnChanged = (listener: Parameters<DesktopApi['setting']['onChanged']>[0]) =>
+  ipcSubscription((callback) => ipcDesktop().setting.onChanged(callback), listener)

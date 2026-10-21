@@ -7,8 +7,8 @@ import type {
   SourceInput,
   ContentType,
 } from '@scnexus/app-shared/types/content.type'
-import { apiContentAnalyze } from '../ipcs/content'
-import { apiCampaignCancel } from '../ipcs/campaign'
+import { ipcContentAnalyze } from '../ipcs/content'
+import { ipcCampaignCancel } from '../ipcs/campaign'
 
 type DescriptorChoice = 'package-json' | 'metadata-txt'
 
@@ -32,9 +32,9 @@ export const useContentImportStore = defineStore('content-import', () => {
     source.value = input
     const current = ++generation
     try {
-      const result = await apiContentAnalyze(input, choice)
+      const result = await ipcContentAnalyze(input, choice)
       if (current !== generation) {
-        if (result.ok) await apiCampaignCancel(result.data.analysisId)
+        if (result.ok) await ipcCampaignCancel(result.data.analysisId)
         return
       }
       if (!result.ok) {
@@ -67,7 +67,7 @@ export const useContentImportStore = defineStore('content-import', () => {
     source.value = null
     if (id) {
       try {
-        const result = await apiCampaignCancel(id)
+        const result = await ipcCampaignCancel(id)
         if (!result.ok) error.value = result.error
       } catch (value) {
         error.value = toErrorDto(normalizeError(value))

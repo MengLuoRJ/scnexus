@@ -56,15 +56,17 @@ class FileBackend implements PersistenceBackend {
     const before = this.raw
     const store = this.backend.open(options)
     if (this.raw !== before) this.writes++
-    const backend = this
+    const write = (data: T) => {
+      if (this.failWrite) throw new Error('Disk full (injected)')
+      store.store = data
+      this.writes++
+    }
     return {
       get store() {
         return store.store
       },
       set store(data: T) {
-        if (backend.failWrite) throw new Error('Disk full (injected)')
-        store.store = data
-        backend.writes++
+        write(data)
       },
     }
   }

@@ -132,7 +132,9 @@ test('SCNexus campaign imports payload only, activates, scans and deactivates', 
     mode: 'scnexus',
     decisions: [],
   })
-  await expect(stat(join(f.paths.modsRoot, 'Core.SC2Mod'))).rejects.toThrow()
+  await expect(stat(join(f.paths.modsRoot, 'Core.SC2Mod'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
   expect(
     await readFile(join(record.payloadDirectory!, 'Maps/Campaign/void/Main.SC2Map'), 'utf8'),
   ).toBe('map')
@@ -146,7 +148,9 @@ test('SCNexus campaign imports payload only, activates, scans and deactivates', 
   const remove = await f.service.prepareRemoval(record.localId, 'deactivate')
   expect(remove.files).toEqual([])
   await f.service.remove(remove.removalId, [])
-  await expect(stat(join(f.paths.gameRoot, 'Maps/Campaign/void/package.json'))).rejects.toThrow()
+  await expect(
+    stat(join(f.paths.gameRoot, 'Maps/Campaign/void/package.json')),
+  ).rejects.toMatchObject({ code: 'ENOENT' })
   expect(await readFile(join(record.payloadDirectory!, 'Mods/Core.SC2Mod'), 'utf8')).toBe('mod')
 })
 test('CCM import installs mods immediately, activation and removal never remove mods', async () => {
@@ -164,13 +168,17 @@ test('CCM import installs mods immediately, activation and removal never remove 
     decisions: [],
   })
   expect(await readFile(join(f.paths.modsRoot, 'Sub/Core.SC2Mod'), 'utf8')).toBe('mod')
-  await expect(stat(join(f.paths.gameRoot, 'Maps/Campaign/swarm/M.SC2Map'))).rejects.toThrow()
+  await expect(stat(join(f.paths.gameRoot, 'Maps/Campaign/swarm/M.SC2Map'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
   const preview = await f.service.prepareActivation(record.localId)
   await f.service.activate(preview.activationId, [])
   expect(
     await readFile(join(f.paths.gameRoot, 'Maps/Campaign/swarm/metadata.txt'), 'utf8'),
   ).toContain('title=C')
-  await expect(stat(join(record.managementDirectory, 'package.json'))).rejects.toThrow()
+  await expect(stat(join(record.managementDirectory, 'package.json'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
   const remove = await f.service.prepareRemoval(record.localId, 'deactivate')
   await f.service.remove(remove.removalId, [])
   const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
@@ -454,14 +462,29 @@ test.each(['file-to-directory', 'directory-to-file', 'directory-to-directory'])(
         action: 'overwrite',
       })),
     )
-    if (shape === 'directory-to-file') expect(await readFile(target, 'utf8')).toBe('custom archive')
-    else {
-      expect(await readFile(join(target, 'DocumentInfo'), 'utf8')).toBe('custom info')
-      expect((await stat(join(target, 'IncomingEmpty'))).isDirectory()).toBe(true)
-      await expect(stat(join(target, 'old-only'))).rejects.toMatchObject({ code: 'ENOENT' })
-    }
+    expect(
+      await readFile(shape === 'directory-to-file' ? target : join(target, 'DocumentInfo'), 'utf8'),
+    ).toBe(shape === 'directory-to-file' ? 'custom archive' : 'custom info')
+    const incomingEmpty = await stat(join(target, 'IncomingEmpty')).then(
+      (info) => info.isDirectory(),
+      (error: NodeJS.ErrnoException) => error.code,
+    )
+    expect(incomingEmpty).toBe(
+      shape === 'directory-to-file' ? (process.platform === 'win32' ? 'ENOENT' : 'ENOTDIR') : true,
+    )
+    await expect(stat(join(target, 'old-only'))).rejects.toMatchObject({
+      code:
+        shape === 'directory-to-file'
+          ? process.platform === 'win32'
+            ? 'ENOENT'
+            : 'ENOTDIR'
+          : 'ENOENT',
+    })
     const scanned = await f.service.scan()
     expect(scanned.active.WOL?.resourceBackups).toHaveLength(1)
+    let failedRestore: unknown
+    let retainedMap: string | undefined
+    let retainedBackup: string | undefined
     if (shape === 'file-to-directory') {
       const failing = new ContentService(
         async () => f.paths,
@@ -476,21 +499,38 @@ test.each(['file-to-directory', 'directory-to-file', 'directory-to-directory'])(
         async (run) => run(),
       )
       const removal = await failing.prepareRemoval(installed.localId, 'deactivate')
-      await expect(failing.remove(removal.removalId, [])).rejects.toThrow('restore state failed')
-      expect(await readFile(join(target, 'DocumentInfo'), 'utf8')).toBe('custom info')
-      expect(await readFile(scanned.active.WOL!.resourceBackups![0]!.path, 'utf8')).toBe(
-        'official archive',
+      failedRestore = await failing.remove(removal.removalId, []).then(
+        () => undefined,
+        (error: unknown) => error,
       )
+      retainedMap = await readFile(join(target, 'DocumentInfo'), 'utf8')
+      retainedBackup = await readFile(scanned.active.WOL!.resourceBackups![0]!.path, 'utf8')
     }
+    expect(failedRestore).toEqual(
+      shape === 'file-to-directory' ? new Error('restore state failed') : undefined,
+    )
+    expect(retainedMap).toBe(shape === 'file-to-directory' ? 'custom info' : undefined)
+    expect(retainedBackup).toBe(shape === 'file-to-directory' ? 'official archive' : undefined)
     const removal = await f.service.prepareRemoval(installed.localId, 'deactivate')
     await f.service.remove(removal.removalId, [])
-    if (shape === 'file-to-directory')
-      expect(await readFile(target, 'utf8')).toBe('official archive')
-    else {
-      expect(await readFile(join(target, 'old-only'), 'utf8')).toBe('official component')
-      expect((await stat(join(target, 'Empty'))).isDirectory()).toBe(true)
-      await expect(stat(join(target, 'DocumentInfo'))).rejects.toMatchObject({ code: 'ENOENT' })
-    }
+    expect(
+      await readFile(shape === 'file-to-directory' ? target : join(target, 'old-only'), 'utf8'),
+    ).toBe(shape === 'file-to-directory' ? 'official archive' : 'official component')
+    const restoredEmpty = await stat(join(target, 'Empty')).then(
+      (info) => info.isDirectory(),
+      (error: NodeJS.ErrnoException) => error.code,
+    )
+    expect(restoredEmpty).toBe(
+      shape === 'file-to-directory' ? (process.platform === 'win32' ? 'ENOENT' : 'ENOTDIR') : true,
+    )
+    await expect(stat(join(target, 'DocumentInfo'))).rejects.toMatchObject({
+      code:
+        shape === 'file-to-directory'
+          ? process.platform === 'win32'
+            ? 'ENOENT'
+            : 'ENOTDIR'
+          : 'ENOENT',
+    })
     const uninstall = await f.service.prepareRemoval(installed.localId, 'uninstall')
     await f.service.remove(uninstall.removalId, [])
     await expect(stat(installed.managementDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
@@ -714,16 +754,31 @@ test.each([
       mode: 'scnexus',
       decisions: decisions(preview, 'scnexus', action),
     })
-    if (action === 'keep') {
-      if (shape === 'file') expect(await readFile(target, 'utf8')).toBe('old archive')
-      else expect(await readFile(join(target, 'old-only'), 'utf8')).toBe('old group')
-      expect(installed.installedFiles.every((file) => file.result === 'kept')).toBe(true)
-    } else if (component) expect(await readFile(join(target, 'new'), 'utf8')).toBe('new group')
-    else expect(await readFile(target, 'utf8')).toBe('new archive')
+    const expectedContent =
+      action === 'keep'
+        ? shape === 'file'
+          ? 'old archive'
+          : 'old group'
+        : component
+          ? 'new group'
+          : 'new archive'
+    const contentPath =
+      action === 'keep'
+        ? shape === 'file'
+          ? target
+          : join(target, 'old-only')
+        : component
+          ? join(target, 'new')
+          : target
+    expect(await readFile(contentPath, 'utf8')).toBe(expectedContent)
+    expect(installed.installedFiles.every((file) => file.result === 'kept')).toBe(action === 'keep')
     const removal = await f.service.prepareRemoval(installed.localId, 'uninstall')
     await f.service.remove(removal.removalId, [])
-    if (action === 'keep') expect(await stat(target)).toBeDefined()
-    else await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
+    const remaining = await stat(target).then(
+      () => 'present',
+      (error: NodeJS.ErrnoException) => error.code,
+    )
+    expect(remaining).toBe(action === 'keep' ? 'present' : 'ENOENT')
   },
 )
 test.each(['single', 'group'] as const)(
@@ -831,22 +886,28 @@ test.each(['ccm', 'scnexus'] as const)(
       join(record.managementDirectory, 'active-manifest.json'),
       JSON.stringify(forged),
     )
-    if (mode === 'ccm') {
-      const scanned = await f.service.scan()
-      expect(scanned.active.WOL?.installedFiles[0].target).toBe('Maps/Campaign/M.SC2Map')
-      expect(scanned.active.WOL?.resourceBackups).toBeUndefined()
-      const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
-      await f.service.remove(removal.removalId, [])
-      expect(await readFile(backup, 'utf8')).toBe('untrusted replacement')
-    } else {
-      const scanned = await scanContent(f.paths, f.campaign.getSnapshot().records)
-      expect(scanned.active.WOL).toBeUndefined()
-      expect(scanned.diagnostics.length).toBeGreaterThan(0)
+    const scanned =
+      mode === 'ccm'
+        ? await f.service.scan()
+        : await scanContent(f.paths, f.campaign.getSnapshot().records)
+    expect(scanned.active.WOL?.installedFiles[0].target).toBe(
+      mode === 'ccm' ? 'Maps/Campaign/M.SC2Map' : undefined,
+    )
+    expect(scanned.active.WOL?.resourceBackups).toBeUndefined()
+    expect(scanned.active.WOL === undefined).toBe(mode === 'scnexus')
+    expect(scanned.diagnostics.length > 0).toBe(mode === 'scnexus')
+    if (mode === 'scnexus')
       f.active.update({ ...f.active.getSnapshot(), active: { WOL: forged } } as never)
-      await expect(f.service.prepareRemoval(record.localId, 'deactivate')).rejects.toMatchObject({
-        code: 'M031',
-      })
-    }
+    const removalResult = await f.service.prepareRemoval(record.localId, 'deactivate').then(
+      async (removal) => {
+        await f.service.remove(removal.removalId, [])
+        return undefined
+      },
+      (error: unknown) => error,
+    )
+    const rejectedRemoval = expect.objectContaining({ code: 'M031' })
+    expect(removalResult).toEqual(mode === 'ccm' ? undefined : rejectedRemoval)
+    expect(await readFile(backup, 'utf8')).toBe('untrusted replacement')
     expect(await readFile(target, 'utf8')).toBe('original executable')
   },
 )
@@ -1136,11 +1197,14 @@ test.each(['modify', 'delete', 'shape'] as const)(
     }
     await f.service.remove(removal.removalId, [])
     expect(f.customize.getSnapshot().records).toEqual([])
-    if (change === 'delete') await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' })
-    else
-      expect(await readFile(change === 'shape' ? join(target, 'a') : target, 'utf8')).toBe(
-        'user edit',
-      )
+    const remainingContent = await readFile(
+      change === 'shape' ? join(target, 'a') : target,
+      'utf8',
+    ).then(
+      (content) => content,
+      (error: NodeJS.ErrnoException) => error.code,
+    )
+    expect(remainingContent).toBe(change === 'delete' ? 'ENOENT' : 'user edit')
   },
 )
 test.each(['keep', 'delete'] as const)(
@@ -1176,8 +1240,12 @@ test.each(['keep', 'delete'] as const)(
     const run = f.service.remove(removal.removalId, [
       { conflictId: removal.files[0].conflictId, action },
     ])
-    if (action === 'delete') await expect(run).rejects.toMatchObject({ code: 'M051' })
-    else await run
+    const result = await run.then(
+      () => undefined,
+      (error: unknown) => error,
+    )
+    const conflictError = expect.objectContaining({ code: 'M051' })
+    expect(result).toEqual(action === 'delete' ? conflictError : undefined)
     expect(await readFile(target, 'utf8')).toBe('user edit')
   },
 )
@@ -1272,7 +1340,9 @@ test('deactivation asks only about non-official files referenced by installed wo
     { conflictId: removal.files[0].conflictId, action: 'keep' },
   ])
   expect(await readFile(join(f.paths.modsRoot, 'Shared.SC2Mod'), 'utf8')).toBe('mod')
-  await expect(stat(join(f.paths.mapsRoot, 'Campaign/M.SC2Map'))).rejects.toThrow()
+  await expect(stat(join(f.paths.mapsRoot, 'Campaign/M.SC2Map'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
 })
 test('campaign preserves authored source/target remapping and same-root CCM original', async () => {
   const f = await fixture()
@@ -1346,7 +1416,7 @@ test('CCM installs under sanitized metadata title and rejects duplicate title wi
   await f.service.remove(removal.removalId, [])
   const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
   await f.service.remove(uninstall.removalId, [])
-  await expect(stat(record.managementDirectory)).rejects.toThrow()
+  await expect(stat(record.managementDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
 })
 test('SCNexus existing installations match either scnid or name within the same domain and game', async () => {
   const f = await fixture()

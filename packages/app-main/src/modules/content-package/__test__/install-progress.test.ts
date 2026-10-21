@@ -99,11 +99,13 @@ test('reports only completed real writes, stable totals and completion after per
   const f = await fixture()
   const events: InstallProgress[] = []
   const reads: Promise<string>[] = []
+  const completedRecordCounts: number[] = []
   const record = await f.service.install(f.selection, 'campaign', (progress) => {
     events.push(progress)
     if (progress.currentFile)
       reads.push(readFile(join(f.paths.gameRoot, progress.currentFile), 'utf8'))
-    if (progress.stage === 'completed') expect(f.campaign.getSnapshot().records).toHaveLength(1)
+    if (progress.stage === 'completed')
+      completedRecordCounts.push(f.campaign.getSnapshot().records.length)
   })
   expect(events[0]).toMatchObject({ stage: 'preparing', completedFiles: 0, totalFiles: 0 })
   const writes = events.filter((event) => event.currentFile)
@@ -121,6 +123,7 @@ test('reports only completed real writes, stable totals and completion after per
   expect(events.every((event) => event.taskId === 'client-task')).toBe(true)
   expect(await Promise.all(reads)).toHaveLength(4)
   expect(record.fileCount).toBe(2)
+  expect(completedRecordCounts).toEqual([1])
 })
 
 test.each([false, true])(
@@ -174,7 +177,7 @@ test('persistence failure reports failed even when all files had been copied', a
 
 test('omitted task ID correlates by analysis ID; invalid task IDs fail before reporting', async () => {
   const f = await fixture()
-  const callback = vi.fn()
+  const callback = vi.fn<(progress: InstallProgress) => void>()
   await expect(
     f.service.install({ ...f.selection, taskId: '' }, 'campaign', callback),
   ).rejects.toMatchObject({ code: 'M003' })

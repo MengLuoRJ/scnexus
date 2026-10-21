@@ -6,10 +6,10 @@ class FakeWindow extends EventEmitter {
   destroyed = false
   minimized = false
   webContents = Object.assign(new EventEmitter(), {
-    send: vi.fn(),
-    isLoadingMainFrame: () => false,
-    openDevTools: vi.fn(),
-    setWindowOpenHandler: vi.fn(),
+    send: vi.fn<import('electron').WebContents['send']>(),
+    isLoadingMainFrame: (): boolean => false,
+    openDevTools: vi.fn<import('electron').WebContents['openDevTools']>(),
+    setWindowOpenHandler: vi.fn<import('electron').WebContents['setWindowOpenHandler']>(),
   })
   constructor(readonly options: BrowserWindowConstructorOptions) {
     super()
@@ -40,8 +40,12 @@ vi.mock('electron', () => ({
   app: { getAppPath: () => process.cwd() },
   BrowserWindow: FakeWindow,
 }))
-vi.mock('../../logging/logging', () => ({ reportError: vi.fn() }))
-vi.mock('../../shell', () => ({ openExternalWebsite: vi.fn() }))
+vi.mock('../../logging/logging', () => ({
+  reportError: vi.fn<typeof import('../../logging/logging').reportError>(),
+}))
+vi.mock('../../shell', () => ({
+  openExternalWebsite: vi.fn<typeof import('../../shell').openExternalWebsite>(),
+}))
 const service = await import('../window')
 test('window singleton, reload handshake, renderer failure and recreation', async () => {
   const [a, b] = await Promise.all([

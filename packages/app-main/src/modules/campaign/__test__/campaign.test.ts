@@ -1,19 +1,19 @@
 import { test, expect, vi } from 'vitest'
-const register = vi.hoisted(() => vi.fn())
+const register = vi.hoisted(() => vi.fn<typeof import('../../../utils/ipc-util').ipcHandle>())
 vi.mock('../../../utils/ipc-util', () => ({
   ipcHandle: register,
 }))
 vi.mock('../../content-package', () => ({
   contentService: {
-    analyze: vi.fn(),
-    install: vi.fn(),
-    scan: vi.fn(),
-    list: vi.fn(),
-    prepareRemoval: vi.fn(),
-    remove: vi.fn(),
-    prepareActivation: vi.fn(),
-    activate: vi.fn(),
-    getActive: vi.fn(),
+    analyze: vi.fn<typeof contentService.analyze>(),
+    install: vi.fn<typeof contentService.install>(),
+    scan: vi.fn<typeof contentService.scan>(),
+    list: vi.fn<typeof contentService.list>(),
+    prepareRemoval: vi.fn<typeof contentService.prepareRemoval>(),
+    remove: vi.fn<typeof contentService.remove>(),
+    prepareActivation: vi.fn<typeof contentService.prepareActivation>(),
+    activate: vi.fn<typeof contentService.activate>(),
+    getActive: vi.fn<typeof contentService.getActive>(),
   },
 }))
 import { initCampaignIpc } from '../campaign.ipc'
@@ -60,7 +60,10 @@ test('install progress is sent only to its initiating renderer, never to destroy
     ([channel]) => channel === 'campaign:install',
   )!
   expect(passEvent).toBe(true)
-  const sender = { isDestroyed: vi.fn(() => false), send: vi.fn() }
+  const sender = {
+    isDestroyed: vi.fn<() => boolean>(() => false),
+    send: vi.fn<(channel: string, progress: InstallProgress) => void>(),
+  }
   expect(await handler({ sender }, selection)).toEqual({ localId: 'installed' })
   expect(contentService.install).toHaveBeenCalledWith(selection, 'campaign', expect.any(Function))
   expect(sender.send).toHaveBeenCalledExactlyOnceWith('campaign:install-progress', progress)

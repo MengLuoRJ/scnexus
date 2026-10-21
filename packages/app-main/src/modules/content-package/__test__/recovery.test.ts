@@ -3,12 +3,10 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, stat, readdir } from 'node:fs/
 import { join } from 'node:path'
 import { ContentService } from '../content-package'
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
-import type { ContentStore, CampaignActiveStoreData } from '@scnexus/app-shared/types/content.type'
 import { createElectronBackend } from '../../../stores/store-electron-backend'
 import { createCampaignRepository } from '../../../stores/campaign'
 import { createCustomizeRepository } from '../../../stores/customize'
 import { createActiveRepository } from '../../../stores/campaign-active'
-import { createHash } from 'node:crypto'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
 const dirs: string[] = []
 afterEach(async () => {
@@ -80,7 +78,7 @@ test('store-write failure restores overwritten files and removes partially-creat
     }),
   ).rejects.toThrow('disk write failed')
   expect(await readFile(join(f.paths.modsRoot, 'M.SC2Mod'), 'utf8')).toBe('original')
-  await expect(stat(join(f.paths.mapsRoot, 'A.SC2Map'))).rejects.toThrow()
+  await expect(stat(join(f.paths.mapsRoot, 'A.SC2Map'))).rejects.toMatchObject({ code: 'ENOENT' })
   expect(f.customize.getSnapshot().records).toEqual([])
   expect((await readdir(f.root)).filter((x) => x.startsWith('.scnexus-operation'))).toEqual([])
 })
@@ -117,7 +115,7 @@ test('uninstall store-write failure restores management directory and installed 
     async (run) => run(),
   )
   const removal = await failing.prepareRemoval(installed.localId, 'uninstall')
-  await expect(failing.remove(removal.removalId, [])).rejects.toThrow()
+  await expect(failing.remove(removal.removalId, [])).rejects.toThrow('disk write failed')
   expect(await readFile(installed.descriptorPath, 'utf8')).toContain('Project')
   expect(await readFile(join(f.paths.mapsRoot, 'A.SC2Map'), 'utf8')).toBe('map')
 })
@@ -262,7 +260,7 @@ test('scanner discovers external customize descriptors with game-relative target
   expect(record.external).toBe(true)
   const remove = await service.prepareRemoval(record.localId, 'uninstall')
   await service.remove(remove.removalId, [])
-  await expect(stat(join(f.paths.mapsRoot, 'A.SC2Map'))).rejects.toThrow()
+  await expect(stat(join(f.paths.mapsRoot, 'A.SC2Map'))).rejects.toMatchObject({ code: 'ENOENT' })
   expect((await readdir(f.paths.mapsRoot)).includes('External')).toBe(true)
 })
 test('corrupt management manifests are isolated without erasing existing records', async () => {

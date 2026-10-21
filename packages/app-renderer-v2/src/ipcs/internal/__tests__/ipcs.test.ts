@@ -1,7 +1,14 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import * as ipcExports from '../../index'
 import { effectScope } from 'vue'
-import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
+import {
+  AppError,
+  ERRORS,
+  toErrorDto,
+  type AppErrorDto,
+  type IpcResult,
+} from '@scnexus/app-shared/errors/app.error'
+import type { InstallProgress } from '@scnexus/app-shared/types/content.type'
 import { ipcRequest, ipcSubscription, ipcUnwrap } from '../ipc-common'
 import {
   ipcGameSettingInitialize,
@@ -48,9 +55,16 @@ test('imports outside Electron and returns a structured missing-bridge error', a
   expect(await ipcGameSettingInitialize()).toMatchObject({ ok: false, error: { code: 'P001' } })
 })
 test('forwards current typed and bridge APIs without changing parameters', async () => {
-  const initialize = vi.fn(async () => ({ ok: true, data: {} }))
-  const updateKey = vi.fn(async () => ({ ok: true, data: {} }))
-  const shell = vi.fn(async () => ({ ok: true, data: undefined }))
+  const initialize = vi.fn<(path?: string) => Promise<IpcResult<Record<string, never>>>>(
+    async () => ({ ok: true, data: {} }),
+  )
+  const updateKey = vi.fn<
+    (key: string, value: string) => Promise<IpcResult<Record<string, never>>>
+  >(async () => ({ ok: true, data: {} }))
+  const shell = vi.fn<(url: string) => Promise<IpcResult<void>>>(async () => ({
+    ok: true,
+    data: undefined,
+  }))
   vi.stubGlobal('window', {
     scnexus: { gameSetting: { initialize }, setting: { updateKey } },
     'shell:open-external-website': shell,
@@ -63,7 +77,7 @@ test('forwards current typed and bridge APIs without changing parameters', async
   expect(shell).toHaveBeenCalledWith('https://example.test')
 })
 test('subscriptions auto-dispose in scope and allow idempotent manual disposal', () => {
-  const dispose = vi.fn()
+  const dispose = vi.fn<() => void>()
   const scope = effectScope()
   let stop: () => void = () => {}
   scope.run(() => {
@@ -75,7 +89,7 @@ test('subscriptions auto-dispose in scope and allow idempotent manual disposal',
   stop()
   scope.stop()
   expect(dispose).toHaveBeenCalledOnce()
-  const manual = vi.fn()
+  const manual = vi.fn<() => void>()
   const unsubscribe = ipcSubscription(
     () => manual,
     () => {},
@@ -85,7 +99,7 @@ test('subscriptions auto-dispose in scope and allow idempotent manual disposal',
   expect(manual).toHaveBeenCalledOnce()
 })
 test('bridge events discard the Electron event and retain typed error details', () => {
-  const dispose = vi.fn()
+  const dispose = vi.fn<() => void>()
   let callback: (event: object, data: unknown) => void = () => {}
   vi.stubGlobal('window', {
     'updater:error': (listener: typeof callback) => {
@@ -93,7 +107,7 @@ test('bridge events discard the Electron event and retain typed error details', 
       return dispose
     },
   })
-  const listener = vi.fn()
+  const listener = vi.fn<(error: AppErrorDto) => void>()
   const stop = ipcUpdaterOnError(listener)
   const error = toErrorDto(new AppError(ERRORS.UPDATER_CHECK_FAILED))
   callback({}, error)
@@ -135,7 +149,7 @@ test('campaign reactive decisions are snapshotted before crossing contextBridge'
 
 test('campaign progress listener receives correlated DTOs and disposes with its scope', async () => {
   const { ipcCampaignOnInstallProgress } = await import('../../campaign')
-  const dispose = vi.fn()
+  const dispose = vi.fn<() => void>()
   let callback: (progress: unknown) => void = () => {}
   vi.stubGlobal('window', {
     scnexus: {
@@ -147,7 +161,7 @@ test('campaign progress listener receives correlated DTOs and disposes with its 
       },
     },
   })
-  const listener = vi.fn()
+  const listener = vi.fn<(progress: InstallProgress) => void>()
   const scope = effectScope()
   let stop = () => {}
   scope.run(() => {

@@ -1,11 +1,11 @@
 import { test, expect, vi } from 'vitest'
 const mock = vi.hoisted(() => ({
   configured: undefined as undefined | (() => Promise<void>),
-  stores: vi.fn(async () => {}),
-  content: vi.fn(),
-  campaign: vi.fn(),
-  customize: vi.fn(),
-  setting: vi.fn(),
+  stores: vi.fn<() => Promise<void>>(async () => {}),
+  content: vi.fn<typeof import('../content-package').initContentPackageModule>(),
+  campaign: vi.fn<typeof import('../campaign').initCampaignModule>(),
+  customize: vi.fn<typeof import('../customize').initCustomizeModule>(),
+  setting: vi.fn<typeof import('../setting').initSettingModule>(),
 }))
 vi.mock('../../stores', () => ({
   initAllStores: async () => {
@@ -29,28 +29,37 @@ vi.mock('../campaign', () => ({ initCampaignModule: mock.campaign }))
 vi.mock('../customize', () => ({ initCustomizeModule: mock.customize }))
 vi.mock('../setting', () => ({
   initSettingModule: mock.setting,
-  disposeSetting: vi.fn(),
+  disposeSetting: vi.fn<typeof import('../setting').disposeSetting>(),
 }))
-vi.mock('../app', () => ({ initAppModule: vi.fn() }))
-vi.mock('../dialog', () => ({ initDialogModule: vi.fn() }))
-vi.mock('../shell', () => ({ initShellModule: vi.fn() }))
-vi.mock('../deep-link', () => ({ initDeepLinkModule: vi.fn() }))
-vi.mock('../tray', () => ({ initTrayModule: vi.fn(), destroyTray: vi.fn() }))
+vi.mock('../app', () => ({ initAppModule: vi.fn<typeof import('../app').initAppModule>() }))
+vi.mock('../dialog', () => ({
+  initDialogModule: vi.fn<typeof import('../dialog').initDialogModule>(),
+}))
+vi.mock('../shell', () => ({ initShellModule: vi.fn<typeof import('../shell').initShellModule>() }))
+vi.mock('../deep-link', () => ({
+  initDeepLinkModule: vi.fn<typeof import('../deep-link').initDeepLinkModule>(),
+}))
+vi.mock('../tray', () => ({
+  initTrayModule: vi.fn<typeof import('../tray').initTrayModule>(),
+  destroyTray: vi.fn<typeof import('../tray').destroyTray>(),
+}))
 vi.mock('../updater', () => ({
-  initUpdaterModule: vi.fn(),
-  setBeforeUpdateInstall: vi.fn(),
+  initUpdaterModule: vi.fn<typeof import('../updater').initUpdaterModule>(),
+  setBeforeUpdateInstall: vi.fn<typeof import('../updater').setBeforeUpdateInstall>(),
 }))
 vi.mock('../telemetry', () => ({
-  initTelemetryModule: vi.fn(),
-  disableTelemetry: vi.fn(),
-  getTelemetryStatus: vi.fn(),
+  initTelemetryModule: vi.fn<typeof import('../telemetry').initTelemetryModule>(),
+  disableTelemetry: vi.fn<typeof import('../telemetry').disableTelemetry>(),
+  getTelemetryStatus: vi.fn<typeof import('../telemetry').getTelemetryStatus>(),
 }))
 vi.mock('../window', () => ({
-  initWindowModule: vi.fn(),
-  onWindowReady: () => vi.fn(),
+  initWindowModule: vi.fn<typeof import('../window').initWindowModule>(),
+  onWindowReady: () => vi.fn<() => void>(),
   getMainWindow: () => null,
 }))
-vi.mock('../workshop', () => ({ initWorkshopModule: vi.fn() }))
+vi.mock('../workshop', () => ({
+  initWorkshopModule: vi.fn<typeof import('../workshop').initWorkshopModule>(),
+}))
 vi.mock('../logging', () => ({ reportError: (error: unknown) => error }))
 import { initModules } from '../init'
 test('store failures defer content; later successful game initialization starts modules once', async () => {
@@ -58,7 +67,7 @@ test('store failures defer content; later successful game initialization starts 
   expect(mock.setting).not.toHaveBeenCalled()
   expect(mock.content).not.toHaveBeenCalled()
   mock.stores.mockRejectedValueOnce(new Error('content store'))
-  await expect(mock.configured!()).rejects.toThrow()
+  await expect(mock.configured!()).rejects.toThrow('content store')
   expect(mock.content).not.toHaveBeenCalled()
   await mock.configured!()
   await mock.configured!()

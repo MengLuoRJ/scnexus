@@ -6,10 +6,10 @@ const mocks = vi.hoisted(() => ({
     clientId: 'client',
     displayLanguage: 'zh',
   },
-  apply: vi.fn(),
-  enable: vi.fn(),
-  disable: vi.fn(async () => {}),
-  send: vi.fn(),
+  apply: vi.fn<typeof import('../../logging/logging').applyLogLevel>(),
+  enable: vi.fn<typeof import('../../telemetry/telemetry').enableTelemetry>(),
+  disable: vi.fn<typeof import('../../telemetry/telemetry').disableTelemetry>(async () => {}),
+  send: vi.fn<typeof import('../../window/window').sendWhenReady>(),
 }))
 vi.mock('electron', () => ({
   app: { getPreferredSystemLanguages: () => ['zh'] },
@@ -23,16 +23,17 @@ vi.mock('../../../stores/setting', () => ({
 }))
 vi.mock('../../logging/logging', () => ({
   applyLogLevel: mocks.apply,
-  reportError: vi.fn(),
+  reportError: vi.fn<typeof import('../../logging/logging').reportError>(),
 }))
 vi.mock('../../telemetry/telemetry', () => ({
   enableTelemetry: mocks.enable,
   disableTelemetry: mocks.disable,
-  setSavedTelemetryEnabled: vi.fn(),
+  setSavedTelemetryEnabled:
+    vi.fn<typeof import('../../telemetry/telemetry').setSavedTelemetryEnabled>(),
 }))
 vi.mock('../../window/window', () => ({
   getMainWindow: () => ({ webContents: { send: mocks.send } }),
-  onWindowReady: vi.fn(),
+  onWindowReady: vi.fn<typeof import('../../window/window').onWindowReady>(),
 }))
 import { updateSetting } from '../setting'
 test('settings compensate log-level failure, serialize later writes and preserve consent revocation despite SDK failure', async () => {
@@ -49,10 +50,10 @@ test('settings compensate log-level failure, serialize later writes and preserve
   mocks.enable.mockImplementationOnce(() => {
     throw new Error('sdk')
   })
-  await expect(updateSetting({ telemetryEnabled: true })).rejects.toThrow()
+  await expect(updateSetting({ telemetryEnabled: true })).rejects.toThrow('sdk')
   expect(mocks.data.telemetryEnabled).toBe(true)
   mocks.disable.mockRejectedValueOnce(new Error('close'))
-  await expect(updateSetting({ telemetryEnabled: false })).rejects.toThrow()
+  await expect(updateSetting({ telemetryEnabled: false })).rejects.toThrow('close')
   expect(mocks.data.telemetryEnabled).toBe(false)
   expect(mocks.send).toHaveBeenCalled()
 })

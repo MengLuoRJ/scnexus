@@ -1,6 +1,17 @@
 import { test, expect, vi, beforeEach } from 'vitest'
 import { EventEmitter } from 'node:events'
-const calls = vi.hoisted(() => ({ spawn: vi.fn(), stat: vi.fn() }))
+type LaunchProcess = EventEmitter & { unref: () => void }
+const calls = vi.hoisted(() => ({
+  spawn:
+    vi.fn<
+      (
+        file: string,
+        args: string[],
+        options: import('node:child_process').SpawnOptions,
+      ) => LaunchProcess
+    >(),
+  stat: vi.fn<(path: string) => Promise<Pick<import('node:fs').Stats, 'isFile'>>>(),
+}))
 vi.mock('node:child_process', () => ({ spawn: calls.spawn }))
 vi.mock('node:fs/promises', () => ({ stat: calls.stat }))
 vi.mock('../../scii-game-setting', () => ({
@@ -16,7 +27,7 @@ beforeEach(() => {
   calls.stat.mockReset()
   calls.stat.mockResolvedValue({ isFile: () => true })
   calls.spawn.mockImplementation(() => {
-    const child = Object.assign(new EventEmitter(), { unref: vi.fn() })
+    const child = Object.assign(new EventEmitter(), { unref: vi.fn<() => void>() })
     queueMicrotask(() => child.emit('spawn'))
     return child
   })

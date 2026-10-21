@@ -2,7 +2,7 @@ import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 
 export function ccmDirectoryName(title: string): string {
   const name = title
-    .replace(/[<>:"/\\|?*\u0000-\u001f\u007f-\u009f]/g, '')
+    .replace(/[<>:"/\\|?*\p{Cc}]/gu, '')
     .trim()
     .replace(/\s/g, '_')
     .replace(/\.+$/, '')

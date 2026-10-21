@@ -19,6 +19,6 @@ test('invalid empty, reserved and oversized titles are rejected', () => {
     'LPT².txt',
     '中'.repeat(86),
   ]) {
-    expect(() => ccmDirectoryName(title)).toThrow()
+    expect(() => ccmDirectoryName(title)).toThrow('CCM title cannot form a portable directory name')
   }
 })

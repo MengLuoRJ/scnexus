@@ -90,17 +90,94 @@ declare global {
   const customRef: typeof import('vue').customRef
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
-  const defineLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').defineLocale
-  const defineShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').defineShortcuts
+  const defineLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').defineLocale
+  const defineShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').defineShortcuts
   const effectScope: typeof import('vue').effectScope
-  const extendLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').extendLocale
-  const extractShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').extractShortcuts
+  const extendLocale: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale').extendLocale
+  const extractShortcuts: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts').extractShortcuts
   const getCurrentInstance: typeof import('vue').getCurrentInstance
   const getCurrentScope: typeof import('vue').getCurrentScope
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getPathForFile: typeof import('./src/ipcs/files').getPathForFile
   const h: typeof import('vue').h
   const inject: typeof import('vue').inject
+  const ipcAppGetLocale: typeof import('./src/ipcs/app').ipcAppGetLocale
+  const ipcAppGetLocaleCountryCode: typeof import('./src/ipcs/app').ipcAppGetLocaleCountryCode
+  const ipcAppGetPath: typeof import('./src/ipcs/app').ipcAppGetPath
+  const ipcAppGetPaths: typeof import('./src/ipcs/app').ipcAppGetPaths
+  const ipcAppGetPreferredSystemLanguages: typeof import('./src/ipcs/app').ipcAppGetPreferredSystemLanguages
+  const ipcAppGetSystemLocale: typeof import('./src/ipcs/app').ipcAppGetSystemLocale
+  const ipcAppGetVersion: typeof import('./src/ipcs/app').ipcAppGetVersion
+  const ipcAppIsPackaged: typeof import('./src/ipcs/app').ipcAppIsPackaged
+  const ipcCampaignActivate: typeof import('./src/ipcs/campaign').ipcCampaignActivate
+  const ipcCampaignActive: typeof import('./src/ipcs/campaign').ipcCampaignActive
+  const ipcCampaignAnalyze: typeof import('./src/ipcs/campaign').ipcCampaignAnalyze
+  const ipcCampaignCancel: typeof import('./src/ipcs/campaign').ipcCampaignCancel
+  const ipcCampaignDeactivate: typeof import('./src/ipcs/campaign').ipcCampaignDeactivate
+  const ipcCampaignInstall: typeof import('./src/ipcs/campaign').ipcCampaignInstall
+  const ipcCampaignLaunch: typeof import('./src/ipcs/campaign').ipcCampaignLaunch
+  const ipcCampaignList: typeof import('./src/ipcs/campaign').ipcCampaignList
+  const ipcCampaignOnInstallProgress: typeof import('./src/ipcs/campaign').ipcCampaignOnInstallProgress
+  const ipcCampaignPrepareActivation: typeof import('./src/ipcs/campaign').ipcCampaignPrepareActivation
+  const ipcCampaignPrepareDeactivation: typeof import('./src/ipcs/campaign').ipcCampaignPrepareDeactivation
+  const ipcCampaignPrepareUninstall: typeof import('./src/ipcs/campaign').ipcCampaignPrepareUninstall
+  const ipcCampaignScan: typeof import('./src/ipcs/campaign').ipcCampaignScan
+  const ipcCampaignUninstall: typeof import('./src/ipcs/campaign').ipcCampaignUninstall
+  const ipcContentAnalyze: typeof import('./src/ipcs/content').ipcContentAnalyze
+  const ipcCustomizeAnalyze: typeof import('./src/ipcs/customize').ipcCustomizeAnalyze
+  const ipcCustomizeCancel: typeof import('./src/ipcs/customize').ipcCustomizeCancel
+  const ipcCustomizeInstall: typeof import('./src/ipcs/customize').ipcCustomizeInstall
+  const ipcCustomizeList: typeof import('./src/ipcs/customize').ipcCustomizeList
+  const ipcCustomizeOnInstallProgress: typeof import('./src/ipcs/customize').ipcCustomizeOnInstallProgress
+  const ipcCustomizePrepareUninstall: typeof import('./src/ipcs/customize').ipcCustomizePrepareUninstall
+  const ipcCustomizeScan: typeof import('./src/ipcs/customize').ipcCustomizeScan
+  const ipcCustomizeUninstall: typeof import('./src/ipcs/customize').ipcCustomizeUninstall
+  const ipcDeepLinkOnAuthentication: typeof import('./src/ipcs/deep-link').ipcDeepLinkOnAuthentication
+  const ipcDeepLinkOnWorkshop: typeof import('./src/ipcs/deep-link').ipcDeepLinkOnWorkshop
+  const ipcDialogShowOpenDialog: typeof import('./src/ipcs/dialog').ipcDialogShowOpenDialog
+  const ipcDialogShowOpenDialogSync: typeof import('./src/ipcs/dialog').ipcDialogShowOpenDialogSync
+  const ipcGameSettingConfigure: typeof import('./src/ipcs/scii-game-setting').ipcGameSettingConfigure
+  const ipcGameSettingGet: typeof import('./src/ipcs/scii-game-setting').ipcGameSettingGet
+  const ipcGameSettingInitialize: typeof import('./src/ipcs/scii-game-setting').ipcGameSettingInitialize
+  const ipcGameSettingRefresh: typeof import('./src/ipcs/scii-game-setting').ipcGameSettingRefresh
+  const ipcGetPathForFile: typeof import('./src/ipcs/files').ipcGetPathForFile
+  const ipcLoggingGetConfig: typeof import('./src/ipcs/logging').ipcLoggingGetConfig
+  const ipcLoggingSetLevel: typeof import('./src/ipcs/logging').ipcLoggingSetLevel
+  const ipcLoggingWrite: typeof import('./src/ipcs/logging').ipcLoggingWrite
+  const ipcSettingGetKey: typeof import('./src/ipcs/setting').ipcSettingGetKey
+  const ipcSettingGetSnapshot: typeof import('./src/ipcs/setting').ipcSettingGetSnapshot
+  const ipcSettingOnChanged: typeof import('./src/ipcs/setting').ipcSettingOnChanged
+  const ipcSettingReplace: typeof import('./src/ipcs/setting').ipcSettingReplace
+  const ipcSettingUpdate: typeof import('./src/ipcs/setting').ipcSettingUpdate
+  const ipcSettingUpdateKey: typeof import('./src/ipcs/setting').ipcSettingUpdateKey
+  const ipcShellOpenExternalWebsite: typeof import('./src/ipcs/shell').ipcShellOpenExternalWebsite
+  const ipcShellOpenPath: typeof import('./src/ipcs/shell').ipcShellOpenPath
+  const ipcShellShowItemInFolder: typeof import('./src/ipcs/shell').ipcShellShowItemInFolder
+  const ipcTelemetryGetStatus: typeof import('./src/ipcs/telemetry').ipcTelemetryGetStatus
+  const ipcTelemetryOnStatus: typeof import('./src/ipcs/telemetry').ipcTelemetryOnStatus
+  const ipcTelemetrySetEnabled: typeof import('./src/ipcs/telemetry').ipcTelemetrySetEnabled
+  const ipcUpdaterCheckForUpdates: typeof import('./src/ipcs/updater').ipcUpdaterCheckForUpdates
+  const ipcUpdaterCheckForUpdatesAndNotify: typeof import('./src/ipcs/updater').ipcUpdaterCheckForUpdatesAndNotify
+  const ipcUpdaterDownloadUpdate: typeof import('./src/ipcs/updater').ipcUpdaterDownloadUpdate
+  const ipcUpdaterGetStatus: typeof import('./src/ipcs/updater').ipcUpdaterGetStatus
+  const ipcUpdaterOnCheckingForUpdate: typeof import('./src/ipcs/updater').ipcUpdaterOnCheckingForUpdate
+  const ipcUpdaterOnDownloadProgress: typeof import('./src/ipcs/updater').ipcUpdaterOnDownloadProgress
+  const ipcUpdaterOnError: typeof import('./src/ipcs/updater').ipcUpdaterOnError
+  const ipcUpdaterOnUpdateAvailable: typeof import('./src/ipcs/updater').ipcUpdaterOnUpdateAvailable
+  const ipcUpdaterOnUpdateDownloaded: typeof import('./src/ipcs/updater').ipcUpdaterOnUpdateDownloaded
+  const ipcUpdaterOnUpdateNotAvailable: typeof import('./src/ipcs/updater').ipcUpdaterOnUpdateNotAvailable
+  const ipcUpdaterQuitAndInstall: typeof import('./src/ipcs/updater').ipcUpdaterQuitAndInstall
+  const ipcWindowClose: typeof import('./src/ipcs/window').ipcWindowClose
+  const ipcWindowGetStatus: typeof import('./src/ipcs/window').ipcWindowGetStatus
+  const ipcWindowMinimize: typeof import('./src/ipcs/window').ipcWindowMinimize
+  const ipcWindowOnStatus: typeof import('./src/ipcs/window').ipcWindowOnStatus
+  const ipcWindowReady: typeof import('./src/ipcs/window').ipcWindowReady
+  const ipcWindowSetMaximized: typeof import('./src/ipcs/window').ipcWindowSetMaximized
+  const ipcWindowShow: typeof import('./src/ipcs/window').ipcWindowShow
+  const ipcWorkshopGetFileMd5: typeof import('./src/ipcs/workshop').ipcWorkshopGetFileMd5
+  const ipcWorkshopGetFileMd5Wasm: typeof import('./src/ipcs/workshop').ipcWorkshopGetFileMd5Wasm
+  const ipcWorkshopUploadCompressedFile: typeof import('./src/ipcs/workshop').ipcWorkshopUploadCompressedFile
+  const ipcWorkshopWriteMetadata: typeof import('./src/ipcs/workshop').ipcWorkshopWriteMetadata
   const isProxy: typeof import('vue').isProxy
   const isReactive: typeof import('vue').isReactive
   const isReadonly: typeof import('vue').isReadonly
@@ -138,29 +215,29 @@ declare global {
   const toValue: typeof import('vue').toValue
   const triggerRef: typeof import('vue').triggerRef
   const unref: typeof import('vue').unref
-  const useAppConfig: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js').useAppConfig
+  const useAppConfig: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js').useAppConfig
   const useAttrs: typeof import('vue').useAttrs
   const useContentImportStore: typeof import('./src/stores/content-import').useContentImportStore
-  const useContentSearch: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch').useContentSearch
+  const useContentSearch: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch').useContentSearch
   const useCounterStore: typeof import('./src/stores/counter').useCounterStore
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
-  const useFileUpload: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload').useFileUpload
-  const useFormField: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').useFormField
+  const useFileUpload: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload').useFileUpload
+  const useFormField: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFormField').useFormField
   const useId: typeof import('vue').useId
-  const useKbd: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useKbd').useKbd
+  const useKbd: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useKbd').useKbd
   const useLink: typeof import('vue-router').useLink
   const useModel: typeof import('vue').useModel
-  const useOverlay: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
-  const useResizable: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useResizable').useResizable
+  const useOverlay: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay').useOverlay
+  const useResizable: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useResizable').useResizable
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
-  const useScrollShadow: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow').useScrollShadow
-  const useScrollspy: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy').useScrollspy
+  const useScrollShadow: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow').useScrollShadow
+  const useScrollspy: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy').useScrollspy
   const useSlots: typeof import('vue').useSlots
   const useTemplateRef: typeof import('vue').useTemplateRef
-  const useToast: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useToast').useToast
-  const useTour: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
+  const useToast: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useToast').useToast
+  const useTour: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
@@ -185,98 +262,98 @@ declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
-    readonly apiAppGetLocale: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetLocale']>
-    readonly apiAppGetLocaleCountryCode: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetLocaleCountryCode']>
-    readonly apiAppGetPath: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetPath']>
-    readonly apiAppGetPaths: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetPaths']>
-    readonly apiAppGetPreferredSystemLanguages: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetPreferredSystemLanguages']>
-    readonly apiAppGetSystemLocale: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetSystemLocale']>
-    readonly apiAppGetVersion: UnwrapRef<typeof import('./src/ipcs/app')['apiAppGetVersion']>
-    readonly apiAppIsPackaged: UnwrapRef<typeof import('./src/ipcs/app')['apiAppIsPackaged']>
-    readonly apiCampaignActivate: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignActivate']>
-    readonly apiCampaignActive: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignActive']>
-    readonly apiCampaignAnalyze: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignAnalyze']>
-    readonly apiCampaignCancel: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignCancel']>
-    readonly apiCampaignDeactivate: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignDeactivate']>
-    readonly apiCampaignInstall: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignInstall']>
-    readonly apiCampaignLaunch: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignLaunch']>
-    readonly apiCampaignList: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignList']>
-    readonly apiCampaignOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignOnInstallProgress']>
-    readonly apiCampaignPrepareActivation: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignPrepareActivation']>
-    readonly apiCampaignPrepareDeactivation: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignPrepareDeactivation']>
-    readonly apiCampaignPrepareUninstall: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignPrepareUninstall']>
-    readonly apiCampaignScan: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignScan']>
-    readonly apiCampaignUninstall: UnwrapRef<typeof import('./src/ipcs/campaign')['apiCampaignUninstall']>
-    readonly apiContentAnalyze: UnwrapRef<typeof import('./src/ipcs/content')['apiContentAnalyze']>
-    readonly apiCustomizeAnalyze: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeAnalyze']>
-    readonly apiCustomizeCancel: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeCancel']>
-    readonly apiCustomizeInstall: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeInstall']>
-    readonly apiCustomizeList: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeList']>
-    readonly apiCustomizeOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeOnInstallProgress']>
-    readonly apiCustomizePrepareUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizePrepareUninstall']>
-    readonly apiCustomizeScan: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeScan']>
-    readonly apiCustomizeUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['apiCustomizeUninstall']>
-    readonly apiDeepLinkOnAuthentication: UnwrapRef<typeof import('./src/ipcs/deep-link')['apiDeepLinkOnAuthentication']>
-    readonly apiDeepLinkOnWorkshop: UnwrapRef<typeof import('./src/ipcs/deep-link')['apiDeepLinkOnWorkshop']>
-    readonly apiDialogShowOpenDialog: UnwrapRef<typeof import('./src/ipcs/dialog')['apiDialogShowOpenDialog']>
-    readonly apiDialogShowOpenDialogSync: UnwrapRef<typeof import('./src/ipcs/dialog')['apiDialogShowOpenDialogSync']>
-    readonly apiGameSettingConfigure: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['apiGameSettingConfigure']>
-    readonly apiGameSettingGet: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['apiGameSettingGet']>
-    readonly apiGameSettingInitialize: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['apiGameSettingInitialize']>
-    readonly apiGameSettingRefresh: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['apiGameSettingRefresh']>
-    readonly apiLoggingGetConfig: UnwrapRef<typeof import('./src/ipcs/logging')['apiLoggingGetConfig']>
-    readonly apiLoggingSetLevel: UnwrapRef<typeof import('./src/ipcs/logging')['apiLoggingSetLevel']>
-    readonly apiLoggingWrite: UnwrapRef<typeof import('./src/ipcs/logging')['apiLoggingWrite']>
-    readonly apiSettingGetKey: UnwrapRef<typeof import('./src/ipcs/setting')['apiSettingGetKey']>
-    readonly apiSettingGetSnapshot: UnwrapRef<typeof import('./src/ipcs/setting')['apiSettingGetSnapshot']>
-    readonly apiSettingOnChanged: UnwrapRef<typeof import('./src/ipcs/setting')['apiSettingOnChanged']>
-    readonly apiSettingReplace: UnwrapRef<typeof import('./src/ipcs/setting')['apiSettingReplace']>
-    readonly apiSettingUpdate: UnwrapRef<typeof import('./src/ipcs/setting')['apiSettingUpdate']>
-    readonly apiSettingUpdateKey: UnwrapRef<typeof import('./src/ipcs/setting')['apiSettingUpdateKey']>
-    readonly apiShellOpenExternalWebsite: UnwrapRef<typeof import('./src/ipcs/shell')['apiShellOpenExternalWebsite']>
-    readonly apiShellOpenPath: UnwrapRef<typeof import('./src/ipcs/shell')['apiShellOpenPath']>
-    readonly apiShellShowItemInFolder: UnwrapRef<typeof import('./src/ipcs/shell')['apiShellShowItemInFolder']>
-    readonly apiTelemetryGetStatus: UnwrapRef<typeof import('./src/ipcs/telemetry')['apiTelemetryGetStatus']>
-    readonly apiTelemetryOnStatus: UnwrapRef<typeof import('./src/ipcs/telemetry')['apiTelemetryOnStatus']>
-    readonly apiTelemetrySetEnabled: UnwrapRef<typeof import('./src/ipcs/telemetry')['apiTelemetrySetEnabled']>
-    readonly apiUpdaterCheckForUpdates: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterCheckForUpdates']>
-    readonly apiUpdaterCheckForUpdatesAndNotify: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterCheckForUpdatesAndNotify']>
-    readonly apiUpdaterDownloadUpdate: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterDownloadUpdate']>
-    readonly apiUpdaterGetStatus: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterGetStatus']>
-    readonly apiUpdaterOnCheckingForUpdate: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterOnCheckingForUpdate']>
-    readonly apiUpdaterOnDownloadProgress: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterOnDownloadProgress']>
-    readonly apiUpdaterOnError: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterOnError']>
-    readonly apiUpdaterOnUpdateAvailable: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterOnUpdateAvailable']>
-    readonly apiUpdaterOnUpdateDownloaded: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterOnUpdateDownloaded']>
-    readonly apiUpdaterOnUpdateNotAvailable: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterOnUpdateNotAvailable']>
-    readonly apiUpdaterQuitAndInstall: UnwrapRef<typeof import('./src/ipcs/updater')['apiUpdaterQuitAndInstall']>
-    readonly apiWindowClose: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowClose']>
-    readonly apiWindowGetStatus: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowGetStatus']>
-    readonly apiWindowMinimize: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowMinimize']>
-    readonly apiWindowOnStatus: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowOnStatus']>
-    readonly apiWindowReady: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowReady']>
-    readonly apiWindowSetMaximized: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowSetMaximized']>
-    readonly apiWindowShow: UnwrapRef<typeof import('./src/ipcs/window')['apiWindowShow']>
-    readonly apiWorkshopGetFileMd5: UnwrapRef<typeof import('./src/ipcs/workshop')['apiWorkshopGetFileMd5']>
-    readonly apiWorkshopGetFileMd5Wasm: UnwrapRef<typeof import('./src/ipcs/workshop')['apiWorkshopGetFileMd5Wasm']>
-    readonly apiWorkshopUploadCompressedFile: UnwrapRef<typeof import('./src/ipcs/workshop')['apiWorkshopUploadCompressedFile']>
-    readonly apiWorkshopWriteMetadata: UnwrapRef<typeof import('./src/ipcs/workshop')['apiWorkshopWriteMetadata']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
-    readonly defineLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['defineLocale']>
-    readonly defineShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['defineShortcuts']>
+    readonly defineLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['defineLocale']>
+    readonly defineShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['defineShortcuts']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
-    readonly extendLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['extendLocale']>
-    readonly extractShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['extractShortcuts']>
+    readonly extendLocale: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineLocale')['extendLocale']>
+    readonly extractShortcuts: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/defineShortcuts')['extractShortcuts']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
-    readonly getPathForFile: UnwrapRef<typeof import('./src/ipcs/files')['getPathForFile']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
+    readonly ipcAppGetLocale: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetLocale']>
+    readonly ipcAppGetLocaleCountryCode: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetLocaleCountryCode']>
+    readonly ipcAppGetPath: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetPath']>
+    readonly ipcAppGetPaths: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetPaths']>
+    readonly ipcAppGetPreferredSystemLanguages: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetPreferredSystemLanguages']>
+    readonly ipcAppGetSystemLocale: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetSystemLocale']>
+    readonly ipcAppGetVersion: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppGetVersion']>
+    readonly ipcAppIsPackaged: UnwrapRef<typeof import('./src/ipcs/app')['ipcAppIsPackaged']>
+    readonly ipcCampaignActivate: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignActivate']>
+    readonly ipcCampaignActive: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignActive']>
+    readonly ipcCampaignAnalyze: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignAnalyze']>
+    readonly ipcCampaignCancel: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignCancel']>
+    readonly ipcCampaignDeactivate: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignDeactivate']>
+    readonly ipcCampaignInstall: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignInstall']>
+    readonly ipcCampaignLaunch: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignLaunch']>
+    readonly ipcCampaignList: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignList']>
+    readonly ipcCampaignOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignOnInstallProgress']>
+    readonly ipcCampaignPrepareActivation: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignPrepareActivation']>
+    readonly ipcCampaignPrepareDeactivation: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignPrepareDeactivation']>
+    readonly ipcCampaignPrepareUninstall: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignPrepareUninstall']>
+    readonly ipcCampaignScan: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignScan']>
+    readonly ipcCampaignUninstall: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignUninstall']>
+    readonly ipcContentAnalyze: UnwrapRef<typeof import('./src/ipcs/content')['ipcContentAnalyze']>
+    readonly ipcCustomizeAnalyze: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeAnalyze']>
+    readonly ipcCustomizeCancel: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeCancel']>
+    readonly ipcCustomizeInstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeInstall']>
+    readonly ipcCustomizeList: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeList']>
+    readonly ipcCustomizeOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeOnInstallProgress']>
+    readonly ipcCustomizePrepareUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizePrepareUninstall']>
+    readonly ipcCustomizeScan: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeScan']>
+    readonly ipcCustomizeUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeUninstall']>
+    readonly ipcDeepLinkOnAuthentication: UnwrapRef<typeof import('./src/ipcs/deep-link')['ipcDeepLinkOnAuthentication']>
+    readonly ipcDeepLinkOnWorkshop: UnwrapRef<typeof import('./src/ipcs/deep-link')['ipcDeepLinkOnWorkshop']>
+    readonly ipcDialogShowOpenDialog: UnwrapRef<typeof import('./src/ipcs/dialog')['ipcDialogShowOpenDialog']>
+    readonly ipcDialogShowOpenDialogSync: UnwrapRef<typeof import('./src/ipcs/dialog')['ipcDialogShowOpenDialogSync']>
+    readonly ipcGameSettingConfigure: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['ipcGameSettingConfigure']>
+    readonly ipcGameSettingGet: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['ipcGameSettingGet']>
+    readonly ipcGameSettingInitialize: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['ipcGameSettingInitialize']>
+    readonly ipcGameSettingRefresh: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['ipcGameSettingRefresh']>
+    readonly ipcGetPathForFile: UnwrapRef<typeof import('./src/ipcs/files')['ipcGetPathForFile']>
+    readonly ipcLoggingGetConfig: UnwrapRef<typeof import('./src/ipcs/logging')['ipcLoggingGetConfig']>
+    readonly ipcLoggingSetLevel: UnwrapRef<typeof import('./src/ipcs/logging')['ipcLoggingSetLevel']>
+    readonly ipcLoggingWrite: UnwrapRef<typeof import('./src/ipcs/logging')['ipcLoggingWrite']>
+    readonly ipcSettingGetKey: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingGetKey']>
+    readonly ipcSettingGetSnapshot: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingGetSnapshot']>
+    readonly ipcSettingOnChanged: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingOnChanged']>
+    readonly ipcSettingReplace: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingReplace']>
+    readonly ipcSettingUpdate: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingUpdate']>
+    readonly ipcSettingUpdateKey: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingUpdateKey']>
+    readonly ipcShellOpenExternalWebsite: UnwrapRef<typeof import('./src/ipcs/shell')['ipcShellOpenExternalWebsite']>
+    readonly ipcShellOpenPath: UnwrapRef<typeof import('./src/ipcs/shell')['ipcShellOpenPath']>
+    readonly ipcShellShowItemInFolder: UnwrapRef<typeof import('./src/ipcs/shell')['ipcShellShowItemInFolder']>
+    readonly ipcTelemetryGetStatus: UnwrapRef<typeof import('./src/ipcs/telemetry')['ipcTelemetryGetStatus']>
+    readonly ipcTelemetryOnStatus: UnwrapRef<typeof import('./src/ipcs/telemetry')['ipcTelemetryOnStatus']>
+    readonly ipcTelemetrySetEnabled: UnwrapRef<typeof import('./src/ipcs/telemetry')['ipcTelemetrySetEnabled']>
+    readonly ipcUpdaterCheckForUpdates: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterCheckForUpdates']>
+    readonly ipcUpdaterCheckForUpdatesAndNotify: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterCheckForUpdatesAndNotify']>
+    readonly ipcUpdaterDownloadUpdate: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterDownloadUpdate']>
+    readonly ipcUpdaterGetStatus: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterGetStatus']>
+    readonly ipcUpdaterOnCheckingForUpdate: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterOnCheckingForUpdate']>
+    readonly ipcUpdaterOnDownloadProgress: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterOnDownloadProgress']>
+    readonly ipcUpdaterOnError: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterOnError']>
+    readonly ipcUpdaterOnUpdateAvailable: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterOnUpdateAvailable']>
+    readonly ipcUpdaterOnUpdateDownloaded: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterOnUpdateDownloaded']>
+    readonly ipcUpdaterOnUpdateNotAvailable: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterOnUpdateNotAvailable']>
+    readonly ipcUpdaterQuitAndInstall: UnwrapRef<typeof import('./src/ipcs/updater')['ipcUpdaterQuitAndInstall']>
+    readonly ipcWindowClose: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowClose']>
+    readonly ipcWindowGetStatus: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowGetStatus']>
+    readonly ipcWindowMinimize: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowMinimize']>
+    readonly ipcWindowOnStatus: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowOnStatus']>
+    readonly ipcWindowReady: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowReady']>
+    readonly ipcWindowSetMaximized: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowSetMaximized']>
+    readonly ipcWindowShow: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowShow']>
+    readonly ipcWorkshopGetFileMd5: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopGetFileMd5']>
+    readonly ipcWorkshopGetFileMd5Wasm: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopGetFileMd5Wasm']>
+    readonly ipcWorkshopUploadCompressedFile: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopUploadCompressedFile']>
+    readonly ipcWorkshopWriteMetadata: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopWriteMetadata']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
@@ -314,29 +391,29 @@ declare module 'vue' {
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
-    readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js')['useAppConfig']>
+    readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js')['useAppConfig']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
     readonly useContentImportStore: UnwrapRef<typeof import('./src/stores/content-import')['useContentImportStore']>
-    readonly useContentSearch: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch')['useContentSearch']>
+    readonly useContentSearch: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch')['useContentSearch']>
     readonly useCounterStore: UnwrapRef<typeof import('./src/stores/counter')['useCounterStore']>
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
-    readonly useFileUpload: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload')['useFileUpload']>
-    readonly useFormField: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['useFormField']>
+    readonly useFileUpload: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload')['useFileUpload']>
+    readonly useFormField: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useFormField')['useFormField']>
     readonly useId: UnwrapRef<typeof import('vue')['useId']>
-    readonly useKbd: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useKbd')['useKbd']>
+    readonly useKbd: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useKbd')['useKbd']>
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
-    readonly useOverlay: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
-    readonly useResizable: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useResizable')['useResizable']>
+    readonly useOverlay: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useOverlay')['useOverlay']>
+    readonly useResizable: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useResizable')['useResizable']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
-    readonly useScrollShadow: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow')['useScrollShadow']>
-    readonly useScrollspy: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy')['useScrollspy']>
+    readonly useScrollShadow: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollShadow')['useScrollShadow']>
+    readonly useScrollspy: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useScrollspy')['useScrollspy']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useTemplateRef: UnwrapRef<typeof import('vue')['useTemplateRef']>
-    readonly useToast: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useToast')['useToast']>
-    readonly useTour: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_a42bc85a871fd56b3bd37313f208b682/node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
+    readonly useToast: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useToast')['useToast']>
+    readonly useTour: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_333fd09be42b5e31308c975cd078d9ec/node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchEffect: UnwrapRef<typeof import('vue')['watchEffect']>
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
 import { openSource, stageArchive } from '../source'
 import { decodeCcm } from '../parser'
+import { ERRORS } from '@scnexus/app-shared/errors/app.error'
 
 function crc32(data: Buffer) {
   let crc = 0xffffffff
@@ -53,7 +54,9 @@ test('legacy non-UTF8 ZIP names remain consistent between 7z listing and reading
     const source = await openSource({ kind: 'archive', path: archive })
     expect(source.entries).toHaveLength(1)
     expect(source.entries[0].path).not.toContain('\ufffd')
-    expect(() => source.read(source.entries[0].path)).toThrow('')
+    expect(() => source.read(source.entries[0].path)).toThrow(
+      expect.objectContaining({ code: ERRORS.ARCHIVE_METADATA_INVALID.code }),
+    )
     const staged = await stageArchive(
       source,
       [source.entries[0].path],
@@ -62,7 +65,10 @@ test('legacy non-UTF8 ZIP names remain consistent between 7z listing and reading
       () => {},
     )
     expect((await readFile(staged.get(source.entries[0].path)!)).toString()).toBe('legacy payload')
-    if (process.platform === 'win32') expect(source.entries[0].path).toBe('Maps/地图.SC2Map')
+    const windowsPaths = source.entries
+      .filter(() => process.platform === 'win32')
+      .map((entry) => entry.path)
+    expect(windowsPaths).toEqual(process.platform === 'win32' ? ['Maps/地图.SC2Map'] : [])
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

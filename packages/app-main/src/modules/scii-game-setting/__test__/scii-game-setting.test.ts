@@ -26,7 +26,7 @@ test('game configuration detects paths, protects valid root, and rejects changes
   await writeFile(join(game, 'StarCraft II.exe'), 'stub')
   await mkdir(join(game, 'Support64'))
   await writeFile(join(game, 'Support64/SC2Switcher_x64.exe'), 'stub')
-  const dependent = vi.fn(async () => {})
+  const dependent = vi.fn<() => Promise<void>>(async () => {})
   onGameConfigured(dependent)
   const snapshot = await configureGame(game)
   expect(dependent).toHaveBeenCalledOnce()

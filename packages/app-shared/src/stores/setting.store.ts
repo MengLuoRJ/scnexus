@@ -11,6 +11,7 @@ export type SettingData = {
   displayLanguage: DisplayLanguage
   logLevel: LogLevel
   telemetryEnabled: boolean
+  analyticsEnabled: boolean
 }
 
 export type LegacySettingStore = {

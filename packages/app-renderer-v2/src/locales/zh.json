@@ -15,6 +15,8 @@
   "ui.logging": "日志与隐私",
   "ui.logLevel": "日志输出等级",
   "ui.telemetry": "错误遥测",
+  "ui.analytics": "在线分析",
+  "ui.analyticsHelp": "静默统计访问与在线状态；离线时暂停，恢复网络后继续。与错误遥测独立。",
   "ui.telemetryHelp": "仅在授权后发送错误报告，可随时关闭。",
   "ui.game": "游戏环境",
   "ui.gameDir": "游戏根目录",

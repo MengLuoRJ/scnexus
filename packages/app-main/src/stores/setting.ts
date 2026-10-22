@@ -12,7 +12,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 2,
+      _schemaVersion: 3,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
@@ -21,10 +21,11 @@ export function createSettingRepository(downloadDirectory: () => string) {
       displayLanguage: 'system',
       logLevel: 'error',
       telemetryEnabled: false,
+      analyticsEnabled: true,
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 2 },
+      _schemaVersion: { const: 3 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -41,10 +42,18 @@ export function createSettingRepository(downloadDirectory: () => string) {
         enum: ['error', 'warn', 'info', 'verbose', 'debug', 'silly'],
       },
       telemetryEnabled: { type: 'boolean' },
+      analyticsEnabled: { type: 'boolean' },
     },
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if (data._schemaVersion === 2) {
+        return {
+          ...data,
+          _schemaVersion: defaults._schemaVersion,
+          analyticsEnabled: defaults.analyticsEnabled,
+        } as SettingData
+      }
       if (data._schemaVersion === 1) {
         const languages: Record<string, string> = {
           'zh-CN': 'zh',
@@ -55,6 +64,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
           ...data,
           _schemaVersion: defaults._schemaVersion,
           displayLanguage: languages[data.displayLanguage as string] ?? data.displayLanguage,
+          analyticsEnabled: defaults.analyticsEnabled,
         } as SettingData
       }
       keys(data, ['IS_INITIAL', 'CLIENT_ID', 'DOWNLOAD_FOLDER', 'LAST_UPDATED_TIME', 'PRESETS'])

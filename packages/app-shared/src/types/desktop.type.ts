@@ -6,7 +6,7 @@ export type LogLevel = (typeof LOG_LEVELS)[number]
 export type DisplayLanguage = 'system' | 'zh' | 'en' | 'zh-Hant'
 export type SettingPreferences = Pick<
   SettingData,
-  'downloadDirectory' | 'displayLanguage' | 'logLevel' | 'telemetryEnabled'
+  'downloadDirectory' | 'displayLanguage' | 'logLevel' | 'telemetryEnabled' | 'analyticsEnabled'
 >
 export type WindowStatus = {
   state: 'absent' | 'loading' | 'ready' | 'failed'

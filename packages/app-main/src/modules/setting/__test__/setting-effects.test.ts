@@ -3,14 +3,17 @@ const mocks = vi.hoisted(() => ({
   data: {
     logLevel: 'error',
     telemetryEnabled: false,
+    analyticsEnabled: true,
     clientId: 'client',
     displayLanguage: 'zh',
   },
+  analytics: vi.fn<(enabled: boolean) => void>(),
   apply: vi.fn<typeof import('../../logging/logging').applyLogLevel>(),
   enable: vi.fn<typeof import('../../telemetry/telemetry').enableTelemetry>(),
   disable: vi.fn<typeof import('../../telemetry/telemetry').disableTelemetry>(async () => {}),
   send: vi.fn<typeof import('../../window/window').sendWhenReady>(),
 }))
+vi.mock('../../analytics-lifecycle', () => ({ setAnalyticsEnabled: mocks.analytics }))
 vi.mock('electron', () => ({
   app: { getPreferredSystemLanguages: () => ['zh'] },
 }))
@@ -56,4 +59,13 @@ test('settings compensate log-level failure, serialize later writes and preserve
   await expect(updateSetting({ telemetryEnabled: false })).rejects.toThrow('close')
   expect(mocks.data.telemetryEnabled).toBe(false)
   expect(mocks.send).toHaveBeenCalled()
+})
+
+test('online analytics is persisted and applied immediately, independently from Sentry', async () => {
+  await updateSetting({ analyticsEnabled: false })
+  expect(mocks.data.analyticsEnabled).toBe(false)
+  expect(mocks.analytics).toHaveBeenLastCalledWith(false)
+  await updateSetting({ analyticsEnabled: true })
+  expect(mocks.data.analyticsEnabled).toBe(true)
+  expect(mocks.analytics).toHaveBeenLastCalledWith(true)
 })

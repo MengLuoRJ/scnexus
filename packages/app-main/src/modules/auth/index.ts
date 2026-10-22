@@ -7,6 +7,13 @@ import { createAuthStorage } from './storage'
 import { createAuthTransport } from './transport'
 import { createAuthService, type AuthService } from './service'
 import { invalid } from './validation'
+import {
+  analyticsAuthenticationChanged,
+  startAnalytics,
+  analyticsLogin,
+  analyticsLogout,
+  disposeAnalytics,
+} from '../analytics-lifecycle'
 
 export { createAuthService } from './service'
 export { createAuthStorage } from './storage'
@@ -31,6 +38,7 @@ export function initAuthModule(): void {
     transport: createAuthTransport(),
     getClientId: () => settingRepository.getSnapshot().clientId,
     changed(snapshot) {
+      analyticsAuthenticationChanged(snapshot)
       for (const window of BrowserWindow.getAllWindows()) {
         try {
           if (window.isDestroyed() || window.webContents.isDestroyed()) continue
@@ -47,16 +55,25 @@ export function initAuthModule(): void {
   })
   service = instance
   for (const method of methods) {
-    ipcHandleRegister(`auth:${method}`, (...args: unknown[]) => {
+    ipcHandleRegister(`auth:${method}`, async (...args: unknown[]) => {
       const takesInput = !['getSnapshot', 'refresh', 'logout'].includes(method)
       if (args.length !== (takesInput ? 1 : 0)) invalid()
       switch (method) {
-        case 'login':
-          return instance.login(args[0])
-        case 'register':
-          return instance.register(args[0])
-        case 'completeMfa':
-          return instance.completeMfa(args[0])
+        case 'login': {
+          const result = await instance.login(args[0])
+          if (result.status === 'signed-in') analyticsLogin(result)
+          return result
+        }
+        case 'register': {
+          const result = await instance.register(args[0])
+          analyticsLogin(result)
+          return result
+        }
+        case 'completeMfa': {
+          const result = await instance.completeMfa(args[0])
+          analyticsLogin(result)
+          return result
+        }
         case 'requestChallenge':
           return instance.requestChallenge(args[0])
         case 'resetPassword':
@@ -65,14 +82,27 @@ export function initAuthModule(): void {
           return instance.getSnapshot()
         case 'refresh':
           return instance.refresh()
-        case 'logout':
-          return instance.logout()
+        case 'logout': {
+          const wasSignedIn = ['signed-in', 'refreshing'].includes(instance.getSnapshot().status)
+          const result = await instance.logout()
+          if (wasSignedIn) analyticsLogout()
+          return result
+        }
       }
     })
   }
-  void instance.start()
+  void instance.start().finally(() => {
+    if (service === instance) {
+      try {
+        startAnalytics(instance.getSnapshot())
+      } catch {
+        startAnalytics(null)
+      }
+    }
+  })
 }
 export function disposeAuth(): void {
+  disposeAnalytics()
   service?.dispose()
   service = undefined
   for (const method of methods) ipcHandleRemove(`auth:${method}`)

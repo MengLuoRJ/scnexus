@@ -47,6 +47,7 @@ const snapshot = {
   displayLanguage: 'zh',
   logLevel: 'info',
   telemetryEnabled: false,
+  analyticsEnabled: true,
 } as SettingSnapshot
 const game = {
   gameRoot: 'D:\\Game',
@@ -280,4 +281,17 @@ test('game directory change and log-level changes also notify success via toast'
   await flushPromises()
   expect(mocks.update).toHaveBeenCalledWith({ logLevel: 'debug' })
   expect(mocks.toast).toHaveBeenCalledWith({ color: 'success', title: '设置已保存' })
+})
+
+test('online analytics appears in privacy settings with persisted default and updates independently', async () => {
+  const wrapper = await render()
+  expect(wrapper.text()).toContain('在线分析')
+  const switches = wrapper.findAllComponents({ name: 'Switch' })
+  const control = switches.find(
+    (item) => item.attributes('modelvalue') === 'true' || item.props('modelValue') === true,
+  )
+  expect(control).toBeDefined()
+  control!.vm.$emit('update:modelValue', false)
+  await flushPromises()
+  expect(mocks.update).toHaveBeenCalledWith({ analyticsEnabled: false })
 })

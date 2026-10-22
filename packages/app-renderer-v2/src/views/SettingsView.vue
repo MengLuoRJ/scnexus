@@ -373,6 +373,17 @@ onMounted(async () => {
               </UFormField>
               <UFormField
                 :ui="{ container: 'mt-1' }"
+                :label="t('ui.analytics')"
+                :description="t('ui.analyticsHelp')"
+              >
+                <USwitch
+                  :model-value="settings?.analyticsEnabled ?? true"
+                  :disabled="!settings || busy"
+                  @update:model-value="(value: boolean) => save({ analyticsEnabled: value })"
+                />
+              </UFormField>
+              <UFormField
+                :ui="{ container: 'mt-1' }"
                 :label="t('ui.telemetry')"
                 :description="t('ui.telemetryHelp')"
               >

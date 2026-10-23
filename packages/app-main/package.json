@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-main",
-  "version": "0.1.0-snapshot.2",
+  "version": "0.1.0-snapshot.3",
   "description": "electron main process",
   "author": {
     "name": "MengLuoRJ",

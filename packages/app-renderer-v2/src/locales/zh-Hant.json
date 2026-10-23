@@ -309,5 +309,11 @@
   "weekly.count": "共 {count} 個因子",
   "weekly.noMatches": "沒有匹配的突變因子",
   "weekly.emptyCatalog": "暫無突變因子資料",
-  "weekly.score": "社區評分"
+  "weekly.score": "社區評分",
+  "weekly.serverLabel": "服務器",
+  "weekly.language": "資料語言",
+  "weekly.region.CN": "國服 CN",
+  "weekly.region.NA": "美服 NA",
+  "weekly.region.EU": "歐服 EU",
+  "weekly.region.AS": "亞服 AS"
 }

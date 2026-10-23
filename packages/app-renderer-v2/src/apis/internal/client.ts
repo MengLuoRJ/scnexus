@@ -52,6 +52,7 @@ export async function apiRequest<T>(
   auth?: ApiAuth,
   method: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET',
   body?: unknown,
+  params?: Record<string, string>,
 ): Promise<T> {
   // Only application-relative paths may receive a Bearer token; reject URL parser normalization tricks.
   if (!/^\/[A-Za-z0-9_/-]+$/.test(path) || path.includes('//') || path.includes('..'))
@@ -73,6 +74,7 @@ export async function apiRequest<T>(
       url: path,
       method,
       data: body,
+      ...(params ? { params } : {}),
       withCredentials: false,
       headers: snapshot?.accessToken ? { Authorization: `Bearer ${snapshot.accessToken}` } : {},
     }

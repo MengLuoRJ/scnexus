@@ -304,10 +304,16 @@
   "weekly.expiredHint": "当前安排已到期，请刷新获取最新资料。不会继续展示旧安排或自动外推。",
   "weekly.noSchedule": "暂无本周安排",
   "weekly.outsideValidity": "当前时间不在服务端安排的有效期内。",
-  "weekly.noScheduleHint": "服务端尚未提供当前国服安排，这不是网络故障。",
+  "weekly.noScheduleHint": "服务端尚未提供当前服务器安排，这不是网络故障。",
   "weekly.search": "搜索因子名称或描述",
   "weekly.count": "共 {count} 个因子",
   "weekly.noMatches": "没有匹配的突变因子",
   "weekly.emptyCatalog": "暂无突变因子资料",
-  "weekly.score": "社区评分"
+  "weekly.score": "社区评分",
+  "weekly.serverLabel": "服务器",
+  "weekly.language": "资料语言",
+  "weekly.region.CN": "国服 CN",
+  "weekly.region.NA": "美服 NA",
+  "weekly.region.EU": "欧服 EU",
+  "weekly.region.AS": "亚服 AS"
 }

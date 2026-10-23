@@ -304,10 +304,16 @@
   "weekly.expiredHint": "This schedule has ended. Refresh for current data; expired schedules are not extrapolated.",
   "weekly.noSchedule": "No weekly schedule",
   "weekly.outsideValidity": "The current time is outside the server schedule’s validity period.",
-  "weekly.noScheduleHint": "The server has no current CN schedule. This is not a network failure.",
+  "weekly.noScheduleHint": "The server has no current server schedule. This is not a network failure.",
   "weekly.search": "Search mutator names or descriptions",
   "weekly.count": "{count} mutators",
   "weekly.noMatches": "No matching mutators",
   "weekly.emptyCatalog": "No mutator data available",
-  "weekly.score": "Community score"
+  "weekly.score": "Community score",
+  "weekly.serverLabel": "Server",
+  "weekly.language": "Data language",
+  "weekly.region.CN": "China CN",
+  "weekly.region.NA": "Americas NA",
+  "weekly.region.EU": "Europe EU",
+  "weekly.region.AS": "Asia AS"
 }

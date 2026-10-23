@@ -1,6 +1,8 @@
 import snapshot from '../../assets/mutators/weekly-data-default.json'
 import type {
   MutationMap,
+  MutationRegion,
+  MutationLanguage,
   Mutator,
   MutatorCatalog,
   WeeklyMutation,
@@ -14,13 +16,16 @@ type LocalSnapshot = {
     mutators: Mutator[]
     mutations: (MutationMap & { mapId: string; mutatorIds: string[] })[]
     schedules: {
-      region: string
-      anchorAt: string
-      anchorIndex: number
+      startIndex: number
+      intervalDays: number
       rotation: string[]
-      validFrom: string
-      validUntil: string | null
-      verifiedAt: string | null
+      regions: {
+        region: string
+        start: string
+        validFrom?: string
+        validUntil?: string | null
+        verifiedAt: string | null
+      }[]
     }[]
     overrides: {
       region: string
@@ -32,20 +37,30 @@ type LocalSnapshot = {
   }
 }
 const WEEK_MS = 7 * 86400000
-export function localMutatorCatalog(): MutatorCatalog {
-  return { revision: snapshot.revision, items: snapshot.catalog.mutators }
+export function localize<T extends MutationMap>(item: T, language: MutationLanguage): T {
+  return { ...item, language, displayName: item.name[language] || item.name.enUS || item.name.zhCN }
+}
+export function localMutatorCatalog(language: MutationLanguage = 'zhCN'): MutatorCatalog {
+  return {
+    revision: snapshot.revision,
+    language,
+    items: snapshot.catalog.mutators.map((item) => localize(item, language)),
+  }
 }
 export function localWeeklyMutation(
   now = Date.now(),
   data: LocalSnapshot = snapshot,
+  region: MutationRegion = 'CN',
+  language: MutationLanguage = 'zhCN',
 ): WeeklyMutation {
   const base = {
-    region: 'CN' as const,
+    region,
+    language,
     revision: data.revision,
     updatedAt: data.updatedAt,
     asOf: new Date(now).toISOString(),
   }
-  const overrides = data.catalog.overrides.filter((item) => item.region === 'CN')
+  const overrides = data.catalog.overrides.filter((item) => item.region === region)
   const override = overrides.find(
     (item) => Date.parse(item.startsAt) <= now && now < Date.parse(item.endsAt),
   )
@@ -59,31 +74,27 @@ export function localWeeklyMutation(
     endsAt = Date.parse(override.endsAt)
     lastVerifiedAt = override.verifiedAt
   } else {
-    const schedule = data.catalog.schedules.find((item) => item.region === 'CN')
-    if (!schedule) return { ...base, available: false, reason: 'NO_SCHEDULE' }
-    if (
-      now < Date.parse(schedule.validFrom) ||
-      (schedule.validUntil !== null && now >= Date.parse(schedule.validUntil))
+    const schedule = data.catalog.schedules.find((item) =>
+      item.regions.some((entry) => entry.region === region),
     )
+    const entry = schedule?.regions.find((item) => item.region === region)
+    if (!schedule || !entry) return { ...base, available: false, reason: 'NO_SCHEDULE' }
+    const validFrom = Date.parse(entry.validFrom ?? entry.start)
+    const validUntil = entry.validUntil == null ? Infinity : Date.parse(entry.validUntil)
+    if (now < validFrom || now >= validUntil)
       return { ...base, available: false, reason: 'OUTSIDE_VALIDITY' }
-    const week = Math.floor((now - Date.parse(schedule.anchorAt)) / WEEK_MS)
+    const week = Math.floor((now - Date.parse(entry.start)) / WEEK_MS)
     const index =
-      (((schedule.anchorIndex + week) % schedule.rotation.length) + schedule.rotation.length) %
+      (((schedule.startIndex + week) % schedule.rotation.length) + schedule.rotation.length) %
       schedule.rotation.length
     mutationId = schedule.rotation[index]!
-    startsAt = Math.max(
-      Date.parse(schedule.anchorAt) + week * WEEK_MS,
-      Date.parse(schedule.validFrom),
-    )
-    endsAt = Math.min(
-      Date.parse(schedule.anchorAt) + (week + 1) * WEEK_MS,
-      schedule.validUntil === null ? Infinity : Date.parse(schedule.validUntil),
-    )
+    startsAt = Math.max(Date.parse(entry.start) + week * WEEK_MS, validFrom)
+    endsAt = Math.min(Date.parse(entry.start) + (week + 1) * WEEK_MS, validUntil)
     for (const item of overrides) {
       if (Date.parse(item.startsAt) > now) endsAt = Math.min(endsAt, Date.parse(item.startsAt))
       if (Date.parse(item.endsAt) <= now) startsAt = Math.max(startsAt, Date.parse(item.endsAt))
     }
-    lastVerifiedAt = schedule.verifiedAt
+    lastVerifiedAt = entry.verifiedAt
   }
   const mutation = data.catalog.mutations.find((item) => item.id === mutationId)
   const map = data.catalog.maps.find((item) => item.id === mutation?.mapId)
@@ -99,6 +110,10 @@ export function localWeeklyMutation(
     startsAt: new Date(startsAt).toISOString(),
     endsAt: new Date(endsAt).toISOString(),
     lastVerifiedAt,
-    mutation: { ...mutation, map, mutators: mutators as Mutator[] },
+    mutation: {
+      ...localize(mutation, language),
+      map: localize(map, language),
+      mutators: (mutators as Mutator[]).map((item) => localize(item, language)),
+    },
   }
 }

@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
-import type { MutationName } from '../../apis/weekly-mutations'
+import { mutationRegions } from '../../apis/weekly-mutations'
+import type { MutationMap } from '../../apis/weekly-mutations'
 import { useWeeklyMutations } from './useWeeklyMutations'
 import MutatorIcon from './components/MutatorIcon.vue'
 defineOptions({ name: 'WeeklyMutationsView' })
@@ -11,6 +12,8 @@ const toast = useToast()
 const tab = ref('weekly')
 const search = ref('')
 const {
+  region,
+  language,
   weekly,
   catalog,
   current,
@@ -28,15 +31,25 @@ const tabs = computed(() => [
   { label: t('weekly.current'), value: 'weekly' },
   { label: t('weekly.mutators'), value: 'mutators' },
 ])
-function name(value: MutationName) {
-  return locale.value === 'en' ? value.enUS || value.zhCN : value.zhCN
+watch(
+  locale,
+  (value) => {
+    language.value = value === 'en' ? 'enUS' : 'zhCN'
+  },
+  { immediate: true },
+)
+const regions = computed(() =>
+  mutationRegions.map((value) => ({ value, label: t(`weekly.region.${value}`) })),
+)
+function name(value: MutationMap) {
+  return value.displayName || value.name[language.value] || value.name.enUS || value.name.zhCN
 }
 const factors = computed(() => {
   const query = search.value.trim().toLocaleLowerCase()
   return (catalog.value?.items ?? []).filter(
     (item) =>
       !query ||
-      [item.name.zhCN, item.name.enUS ?? '', item.description].some((value) =>
+      [...Object.values(item.name), item.description].some((value) =>
         value.toLocaleLowerCase().includes(query),
       ),
   )
@@ -45,7 +58,7 @@ function date(value: string) {
   return new Intl.DateTimeFormat(
     locale.value === 'en' ? 'en-US' : locale.value === 'zh-Hant' ? 'zh-TW' : 'zh-CN',
     {
-      timeZone: 'Asia/Shanghai',
+      timeZoneName: 'short',
       month: '2-digit',
       day: '2-digit',
       year: 'numeric',
@@ -59,7 +72,18 @@ function date(value: string) {
 <template>
   <section class="mutation-theme min-w-0 space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <UTabs v-model="tab" :items="tabs" :content="false" size="sm" />
+      <div class="flex min-w-0 items-center gap-3">
+        <UTabs v-model="tab" :items="tabs" :content="false" size="sm" />
+        <UTabs
+          v-if="tab === 'weekly'"
+          v-model="region"
+          :items="regions"
+          :content="false"
+          size="sm"
+          class="w-fit"
+          :aria-label="t('weekly.serverLabel')"
+        />
+      </div>
       <UButton
         size="sm"
         color="neutral"
@@ -85,7 +109,7 @@ function date(value: string) {
         <div class="mutation-brief space-y-2 rounded-lg border p-4">
           <div class="flex items-center gap-2">
             <h2 class="min-w-0 break-words text-lg font-semibold">
-              {{ name(current.mutation.name) }}
+              {{ name(current.mutation) }}
             </h2>
             <UBadge
               class="shrink-0"
@@ -94,9 +118,9 @@ function date(value: string) {
               >{{ t(`weekly.${current.dataStatus}`) }}</UBadge
             >
           </div>
-          <p class="text-sm">{{ t('weekly.map') }}：{{ name(current.mutation.map.name) }}</p>
+          <p class="text-sm">{{ t('weekly.map') }}：{{ name(current.mutation.map) }}</p>
           <p class="text-xs text-muted">
-            {{ date(current.startsAt) }} — {{ date(current.endsAt) }} · {{ t('weekly.beijing') }}
+            {{ date(current.startsAt) }} — {{ date(current.endsAt) }}
           </p>
           <p v-if="current.mutation.description" class="whitespace-pre-wrap break-words text-sm">
             {{ current.mutation.description }}
@@ -117,7 +141,7 @@ function date(value: string) {
           >
             <MutatorIcon :id="factor.id" />
             <div class="min-w-0 space-y-1">
-              <h4 class="break-words font-medium text-primary">{{ name(factor.name) }}</h4>
+              <h4 class="break-words font-medium text-primary">{{ name(factor) }}</h4>
               <p class="whitespace-pre-wrap break-words text-sm text-muted">
                 {{ factor.description }}
               </p>
@@ -178,7 +202,7 @@ function date(value: string) {
         >
           <MutatorIcon :id="factor.id" />
           <div class="min-w-0 space-y-1">
-            <h3 class="break-words font-medium text-primary">{{ name(factor.name) }}</h3>
+            <h3 class="break-words font-medium text-primary">{{ name(factor) }}</h3>
             <p v-if="factor.name.enUS && locale !== 'en'" class="break-words text-xs text-muted">
               {{ factor.name.enUS }}
             </p>

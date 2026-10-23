@@ -1,9 +1,18 @@
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { apiMutatorCatalog, apiWeeklyMutation } from '../../apis/weekly-mutations'
-import type { MutatorCatalog, WeeklyMutation } from '../../apis/weekly-mutations'
+import type {
+  MutationRegion,
+  MutationLanguage,
+  MutatorCatalog,
+  WeeklyMutation,
+} from '../../apis/weekly-mutations'
 import { localMutatorCatalog, localWeeklyMutation } from './local-data'
 
 export function useWeeklyMutations(onFailure: () => void) {
+  const region = ref<MutationRegion>('CN')
+  const language = ref<MutationLanguage>('zhCN')
+  let weeklyGeneration = 0
+  let catalogGeneration = 0
   const weekly = ref<WeeklyMutation | null>(null)
   const catalog = ref<MutatorCatalog | null>(null)
   const weeklyLoading = ref(false)
@@ -22,22 +31,30 @@ export function useWeeklyMutations(onFailure: () => void) {
     if (!expired.value) timer = setTimeout(checkExpiry, Math.min(remaining, 2147483647))
   }
   async function loadWeekly() {
-    if (weeklyLoading.value || disposed) return
+    if (disposed) return
+    const generation = ++weeklyGeneration
+    const selectedRegion = region.value
+    const selectedLanguage = language.value
     weeklyLoading.value = true
     weeklyError.value = false
     clearTimeout(timer)
     weekly.value = null
     expired.value = false
     try {
-      const result = await apiWeeklyMutation()
-      if (!disposed) {
+      const result = await apiWeeklyMutation(selectedRegion, selectedLanguage)
+      if (!disposed && generation === weeklyGeneration) {
         weekly.value = result
         checkExpiry()
       }
     } catch {
-      if (!disposed) {
+      if (!disposed && generation === weeklyGeneration) {
         try {
-          weekly.value = localWeeklyMutation()
+          weekly.value = localWeeklyMutation(
+            Date.now(),
+            undefined,
+            selectedRegion,
+            selectedLanguage,
+          )
           checkExpiry()
         } catch {
           weeklyError.value = true
@@ -45,27 +62,36 @@ export function useWeeklyMutations(onFailure: () => void) {
         }
       }
     } finally {
-      if (!disposed) weeklyLoading.value = false
+      if (!disposed && generation === weeklyGeneration) weeklyLoading.value = false
     }
   }
   async function loadCatalog() {
-    if (catalogLoading.value || disposed) return
+    if (disposed) return
+    const generation = ++catalogGeneration
+    const selectedLanguage = language.value
     catalogLoading.value = true
     catalogError.value = false
     try {
-      const result = await apiMutatorCatalog()
-      if (!disposed) catalog.value = result
+      const result = await apiMutatorCatalog(selectedLanguage)
+      if (!disposed && generation === catalogGeneration) catalog.value = result
     } catch {
-      if (!disposed) {
-        catalog.value = localMutatorCatalog()
+      if (!disposed && generation === catalogGeneration) {
+        catalog.value = localMutatorCatalog(selectedLanguage)
       }
     } finally {
-      if (!disposed) catalogLoading.value = false
+      if (!disposed && generation === catalogGeneration) catalogLoading.value = false
     }
   }
   function onVisible() {
     if (document.visibilityState === 'visible') checkExpiry()
   }
+  watch(region, () => {
+    void loadWeekly()
+  })
+  watch(language, () => {
+    void loadWeekly()
+    void loadCatalog()
+  })
   onMounted(() => {
     void loadWeekly()
     void loadCatalog()
@@ -77,6 +103,8 @@ export function useWeeklyMutations(onFailure: () => void) {
     document.removeEventListener('visibilitychange', onVisible)
   })
   return {
+    region,
+    language,
     weekly,
     catalog,
     current,

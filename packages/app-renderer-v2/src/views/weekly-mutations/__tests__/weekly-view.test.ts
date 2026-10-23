@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
 }))
 vi.mock('../../../apis/weekly-mutations', () => ({
+  mutationRegions: ['CN', 'NA', 'EU', 'AS'],
+  mutationLanguages: ['zhCN', 'enUS', 'ruRU', 'koKR', 'frFR', 'deDE'],
   apiWeeklyMutation: mocks.weekly,
   apiMutatorCatalog: mocks.catalog,
 }))
@@ -35,13 +37,13 @@ afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
   vi.resetAllMocks()
 })
-function render() {
+function render(locale = 'zh') {
   const wrapper = mount(View, {
     global: {
       plugins: [
         createI18n({
           legacy: false,
-          locale: 'zh',
+          locale,
           flatJson: true,
           messages: { zh },
         }) as unknown as Plugin,
@@ -85,6 +87,17 @@ test('renders projected status and plain text, then searches catalog in Chinese 
   const wrapper = render()
   await flushPromises()
   expect(wrapper.text()).toContain('轮换推算')
+  const expectedStart = new Intl.DateTimeFormat('zh-CN', {
+    timeZoneName: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date('2099-01-01T00:00:00Z'))
+  expect(wrapper.text()).toContain(expectedStart)
+  expect(wrapper.text()).not.toContain('北京时间')
   expect(wrapper.text()).not.toContain('不代表本周已逐项人工核验')
   expect(wrapper.find('article b').exists()).toBe(false)
   expect(wrapper.text()).not.toContain('最近核验')
@@ -107,3 +120,31 @@ test.each(['NO_SCHEDULE', 'OUTSIDE_VALIDITY'])(
     expect(mocks.toast).not.toHaveBeenCalled()
   },
 )
+
+test('server switcher requests selected region without a language selector', async () => {
+  mocks.weekly.mockResolvedValue({ available: false, reason: 'NO_SCHEDULE' })
+  mocks.catalog.mockResolvedValue({ revision: 1, items: [] })
+  const wrapper = render()
+  await flushPromises()
+  const regionTabs = wrapper.findAllComponents(tabs)[1]!
+  await regionTabs.findAll('button')[2]!.trigger('click')
+  await flushPromises()
+  expect(mocks.weekly).toHaveBeenLastCalledWith('EU', 'zhCN')
+  expect(wrapper.find('select').exists()).toBe(false)
+  expect(wrapper.find('[aria-label="资料语言"]').exists()).toBe(false)
+  await wrapper.findAllComponents(tabs)[0]!.findAll('button')[1]!.trigger('click')
+  expect(wrapper.findAllComponents(tabs)).toHaveLength(1)
+  await wrapper.findAllComponents(tabs)[0]!.findAll('button')[0]!.trigger('click')
+  expect(wrapper.findAllComponents(tabs)[1]!.props('modelValue')).toBe('EU')
+})
+test.each([
+  ['en', 'enUS'],
+  ['zh-Hant', 'zhCN'],
+])('data language follows application locale %s', async (locale, expected) => {
+  mocks.weekly.mockResolvedValue({ available: false, reason: 'NO_SCHEDULE' })
+  mocks.catalog.mockResolvedValue({ revision: 1, items: [] })
+  render(locale)
+  await flushPromises()
+  expect(mocks.weekly).toHaveBeenLastCalledWith('CN', expected)
+  expect(mocks.catalog).toHaveBeenLastCalledWith(expected)
+})

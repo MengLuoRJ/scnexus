@@ -1,10 +1,21 @@
 import { apiRequest } from './internal/client'
 
-export type MutationName = { zhCN: string; enUS?: string }
-export type MutationMap = { id: string; name: MutationName; description?: string }
+export const mutationRegions = ['CN', 'NA', 'EU', 'AS'] as const
+export const mutationLanguages = ['zhCN', 'enUS', 'ruRU', 'koKR', 'frFR', 'deDE'] as const
+export type MutationRegion = (typeof mutationRegions)[number]
+export type MutationLanguage = (typeof mutationLanguages)[number]
+export type MutationName = { zhCN: string } & Partial<Record<MutationLanguage, string>>
+export type MutationMap = {
+  id: string
+  name: MutationName
+  displayName?: string
+  language?: MutationLanguage
+  description?: string
+}
 export type Mutator = MutationMap & { description: string; communityScore?: number }
 export type WeeklyMutation = {
-  region: 'CN'
+  region: MutationRegion
+  language?: MutationLanguage
   revision: number
   updatedAt: string
   asOf: string
@@ -19,7 +30,7 @@ export type WeeklyMutation = {
       mutation: MutationMap & { map: MutationMap; mutators: Mutator[] }
     }
 )
-export type MutatorCatalog = { revision: number; items: Mutator[] }
+export type MutatorCatalog = { revision: number; language?: MutationLanguage; items: Mutator[] }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('Invalid response')
@@ -47,10 +58,14 @@ function entry(value: unknown): MutationMap {
   const names = object(item.name)
   const zhCN = text(names.zhCN, 120)
   if (!zhCN.trim()) throw new Error('Invalid name')
-  const enUS = names.enUS === undefined ? undefined : text(names.enUS, 120)
+  const name: MutationName = { zhCN }
+  for (const key of mutationLanguages)
+    if (names[key] !== undefined) name[key] = text(names[key], 120)
   return {
     id,
-    name: { zhCN, ...(enUS ? { enUS } : {}) },
+    name,
+    ...(item.displayName === undefined ? {} : { displayName: text(item.displayName, 120) }),
+    ...(item.language === undefined ? {} : { language: language(item.language) }),
     ...(item.description === undefined ? {} : { description: text(item.description) }),
   }
 }
@@ -74,11 +89,24 @@ function items(value: unknown, max: number): Mutator[] {
   if (new Set(result.map((item) => item.id)).size !== result.length) throw new Error('Duplicate ID')
   return result
 }
-function weekly(value: unknown): WeeklyMutation {
+function language(value: unknown): MutationLanguage {
+  if (!mutationLanguages.includes(value as MutationLanguage)) throw new Error('Invalid language')
+  return value as MutationLanguage
+}
+function weekly(
+  value: unknown,
+  region: MutationRegion,
+  selectedLanguage: MutationLanguage,
+): WeeklyMutation {
   const data = object(value)
-  if (data.region !== 'CN') throw new Error('Invalid region')
+  if (
+    data.region !== region ||
+    (data.language !== undefined && language(data.language) !== selectedLanguage)
+  )
+    throw new Error('Invalid region')
   const base = {
-    region: 'CN' as const,
+    region,
+    ...(data.language === undefined ? {} : { language: language(data.language) }),
     revision: revision(data.revision),
     updatedAt: timestamp(data.updatedAt),
     asOf: timestamp(data.asOf),
@@ -112,9 +140,39 @@ function weekly(value: unknown): WeeklyMutation {
     mutation: { ...entry(mutation), map: entry(mutation.map), mutators: factors },
   }
 }
-export const apiWeeklyMutation = () => apiRequest('/sc2/coop/weekly-mutations/current', weekly)
-export const apiMutatorCatalog = () =>
-  apiRequest('/sc2/coop/mutators', (value): MutatorCatalog => {
-    const data = object(value)
-    return { revision: revision(data.revision), items: items(data.items, 200) }
-  })
+export const apiWeeklyMutation = (
+  region: MutationRegion = 'CN',
+  selectedLanguage: MutationLanguage = 'zhCN',
+) => {
+  if (!mutationRegions.includes(region) || !mutationLanguages.includes(selectedLanguage))
+    return Promise.reject(new Error('Invalid selection'))
+  return apiRequest(
+    '/sc2/coop/weekly-mutations/current',
+    (value) => weekly(value, region, selectedLanguage),
+    undefined,
+    'GET',
+    undefined,
+    { region, language: selectedLanguage },
+  )
+}
+export const apiMutatorCatalog = (selectedLanguage: MutationLanguage = 'zhCN') => {
+  if (!mutationLanguages.includes(selectedLanguage))
+    return Promise.reject(new Error('Invalid selection'))
+  return apiRequest(
+    '/sc2/coop/mutators',
+    (value): MutatorCatalog => {
+      const data = object(value)
+      if (data.language !== undefined && language(data.language) !== selectedLanguage)
+        throw new Error('Invalid language')
+      return {
+        revision: revision(data.revision),
+        ...(data.language === undefined ? {} : { language: language(data.language) }),
+        items: items(data.items, 200),
+      }
+    },
+    undefined,
+    'GET',
+    undefined,
+    { language: selectedLanguage },
+  )
+}

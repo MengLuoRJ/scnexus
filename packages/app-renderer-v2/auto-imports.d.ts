@@ -205,6 +205,8 @@ declare global {
   const isRef: typeof import('vue').isRef
   const isShallow: typeof import('vue').isShallow
   const markRaw: typeof import('vue').markRaw
+  const mutationLanguages: typeof import('./src/apis/weekly-mutations').mutationLanguages
+  const mutationRegions: typeof import('./src/apis/weekly-mutations').mutationRegions
   const nextTick: typeof import('vue').nextTick
   const onActivated: typeof import('vue').onActivated
   const onBeforeMount: typeof import('vue').onBeforeMount
@@ -283,7 +285,7 @@ declare global {
   export type { Experience } from './src/apis/personal-center'
   import('./src/apis/personal-center')
   // @ts-ignore
-  export type { MutationName, MutationMap, Mutator, WeeklyMutation, MutatorCatalog } from './src/apis/weekly-mutations'
+  export type { MutationRegion, MutationLanguage, MutationName, MutationMap, Mutator, WeeklyMutation, MutatorCatalog } from './src/apis/weekly-mutations'
   import('./src/apis/weekly-mutations')
 }
 
@@ -411,6 +413,8 @@ declare module 'vue' {
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
+    readonly mutationLanguages: UnwrapRef<typeof import('./src/apis/weekly-mutations')['mutationLanguages']>
+    readonly mutationRegions: UnwrapRef<typeof import('./src/apis/weekly-mutations')['mutationRegions']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>

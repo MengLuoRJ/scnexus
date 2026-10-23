@@ -87,3 +87,25 @@ test('late results after unmount do not update state or show a toast', async () 
   expect(state.weekly.value).toBeNull()
   expect(failure).not.toHaveBeenCalled()
 })
+
+test('late previous-server response does not replace a newly selected server', async () => {
+  let resolve!: (value: unknown) => void
+  mocks.weekly.mockImplementationOnce(
+    () =>
+      new Promise((yes) => {
+        resolve = yes
+      }),
+  )
+  const { state } = setup()
+  state.region.value = 'NA'
+  mocks.weekly.mockResolvedValueOnce({ ...weekly, region: 'NA' })
+  await flushPromises()
+  expect(mocks.weekly).toHaveBeenLastCalledWith('NA', 'zhCN')
+  resolve({ ...weekly, region: 'CN' })
+  await flushPromises()
+  expect(state.weekly.value).toMatchObject({ region: 'NA' })
+  state.language.value = 'koKR'
+  await flushPromises()
+  expect(mocks.weekly).toHaveBeenLastCalledWith('NA', 'koKR')
+  expect(mocks.catalog).toHaveBeenLastCalledWith('koKR')
+})

@@ -168,3 +168,15 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 本机只读联调成功：当前返回“光炫神迷 / 机会渺茫”、3 个本周因子和 69 个目录因子。后端后续移除本周响应 `source` 字段，客户端已停止要求及保留该字段，兼容旧响应多余字段但不显示、不访问其 URL；对应回归覆盖无 `source` 的成功返回。因子卡片同排等高（Grid stretch），高度由本行最长说明决定，不裁切文字。1000×700 浏览器验收，两列各 402px，无横向溢出；中文搜索“激光”返回 1 项。开发来源使用后端已允许的 `http://localhost:5173`；其他临时端口未被 CORS 允许，不通过放宽安全配置绕过。生产 API 与打包环境仍需部署后独立验收；本轮未修改后端。
 
 验收命令：`pnpm run typecheck:renderer` 通过；`pnpm run test:renderer` 29 文件 279 项通过（新增突变相关 20 项）；`pnpm run build:renderer` 通过；`pnpm exec oxlint -c .oxlintrc.json packages\app-renderer-v2` 通过；新增及修改的业务文件 ESLint 通过。
+
+## 2026-10-24 共享轮换、多服务器及资料语言
+
+以服务端 `docs/sc2-mutations.md` 的“共享轮换与多服务器”最新规则为准，替代前文 CN-only 回退描述。
+
+- 页面支持 CN/NA/EU/AS，默认 CN；资料语言支持 zhCN/enUS/ruRU/koKR/frFR/deDE，底层支持六种资料语言，页面不提供独立语言选择，自动跟随设置的有效界面语言：en→enUS，zh/zh-Hant→zhCN（后端无zhTW）。公开 current 请求传 region/language，mutators 传 language；无认证头和 Cookie，不改变固定 API origin。
+- 保留多语言 name，优先使用服务端 displayName；本地回退遵循请求语言→enUS→zhCN。描述维持服务端原文，不宣称已翻译。服务器使用分段切换器，仅影响当前页面；资料语言随设置自动同步，不单独持久化。
+- 本地 weekly-data-default 的共享 schedules 使用 startIndex/regions；每地区从 start 按固定七天推进，起点前不可用，遵守可选 validFrom/validUntil。覆盖仅影响同 region，且截断推算区间；不按地区名称猜测 DST。界面时间跟随用户操作系统的本地时区，起止与核验时间附带各自时区缩写/偏移（支持跨夏令时区间），区间仍来自所选服务器，不改变时间戳或轮换计算。
+- 切换地区/语言会重新获取；各加载任务带递增版本，迟到成功和失败均不得替换新选择或触发旧回退。每个请求仍后端优先，只有失败才使用当前所选地区/语言的本地数据，成功的暂无安排不回退。
+- 本轮只接入既有本周与因子功能的新版契约，不增加管理发布入口或将轮换目录当成本周安排。
+
+验证：`pnpm run test:renderer` 31 文件 293 项通过；`pnpm run typecheck:renderer`、`pnpm run build:renderer`、renderer Oxlint 与修改文件 ESLint 通过。本地公开 EU/deDE 请求成功返回对应 displayName；1000×700 页面两列各402px同高，无横向溢出。未修改后端或用户提交的默认JSON，未执行生产环境联调。

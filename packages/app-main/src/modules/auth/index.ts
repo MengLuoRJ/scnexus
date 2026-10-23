@@ -1,4 +1,5 @@
-import { app, BrowserWindow, safeStorage, type IpcMainInvokeEvent } from 'electron'
+import { BrowserWindow, safeStorage, type IpcMainInvokeEvent } from 'electron'
+import { getApplicationDataDirectory } from '../../utils/application-data'
 import { join } from 'node:path'
 import { settingRepository } from '../../stores/setting'
 import { ipcHandleRegister, ipcHandleRemove } from '../../utils/ipc-util'
@@ -34,7 +35,7 @@ const methods = [
 export function initAuthModule(): void {
   if (service) return
   const instance = createAuthService({
-    storage: createAuthStorage(join(app.getPath('userData'), 'auth'), safeStorage),
+    storage: createAuthStorage(join(getApplicationDataDirectory(), 'auth'), safeStorage),
     transport: createAuthTransport(),
     getClientId: () => settingRepository.getSnapshot().clientId,
     changed(snapshot) {

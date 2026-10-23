@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { getApplicationDataDirectory } from '../utils/application-data'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { createElectronBackend } from './store-electron-backend'
 import { settingRepository, configureSettingDefaults } from './setting'
@@ -23,7 +24,7 @@ export async function initGameStore(reload = false): Promise<void> {
   const { app } = await import('electron')
   if (!app.isReady()) throw new AppError(ERRORS.APP_INITIALIZATION_FAILED)
   configureGameDefaults(app.getPath('documents'))
-  const directory = join(app.getPath('userData'), 'SCNexusStorage')
+  const directory = join(getApplicationDataDirectory(), 'SCNexusStorage')
   const backend = await createElectronBackend('store-scii-game-setting', directory)
   if (reload) sciiGameSettingRepository.reload(backend)
   else sciiGameSettingRepository.init(backend)
@@ -32,7 +33,7 @@ export async function initGameStore(reload = false): Promise<void> {
 export async function initContentStores(): Promise<void> {
   const { app } = await import('electron')
   if (!app.isReady()) throw new AppError(ERRORS.APP_INITIALIZATION_FAILED)
-  const directory = join(app.getPath('userData'), 'SCNexusStorage')
+  const directory = join(getApplicationDataDirectory(), 'SCNexusStorage')
   for (const [name, repository] of [
     ['store-campaign', campaignRepository],
     ['store-campaign-active', campaignActiveRepository],
@@ -48,7 +49,7 @@ async function initialize(): Promise<void> {
     throw new AppError(ERRORS.APP_INITIALIZATION_FAILED, {
       message: 'Stores require app readiness',
     })
-  const directory = join(app.getPath('userData'), 'SCNexusStorage')
+  const directory = join(getApplicationDataDirectory(), 'SCNexusStorage')
   configureSettingDefaults(app.getPath('downloads'))
   configureGameDefaults(app.getPath('documents'))
   const oldProfile = join(directory, 'store-profile.json')

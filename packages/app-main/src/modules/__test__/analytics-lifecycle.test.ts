@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   logout: vi.fn<() => Promise<void>>(async () => {}),
   dispose: vi.fn<() => void>(),
 }))
+vi.mock('../../utils/application-data', () => ({
+  getApplicationDataDirectory: () => 'test-application-data',
+}))
 vi.mock('electron', () => ({
   app: { getPath: () => 'test-user-data' },
   net: { isOnline: () => mocks.online },

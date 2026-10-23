@@ -143,7 +143,8 @@ store-schema.ts 仅提供版本、字符串、时间戳等通用 schema 片段�
 - 目标升级到 electron-store v11；它是原生 ESM，要求 Electron 30+，与 Electron 44 的目标范围匹配。
 - 仅 main 创建 Store。即使库支持 renderer 使用，也不启用 Store.initRenderer，不向 preload/renderer 暴露存储能力。
 - 在明确的启动阶段创建实例，不在模块 import 时读路径、建目录或写文件。
-- 保持用户数据目录下的 SCNexusStorage；旧文件在迁移成功前保留。
+- 应用自有数据根目录为 `app.getPath('home')/.scnexus`（Windows 为 `%USERPROFILE%\.scnexus`），包含 `SCNexusStorage`、`auth`、`analytics`。启动时在任何业务存储初始化前，将旧 Electron `userData` 下这三个目录复制至同级暂存目录，成功后整体重命名提交；保留旧目录，不迁移游戏文件或下载文件。新根目录已存在时以其为准，不合并、不重新导入旧凭据；清空数据或退出账号后不会从旧目录复活。迁移失败阻止本次业务初始化，清理暂存并允许下次重试，不以空设置覆盖旧数据；拒绝迁移中的符号链接和非普通文件。不要预先手工创建空的新根目录。
+- 不修改 Electron `userData`、`sessionData`、缓存、Local Storage、日志、崩溃数据及 safeStorage 操作系统密钥的位置。认证密文迁移后仍使用同一 Electron 加密环境；仅复制 `.scnexus` 到其他用户或机器不保证可解密。
 - Store 的单文件原子写入不意味着多文件事务，也不意味着游戏文件与配置事务。
 
 ### 数据组织

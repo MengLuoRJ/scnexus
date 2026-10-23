@@ -1,4 +1,5 @@
-import { app, net } from 'electron'
+import { net } from 'electron'
+import { getApplicationDataDirectory } from '../utils/application-data'
 import { join } from 'node:path'
 import type { AuthSnapshot } from '@scnexus/app-shared/types/auth.type'
 import { settingRepository } from '../stores/setting'
@@ -25,7 +26,7 @@ export function startAnalytics(snapshot: AuthSnapshot | null): void {
   if (service) return
   try {
     service = createAnalyticsService({
-      storage: createAnalyticsStorage(join(app.getPath('userData'), 'analytics')),
+      storage: createAnalyticsStorage(join(getApplicationDataDirectory(), 'analytics')),
       transport: createAnalyticsTransport(),
       getClientId: () => settingRepository.getSnapshot().clientId,
     })

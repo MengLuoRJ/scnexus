@@ -1,3 +1,5 @@
+import { app } from 'electron'
+import { initializeApplicationData } from '../utils/application-data'
 import { initAllStores, initContentStores } from '../stores'
 import { settingRepository } from '../stores/setting'
 import { onGameConfigured } from './scii-game-setting'
@@ -22,6 +24,7 @@ import { reportError } from './logging'
 
 const cleanup: (() => void)[] = []
 export async function initModules() {
+  initializeApplicationData(app.getPath('home'), app.getPath('userData'))
   setBeforeUpdateInstall(disposeModules)
   let contentStarted = false
   onGameConfigured(async () => {

@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => ({
     throw new Error('no network')
   }),
 }))
+vi.mock('../../../utils/application-data', () => ({
+  getApplicationDataDirectory: () => 'unused-app-data',
+}))
 vi.mock('electron', () => ({
   app: { getPath: () => 'unused' },
   BrowserWindow: { getAllWindows: mocks.windows },

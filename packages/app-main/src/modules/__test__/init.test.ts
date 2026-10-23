@@ -1,5 +1,6 @@
 import { test, expect, vi } from 'vitest'
 const mock = vi.hoisted(() => ({
+  data: vi.fn<(home: string, legacy: string) => void>(),
   configured: undefined as undefined | (() => Promise<void>),
   stores: vi.fn<() => Promise<void>>(async () => {}),
   content: vi.fn<typeof import('../content-package').initContentPackageModule>(),
@@ -7,6 +8,8 @@ const mock = vi.hoisted(() => ({
   customize: vi.fn<typeof import('../customize').initCustomizeModule>(),
   setting: vi.fn<typeof import('../setting').initSettingModule>(),
 }))
+vi.mock('electron', () => ({ app: { getPath: (name: string) => `test-${name}` } }))
+vi.mock('../../utils/application-data', () => ({ initializeApplicationData: mock.data }))
 vi.mock('../../stores', () => ({
   initAllStores: async () => {
     throw new Error('store failure')
@@ -68,6 +71,7 @@ vi.mock('../logging', () => ({ reportError: (error: unknown) => error }))
 import { initModules } from '../init'
 test('store failures defer content; later successful game initialization starts modules once', async () => {
   expect(await initModules()).toHaveLength(2)
+  expect(mock.data).toHaveBeenCalledWith('test-home', 'test-userData')
   expect(mock.setting).not.toHaveBeenCalled()
   expect(mock.content).not.toHaveBeenCalled()
   mock.stores.mockRejectedValueOnce(new Error('content store'))
@@ -78,4 +82,14 @@ test('store failures defer content; later successful game initialization starts 
   expect(mock.content).toHaveBeenCalledOnce()
   expect(mock.campaign).toHaveBeenCalledOnce()
   expect(mock.customize).toHaveBeenCalledOnce()
+})
+test('a migration failure prevents business initialization instead of using empty stores', async () => {
+  vi.clearAllMocks()
+  mock.data.mockImplementationOnce(() => {
+    throw new Error('migration failed')
+  })
+  await expect(initModules()).rejects.toThrow('migration failed')
+  expect(mock.stores).not.toHaveBeenCalled()
+  expect(mock.content).not.toHaveBeenCalled()
+  expect(mock.setting).not.toHaveBeenCalled()
 })

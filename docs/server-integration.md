@@ -155,3 +155,16 @@ Zod 依赖声明于 renderer-v2，仅用于用户交互输入：登录、注册�
 测试使用模拟传输/存储/时钟，覆盖30秒周期、开关、离线恢复、退避、Retry-After、过期/失效凭证、认证更新和旧设置迁移。未向真实后端自动写统计，不宣称已验收生产统计快照或持续前台在线口径。后端文件只读。
 
 验收记录（2026-10-23）：`pnpm --filter @scnexus/app-main test --maxWorkers=1` 39文件353项通过；renderer-v2全量26文件258项通过；`pnpm run typecheck`、`pnpm run lint:oxlint`、修改文件ESLint、`pnpm run build`通过；`pnpm run test:build` 19项通过。未执行真实统计写请求及生产在线快照验收。
+
+## 2026-10-23 每周突变与突变因子
+
+renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axios 客户端直连公开只读接口，不需要登录、不附带 Access 或 Cookie，不新增 IPC 或持久化。
+
+- `GET /sc2/coop/weekly-mutations/current`：省略 region 按后端约定默认 CN。展示主题、展开地图、本周因子及北京时间区间；区分 `projected` 轮换推算与 `verified` 已核验，`lastVerifiedAt: null` 不显示核验时间。
+- `GET /sc2/coop/mutators`：展示全部目录，支持中文名、英文名和描述搜索。社区评分仅在存在且非负时显示，`-1` 不当作实际评分；不将 `iconName` 当远程图片 URL；按因子 `id` 从 `src/assets/mutators/{id}.png` 通过 Vite glob URL 映射加载，静态导入 `Ui_coop_ingame_mutatorframe.webp` 外框并叠加，生产资源路径由构建器生成，不再拼接 public URL。图标缺失时显示占位，装饰图片不重复朗读名称。页面采用局部突变绿主题，不影响其他模块，保持 1000×700 双列布局。
+- `available: false` 的 `NO_SCHEDULE` 和 `OUTSIDE_VALIDITY` 是成功的空状态，不报网络故障。有效期为 `[startsAt, endsAt)`；到期或恢复可见时检查到期状态，停止展示旧安排，由用户刷新，不将过期响应直接外推、不循环重试。
+- 响应通过普通 TypeScript 校验，仅保留显示字段；描述以纯文本渲染，不使用 HTML。两个接口独立加载，各自以后端成功响应优先；请求失败（含无效响应）时使用随包的 `src/assets/mutators/weekly-data-default.json` 回退，不弹出网络失败提示。后端成功返回不可用或空目录时不回退。本周回退按本地快照的 CN 周历锚点、有效范围及覆盖记录计算，覆盖优先，区间同样为半开区间；不把任意第一条当作本周。手动刷新仍先请求后端。移除轮换推算说明句，保留状态标记。页面卸载后迟到结果不更新页面或提示。
+
+本机只读联调成功：当前返回“光炫神迷 / 机会渺茫”、3 个本周因子和 69 个目录因子。后端后续移除本周响应 `source` 字段，客户端已停止要求及保留该字段，兼容旧响应多余字段但不显示、不访问其 URL；对应回归覆盖无 `source` 的成功返回。因子卡片同排等高（Grid stretch），高度由本行最长说明决定，不裁切文字。1000×700 浏览器验收，两列各 402px，无横向溢出；中文搜索“激光”返回 1 项。开发来源使用后端已允许的 `http://localhost:5173`；其他临时端口未被 CORS 允许，不通过放宽安全配置绕过。生产 API 与打包环境仍需部署后独立验收；本轮未修改后端。
+
+验收命令：`pnpm run typecheck:renderer` 通过；`pnpm run test:renderer` 29 文件 279 项通过（新增突变相关 20 项）；`pnpm run build:renderer` 通过；`pnpm exec oxlint -c .oxlintrc.json packages\app-renderer-v2` 通过；新增及修改的业务文件 ESLint 通过。

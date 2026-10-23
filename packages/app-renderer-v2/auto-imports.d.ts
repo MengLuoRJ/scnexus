@@ -53,6 +53,7 @@ declare global {
   const apiLoggingGetConfig: typeof import('./src/ipcs/logging').apiLoggingGetConfig
   const apiLoggingSetLevel: typeof import('./src/ipcs/logging').apiLoggingSetLevel
   const apiLoggingWrite: typeof import('./src/ipcs/logging').apiLoggingWrite
+  const apiMutatorCatalog: typeof import('./src/apis/weekly-mutations').apiMutatorCatalog
   const apiRegistrationPolicy: typeof import('./src/apis/account').apiRegistrationPolicy
   const apiRequest: typeof import('./src/apis/client').apiRequest
   const apiSettingGetKey: typeof import('./src/ipcs/setting').apiSettingGetKey
@@ -83,6 +84,7 @@ declare global {
   const apiUserExperience: typeof import('./src/apis/personal-center').apiUserExperience
   const apiUserMe: typeof import('./src/apis/account').apiUserMe
   const apiUserNickname: typeof import('./src/apis/personal-center').apiUserNickname
+  const apiWeeklyMutation: typeof import('./src/apis/weekly-mutations').apiWeeklyMutation
   const apiWindowClose: typeof import('./src/ipcs/window').apiWindowClose
   const apiWindowGetStatus: typeof import('./src/ipcs/window').apiWindowGetStatus
   const apiWindowMinimize: typeof import('./src/ipcs/window').apiWindowMinimize
@@ -280,6 +282,9 @@ declare global {
   // @ts-ignore
   export type { Experience } from './src/apis/personal-center'
   import('./src/apis/personal-center')
+  // @ts-ignore
+  export type { MutationName, MutationMap, Mutator, WeeklyMutation, MutatorCatalog } from './src/apis/weekly-mutations'
+  import('./src/apis/weekly-mutations')
 }
 
 // for vue template auto import
@@ -290,12 +295,14 @@ declare module 'vue' {
     readonly AccountError: UnwrapRef<typeof import('./src/apis/index')['AccountError']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly accountErrorKey: UnwrapRef<typeof import('./src/apis/index')['accountErrorKey']>
+    readonly apiMutatorCatalog: UnwrapRef<typeof import('./src/apis/weekly-mutations')['apiMutatorCatalog']>
     readonly apiRegistrationPolicy: UnwrapRef<typeof import('./src/apis/account')['apiRegistrationPolicy']>
     readonly apiUserAuthorization: UnwrapRef<typeof import('./src/apis/account')['apiUserAuthorization']>
     readonly apiUserCheckIn: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserCheckIn']>
     readonly apiUserExperience: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserExperience']>
     readonly apiUserMe: UnwrapRef<typeof import('./src/apis/account')['apiUserMe']>
     readonly apiUserNickname: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserNickname']>
+    readonly apiWeeklyMutation: UnwrapRef<typeof import('./src/apis/weekly-mutations')['apiWeeklyMutation']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>

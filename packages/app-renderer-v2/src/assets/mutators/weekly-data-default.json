@@ -1,0 +1,4865 @@
+{
+  "revision": 0,
+  "updatedAt": "2026-10-20T04:10:54Z",
+  "catalog": {
+    "schemaVersion": 1,
+    "maps": [
+      {
+        "id": "oblivion-express",
+        "name": {
+          "zhCN": "湮灭快车",
+          "enUS": "Oblivion Express",
+          "ruRU": "Oblivion Express",
+          "koKR": "Oblivion Express",
+          "frFR": "Oblivion Express",
+          "deDE": "Oblivion Express"
+        }
+      },
+      {
+        "id": "lock-and-load",
+        "name": {
+          "zhCN": "天界封锁",
+          "enUS": "Lock & Load",
+          "ruRU": "Lock & Load",
+          "koKR": "Lock & Load",
+          "frFR": "Lock & Load",
+          "deDE": "Lock & Load"
+        }
+      },
+      {
+        "id": "temple-of-the-past",
+        "name": {
+          "zhCN": "往日神庙",
+          "enUS": "Temple of the Past",
+          "ruRU": "Temple of the Past",
+          "koKR": "Temple of the Past",
+          "frFR": "Temple of the Past",
+          "deDE": "Temple of the Past"
+        }
+      },
+      {
+        "id": "void-thrashing",
+        "name": {
+          "zhCN": "虚空撕裂",
+          "enUS": "Void Thrashing",
+          "ruRU": "Void Thrashing",
+          "koKR": "Void Thrashing",
+          "frFR": "Void Thrashing",
+          "deDE": "Void Thrashing"
+        }
+      },
+      {
+        "id": "void-launch",
+        "name": {
+          "zhCN": "虚空降临",
+          "enUS": "Void Launch",
+          "ruRU": "Void Launch",
+          "koKR": "Void Launch",
+          "frFR": "Void Launch",
+          "deDE": "Void Launch"
+        }
+      },
+      {
+        "id": "chain-of-ascension",
+        "name": {
+          "zhCN": "升格之链",
+          "enUS": "Chain of Ascension",
+          "ruRU": "Chain of Ascension",
+          "koKR": "Chain of Ascension",
+          "frFR": "Chain of Ascension",
+          "deDE": "Chain of Ascension"
+        }
+      },
+      {
+        "id": "rifts-to-korhal",
+        "name": {
+          "zhCN": "克哈裂痕",
+          "enUS": "Rifts to Korhal",
+          "ruRU": "Rifts to Korhal",
+          "koKR": "Rifts to Korhal",
+          "frFR": "Rifts to Korhal",
+          "deDE": "Rifts to Korhal"
+        }
+      },
+      {
+        "id": "map-e30c71c3d37c",
+        "name": {
+          "zhCN": "熔火危机",
+          "enUS": "The Vermillion Problem",
+          "ruRU": "The Vermillion Problem",
+          "koKR": "The Vermillion Problem",
+          "frFR": "The Vermillion Problem",
+          "deDE": "The Vermillion Problem"
+        }
+      },
+      {
+        "id": "map-942b4d7d18ba",
+        "name": {
+          "zhCN": "机会渺茫",
+          "enUS": "Mist Opportunities",
+          "ruRU": "Mist Opportunities",
+          "koKR": "Mist Opportunities",
+          "frFR": "Mist Opportunities",
+          "deDE": "Mist Opportunities"
+        }
+      },
+      {
+        "id": "map-f11bf0e27aab",
+        "name": {
+          "zhCN": "营救矿工",
+          "enUS": "Miner Evacuation",
+          "ruRU": "Miner Evacuation",
+          "koKR": "Miner Evacuation",
+          "frFR": "Miner Evacuation",
+          "deDE": "Miner Evacuation"
+        }
+      },
+      {
+        "id": "map-00072c95164a",
+        "name": {
+          "zhCN": "亡者之夜",
+          "enUS": "Dead of Night",
+          "ruRU": "Dead of Night",
+          "koKR": "Dead of Night",
+          "frFR": "Dead of Night",
+          "deDE": "Dead of Night"
+        }
+      },
+      {
+        "id": "map-420ba96ed84c",
+        "name": {
+          "zhCN": "黑暗杀星",
+          "enUS": "Scythe of Amon",
+          "ruRU": "Scythe of Amon",
+          "koKR": "Scythe of Amon",
+          "frFR": "Scythe of Amon",
+          "deDE": "Scythe of Amon"
+        }
+      },
+      {
+        "id": "map-77fa060614f3",
+        "name": {
+          "zhCN": "净网行动",
+          "enUS": "Malwarfare",
+          "ruRU": "Malwarfare",
+          "koKR": "Malwarfare",
+          "frFR": "Malwarfare",
+          "deDE": "Malwarfare"
+        }
+      },
+      {
+        "id": "map-63c69c9ba4f3",
+        "name": {
+          "zhCN": "聚铁成兵",
+          "enUS": "Part and Parcel",
+          "ruRU": "Part and Parcel",
+          "koKR": "Part and Parcel",
+          "frFR": "Part and Parcel",
+          "deDE": "Part and Parcel"
+        }
+      },
+      {
+        "id": "map-933478d4ebff",
+        "name": {
+          "zhCN": "死亡摇篮",
+          "enUS": "Cradle of Death",
+          "ruRU": "Cradle of Death",
+          "koKR": "Cradle of Death",
+          "frFR": "Cradle of Death",
+          "deDE": "Cradle of Death"
+        }
+      }
+    ],
+    "mutators": [
+      {
+        "id": "random",
+        "sourceId": "Random",
+        "name": {
+          "zhCN": "随机",
+          "enUS": "Random",
+          "ruRU": "Случайный",
+          "koKR": "무작위",
+          "frFR": "Aléatoire",
+          "deDE": "Zufall"
+        },
+        "description": "激活一个尚未在该游戏中被选择的突变因子。",
+        "communityScore": -1,
+        "iconName": "random"
+      },
+      {
+        "id": "walking-infested",
+        "sourceId": "WalkingInfested",
+        "name": {
+          "zhCN": "行尸走肉",
+          "enUS": "Walking Infested",
+          "ruRU": "Ходячие зараженцы",
+          "koKR": "감염자의 행진",
+          "frFR": "Contaminés-vivants",
+          "deDE": "Zombieapokalypse"
+        },
+        "description": "敌方单位在死亡时生成大量的被感染的人类，具体数量由死亡单位的生命值决定。",
+        "communityScore": 2,
+        "iconName": "walking-infested"
+      },
+      {
+        "id": "outbreak",
+        "sourceId": "InfestedTerranSpawner",
+        "name": {
+          "zhCN": "丧尸大战",
+          "enUS": "Outbreak",
+          "ruRU": "Эпидемия",
+          "koKR": "재앙",
+          "frFR": "Infestation",
+          "deDE": "Epidemie"
+        },
+        "description": "敌方被感染的人类会不断地出现在地图上。",
+        "communityScore": 3,
+        "iconName": "outbreak"
+      },
+      {
+        "id": "darkness",
+        "sourceId": "BlackFog",
+        "name": {
+          "zhCN": "暗无天日",
+          "enUS": "Darkness",
+          "ruRU": "Мрак",
+          "koKR": "암흑",
+          "frFR": "Ténèbres",
+          "deDE": "Finsternis"
+        },
+        "description": "先前探索过的区域若离开了玩家的视野范围将会重新变成一片黑色。",
+        "communityScore": 2,
+        "iconName": "darkness"
+      },
+      {
+        "id": "time-warp",
+        "sourceId": "TimeWarp",
+        "name": {
+          "zhCN": "时间扭曲",
+          "enUS": "Time Warp",
+          "ruRU": "Искривление времени",
+          "koKR": "시간 왜곡",
+          "frFR": "Distorsion temporelle",
+          "deDE": "Zeitkrümmung"
+        },
+        "description": "地图上会周期性地部署敌人的时间扭曲。",
+        "communityScore": 1,
+        "iconName": "time-warp"
+      },
+      {
+        "id": "speed-freaks",
+        "sourceId": "UnitSpeed",
+        "name": {
+          "zhCN": "速度狂魔",
+          "enUS": "Speed Freaks",
+          "ruRU": "Бешеная скорость",
+          "koKR": "속도광",
+          "frFR": "Fous de vitesse",
+          "deDE": "Vollgas"
+        },
+        "description": "敌方单位移动速度提高。",
+        "communityScore": 2,
+        "iconName": "speed-freaks"
+      },
+      {
+        "id": "mag-nificent",
+        "sourceId": "Magnificent",
+        "name": {
+          "zhCN": "强磁雷场",
+          "enUS": "Mag-nificent",
+          "ruRU": "Ми-ми-мины",
+          "koKR": "죽이는 자기",
+          "frFR": "Magnéti-fique",
+          "deDE": "Minenräumung"
+        },
+        "description": "麦格天雷会在任务一开始布满整个地图。",
+        "communityScore": 4,
+        "iconName": "mag-nificent"
+      },
+      {
+        "id": "mineral-shields",
+        "sourceId": "Entomb",
+        "name": {
+          "zhCN": "晶矿护盾",
+          "enUS": "Mineral Shields",
+          "ruRU": "Минеральные щиты",
+          "koKR": "광물 보호막",
+          "frFR": "Cloches à minerai",
+          "deDE": "Mineralienschilde"
+        },
+        "description": "玩家基地中的晶体矿簇会被周期性包覆一层护盾，必须将其摧毁才能继续采集资源。",
+        "communityScore": 2,
+        "iconName": "mineral-shields"
+      },
+      {
+        "id": "barrier",
+        "sourceId": "Barrier",
+        "name": {
+          "zhCN": "减伤屏障",
+          "enUS": "Barrier",
+          "ruRU": "Барьер",
+          "koKR": "방어막",
+          "frFR": "Barrière",
+          "deDE": "Barriere"
+        },
+        "description": "敌方单位和建筑在第一次受到伤害时会获得一个临时护盾。",
+        "communityScore": 2,
+        "iconName": "barrier"
+      },
+      {
+        "id": "avenger",
+        "sourceId": "Avenger",
+        "name": {
+          "zhCN": "复仇战士",
+          "enUS": "Avenger",
+          "ruRU": "Мститель",
+          "koKR": "복수자",
+          "frFR": "Vengeur",
+          "deDE": "Vergeltung"
+        },
+        "description": "当附近的敌方单位死亡时，敌方单位的攻击速度、移动速度、护甲、生命值以及生命回复速度提高。",
+        "communityScore": 5,
+        "iconName": "avenger"
+      },
+      {
+        "id": "evasive-maneuvers",
+        "sourceId": "SideStep",
+        "name": {
+          "zhCN": "闪避机动",
+          "enUS": "Evasive Maneuvers",
+          "ruRU": "Маневры уклонения",
+          "koKR": "회피 기동",
+          "frFR": "Manœuvres d’évasion",
+          "deDE": "Ausweichmanöver"
+        },
+        "description": "敌方单位受到伤害时将传送一小段距离。",
+        "communityScore": 1,
+        "iconName": "evasive-maneuvers"
+      },
+      {
+        "id": "scorched-earth",
+        "sourceId": "FireFight",
+        "name": {
+          "zhCN": "焦土政策",
+          "enUS": "Scorched Earth",
+          "ruRU": "Выжженная земля",
+          "koKR": "불타는 대지",
+          "frFR": "Terre brûlée",
+          "deDE": "Verbrannte Erde"
+        },
+        "description": "敌方单位死亡时会点燃地面。",
+        "communityScore": 2,
+        "iconName": "scorched-earth"
+      },
+      {
+        "id": "lava-burst",
+        "sourceId": "LavaBurst",
+        "name": {
+          "zhCN": "岩浆爆发",
+          "enUS": "Lava Burst",
+          "ruRU": "Выброс лавы",
+          "koKR": "용암 폭발",
+          "frFR": "Explosion de lave",
+          "deDE": "Lavaeruption"
+        },
+        "description": "岩浆会周期性地在随机位置从地下喷发，并对玩家的空中和地面单位造成伤害。",
+        "communityScore": 3,
+        "iconName": "lava-burst"
+      },
+      {
+        "id": "self-destruction",
+        "sourceId": "DeathAOE",
+        "name": {
+          "zhCN": "自毁程序",
+          "enUS": "Self Destruction",
+          "ruRU": "Самоуничтожение",
+          "koKR": "자폭",
+          "frFR": "Autodestruction",
+          "deDE": "Selbstzerstörung"
+        },
+        "description": "敌方单位死亡时发生爆炸，并对附近的玩家单位造成伤害。",
+        "communityScore": 3,
+        "iconName": "self-destruction"
+      },
+      {
+        "id": "aggressive-deployment",
+        "sourceId": "DropPods",
+        "name": {
+          "zhCN": "进攻部署",
+          "enUS": "Aggressive Deployment",
+          "ruRU": "Агрессивная поддержка",
+          "koKR": "공격적 배치",
+          "frFR": "Déploiement agressif",
+          "deDE": "Luftlandetruppen"
+        },
+        "description": "周期性地将额外的敌方单位部署到战场上。",
+        "communityScore": 3,
+        "iconName": "aggressive-deployment"
+      },
+      {
+        "id": "alien-incubation",
+        "sourceId": "SpawnBroodlings",
+        "name": {
+          "zhCN": "异形寄生",
+          "enUS": "Alien Incubation",
+          "ruRU": "Инопланетная инкубация",
+          "koKR": "에일리언 부화",
+          "frFR": "Incubation de vermine",
+          "deDE": "Abschiedsgeschenk"
+        },
+        "description": "所有敌方单位在死亡时会孵化巢虫。",
+        "communityScore": 2,
+        "iconName": "alien-incubation"
+      },
+      {
+        "id": "laser-drill",
+        "sourceId": "LaserDrill",
+        "name": {
+          "zhCN": "激光钻机",
+          "enUS": "Laser Drill",
+          "ruRU": "Лазерная установка",
+          "koKR": "레이저 천공기",
+          "frFR": "Foreuse laser",
+          "deDE": "Laserbohrer"
+        },
+        "description": "一台敌方激光钻机会不停地攻击位于敌人视野范围内的玩家单位。",
+        "communityScore": 2,
+        "iconName": "laser-drill"
+      },
+      {
+        "id": "long-range",
+        "sourceId": "LongRange",
+        "name": {
+          "zhCN": "超远视距",
+          "enUS": "Long Range",
+          "ruRU": "Увеличенная дальность",
+          "koKR": "원거리",
+          "frFR": "Longue portée",
+          "deDE": "Adlerauge"
+        },
+        "description": "敌方单位和建筑的武器射程与视野范围提高。",
+        "communityScore": 2,
+        "iconName": "long-range"
+      },
+      {
+        "id": "shortsighted",
+        "sourceId": "ReducedVision",
+        "name": {
+          "zhCN": "短视症",
+          "enUS": "Shortsighted",
+          "ruRU": "Малый обзор",
+          "koKR": "근시안",
+          "frFR": "Myopie",
+          "deDE": "Kurzsichtig"
+        },
+        "description": "玩家单位及其建筑的视野范围缩短。",
+        "communityScore": 1,
+        "iconName": "shortsighted"
+      },
+      {
+        "id": "mutually-assured-destruction",
+        "sourceId": "HybridNuke",
+        "name": {
+          "zhCN": "相互摧毁",
+          "enUS": "Mutually Assured Destruction",
+          "ruRU": "Взаимное гарантированное уничтожение",
+          "koKR": "상호 파괴 보장",
+          "frFR": "Détruisez-vous les uns les autres",
+          "deDE": "Nukleare Abschreckung"
+        },
+        "description": "敌方混合体死亡时会引爆一发核弹。",
+        "communityScore": 5,
+        "iconName": "mutually-assured-destruction"
+      },
+      {
+        "id": "we-move-unseen",
+        "sourceId": "AllEnemiesCloaked",
+        "name": {
+          "zhCN": "来去无踪",
+          "enUS": "We Move Unseen",
+          "ruRU": "Мы – крадущиеся тени",
+          "koKR": "아무도 모르게",
+          "frFR": "Nous avançons en secret",
+          "deDE": "Wir bleiben im Verborgenen"
+        },
+        "description": "所有敌方单位永久隐形。",
+        "communityScore": 3,
+        "iconName": "we-move-unseen"
+      },
+      {
+        "id": "nap-time",
+        "sourceId": "LazyWorkers",
+        "name": {
+          "zhCN": "上班偷睡",
+          "enUS": "Nap Time",
+          "ruRU": "Тихий час",
+          "koKR": "낮잠 시간",
+          "frFR": "Sieste",
+          "deDE": "Nickerchen"
+        },
+        "description": "玩家的工人单位会周期性地陷入沉睡，必须使用命令面板上的“苏醒”技能才能将其唤醒。",
+        "communityScore": -1,
+        "iconName": "nap-time"
+      },
+      {
+        "id": "slim-pickings",
+        "sourceId": "NoResources",
+        "name": {
+          "zhCN": "小捞油水",
+          "enUS": "Slim Pickings",
+          "ruRU": "Низкая добыча",
+          "koKR": "허리띠 졸라 매고",
+          "frFR": "Dépôts sauvages",
+          "deDE": "Magere Ausbeute"
+        },
+        "description": "玩家的工人单位采集资源的效率降低，但是地图上会生成可以拾取的资源。",
+        "communityScore": 5,
+        "iconName": "slim-pickings"
+      },
+      {
+        "id": "concussive-attacks",
+        "sourceId": "ConcussiveAttacks",
+        "name": {
+          "zhCN": "震荡攻击",
+          "enUS": "Concussive Attacks",
+          "ruRU": "Контузящие атаки",
+          "koKR": "충격 요법",
+          "frFR": "Attaques incapacitantes",
+          "deDE": "Schockangriff"
+        },
+        "description": "玩家单位会被所有敌方攻击减速。",
+        "communityScore": 1,
+        "iconName": "concussive-attacks"
+      },
+      {
+        "id": "stone-zealots",
+        "sourceId": "StoneZealots",
+        "name": {
+          "zhCN": "石像狂热者",
+          "enUS": "Stone Zealots",
+          "ruRU": "Каменные зилоты",
+          "koKR": "광전사 석상",
+          "frFR": "Zélotes de pierre",
+          "deDE": "Stein-Berserker"
+        },
+        "description": "敌人已部署石像狂热者。",
+        "communityScore": -1,
+        "iconName": "stone-zealots"
+      },
+      {
+        "id": "just-die",
+        "sourceId": "JustDie",
+        "name": {
+          "zhCN": "给我死吧！",
+          "enUS": "Just Die",
+          "ruRU": "Почему они не умирают?",
+          "koKR": "좀 죽어!",
+          "frFR": "Mais crevez !",
+          "deDE": "Sie leben!"
+        },
+        "description": "敌方单位死亡后会自动复活。",
+        "communityScore": 7,
+        "iconName": "just-die"
+      },
+      {
+        "id": "temporal-field",
+        "sourceId": "TemporalField",
+        "name": {
+          "zhCN": "时空力场",
+          "enUS": "Temporal Field",
+          "ruRU": "Темпоральное поле",
+          "koKR": "감속장",
+          "frFR": "Champ temporel",
+          "deDE": "Temporale Felder"
+        },
+        "description": "地图上会周期性地部署敌人的时空力场。",
+        "communityScore": 1,
+        "iconName": "temporal-field"
+      },
+      {
+        "id": "void-rifts",
+        "sourceId": "VoidRifts",
+        "name": {
+          "zhCN": "虚空裂隙",
+          "enUS": "Void Rifts",
+          "ruRU": "Разломы Пустоты",
+          "koKR": "공허 균열",
+          "frFR": "Failles du Vide",
+          "deDE": "Leerenspalte"
+        },
+        "description": "虚空裂隙周期性地出现在随机位置，并会不断地生成敌方单位，直至其被摧毁。",
+        "communityScore": 10,
+        "iconName": "void-rifts"
+      },
+      {
+        "id": "twister",
+        "sourceId": "Tornadoes",
+        "name": {
+          "zhCN": "龙卷风暴",
+          "enUS": "Twister",
+          "ruRU": "Смерч",
+          "koKR": "회오리바람",
+          "frFR": "Tornade",
+          "deDE": "Tornadowarnung"
+        },
+        "description": "多股龙卷风在地图上移动，对位于其行进路线上的玩家单位造成伤害并将其击退。",
+        "communityScore": 2,
+        "iconName": "twister"
+      },
+      {
+        "id": "orbital-strike",
+        "sourceId": "OrbitalStrike",
+        "name": {
+          "zhCN": "轨道轰炸",
+          "enUS": "Orbital Strike",
+          "ruRU": "Орбитальный удар",
+          "koKR": "궤도 폭격",
+          "frFR": "Frappe orbitale",
+          "deDE": "Orbitalschlag"
+        },
+        "description": "敌人会在地图上周期性地施放轨道轰炸。",
+        "communityScore": 1,
+        "iconName": "orbital-strike"
+      },
+      {
+        "id": "purifier-beam",
+        "sourceId": "PurifierBeam",
+        "name": {
+          "zhCN": "净化光束",
+          "enUS": "Purifier Beam",
+          "ruRU": "Луч воздаяния",
+          "koKR": "정화 광선",
+          "frFR": "Rayon purificateur",
+          "deDE": "Destruktorstrahl"
+        },
+        "description": "地图上会出现一道敌人的净化光束并朝附近的玩家单位移动。",
+        "communityScore": 2,
+        "iconName": "purifier-beam"
+      },
+      {
+        "id": "blizzard",
+        "sourceId": "Blizzard",
+        "name": {
+          "zhCN": "暴风雪",
+          "enUS": "Blizzard",
+          "ruRU": "Вьюга",
+          "koKR": "눈보라",
+          "frFR": "Blizzard",
+          "deDE": "Blizzard"
+        },
+        "description": "风暴雷云在地图上飘荡，对位于其行进路线上的玩家单位造成伤害并将其冻结。",
+        "communityScore": 4,
+        "iconName": "blizzard"
+      },
+      {
+        "id": "fear",
+        "sourceId": "Fear",
+        "name": {
+          "zhCN": "无边恐惧",
+          "enUS": "Fear",
+          "ruRU": "Страх",
+          "koKR": "공포",
+          "frFR": "Peur",
+          "deDE": "Furcht"
+        },
+        "description": "玩家的单位在受到伤害时会不时地停止攻击，并且害怕地到处乱跑。",
+        "communityScore": 3,
+        "iconName": "fear"
+      },
+      {
+        "id": "photon-overload",
+        "sourceId": "PhotonOverload",
+        "name": {
+          "zhCN": "光子过载",
+          "enUS": "Photon Overload",
+          "ruRU": "Фотонная перегрузка",
+          "koKR": "광자 과부하",
+          "frFR": "Surcharge photonique",
+          "deDE": "Photonenüberladung"
+        },
+        "description": "所有敌方建筑会攻击附近的敌对单位。",
+        "communityScore": 1,
+        "iconName": "photon-overload"
+      },
+      {
+        "id": "minesweeper",
+        "sourceId": "SpiderMines",
+        "name": {
+          "zhCN": "扫雷专家",
+          "enUS": "Minesweeper",
+          "ruRU": "Сапер",
+          "koKR": "지뢰청소부",
+          "frFR": "Démineurs",
+          "deDE": "Das reinste Minenfeld"
+        },
+        "description": "数量庞大的寡妇雷和蜘蛛雷遍布整个战场。",
+        "communityScore": 6,
+        "iconName": "minesweeper"
+      },
+      {
+        "id": "chaos-studios",
+        "sourceId": "CycleRandom",
+        "name": {
+          "zhCN": "混乱工作室",
+          "enUS": "Chaos Studios",
+          "ruRU": "Хаос продакшн",
+          "koKR": "혼돈의 도가니",
+          "frFR": "Studios Chaos",
+          "deDE": "Totales Chaos"
+        },
+        "description": "突变因子会随机选择，并且在任务中周期性轮换。",
+        "communityScore": 0,
+        "iconName": "chaos-studios"
+      },
+      {
+        "id": "void-reanimators",
+        "sourceId": "Reanimators",
+        "name": {
+          "zhCN": "虚空重生者",
+          "enUS": "Void Reanimators",
+          "ruRU": "Реаниматоры Пустоты",
+          "koKR": "공허 부활자",
+          "frFR": "Réanimateurs du Vide",
+          "deDE": "Leerenerwecker"
+        },
+        "description": "虚空重生者游荡在战场上，不断地复活你的敌人。",
+        "communityScore": 5,
+        "iconName": "void-reanimators"
+      },
+      {
+        "id": "going-nuclear",
+        "sourceId": "Nukes",
+        "name": {
+          "zhCN": "核弹打击",
+          "enUS": "Going Nuclear",
+          "ruRU": "Ядерная вечеринка",
+          "koKR": "핵전쟁",
+          "frFR": "Grosse artillerie",
+          "deDE": "Atomkrieg"
+        },
+        "description": "核弹会随机在整张地图上进行发射。",
+        "communityScore": 3,
+        "iconName": "going-nuclear"
+      },
+      {
+        "id": "life-leech",
+        "sourceId": "LifeLeech",
+        "name": {
+          "zhCN": "生命吸取",
+          "enUS": "Life Leech",
+          "ruRU": "Похищение здоровья",
+          "koKR": "생명력 착취",
+          "frFR": "Ponction",
+          "deDE": "Lebensentzug"
+        },
+        "description": "敌方单位和建筑在造成伤害时偷取生命值或护盾。",
+        "communityScore": 1,
+        "iconName": "life-leech"
+      },
+      {
+        "id": "power-overwhelming",
+        "sourceId": "OopsAllCasters",
+        "name": {
+          "zhCN": "灵能爆表",
+          "enUS": "Power Overwhelming",
+          "ruRU": "Переполняющая мощь",
+          "koKR": "압도적인 힘으로",
+          "frFR": "Déferlement de puissance",
+          "deDE": "Die Kraft ist überwältigend"
+        },
+        "description": "所有敌方单位拥有能量并且使用随机技能。",
+        "communityScore": 5,
+        "iconName": "power-overwhelming"
+      },
+      {
+        "id": "micro-transactions",
+        "sourceId": "OrderCosts",
+        "name": {
+          "zhCN": "拿钱说话",
+          "enUS": "Micro Transactions",
+          "ruRU": "Микротранзакции",
+          "koKR": "활동 비용",
+          "frFR": "Microtransactions",
+          "deDE": "Mikrotransaktionen"
+        },
+        "description": "对你的单位发出指令会消耗资源，数量取决于该单位的生产价格。",
+        "communityScore": 5,
+        "iconName": "micro-transactions"
+      },
+      {
+        "id": "missile-command",
+        "sourceId": "MissileBarrage",
+        "name": {
+          "zhCN": "飞弹大战",
+          "enUS": "Missile Command",
+          "ruRU": "Противоракетная оборона",
+          "koKR": "미사일 폭격",
+          "frFR": "Déluge de missiles",
+          "deDE": "Bombenhagel"
+        },
+        "description": "你的建筑会不停地遭受飞弹轰炸的袭击，你必须将它们击落。",
+        "communityScore": 3,
+        "iconName": "missile-command"
+      },
+      {
+        "id": "vertigo",
+        "sourceId": "Vertigo",
+        "name": {
+          "zhCN": "迷失方向",
+          "enUS": "Vertigo",
+          "ruRU": "Головокружение",
+          "koKR": "현기증",
+          "frFR": "Tournis",
+          "deDE": "Schwindelgefühle"
+        },
+        "description": "你的镜头会随机改变位置。",
+        "communityScore": 0,
+        "iconName": "vertigo"
+      },
+      {
+        "id": "undying-evil",
+        "sourceId": "UndyingEvil",
+        "name": {
+          "zhCN": "不死邪魔",
+          "enUS": "Undying Evil",
+          "ruRU": "Бессмертное зло",
+          "koKR": "죽지 않는 악",
+          "frFR": "Mal tenace",
+          "deDE": "Unsterbliches Übel"
+        },
+        "description": "有只怪物缠上你了，而且你杀它的次数越多，你下一次遇到的它越强大。",
+        "communityScore": -1,
+        "iconName": "undying-evil"
+      },
+      {
+        "id": "polarity",
+        "sourceId": "Polarity",
+        "name": {
+          "zhCN": "极性不定",
+          "enUS": "Polarity",
+          "ruRU": "Полярность",
+          "koKR": "극성",
+          "frFR": "Polarité",
+          "deDE": "Polarität"
+        },
+        "description": "每一个敌方单位不是对你的单位免疫，就是对你盟友的单位免疫。",
+        "communityScore": 7,
+        "iconName": "polarity"
+      },
+      {
+        "id": "transmutation",
+        "sourceId": "Evolve",
+        "name": {
+          "zhCN": "力量蜕变",
+          "enUS": "Transmutation",
+          "ruRU": "Трансформация",
+          "koKR": "변성",
+          "frFR": "Transmutation",
+          "deDE": "Transmutation"
+        },
+        "description": "敌方单位造成伤害时有一定几率变形成更强大的单位。",
+        "communityScore": 7,
+        "iconName": "transmutation"
+      },
+      {
+        "id": "afraid-of-the-dark",
+        "sourceId": "UberDarkness",
+        "name": {
+          "zhCN": "惧怕黑暗",
+          "enUS": "Afraid of the Dark",
+          "ruRU": "Боишься ли ты темноты?",
+          "koKR": "어둠의 공포",
+          "frFR": "Peur du noir",
+          "deDE": "Angst im Dunkeln"
+        },
+        "description": "通过各种方式提供的视野都会受到极大的限制，只有你镜头中的视野一切正常。",
+        "communityScore": 0,
+        "iconName": "afraid-of-the-dark"
+      },
+      {
+        "id": "trick-or-treat",
+        "sourceId": "TrickOrTreat",
+        "name": {
+          "zhCN": "不给糖果就捣蛋",
+          "enUS": "Trick or Treat",
+          "ruRU": "Конфета или жизнь",
+          "koKR": "즐거운 할로윈",
+          "frFR": "Un bonbon ou une farce",
+          "deDE": "Süßes oder Saures"
+        },
+        "description": "平民们会拜访你的糖果碗寻找零食，这些零食是通过花费晶体矿产生的。如果没有零食可以享用，平民们就会变身成随机的敌方单位。",
+        "communityScore": 0,
+        "iconName": "trick-or-treat"
+      },
+      {
+        "id": "turkey-shoot",
+        "sourceId": "FoodHunt",
+        "name": {
+          "zhCN": "捕杀火鸡",
+          "enUS": "Turkey Shoot",
+          "ruRU": "Отстрел индеек",
+          "koKR": "칠면조 사냥",
+          "frFR": "Dindocide",
+          "deDE": "Truthahnsafari"
+        },
+        "description": "补给只能通过击杀火鸡产生，它们在整个地图上漫游。这么做可能会激怒其它的火鸡。",
+        "communityScore": 0,
+        "iconName": "turkey-shoot"
+      },
+      {
+        "id": "sharing-is-caring",
+        "sourceId": "SharedSupply",
+        "name": {
+          "zhCN": "补给共享",
+          "enUS": "Sharing is Caring",
+          "ruRU": "Совместное пользование",
+          "koKR": "공유의 미덕",
+          "frFR": "Compte commun",
+          "deDE": "Futterneid"
+        },
+        "description": "你和你的搭档共享补给，双方的部队单位会占用你们共有的补给。",
+        "communityScore": 0,
+        "iconName": "sharing-is-caring"
+      },
+      {
+        "id": "diffusion",
+        "sourceId": "DamageBounce",
+        "name": {
+          "zhCN": "伤害散射",
+          "enUS": "Diffusion",
+          "ruRU": "Опасные амбиции",
+          "koKR": "위험한 야망",
+          "frFR": "Ambition dangereuse",
+          "deDE": "Gefährlicher Ehrgeiz"
+        },
+        "description": "对敌人造成的伤害将平摊给所有附近的单位，包括你的单位。",
+        "communityScore": 3,
+        "iconName": "diffusion"
+      },
+      {
+        "id": "black-death",
+        "sourceId": "Plague",
+        "name": {
+          "zhCN": "黑死病",
+          "enUS": "Black Death",
+          "ruRU": "Черная смерть",
+          "koKR": "흑사병",
+          "frFR": "Peste noire",
+          "deDE": "Schwarzer Tod"
+        },
+        "description": "一些敌方单位携带着一种疫病，不仅会持续造成伤害，还会传染给附近的其它单位。此类敌人被消灭时，他们会把这种疫病传染给你的单位。",
+        "communityScore": 7,
+        "iconName": "black-death"
+      },
+      {
+        "id": "eminent-domain",
+        "sourceId": "StructureSteal",
+        "name": {
+          "zhCN": "强行征用",
+          "enUS": "Eminent Domain",
+          "ruRU": "Прихватизация",
+          "koKR": "강제 수용권",
+          "frFR": "Expropriation",
+          "deDE": "Feindliche Übernahme"
+        },
+        "description": "敌人摧毁你的建筑后将获得建筑的控制权。",
+        "communityScore": 1,
+        "iconName": "eminent-domain"
+      },
+      {
+        "id": "gift-exchange",
+        "sourceId": "GiftFight",
+        "name": {
+          "zhCN": "礼尚往来",
+          "enUS": "Gift Exchange",
+          "ruRU": "Обмен подарками",
+          "koKR": "선물 교환",
+          "frFR": "Échange de cadeaux",
+          "deDE": "Wichteln"
+        },
+        "description": "地图上会周期性地放置一些礼物。你们不抢就会便宜了埃蒙哟！",
+        "communityScore": 0,
+        "iconName": "gift-exchange"
+      },
+      {
+        "id": "naughty-list",
+        "sourceId": "KillKarma",
+        "name": {
+          "zhCN": "杀生业报",
+          "enUS": "Naughty List",
+          "ruRU": "Список плохишей",
+          "koKR": "인과응보",
+          "frFR": "Un mal nécessaire",
+          "deDE": "Schlechtes Gewissen"
+        },
+        "description": "玩家的单位和建筑每消灭一个敌人，其所受到的伤害就会提高。",
+        "communityScore": 0,
+        "iconName": "naughty-list"
+      },
+      {
+        "id": "extreme-caution",
+        "sourceId": "AfraidOfTheDark",
+        "name": {
+          "zhCN": "极度谨慎",
+          "enUS": "Extreme Caution",
+          "ruRU": "Боязнь темноты",
+          "koKR": "과도한 경계",
+          "frFR": "Précautions extrêmes",
+          "deDE": "Übervorsichtig"
+        },
+        "description": "你的单位不会接受你在他们看不见的地方所下达的任何命令。",
+        "communityScore": -1,
+        "iconName": "extreme-caution"
+      },
+      {
+        "id": "insubordination",
+        "sourceId": "Insubordination",
+        "name": {
+          "zhCN": "刺头兵",
+          "enUS": "Insubordination",
+          "ruRU": "Неподчинение",
+          "koKR": "반항",
+          "frFR": "Insubordination",
+          "deDE": "Insubordination"
+        },
+        "description": "你的单位不会准确地执行命令。",
+        "communityScore": -1,
+        "iconName": "insubordination"
+      },
+      {
+        "id": "heroes-from-the-storm",
+        "sourceId": "HeroesFromTheStorm",
+        "name": {
+          "zhCN": "风暴英雄",
+          "enUS": "Heroes From the Storm",
+          "ruRU": "Герои Нексуса",
+          "koKR": "폭풍의 영웅들",
+          "frFR": "Héros de la tempête",
+          "deDE": "Helden des Sturms"
+        },
+        "description": "每一轮攻击波次都会由实力越来越强的英雄率领。",
+        "communityScore": 10,
+        "iconName": "heroes-from-the-storm"
+      },
+      {
+        "id": "inspiration",
+        "sourceId": "Inspiration",
+        "name": {
+          "zhCN": "鼓舞人心",
+          "enUS": "Inspiration",
+          "ruRU": "Воодушевление",
+          "koKR": "감화",
+          "frFR": "Inspiration",
+          "deDE": "Inspiration"
+        },
+        "description": "敌方英雄单位提高小范围内所有敌人的攻击速度和护甲。",
+        "communityScore": 2,
+        "iconName": "inspiration"
+      },
+      {
+        "id": "hardened-will",
+        "sourceId": "HardenedWill",
+        "name": {
+          "zhCN": "坚强意志",
+          "enUS": "Hardened Will",
+          "ruRU": "Боевая закалка",
+          "koKR": "굳건한 의지",
+          "frFR": "Volonté de fer",
+          "deDE": "Unbeugsamer Wille"
+        },
+        "description": "敌方英雄单位附近有任何非英雄敌方单位时，其所受到的伤害最高不超过10点。",
+        "communityScore": 2,
+        "iconName": "hardened-will"
+      },
+      {
+        "id": "fireworks",
+        "sourceId": "Fireworks",
+        "name": {
+          "zhCN": "焰火秀",
+          "enUS": "Fireworks",
+          "ruRU": "Фейерверки",
+          "koKR": "불꽃놀이",
+          "frFR": "Feu d’artifice",
+          "deDE": "Feuerwerk"
+        },
+        "description": "敌人死亡时会发射灿烂的烟花，对你周围的单位造成伤害。",
+        "communityScore": 0,
+        "iconName": "fireworks"
+      },
+      {
+        "id": "lucky-envelopes",
+        "sourceId": "RedEnvelopes",
+        "name": {
+          "zhCN": "幸运红包",
+          "enUS": "Lucky Envelopes",
+          "ruRU": "Красные конверты",
+          "koKR": "행운의 봉투",
+          "frFR": "Pochettes surprises",
+          "deDE": "Glücksumschläge"
+        },
+        "description": "塞满物资的节日红包，被随机丢弃在地图的各个角落。",
+        "communityScore": 0,
+        "iconName": "lucky-envelopes"
+      },
+      {
+        "id": "sluggishness",
+        "sourceId": "Sluggish",
+        "name": {
+          "zhCN": "消极战斗",
+          "enUS": "Sluggishness",
+          "ruRU": "Сила инерции",
+          "koKR": "둔화",
+          "frFR": "Biodégradation",
+          "deDE": "Trägheit"
+        },
+        "description": "你的单位先加速，然后再减速。",
+        "communityScore": -1,
+        "iconName": "sluggishness"
+      },
+      {
+        "id": "double-edged",
+        "sourceId": "DamageReflect",
+        "name": {
+          "zhCN": "双重压力",
+          "enUS": "Double Edged",
+          "ruRU": "Мгновенная карма",
+          "koKR": "양날의 검",
+          "frFR": "À double tranchant",
+          "deDE": "Zweischneidiges Schwert"
+        },
+        "description": "你的单位也会受到他们自身造成的所有伤害，但是会持续恢复。",
+        "communityScore": 3,
+        "iconName": "double-edged"
+      },
+      {
+        "id": "fatal-attraction",
+        "sourceId": "DeathPull",
+        "name": {
+          "zhCN": "致命勾引",
+          "enUS": "Fatal Attraction",
+          "ruRU": "Смертельное притяжение",
+          "koKR": "치명적 끌림",
+          "frFR": "Attraction fatale",
+          "deDE": "Fatale Anziehung"
+        },
+        "description": "敌方单位或建筑被摧毁后，你附近的任何单位将被牵拉至被它们的位置。",
+        "communityScore": 3,
+        "iconName": "fatal-attraction"
+      },
+      {
+        "id": "propagators",
+        "sourceId": "Propagate",
+        "name": {
+          "zhCN": "同化体",
+          "enUS": "Propagators",
+          "ruRU": "Распространители",
+          "koKR": "번식자",
+          "frFR": "Propagateurs",
+          "deDE": "Duplikatoren"
+        },
+        "description": "无形的软泥怪缓慢爬向你的基地，被其接触到的任何单位和建筑都将变成和它们一样的复制体。",
+        "communityScore": 8,
+        "iconName": "propagators"
+      },
+      {
+        "id": "moment-of-silence",
+        "sourceId": "MomentOfSilence",
+        "name": {
+          "zhCN": "默哀",
+          "enUS": "Moment of Silence",
+          "ruRU": "Минута молчания",
+          "koKR": "침묵의 순간",
+          "frFR": "Moment de silence",
+          "deDE": "Moment der Stille"
+        },
+        "description": "敌方英雄单位死亡时，在其周围的所有玩家单位都会反思自己的过错，无法攻击或使用技能。",
+        "communityScore": 2,
+        "iconName": "moment-of-silence"
+      },
+      {
+        "id": "kill-bots",
+        "sourceId": "KillBots",
+        "name": {
+          "zhCN": "杀戮机器人",
+          "enUS": "Kill Bots",
+          "ruRU": "Смертоботы",
+          "koKR": "처치 로봇",
+          "frFR": "Robots exterminateurs",
+          "deDE": "Killerbots"
+        },
+        "description": "来源不明的进攻性机器人已被释放到了科普卢星区，意图制造毁灭。经过用心险恶的工程改造后，它们在达到预先设定的击杀数量之前都是无敌的存在。只有在那之后，它们才能被阻止。不过，你能撑到最后吗？",
+        "communityScore": 6,
+        "iconName": "kill-bots"
+      },
+      {
+        "id": "boom-bots",
+        "sourceId": "BoomBots",
+        "name": {
+          "zhCN": "炸弹机器人",
+          "enUS": "Boom Bots",
+          "ruRU": "Взрыв-боты",
+          "koKR": "폭탄로봇",
+          "frFR": "Robots bombes",
+          "deDE": "Bummbots"
+        },
+        "description": "对一切都毫不在意的机器人携带着聚变弹头朝你的基地进发。一名玩家必须识别出拆弹的顺序，另一名玩家则必须正确输入才能解除危机。",
+        "communityScore": 10,
+        "iconName": "boom-bots"
+      }
+    ],
+    "mutations": [
+      {
+        "id": "train-of-the-dead",
+        "name": {
+          "zhCN": "亡者列车",
+          "enUS": "Train of the Dead",
+          "ruRU": "Поезд мертвецов",
+          "koKR": "망자의 열차",
+          "frFR": "Le train de la mort",
+          "deDE": "Zug der Toten"
+        },
+        "sourceId": "TrainOfTheDead",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "walking-infested",
+          "outbreak",
+          "darkness"
+        ]
+      },
+      {
+        "id": "time-lock",
+        "name": {
+          "zhCN": "时空枷锁",
+          "enUS": "Time Lock",
+          "ruRU": "Временное ограничение",
+          "koKR": "제한 시간",
+          "frFR": "Temps verrouillé",
+          "deDE": "Zeitschloss"
+        },
+        "sourceId": "TimeLock",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "mag-nificent",
+          "speed-freaks",
+          "time-warp"
+        ]
+      },
+      {
+        "id": "temple-of-pain",
+        "name": {
+          "zhCN": "痛苦神庙",
+          "enUS": "Temple of Pain",
+          "ruRU": "Храм боли",
+          "koKR": "고통의 사원",
+          "frFR": "Le temple de la douleur",
+          "deDE": "Tempel der Schmerzen"
+        },
+        "sourceId": "TempleOfPain",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "barrier",
+          "avenger",
+          "mineral-shields"
+        ]
+      },
+      {
+        "id": "war-is-hell",
+        "name": {
+          "zhCN": "战场炼狱",
+          "enUS": "War Is Hell",
+          "ruRU": "Адская война",
+          "koKR": "전쟁은 지옥",
+          "frFR": "L’enfer de la guerre",
+          "deDE": "Krieg ist die Hölle"
+        },
+        "sourceId": "WarIsHell",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "scorched-earth",
+          "evasive-maneuvers",
+          "lava-burst"
+        ]
+      },
+      {
+        "id": "special-delivery",
+        "name": {
+          "zhCN": "特别快递",
+          "enUS": "Special Delivery",
+          "ruRU": "Особая доставка",
+          "koKR": "특별 배달",
+          "frFR": "Livraison spéciale",
+          "deDE": "Kamikaze"
+        },
+        "sourceId": "ShuttleSurprise",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "alien-incubation",
+          "aggressive-deployment",
+          "self-destruction"
+        ]
+      },
+      {
+        "id": "first-strike",
+        "name": {
+          "zhCN": "先发制人",
+          "enUS": "First Strike",
+          "ruRU": "Первый удар",
+          "koKR": "선제공격",
+          "frFR": "Frappe initiale",
+          "deDE": "Erstschlag"
+        },
+        "sourceId": "FirstStrike",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "long-range",
+          "shortsighted",
+          "laser-drill"
+        ]
+      },
+      {
+        "id": "bad-weather",
+        "name": {
+          "zhCN": "恶劣天气",
+          "enUS": "Bad Weather",
+          "ruRU": "Плохая погода",
+          "koKR": "궂은 날씨",
+          "frFR": "Sale temps",
+          "deDE": "Höhere Gewalt"
+        },
+        "sourceId": "BadWeather",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "twister",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "spear-of-your-doom",
+        "name": {
+          "zhCN": "末日之矛",
+          "enUS": "Spear of Your Doom",
+          "ruRU": "Копье зла",
+          "koKR": "어둠의 창",
+          "frFR": "La lance de l’infortune",
+          "deDE": "Speer des Amon"
+        },
+        "sourceId": "EvilSoA",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "orbital-strike",
+          "temporal-field",
+          "purifier-beam"
+        ]
+      },
+      {
+        "id": "white-out",
+        "name": {
+          "zhCN": "雪茫危机",
+          "enUS": "Whiteout",
+          "ruRU": "Ослепление",
+          "koKR": "하얀 세상",
+          "frFR": "L’enfer blanc",
+          "deDE": "Eiszeit"
+        },
+        "sourceId": "WhiteOut",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "blizzard",
+          "slim-pickings"
+        ]
+      },
+      {
+        "id": "urban-warfare",
+        "name": {
+          "zhCN": "城市巷战",
+          "enUS": "Urban Warfare",
+          "ruRU": "Городские бои",
+          "koKR": "시가전",
+          "frFR": "Guérilla urbaine",
+          "deDE": "Häuserkampf"
+        },
+        "sourceId": "Urban Warfare",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "photon-overload",
+          "we-move-unseen",
+          "minesweeper"
+        ]
+      },
+      {
+        "id": "chaos-studios-1",
+        "name": {
+          "zhCN": "灾难之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Wheel of Misfortune",
+          "koKR": "Wheel of Misfortune",
+          "frFR": "Wheel of Misfortune",
+          "deDE": "Wheel of Misfortune"
+        },
+        "sourceId": "ChaosStudios1",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      },
+      {
+        "id": "perfect-storm",
+        "name": {
+          "zhCN": "完美风暴",
+          "enUS": "Perfect Storm",
+          "ruRU": "Идеальный штурм",
+          "koKR": "완벽한 폭풍",
+          "frFR": "La tempête ultime",
+          "deDE": "Der perfekte Sturm"
+        },
+        "sourceId": "PerfectStorm",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "blizzard",
+          "twister",
+          "shortsighted"
+        ]
+      },
+      {
+        "id": "pain-train",
+        "name": {
+          "zhCN": "全面核战",
+          "enUS": "Boom Town",
+          "ruRU": "Город-полигон",
+          "koKR": "도시 폭발",
+          "frFR": "Chaos nucléaire",
+          "deDE": "Bombenstimmung"
+        },
+        "sourceId": "Pain Train",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "going-nuclear",
+          "fear",
+          "self-destruction"
+        ]
+      },
+      {
+        "id": "vampires",
+        "name": {
+          "zhCN": "血魔入侵",
+          "enUS": "Castlepainia",
+          "ruRU": "Вампиромания",
+          "koKR": "피의 향연",
+          "frFR": "Castlepeinia",
+          "deDE": "Vampirismus"
+        },
+        "sourceId": "Vampires",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "life-leech",
+          "evasive-maneuvers",
+          "concussive-attacks"
+        ]
+      },
+      {
+        "id": "dark-ritual",
+        "name": {
+          "zhCN": "黑暗仪式",
+          "enUS": "Dark Ritual",
+          "ruRU": "Темный ритуал",
+          "koKR": "암흑의 의식",
+          "frFR": "Sombre rituel",
+          "deDE": "Dunkles Ritual"
+        },
+        "sourceId": "DarkRitual",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "power-overwhelming",
+          "speed-freaks"
+        ]
+      },
+      {
+        "id": "countdown-to-destruction",
+        "name": {
+          "zhCN": "燃烧军团",
+          "enUS": "Burning Legion",
+          "ruRU": "Пылающий Легион",
+          "koKR": "불타는 군단",
+          "frFR": "Légion ardente",
+          "deDE": "Die Brennende Legion"
+        },
+        "sourceId": "CountdownToDestruction",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "void-rifts",
+          "avenger",
+          "scorched-earth"
+        ]
+      },
+      {
+        "id": "out-of-control",
+        "name": {
+          "zhCN": "失心疯",
+          "enUS": "Flipping Out",
+          "ruRU": "Вырубание",
+          "koKR": "혼란",
+          "frFR": "Vent de panique",
+          "deDE": "Übergeschnappt"
+        },
+        "sourceId": "OutOfControl",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "fear",
+          "evasive-maneuvers",
+          "vertigo"
+        ]
+      },
+      {
+        "id": "environmental-destruction",
+        "name": {
+          "zhCN": "烈焰战场",
+          "enUS": "World on Fire",
+          "ruRU": "Мир в огне",
+          "koKR": "불타는 세계",
+          "frFR": "À feu et à sang",
+          "deDE": "Welt in Flammen"
+        },
+        "sourceId": "EnvironmentalDestruction",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "missile-command",
+          "purifier-beam",
+          "going-nuclear"
+        ]
+      },
+      {
+        "id": "comm-failure",
+        "name": {
+          "zhCN": "完全失控",
+          "enUS": "Out of Order",
+          "ruRU": "Беспорядок",
+          "koKR": "고장",
+          "frFR": "Hors service",
+          "deDE": "Außer Betrieb"
+        },
+        "sourceId": "CommFailure",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "micro-transactions",
+          "darkness",
+          "time-warp"
+        ]
+      },
+      {
+        "id": "relentless-dead",
+        "name": {
+          "zhCN": "残暴亡灵",
+          "enUS": "Relentless Dead",
+          "ruRU": "Неугомонные мертвецы",
+          "koKR": "잠들지 못 하는 망자",
+          "frFR": "Morts implacables",
+          "deDE": "Unnachgiebige Tote"
+        },
+        "sourceId": "RelentlessDead",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "undying-evil",
+          "void-reanimators",
+          "walking-infested"
+        ]
+      },
+      {
+        "id": "trifecta",
+        "name": {
+          "zhCN": "三重威胁",
+          "enUS": "Triple Threat",
+          "ruRU": "Три в одном",
+          "koKR": "삼중 위협",
+          "frFR": "Triple menace",
+          "deDE": "Gefahr hoch drei"
+        },
+        "sourceId": "Trifecta",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "laser-drill",
+          "outbreak",
+          "orbital-strike"
+        ]
+      },
+      {
+        "id": "growing-threat",
+        "name": {
+          "zhCN": "威胁递增",
+          "enUS": "Growing Threat",
+          "ruRU": "Растущая угроза",
+          "koKR": "커져가는 위협",
+          "frFR": "Menace croissante",
+          "deDE": "Wachsende Bedrohung"
+        },
+        "sourceId": "GrowingThreat",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "transmutation",
+          "mutually-assured-destruction",
+          "alien-incubation"
+        ]
+      },
+      {
+        "id": "deadly-harvest",
+        "name": {
+          "zhCN": "资源危机",
+          "enUS": "Miner Concerns",
+          "ruRU": "Будни сапера",
+          "koKR": "광부의 역경",
+          "frFR": "Mauvaises mines",
+          "deDE": "Räumkommando"
+        },
+        "sourceId": "DeadlyHarvest",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "mag-nificent",
+          "fear",
+          "slim-pickings"
+        ]
+      },
+      {
+        "id": "false-dichotomy",
+        "name": {
+          "zhCN": "外交豁免",
+          "enUS": "Diplomatic Immunity",
+          "ruRU": "Дипломатическая неприкосновенность",
+          "koKR": "외교 특권",
+          "frFR": "Immunité diplomatique",
+          "deDE": "Diplomatische Immunität"
+        },
+        "sourceId": "FalseDichotomy",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "polarity",
+          "evasive-maneuvers",
+          "barrier"
+        ]
+      },
+      {
+        "id": "burning-tide",
+        "name": {
+          "zhCN": "玩火自焚",
+          "enUS": "Conflagration",
+          "ruRU": "Воспламенение",
+          "koKR": "대화재",
+          "frFR": "Conflagration",
+          "deDE": "Flammenmeer"
+        },
+        "sourceId": "BurningTide",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "walking-infested",
+          "scorched-earth",
+          "alien-incubation"
+        ]
+      },
+      {
+        "id": "up-and-atom",
+        "name": {
+          "zhCN": "天轰地爆",
+          "enUS": "Explosive Results",
+          "ruRU": "Практика большого взрыва",
+          "koKR": "폭발성 결과물",
+          "frFR": "Conséquences explosives",
+          "deDE": "Strahlende Aussichten"
+        },
+        "sourceId": "UpAndAtom",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "self-destruction",
+          "mutually-assured-destruction",
+          "going-nuclear"
+        ]
+      },
+      {
+        "id": "terrazine-overload",
+        "name": {
+          "zhCN": "地嗪过量",
+          "enUS": "Breath of Destruction",
+          "ruRU": "Перегрузка терразином",
+          "koKR": "테라진 과적",
+          "frFR": "Surcharge de terrazine",
+          "deDE": "Terrazinrausch"
+        },
+        "sourceId": "TerrazineOverload",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "speed-freaks",
+          "avenger",
+          "aggressive-deployment"
+        ],
+        "aliasesZhCN": [
+          "造恶之息"
+        ]
+      },
+      {
+        "id": "chaos-studios-2",
+        "name": {
+          "zhCN": "灾难之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Хаос продакшн 2",
+          "koKR": "혼돈의 도가니 2",
+          "frFR": "Studios Chaos 2",
+          "deDE": "Totales Chaos 2"
+        },
+        "sourceId": "ChaosStudios2",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      },
+      {
+        "id": "oct-holiday",
+        "name": {
+          "zhCN": "惊魂之夜",
+          "enUS": "Fright Night",
+          "ruRU": "Жуткая ночь",
+          "koKR": "두려운 밤",
+          "frFR": "Nuit d’effroi",
+          "deDE": "Nacht der Schrecken"
+        },
+        "sourceId": "OctHoliday",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "afraid-of-the-dark",
+          "trick-or-treat"
+        ]
+      },
+      {
+        "id": "nov-holiday",
+        "name": {
+          "zhCN": "捉鸡行动",
+          "enUS": "Fowl Play",
+          "ruRU": "Охота на индеек",
+          "koKR": "칠면조 대소동",
+          "frFR": "Dindépendance",
+          "deDE": "Nicht viel Federlesen"
+        },
+        "sourceId": "NovHoliday",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "turkey-shoot",
+          "sharing-is-caring"
+        ]
+      },
+      {
+        "id": "opo",
+        "name": {
+          "zhCN": "能量超负",
+          "enUS": "Power Trip",
+          "ruRU": "Суплекс Сити",
+          "koKR": "넘치는 위력",
+          "frFR": "Abus de pouvoir",
+          "deDE": "Machtfantasien"
+        },
+        "sourceId": "OPO",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "power-overwhelming",
+          "photon-overload",
+          "long-range"
+        ]
+      },
+      {
+        "id": "shir-madness",
+        "name": {
+          "zhCN": "拉克希尔大乱斗",
+          "enUS": "Shir Chaos",
+          "ruRU": "Рак-шир во время чумы",
+          "koKR": "혼돈의 광란",
+          "frFR": "Rite anarchique",
+          "deDE": "Shires Chaos"
+        },
+        "sourceId": "ShirMadness",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "outbreak",
+          "speed-freaks",
+          "just-die"
+        ]
+      },
+      {
+        "id": "death-from-above-below",
+        "name": {
+          "zhCN": "天地双杀",
+          "enUS": "Death From Above And Below",
+          "ruRU": "Смерть с небес и из-под земли",
+          "koKR": "하늘과 땅에서 죽음이",
+          "frFR": "La mort vient d’en haut et d’en bas",
+          "deDE": "Tod von oben und unten"
+        },
+        "sourceId": "DeathFromAboveBelow",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "void-reanimators",
+          "purifier-beam"
+        ]
+      },
+      {
+        "id": "survival-of-the-fittest",
+        "name": {
+          "zhCN": "适者生存",
+          "enUS": "Survival of the Fittest",
+          "ruRU": "Выживает сильнейший",
+          "koKR": "적자생존",
+          "frFR": "La loi du plus apte",
+          "deDE": "Natürliche Auslese"
+        },
+        "sourceId": "SurvivalOfTheFittest",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "barrier",
+          "transmutation"
+        ]
+      },
+      {
+        "id": "terrors-in-the-mist",
+        "name": {
+          "zhCN": "丛林激斗",
+          "enUS": "Rumble in the Jungle",
+          "ruRU": "Партизаны в тумане",
+          "koKR": "밀림의 대난투",
+          "frFR": "Tapage dans la jungle",
+          "deDE": "Da ist was im Busch"
+        },
+        "sourceId": "TerrorsInTheMist",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "we-move-unseen",
+          "aggressive-deployment",
+          "temporal-field"
+        ]
+      },
+      {
+        "id": "ultimate-price",
+        "name": {
+          "zhCN": "终极代价",
+          "enUS": "The Ultimate Price",
+          "ruRU": "Наивысшая цена",
+          "koKR": "극한의 값어치",
+          "frFR": "Le prix fort",
+          "deDE": "Umsonst ist nur der Tod"
+        },
+        "sourceId": "UltimatePrice",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "micro-transactions",
+          "missile-command",
+          "mineral-shields"
+        ]
+      },
+      {
+        "id": "underground-pound",
+        "name": {
+          "zhCN": "火葬仪式",
+          "enUS": "Cremation",
+          "ruRU": "Кремация",
+          "koKR": "화장",
+          "frFR": "Crémation",
+          "deDE": "Feuerbestattung"
+        },
+        "sourceId": "UndergroundPound",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "void-reanimators",
+          "scorched-earth"
+        ]
+      },
+      {
+        "id": "shields-up",
+        "name": {
+          "zhCN": "高举盾牌！",
+          "enUS": "Shields Up!",
+          "ruRU": "Поднять щиты!",
+          "koKR": "보호막 가동",
+          "frFR": "Levée de boucliers !",
+          "deDE": "Schilde hoch!"
+        },
+        "sourceId": "ShieldsUp",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "diffusion",
+          "mineral-shields",
+          "shortsighted"
+        ]
+      },
+      {
+        "id": "sick-micro",
+        "name": {
+          "zhCN": "死疫横生",
+          "enUS": "Sick Micro",
+          "ruRU": "Кошмарный микроконтроль",
+          "koKR": "질병 활동",
+          "frFR": "Une microgestion de malade",
+          "deDE": "Krankes Mikro"
+        },
+        "sourceId": "SickMicro",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "black-death",
+          "micro-transactions"
+        ]
+      },
+      {
+        "id": "neutron-bomb",
+        "name": {
+          "zhCN": "旧忆重惊",
+          "enUS": "Blast from the Past",
+          "ruRU": "Привет из прошлого",
+          "koKR": "과거의 역습",
+          "frFR": "Retour vers le passé",
+          "deDE": "Paukenschlag"
+        },
+        "sourceId": "NeutronBomb",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "eminent-domain",
+          "mutually-assured-destruction"
+        ]
+      },
+      {
+        "id": "dank-portal",
+        "name": {
+          "zhCN": "星门异动",
+          "enUS": "Portal Power",
+          "ruRU": "Портучая сила",
+          "koKR": "차원문의 힘",
+          "frFR": "Portail fatal",
+          "deDE": "Angriff aus dem Nichts"
+        },
+        "sourceId": "DankPortal",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "void-rifts",
+          "power-overwhelming"
+        ]
+      },
+      {
+        "id": "chaos-studios-3",
+        "name": {
+          "zhCN": "灾难之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Колесо неудачи",
+          "koKR": "불운의 수레바퀴",
+          "frFR": "La roue de l’infortune",
+          "deDE": "Unglücksrad"
+        },
+        "sourceId": "ChaosStudios3",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      },
+      {
+        "id": "dec-holiday",
+        "name": {
+          "zhCN": "暴力之夜",
+          "enUS": "Violent Night",
+          "ruRU": "Ужасная ночь",
+          "koKR": "끔찍한 밤",
+          "frFR": "Dure nuit",
+          "deDE": "Schöne Bescherung"
+        },
+        "sourceId": "DecHoliday",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "gift-exchange",
+          "naughty-list"
+        ]
+      },
+      {
+        "id": "injustice-league",
+        "name": {
+          "zhCN": "至暗之时",
+          "enUS": "The Injustice League",
+          "ruRU": "Темнейший час",
+          "koKR": "암흑의 시간",
+          "frFR": "L’heure la plus sombre",
+          "deDE": "Dunkelste Stunde"
+        },
+        "sourceId": "InjusticeLeague",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "heroes-from-the-storm",
+          "inspiration",
+          "hardened-will"
+        ]
+      },
+      {
+        "id": "lunar-new-year",
+        "name": {
+          "zhCN": "乌历新年",
+          "enUS": "Ulnar New Year",
+          "ruRU": "Ульнарский фестиваль",
+          "koKR": "울나르 새해",
+          "frFR": "Nouvel an ulnaire",
+          "deDE": "Neujahr auf Ulnar"
+        },
+        "sourceId": "LunarNewYear",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "fireworks",
+          "lucky-envelopes"
+        ]
+      },
+      {
+        "id": "frostbite",
+        "name": {
+          "zhCN": "噬骨之寒",
+          "enUS": "Frostbite",
+          "ruRU": "Обморожение",
+          "koKR": "동상",
+          "frFR": "Morsure du froid",
+          "deDE": "Frostbeulen"
+        },
+        "sourceId": "Frostbite",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "mag-nificent",
+          "blizzard"
+        ]
+      },
+      {
+        "id": "occupational-hazard",
+        "name": {
+          "zhCN": "强行霸占",
+          "enUS": "Hostile Takeover",
+          "ruRU": "Враждебное поглощение",
+          "koKR": "적대적 인수",
+          "frFR": "Expropriation de masse",
+          "deDE": "Machtwechsel"
+        },
+        "sourceId": "OccupationalHazard",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "missile-command",
+          "laser-drill",
+          "eminent-domain"
+        ]
+      },
+      {
+        "id": "grave-danger",
+        "name": {
+          "zhCN": "死亡危机",
+          "enUS": "Grave Danger",
+          "ruRU": "Смертельная опасность",
+          "koKR": "죽음의 위험",
+          "frFR": "L’armée des morts",
+          "deDE": "Leben und leben lassen"
+        },
+        "sourceId": "GraveDanger",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "void-reanimators",
+          "transmutation",
+          "walking-infested"
+        ]
+      },
+      {
+        "id": "mo-money-mo-problems",
+        "name": {
+          "zhCN": "没钱麻烦大了",
+          "enUS": "No Money, More Problems",
+          "ruRU": "Нет денег – есть проблемы",
+          "koKR": "자린고비",
+          "frFR": "Les fonds du problème",
+          "deDE": "Ohne Moos nix los"
+        },
+        "sourceId": "MoMoneyMoProblems",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "slim-pickings",
+          "self-destruction",
+          "twister"
+        ]
+      },
+      {
+        "id": "fields-of-death",
+        "name": {
+          "zhCN": "雷鸣弹啸",
+          "enUS": "Field of Screams",
+          "ruRU": "Поле воплей",
+          "koKR": "비명의 벌판",
+          "frFR": "Grises mines",
+          "deDE": "Stolpersteine"
+        },
+        "sourceId": "FieldsOfDeath",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "polarity",
+          "minesweeper"
+        ]
+      },
+      {
+        "id": "dead-by-dawn",
+        "name": {
+          "zhCN": "疫鬼狂潮",
+          "enUS": "The Quick and the Dead",
+          "ruRU": "Быстрый и мертвый",
+          "koKR": "빠른 자와 죽은 자",
+          "frFR": "Morts et vifs",
+          "deDE": "Wettlauf mit dem Tod"
+        },
+        "sourceId": "DeadByDawn",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "speed-freaks",
+          "black-death"
+        ]
+      },
+      {
+        "id": "unseen-threat",
+        "name": {
+          "zhCN": "隐形威胁",
+          "enUS": "Out of Sight",
+          "ruRU": "С глаз долой",
+          "koKR": "보이지 않는 적",
+          "frFR": "Menace invisible",
+          "deDE": "Unsichtbare Bedrohung"
+        },
+        "sourceId": "UnseenThreat",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "we-move-unseen",
+          "purifier-beam"
+        ]
+      },
+      {
+        "id": "chaos-studios-4",
+        "name": {
+          "zhCN": "悲惨之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Колесо неудачи",
+          "koKR": "불운의 수레바퀴",
+          "frFR": "La roue de l’infortune",
+          "deDE": "Unglücksrad"
+        },
+        "sourceId": "ChaosStudios4",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      },
+      {
+        "id": "dangerous-ambition",
+        "name": {
+          "zhCN": "现世现报",
+          "enUS": "Instant Karma",
+          "ruRU": "Мгновенная карма",
+          "koKR": "환각",
+          "frFR": "Le revers de la médaille",
+          "deDE": "Sofortkarma"
+        },
+        "sourceId": "DangerousAmbition",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "double-edged",
+          "self-destruction",
+          "mutually-assured-destruction"
+        ]
+      },
+      {
+        "id": "propagator-intro",
+        "name": {
+          "zhCN": "异形进击",
+          "enUS": "Futile Resistance",
+          "ruRU": "Бесполезное сопротивление",
+          "koKR": "부질없는 저항",
+          "frFR": "Une résistance futile",
+          "deDE": "Angriff der Körperfresser"
+        },
+        "sourceId": "PropagatorIntro",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "propagators",
+          "temporal-field",
+          "concussive-attacks"
+        ]
+      },
+      {
+        "id": "certain-demise",
+        "name": {
+          "zhCN": "无间死局",
+          "enUS": "Certain Demise",
+          "ruRU": "Верная погибель",
+          "koKR": "확정된 파멸",
+          "frFR": "Trompe-la-mort",
+          "deDE": "Todesverachtung"
+        },
+        "sourceId": "CertainDemise",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "avenger",
+          "void-reanimators"
+        ]
+      },
+      {
+        "id": "dead-heat",
+        "name": {
+          "zhCN": "烈火金刚",
+          "enUS": "Dead Heat",
+          "ruRU": "Смертельная жара",
+          "koKR": "죽음의 열기",
+          "frFR": "Coup de chaleur",
+          "deDE": "Das Ende ist nah"
+        },
+        "sourceId": "DeadHeat",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "fatal-attraction",
+          "self-destruction",
+          "walking-infested"
+        ]
+      },
+      {
+        "id": "delivery-guaranteed",
+        "name": {
+          "zhCN": "火线快递",
+          "enUS": "Delivery Guaranteed",
+          "ruRU": "Гарантии доставки",
+          "koKR": "배송 보장",
+          "frFR": "Livraison garantie",
+          "deDE": "Liefergarantie"
+        },
+        "sourceId": "DeliveryGuaranteed",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "just-die",
+          "going-nuclear",
+          "barrier"
+        ]
+      },
+      {
+        "id": "cold-is-the-void",
+        "name": {
+          "zhCN": "寒冷即是虚空",
+          "enUS": "Cold is the Void",
+          "ruRU": "Пустота холодна",
+          "koKR": "차가운 공허",
+          "frFR": "Froid comme le Vide",
+          "deDE": "Kalt ist die Leere"
+        },
+        "sourceId": "ColdIsTheVoid",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "blizzard",
+          "void-reanimators",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "hard-target",
+        "name": {
+          "zhCN": "硬骨头",
+          "enUS": "Hard Target",
+          "ruRU": "Крепкий орешек",
+          "koKR": "완고한 상대",
+          "frFR": "Cible endurcie",
+          "deDE": "Hart im Nehmen"
+        },
+        "sourceId": "HardTarget",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "hardened-will",
+          "polarity",
+          "barrier"
+        ]
+      },
+      {
+        "id": "tide-of-terror",
+        "name": {
+          "zhCN": "火海惊魂",
+          "enUS": "Fear and Lava",
+          "ruRU": "Страх и лава",
+          "koKR": "공포와 용암",
+          "frFR": "Cavale dans la lave",
+          "deDE": "Rette sich, wer kann!"
+        },
+        "sourceId": "TideOfTerror",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "void-rifts",
+          "fear"
+        ]
+      },
+      {
+        "id": "slow-and-steady",
+        "name": {
+          "zhCN": "步步为营",
+          "enUS": "Slow and Steady",
+          "ruRU": "Медленно, но верно",
+          "koKR": "천천히 그리고 꾸준히",
+          "frFR": "Lentement mais sûrement",
+          "deDE": "Eile mit Weile"
+        },
+        "sourceId": "SlowAndSteady",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "time-warp",
+          "speed-freaks",
+          "concussive-attacks"
+        ]
+      },
+      {
+        "id": "unwelcome-visitors",
+        "name": {
+          "zhCN": "仁至义尽",
+          "enUS": "Worn Out Welcome",
+          "ruRU": "Непрошеные гости",
+          "koKR": "고달픈 환영",
+          "frFR": "Le siège de fer",
+          "deDE": "Zwangsräumung"
+        },
+        "sourceId": "UnwelcomeVisitors",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "just-die",
+          "long-range",
+          "inspiration"
+        ]
+      },
+      {
+        "id": "moth-into-flame",
+        "name": {
+          "zhCN": "飞蛾扑火",
+          "enUS": "Moths to the Flame",
+          "ruRU": "Мотыльки и пламя",
+          "koKR": "화염 속 나방",
+          "frFR": "Rayons ardents",
+          "deDE": "In die Falle"
+        },
+        "sourceId": "MothIntoFlame",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "fatal-attraction",
+          "purifier-beam",
+          "alien-incubation"
+        ]
+      },
+      {
+        "id": "charnel-house",
+        "name": {
+          "zhCN": "疫区逃生",
+          "enUS": "Charnel House",
+          "ruRU": "Склеп",
+          "koKR": "납골당",
+          "frFR": "Le charnier",
+          "deDE": "Totenhaus"
+        },
+        "sourceId": "CharnelHouse",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "darkness",
+          "photon-overload",
+          "black-death"
+        ]
+      },
+      {
+        "id": "battle-bots",
+        "name": {
+          "zhCN": "机器人大战",
+          "enUS": "Kill Bot Wars",
+          "ruRU": "Войны смертоботов",
+          "koKR": "처치 로봇 전쟁",
+          "frFR": "La guerre des robots exterminateurs",
+          "deDE": "Angriff der Killerbots"
+        },
+        "sourceId": "BattleBots",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "kill-bots",
+          "moment-of-silence"
+        ]
+      },
+      {
+        "id": "eye-for-an-eye",
+        "name": {
+          "zhCN": "自作自受",
+          "enUS": "What Goes Around",
+          "ruRU": "Шальные рикошеты",
+          "koKR": "자업자득",
+          "frFR": "Qui sème le vent…",
+          "deDE": "Wie du mir, so ich dir"
+        },
+        "sourceId": "EyeForAnEye",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "double-edged",
+          "mutually-assured-destruction"
+        ]
+      },
+      {
+        "id": "magnetic-pull",
+        "name": {
+          "zhCN": "磁性牵引",
+          "enUS": "Magnetic Attraction",
+          "ruRU": "Магнетизм",
+          "koKR": "자기 인력",
+          "frFR": "Attraction magnétique",
+          "deDE": "Anziehungskräfte"
+        },
+        "sourceId": "MagneticPull",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "mag-nificent",
+          "fatal-attraction",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "death-from-below",
+        "name": {
+          "zhCN": "地发杀机",
+          "enUS": "Death from Below",
+          "ruRU": "Смерть из-под земли",
+          "koKR": "땅속에서 죽음이",
+          "frFR": "La mort vient d’en bas",
+          "deDE": "Tod von unten"
+        },
+        "sourceId": "DeathFromBelow",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "scorched-earth",
+          "lava-burst",
+          "minesweeper"
+        ]
+      },
+      {
+        "id": "death-from-above",
+        "name": {
+          "zhCN": "天发杀机",
+          "enUS": "Watch the Skies",
+          "ruRU": "Воздух!",
+          "koKR": "하늘 경계",
+          "frFR": "Monarque en ciel",
+          "deDE": "Himmeldonnerwetter"
+        },
+        "sourceId": "DeathFromAbove",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "aggressive-deployment",
+          "orbital-strike",
+          "missile-command"
+        ]
+      },
+      {
+        "id": "think-fast",
+        "name": {
+          "zhCN": "兵贵神速",
+          "enUS": "Think Fast",
+          "ruRU": "Думай быстрее!",
+          "koKR": "빠른 결단",
+          "frFR": "Sans l’ombre d’un doute",
+          "deDE": "Entscheidungsdruck"
+        },
+        "sourceId": "ThinkFast",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "speed-freaks",
+          "propagators"
+        ]
+      },
+      {
+        "id": "bannable-offense",
+        "name": {
+          "zhCN": "封禁行为",
+          "enUS": "Bannable Offense",
+          "ruRU": "Запретное нападение",
+          "koKR": "금지된 공격",
+          "frFR": "Courage, fuyons !",
+          "deDE": "Strafbarer Verstoß"
+        },
+        "sourceId": "BannableOffense",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "power-overwhelming",
+          "evasive-maneuvers"
+        ]
+      },
+      {
+        "id": "vampire-hybrids",
+        "name": {
+          "zhCN": "嗜血夜魔",
+          "enUS": "Masters of Midnight",
+          "ruRU": "Повелители ночи",
+          "koKR": "자정의 지배자",
+          "frFR": "Maîtres de minuit",
+          "deDE": "Nächtliche Schatten"
+        },
+        "sourceId": "VampireHybrids",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "life-leech",
+          "shortsighted",
+          "fear"
+        ]
+      },
+      {
+        "id": "night-drive",
+        "name": {
+          "zhCN": "雷场夜战",
+          "enUS": "Night Drive",
+          "ruRU": "Ночной заезд",
+          "koKR": "야간 주행",
+          "frFR": "La mine nuit",
+          "deDE": "Finstere Falle"
+        },
+        "sourceId": "NightDrive",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "afraid-of-the-dark",
+          "mag-nificent"
+        ]
+      },
+      {
+        "id": "get-out-more",
+        "name": {
+          "zhCN": "极限压迫",
+          "enUS": "Get Out More",
+          "ruRU": "Большие проблемы",
+          "koKR": "집 밖은 위험해",
+          "frFR": "Occupation",
+          "deDE": "Hart erkämpft"
+        },
+        "sourceId": "GetOutMore",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "eminent-domain",
+          "mineral-shields",
+          "self-destruction"
+        ]
+      },
+      {
+        "id": "quick-killers",
+        "name": {
+          "zhCN": "杀劫迫临",
+          "enUS": "Quick Killers",
+          "ruRU": "Молниеносные убийцы",
+          "koKR": "빠른 학살자",
+          "frFR": "Tueurs exaltés",
+          "deDE": "Schnelle Killer"
+        },
+        "sourceId": "QuickKillers",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "kill-bots",
+          "inspiration",
+          "speed-freaks"
+        ]
+      },
+      {
+        "id": "unstable-environment",
+        "name": {
+          "zhCN": "时空气象战",
+          "enUS": "Unstable Environment",
+          "ruRU": "Нестабильная среда",
+          "koKR": "불안정한 환경",
+          "frFR": "Environnement instable",
+          "deDE": "Instabile Umgebung"
+        },
+        "sourceId": "UnstableEnvironment",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "twister",
+          "lava-burst",
+          "time-warp"
+        ]
+      },
+      {
+        "id": "remember-propagator",
+        "name": {
+          "zhCN": "死亡无声",
+          "enUS": "Rest in Peace",
+          "ruRU": "Покойся с миром",
+          "koKR": "평온한 안식",
+          "frFR": "Repose en paix",
+          "deDE": "Ruhe in Frieden"
+        },
+        "sourceId": "RememberPropagator",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "propagators",
+          "moment-of-silence"
+        ]
+      },
+      {
+        "id": "endless-infection",
+        "name": {
+          "zhCN": "无尽感染",
+          "enUS": "Endless Infection",
+          "ruRU": "Бесконечное заражение",
+          "koKR": "끝없는 전염",
+          "frFR": "Contagion sans fin",
+          "deDE": "Endlose Infektion"
+        },
+        "sourceId": "EndlessInfection",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "black-death",
+          "alien-incubation",
+          "walking-infested"
+        ]
+      },
+      {
+        "id": "missile-commanders",
+        "name": {
+          "zhCN": "顽强作战",
+          "enUS": "Battle Hardened",
+          "ruRU": "Закалка в бою",
+          "koKR": "전투 단련",
+          "frFR": "Vieux de la vieille",
+          "deDE": "Kampfgestählt"
+        },
+        "sourceId": "MissileCommanders",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "missile-command",
+          "inspiration",
+          "hardened-will"
+        ]
+      },
+      {
+        "id": "cold-adaptation",
+        "name": {
+          "zhCN": "寒冷适应",
+          "enUS": "Chilling Adaptation",
+          "ruRU": "Адаптация к холоду",
+          "koKR": "차가운 적응",
+          "frFR": "Adaptation au froid",
+          "deDE": "Kälteanpassung"
+        },
+        "sourceId": "ColdAdaptation",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "blizzard",
+          "transmutation"
+        ]
+      },
+      {
+        "id": "bot-farm",
+        "name": {
+          "zhCN": "进步的代价",
+          "enUS": "Price of Progress",
+          "ruRU": "Цена прогресса",
+          "koKR": "진보의 대가",
+          "frFR": "Prix du progrès",
+          "deDE": "Preis des Fortschritts"
+        },
+        "sourceId": "BotFarm",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "kill-bots",
+          "micro-transactions"
+        ]
+      },
+      {
+        "id": "negative-reinforcement",
+        "name": {
+          "zhCN": "消极增援",
+          "enUS": "Negative Reinforcement",
+          "ruRU": "Отрицательное подкрепление",
+          "koKR": "부정적인 증원",
+          "frFR": "Renforts négatifs",
+          "deDE": "Negative Verstärkung"
+        },
+        "sourceId": "NegativeReinforcement",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "fatal-attraction",
+          "avenger"
+        ]
+      },
+      {
+        "id": "karmatic-invaders",
+        "name": {
+          "zhCN": "报应不爽",
+          "enUS": "Retribution",
+          "ruRU": "Возмездие",
+          "koKR": "응징",
+          "frFR": "Représailles",
+          "deDE": "Karma"
+        },
+        "sourceId": "KarmaticInvaders",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "void-rifts",
+          "double-edged"
+        ]
+      },
+      {
+        "id": "rise-from-ashes",
+        "name": {
+          "zhCN": "灰烬重生",
+          "enUS": "Rise from the Ashes",
+          "ruRU": "Возрождение из пепла",
+          "koKR": "재에서 일어나라",
+          "frFR": "Sans repos ni trêve",
+          "deDE": "Das letzte Wort"
+        },
+        "sourceId": "RiseFromAshes",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "self-destruction",
+          "void-reanimators",
+          "lava-burst"
+        ]
+      },
+      {
+        "id": "warp-zone",
+        "name": {
+          "zhCN": "扭曲空间",
+          "enUS": "Warp Zone",
+          "ruRU": "Область вызова",
+          "koKR": "소환 지역",
+          "frFR": "Dilatation du temps",
+          "deDE": "Immer langsam"
+        },
+        "sourceId": "WarpZone",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "temporal-field",
+          "time-warp",
+          "twister"
+        ]
+      },
+      {
+        "id": "well-trained",
+        "name": {
+          "zhCN": "训练有素",
+          "enUS": "Well Trained",
+          "ruRU": "Хорошая подготовка",
+          "koKR": "적절한 훈련",
+          "frFR": "Troupes d’élite",
+          "deDE": "Gemeinsam stark"
+        },
+        "sourceId": "WellTrained",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "inspiration",
+          "aggressive-deployment",
+          "avenger"
+        ]
+      },
+      {
+        "id": "nuke-from-orbit",
+        "name": {
+          "zhCN": "末日报告",
+          "enUS": "Doomsday Report",
+          "ruRU": "Вести о конце света",
+          "koKR": "파멸의 날 보고서",
+          "frFR": "Signe de l’apocalypse",
+          "deDE": "Alles Gute kommt von oben"
+        },
+        "sourceId": "NukeFromOrbit",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "propagators",
+          "going-nuclear",
+          "orbital-strike"
+        ]
+      },
+      {
+        "id": "safety-violation",
+        "name": {
+          "zhCN": "安全违规",
+          "enUS": "Safety Violation",
+          "ruRU": "Нарушение безопасности",
+          "koKR": "안전 규정 위반",
+          "frFR": "Distances de sécurité",
+          "deDE": "Sicherheitsabstand"
+        },
+        "sourceId": "SafetyViolation",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "self-destruction",
+          "laser-drill",
+          "mag-nificent"
+        ]
+      },
+      {
+        "id": "double-life",
+        "name": {
+          "zhCN": "重生圣殿",
+          "enUS": "Temple of Rebirth",
+          "ruRU": "Храм перерождения",
+          "koKR": "부활의 사원",
+          "frFR": "Temple de la renaissance",
+          "deDE": "Fast unsterblich"
+        },
+        "sourceId": "Double Life",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "just-die",
+          "life-leech",
+          "barrier"
+        ]
+      },
+      {
+        "id": "frenzied-protectors",
+        "name": {
+          "zhCN": "疯狂超频",
+          "enUS": "Overclocked",
+          "ruRU": "Разгон",
+          "koKR": "오버클럭",
+          "frFR": "Surrégime",
+          "deDE": "Übertaktung"
+        },
+        "sourceId": "FrenziedProtectors",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "speed-freaks",
+          "photon-overload",
+          "avenger"
+        ]
+      },
+      {
+        "id": "attrition-warfare",
+        "name": {
+          "zhCN": "消耗战",
+          "enUS": "Attrition Warfare",
+          "ruRU": "Война на истощение",
+          "koKR": "소모전",
+          "frFR": "Guerre d’usure",
+          "deDE": "Zermürbungskrieg"
+        },
+        "sourceId": "AttritionWarfare",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "diffusion",
+          "minesweeper"
+        ]
+      },
+      {
+        "id": "together-forever",
+        "name": {
+          "zhCN": "永不分离",
+          "enUS": "Together Forever",
+          "ruRU": "Вместе навсегда",
+          "koKR": "그대와 영원히",
+          "frFR": "À la vie, à la mort",
+          "deDE": "Traute Zweisamkeit"
+        },
+        "sourceId": "TogetherForever",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "just-die",
+          "polarity"
+        ]
+      },
+      {
+        "id": "spectre-of-death",
+        "name": {
+          "zhCN": "死亡鬼影",
+          "enUS": "Specter of Death",
+          "ruRU": "Аспекты смерти",
+          "koKR": "죽음의 악령",
+          "frFR": "L’ombre de la mort",
+          "deDE": "Geistererscheinung"
+        },
+        "sourceId": "SpectreOfDeath",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "void-reanimators",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "distant-threat",
+        "name": {
+          "zhCN": "远距威胁",
+          "enUS": "Distant Threat",
+          "ruRU": "Далекая угроза",
+          "koKR": "머나먼 위협",
+          "frFR": "Menace distante",
+          "deDE": "Ferne Bedrohung"
+        },
+        "sourceId": "DistantThreat",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "long-range",
+          "purifier-beam",
+          "time-warp"
+        ]
+      },
+      {
+        "id": "radiation-zone",
+        "name": {
+          "zhCN": "辐射区",
+          "enUS": "Radiation Zone",
+          "ruRU": "Зона отчуждения",
+          "koKR": "방사능 지역",
+          "frFR": "Zone irradiée",
+          "deDE": "Postapokalypse"
+        },
+        "sourceId": "RadiationZone",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "going-nuclear",
+          "outbreak",
+          "black-death"
+        ]
+      },
+      {
+        "id": "inner-power",
+        "name": {
+          "zhCN": "心灵力量",
+          "enUS": "Inner Power",
+          "ruRU": "Внутренняя мощь",
+          "koKR": "내면의 힘",
+          "frFR": "Force intérieure",
+          "deDE": "Von Macht besessen"
+        },
+        "sourceId": "InnerPower",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "alien-incubation",
+          "power-overwhelming"
+        ]
+      },
+      {
+        "id": "moving-fees",
+        "name": {
+          "zhCN": "调遣军费",
+          "enUS": "Moving Fees",
+          "ruRU": "Транспортные расходы",
+          "koKR": "이동 비용",
+          "frFR": "Toute chose a un prix",
+          "deDE": "Alles hat einen Preis"
+        },
+        "sourceId": "MovingFees",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "micro-transactions",
+          "scorched-earth"
+        ]
+      },
+      {
+        "id": "memorable-boss",
+        "name": {
+          "zhCN": "梦魇敌酋",
+          "enUS": "Memorable Boss",
+          "ruRU": "Хороший был босс",
+          "koKR": "인상적인 우두머리",
+          "frFR": "Figures mémorables",
+          "deDE": "Gedenkt des Bosses"
+        },
+        "sourceId": "MemorableBoss",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "moment-of-silence",
+          "heroes-from-the-storm"
+        ]
+      },
+      {
+        "id": "flip-my-base",
+        "name": {
+          "zhCN": "基地翻转",
+          "enUS": "Flip My Base",
+          "ruRU": "Базофобия",
+          "koKR": "기지 뒤집기",
+          "frFR": "Dans ma base",
+          "deDE": "Basisklau"
+        },
+        "sourceId": "FlipMyBase",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "missile-command",
+          "purifier-beam",
+          "eminent-domain"
+        ]
+      },
+      {
+        "id": "firewall",
+        "name": {
+          "zhCN": "防火墙",
+          "enUS": "Firewall",
+          "ruRU": "Стена огня",
+          "koKR": "방화벽",
+          "frFR": "Pare-feu",
+          "deDE": "Unsicheres Gelände"
+        },
+        "sourceId": "Firewall",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "lava-burst",
+          "minesweeper",
+          "barrier"
+        ]
+      },
+      {
+        "id": "death-and-taxes",
+        "name": {
+          "zhCN": "死亡税金",
+          "enUS": "Death and Taxes",
+          "ruRU": "Смерть и налоги",
+          "koKR": "죽음과 세금",
+          "frFR": "Impôt mortel",
+          "deDE": "Harte Zeiten"
+        },
+        "sourceId": "DeathAndTaxes",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "micro-transactions",
+          "slim-pickings",
+          "black-death"
+        ]
+      },
+      {
+        "id": "chaos-studios-5",
+        "name": {
+          "zhCN": "灾难之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Wheel of Misfortune",
+          "koKR": "Wheel of Misfortune",
+          "frFR": "Wheel of Misfortune",
+          "deDE": "Wheel of Misfortune"
+        },
+        "sourceId": "ChaosStudios5",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      },
+      {
+        "id": "rubber-and-glue",
+        "name": {
+          "zhCN": "感痛身受",
+          "enUS": "Rubber and Glue",
+          "ruRU": "Нет, ты",
+          "koKR": "고무와 접착제",
+          "frFR": "Lent et douloureux",
+          "deDE": "Alles tut weh"
+        },
+        "sourceId": "RubberAndGlue",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "double-edged",
+          "diffusion",
+          "temporal-field"
+        ]
+      },
+      {
+        "id": "hell-train",
+        "name": {
+          "zhCN": "地狱列车",
+          "enUS": "Hell Train",
+          "ruRU": "Адский товарняк",
+          "koKR": "지옥 열차",
+          "frFR": "Train pour l’enfer",
+          "deDE": "Zug in die Hölle"
+        },
+        "sourceId": "HellTrain",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "just-die",
+          "scorched-earth"
+        ]
+      },
+      {
+        "id": "infection-detected",
+        "name": {
+          "zhCN": "感染危机",
+          "enUS": "Infection Detected",
+          "ruRU": "Обнаружено заражение",
+          "koKR": "감염 감지",
+          "frFR": "Contamination détectée",
+          "deDE": "Verseuchung festgestellt"
+        },
+        "sourceId": "InfectionDetected",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "alien-incubation",
+          "outbreak",
+          "self-destruction"
+        ]
+      },
+      {
+        "id": "opportunities-unleashed",
+        "name": {
+          "zhCN": "机会尽出",
+          "enUS": "Opportunities Unleashed",
+          "ruRU": "Бешеные возможности",
+          "koKR": "기회 창출",
+          "frFR": "Chaos robotique",
+          "deDE": "Entfesselte Kräfte"
+        },
+        "sourceId": "OpportunitiesUnleashed",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "speed-freaks",
+          "barrier",
+          "power-overwhelming"
+        ]
+      },
+      {
+        "id": "one-for-all",
+        "name": {
+          "zhCN": "一将千军",
+          "enUS": "One For All",
+          "ruRU": "Один за всех",
+          "koKR": "모두를 위한 하나",
+          "frFR": "Un pour tous",
+          "deDE": "Einer für alle"
+        },
+        "sourceId": "OneForAll",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "hardened-will",
+          "transmutation",
+          "inspiration"
+        ]
+      },
+      {
+        "id": "experimental-artillery",
+        "name": {
+          "zhCN": "实验巨炮",
+          "enUS": "Experimental Artillery",
+          "ruRU": "Эксперименты с артиллерией",
+          "koKR": "실험용 대포",
+          "frFR": "Artillerie expérimentale",
+          "deDE": "Experimentelle Artillerie"
+        },
+        "sourceId": "ExperimentalArtillery",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "laser-drill",
+          "photon-overload",
+          "long-range"
+        ]
+      },
+      {
+        "id": "nuclear-family",
+        "name": {
+          "zhCN": "核族入侵",
+          "enUS": "Nuclear Family",
+          "ruRU": "Ядерная семейка",
+          "koKR": "핵가족",
+          "frFR": "Famille nucléaire",
+          "deDE": "Explosive Mischung"
+        },
+        "sourceId": "NuclearFamily",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "mutually-assured-destruction",
+          "outbreak",
+          "hardened-will"
+        ]
+      },
+      {
+        "id": "die-together",
+        "name": {
+          "zhCN": "同归于尽",
+          "enUS": "Die Together",
+          "ruRU": "Умрите вместе",
+          "koKR": "같이 좀 죽어",
+          "frFR": "Mort collective",
+          "deDE": "Sterben und sterben lassen"
+        },
+        "sourceId": "DieTogether",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "just-die",
+          "polarity"
+        ]
+      },
+      {
+        "id": "burning-evacuation",
+        "name": {
+          "zhCN": "烈火营救",
+          "enUS": "Burning Evacuation",
+          "ruRU": "Эвакуация в огне",
+          "koKR": "불타는 탈출",
+          "frFR": "Évacuation brûlante",
+          "deDE": "Brenzlig"
+        },
+        "sourceId": "BurningEvacuation",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "eminent-domain",
+          "scorched-earth",
+          "avenger"
+        ]
+      },
+      {
+        "id": "assembly-of-vengeance",
+        "name": {
+          "zhCN": "复仇者集结",
+          "enUS": "Assembly of Vengeance",
+          "ruRU": "Сбор мстителей",
+          "koKR": "몰려드는 복수",
+          "frFR": "Rassemblement des vengeurs",
+          "deDE": "Heldenopfer"
+        },
+        "sourceId": "AssemblyOfVengeance",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "heroes-from-the-storm",
+          "avenger"
+        ]
+      },
+      {
+        "id": "railroad-switch",
+        "name": {
+          "zhCN": "铁轨换线",
+          "enUS": "Railroad Switch",
+          "ruRU": "Маятник смерти",
+          "koKR": "교대 작업",
+          "frFR": "Aiguillage",
+          "deDE": "Weichensteller"
+        },
+        "sourceId": "RailroadSwitch",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "just-die",
+          "polarity"
+        ]
+      },
+      {
+        "id": "hostile-territory",
+        "name": {
+          "zhCN": "敌对领地",
+          "enUS": "Hostile Territory",
+          "ruRU": "Вражеская территория",
+          "koKR": "적대 구역",
+          "frFR": "Territoire hostile",
+          "deDE": "Feindgebiet"
+        },
+        "sourceId": "HostileTerritory",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "barrier",
+          "photon-overload",
+          "power-overwhelming"
+        ]
+      },
+      {
+        "id": "media-blackout",
+        "name": {
+          "zhCN": "媒体抹黑",
+          "enUS": "Media Blackout",
+          "ruRU": "Медийная блокада",
+          "koKR": "전면 통제",
+          "frFR": "Silence médiatique",
+          "deDE": "Unsichtbare Gefahr"
+        },
+        "sourceId": "MediaBlackout",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "darkness",
+          "missile-command",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "thunder-dome",
+        "name": {
+          "zhCN": "雷霆穹顶",
+          "enUS": "Thunder Dome",
+          "ruRU": "Вы под куполом",
+          "koKR": "천둥의 전장",
+          "frFR": "Dôme du tonnerre",
+          "deDE": "Donnerkuppel"
+        },
+        "sourceId": "ThunderDome",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "heroes-from-the-storm",
+          "mag-nificent"
+        ]
+      },
+      {
+        "id": "dodge-this",
+        "name": {
+          "zhCN": "躲灾避祸",
+          "enUS": "Dodge This",
+          "ruRU": "Попробуй уклонись!",
+          "koKR": "피할 테면 피해 봐",
+          "frFR": "Esquivez ça !",
+          "deDE": "In Deckung"
+        },
+        "sourceId": "DodgeThis",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "darkness",
+          "going-nuclear",
+          "orbital-strike"
+        ]
+      },
+      {
+        "id": "binary-choice",
+        "name": {
+          "zhCN": "二元选择",
+          "enUS": "Binary Choice",
+          "ruRU": "Бинарный выбор",
+          "koKR": "양자택일",
+          "frFR": "Choix binaire",
+          "deDE": "Zweischneidig"
+        },
+        "sourceId": "BinaryChoice",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "polarity",
+          "void-reanimators"
+        ]
+      },
+      {
+        "id": "the-ascended",
+        "name": {
+          "zhCN": "升格蜕变",
+          "enUS": "The Ascended",
+          "ruRU": "Перерожденные",
+          "koKR": "승천자",
+          "frFR": "Formes évoluées",
+          "deDE": "Die Aufgestiegenen"
+        },
+        "sourceId": "TheAscended",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "inspiration",
+          "transmutation"
+        ]
+      },
+      {
+        "id": "enhanced-defenses",
+        "name": {
+          "zhCN": "森严壁垒",
+          "enUS": "Enhanced Defenses",
+          "ruRU": "Усиленная оборона",
+          "koKR": "향상된 방어",
+          "frFR": "Défenses améliorées",
+          "deDE": "Verbesserte Verteidigung"
+        },
+        "sourceId": "EnhancedDefenses",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "barrier",
+          "going-nuclear",
+          "photon-overload"
+        ]
+      },
+      {
+        "id": "double-trouble",
+        "name": {
+          "zhCN": "双重麻烦",
+          "enUS": "Double Trouble",
+          "ruRU": "Двойная неприятность",
+          "koKR": "이중고",
+          "frFR": "Double peine",
+          "deDE": "Feindlicher Ansturm"
+        },
+        "sourceId": "DoubleTrouble",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "kill-bots",
+          "propagators"
+        ]
+      },
+      {
+        "id": "and-drops-and-rifts",
+        "name": {
+          "zhCN": "星沉地裂",
+          "enUS": "And Drops And Rifts",
+          "ruRU": "Ресурсы и разломы",
+          "koKR": "배치와 균열",
+          "frFR": "Failles dans le système",
+          "deDE": "Aus dem Nichts"
+        },
+        "sourceId": "AndDropsandRifts",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "aggressive-deployment",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "catch-the-train",
+        "name": {
+          "zhCN": "赶夜车",
+          "enUS": "Catch the Train",
+          "ruRU": "Поезд не ждет",
+          "koKR": "기차를 잡아라",
+          "frFR": "Train de nuit",
+          "deDE": "Zugzwang"
+        },
+        "sourceId": "CatchTheTrain",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "afraid-of-the-dark",
+          "shortsighted",
+          "speed-freaks"
+        ]
+      },
+      {
+        "id": "temple-of-terror",
+        "name": {
+          "zhCN": "恐惧神庙",
+          "enUS": "Temple of Terror",
+          "ruRU": "Храм ужасов",
+          "koKR": "공포의 사원",
+          "frFR": "Temple de la terreur",
+          "deDE": "Tempel des Grauens"
+        },
+        "sourceId": "TempleOfTerror",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "alien-incubation",
+          "afraid-of-the-dark",
+          "fear"
+        ]
+      },
+      {
+        "id": "shining-bright",
+        "name": {
+          "zhCN": "光炫神迷",
+          "enUS": "Shining Bright",
+          "ruRU": "Гори ярко",
+          "koKR": "찬란한 광휘",
+          "frFR": "Brillante lumière",
+          "deDE": "Gebündelter Strahl"
+        },
+        "sourceId": "ShiningBright",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "concussive-attacks",
+          "laser-drill",
+          "purifier-beam"
+        ]
+      },
+      {
+        "id": "endless-sparkles",
+        "name": {
+          "zhCN": "无尽花火",
+          "enUS": "Endless Sparkles",
+          "ruRU": "Бесконечные искры",
+          "koKR": "끝없는 생기",
+          "frFR": "Étincelles infinies",
+          "deDE": "Gewaltsamer Tod"
+        },
+        "sourceId": "EndlessSparkles",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "alien-incubation",
+          "self-destruction"
+        ]
+      },
+      {
+        "id": "graveyard-shift",
+        "name": {
+          "zhCN": "坟场夜班",
+          "enUS": "Graveyard Shift",
+          "ruRU": "Ночь на кладбище",
+          "koKR": "야간 근무",
+          "frFR": "Transfert de cimetière",
+          "deDE": "Schlaflose Nacht"
+        },
+        "sourceId": "GraveyardShift",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "afraid-of-the-dark",
+          "purifier-beam"
+        ]
+      },
+      {
+        "id": "robotic-revival",
+        "name": {
+          "zhCN": "机器重生",
+          "enUS": "Robotic Revival",
+          "ruRU": "Роботы-ревенанты",
+          "koKR": "로봇 부활",
+          "frFR": "Renaissance robotique",
+          "deDE": "Rückkehr der Roboter"
+        },
+        "sourceId": "RoboticRevival",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "fear",
+          "just-die",
+          "laser-drill"
+        ]
+      },
+      {
+        "id": "secret-storm",
+        "name": {
+          "zhCN": "秘密突击",
+          "enUS": "Secret Storm",
+          "ruRU": "Незримая буря",
+          "koKR": "비밀 폭풍",
+          "frFR": "Tempête secrète",
+          "deDE": "Sturmtarnung"
+        },
+        "sourceId": "SecretStorm",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "aggressive-deployment",
+          "twister",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "undermined",
+        "name": {
+          "zhCN": "暗地破坏",
+          "enUS": "Undermined",
+          "ruRU": "Подрыв",
+          "koKR": "침식",
+          "frFR": "Mauvaise mine",
+          "deDE": "Unterminiert"
+        },
+        "sourceId": "Undermined",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "minesweeper",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "astigmatism",
+        "name": {
+          "zhCN": "散光",
+          "enUS": "Astigmatism",
+          "ruRU": "Астигматизм",
+          "koKR": "난시",
+          "frFR": "Astigmatisme",
+          "deDE": "Astigmatismus"
+        },
+        "sourceId": "Astigmatism",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "long-range",
+          "shortsighted",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "never-say-die",
+        "name": {
+          "zhCN": "永不言死",
+          "enUS": "Never Say Die",
+          "ruRU": "Умри, но не сейчас",
+          "koKR": "불굴",
+          "frFR": "Ne pas se laisser abattre",
+          "deDE": "Nicht totzukriegen"
+        },
+        "sourceId": "NeverSayDie",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "barrier",
+          "just-die",
+          "life-leech"
+        ]
+      },
+      {
+        "id": "medieval-times",
+        "name": {
+          "zhCN": "中世纪",
+          "enUS": "Medieval Times",
+          "ruRU": "Средневековье",
+          "koKR": "중세 시대",
+          "frFR": "Époque médiévale",
+          "deDE": "Mittelalterliche Zustände"
+        },
+        "sourceId": "MedievalTimes",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "black-death",
+          "transmutation"
+        ]
+      },
+      {
+        "id": "onslaught",
+        "name": {
+          "zhCN": "全力猛攻",
+          "enUS": "Onslaught",
+          "ruRU": "Натиск",
+          "koKR": "맹습",
+          "frFR": "Assaut",
+          "deDE": "Die Flut"
+        },
+        "sourceId": "Onslaught",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "aggressive-deployment",
+          "outbreak",
+          "void-reanimators"
+        ]
+      },
+      {
+        "id": "equivalent-exchange",
+        "name": {
+          "zhCN": "等价交换",
+          "enUS": "Equivalent Exchange",
+          "ruRU": "Равноценный обмен",
+          "koKR": "등가 교환",
+          "frFR": "Échange équitable",
+          "deDE": "Gleichwertiger Austausch"
+        },
+        "sourceId": "EquivalentExchange",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "diffusion",
+          "just-die"
+        ]
+      },
+      {
+        "id": "encroaching-madness",
+        "name": {
+          "zhCN": "迫近的疯狂",
+          "enUS": "Encroaching Madness",
+          "ruRU": "Подступающее безумие",
+          "koKR": "침범하는 광기",
+          "frFR": "Folie envahissante",
+          "deDE": "Schleichender Wahnsinn"
+        },
+        "sourceId": "EncroachingMadness",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "eminent-domain",
+          "purifier-beam",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "season-of-giving",
+        "name": {
+          "zhCN": "感恩季",
+          "enUS": "Season of Giving",
+          "ruRU": "Сезон подарков",
+          "koKR": "나눔의 계절",
+          "frFR": "Saison des fêtes",
+          "deDE": "Fest der Geschenke"
+        },
+        "sourceId": "SeasonofGiving",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "blizzard",
+          "gift-exchange",
+          "naughty-list"
+        ]
+      },
+      {
+        "id": "choices-choices",
+        "name": {
+          "zhCN": "决择抉择",
+          "enUS": "Choices Choices",
+          "ruRU": "Непростой выбор",
+          "koKR": "선택 선택",
+          "frFR": "Que de choix",
+          "deDE": "Qual der Wahl"
+        },
+        "sourceId": "ChoicesChoices",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "hardened-will",
+          "inspiration",
+          "mutually-assured-destruction"
+        ]
+      },
+      {
+        "id": "pure-vengeance",
+        "name": {
+          "zhCN": "过度反应",
+          "enUS": "Inordinate Response",
+          "ruRU": "Несдержанный ответ",
+          "koKR": "과도한 대응",
+          "frFR": "Réponse démesurée",
+          "deDE": "Unverhältnismäßige Maßnahmen"
+        },
+        "sourceId": "PureVengeance",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "avenger",
+          "power-overwhelming"
+        ]
+      },
+      {
+        "id": "hot-are-the-nukes",
+        "name": {
+          "zhCN": "火焰净化",
+          "enUS": "By Fire Be Purged",
+          "ruRU": "Очищение огнем",
+          "koKR": "불의 세례",
+          "frFR": "Par le feu, soyez purifiés !",
+          "deDE": "Das Feuer wird Euch läutern"
+        },
+        "sourceId": "HotAreTheNukes",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "going-nuclear",
+          "lava-burst",
+          "scorched-earth"
+        ]
+      },
+      {
+        "id": "bonus-rifts",
+        "name": {
+          "zhCN": "极速增援",
+          "enUS": "Timely Reinforcements",
+          "ruRU": "Своевременное подкрепление",
+          "koKR": "적시의 보강",
+          "frFR": "Renforts providentiels",
+          "deDE": "Kommt Zeit, kommt Verstärkung"
+        },
+        "sourceId": "BonusRifts",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "temporal-field",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "blind-tribute",
+        "name": {
+          "zhCN": "盲目进贡",
+          "enUS": "Blind Tribute",
+          "ruRU": "Слепое подношение",
+          "koKR": "눈 먼 공물",
+          "frFR": "Tribut aveugle",
+          "deDE": "Blinder Tribut"
+        },
+        "sourceId": "BlindTribute",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "kill-bots",
+          "shortsighted"
+        ]
+      },
+      {
+        "id": "barrier-to-entry",
+        "name": {
+          "zhCN": "进击壁垒",
+          "enUS": "Barrier to Entry",
+          "ruRU": "Барьер на вход",
+          "koKR": "진입 방어막",
+          "frFR": "Barrière d’entrée",
+          "deDE": "Kommst hier nich rein"
+        },
+        "sourceId": "BarrierToEntry",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "barrier",
+          "mineral-shields",
+          "just-die"
+        ]
+      },
+      {
+        "id": "descent-of-the-masses",
+        "name": {
+          "zhCN": "虫人海啸",
+          "enUS": "Like Swatting Insects",
+          "ruRU": "Как назойливые мухи",
+          "koKR": "파리 같은 놈들",
+          "frFR": "Tomber comme des mouches",
+          "deDE": "Wie die Fliegen"
+        },
+        "sourceId": "DescentOfTheMasses",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "alien-incubation",
+          "missile-command",
+          "outbreak"
+        ]
+      },
+      {
+        "id": "getting-along",
+        "name": {
+          "zhCN": "心有灵犀",
+          "enUS": "Getting Along",
+          "ruRU": "Сосуществование",
+          "koKR": "어울림",
+          "frFR": "Entente cordiale",
+          "deDE": "Bruderliebe"
+        },
+        "sourceId": "GettingAlong",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "polarity",
+          "sharing-is-caring"
+        ]
+      },
+      {
+        "id": "knock-knock",
+        "name": {
+          "zhCN": "夜半敲门",
+          "enUS": "Knock Knock",
+          "ruRU": "Тук-тук",
+          "koKR": "똑똑",
+          "frFR": "Toc, toc",
+          "deDE": "Klopf, klopf"
+        },
+        "sourceId": "KnockKnock",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "avenger",
+          "propagators"
+        ]
+      },
+      {
+        "id": "dance-dance-evolution",
+        "name": {
+          "zhCN": "舞舞生疯",
+          "enUS": "Dance Dance Evolution",
+          "ruRU": "Танец эволюции",
+          "koKR": "댄스 댄스 에볼루션",
+          "frFR": "Dance Dance Evolution",
+          "deDE": "Dance Dance Evolution"
+        },
+        "sourceId": "DanceDanceEvolution",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "moment-of-silence",
+          "speed-freaks",
+          "transmutation"
+        ]
+      },
+      {
+        "id": "train-of-pain",
+        "name": {
+          "zhCN": "痛苦列车",
+          "enUS": "Train of Pain",
+          "ruRU": "Поезд боли",
+          "koKR": "고통의 열차",
+          "frFR": "Train of Pain",
+          "deDE": "Train of Pain"
+        },
+        "sourceId": "TrainOfPain",
+        "mapId": "oblivion-express",
+        "mutatorIds": [
+          "double-edged",
+          "going-nuclear",
+          "mutually-assured-destruction"
+        ]
+      },
+      {
+        "id": "resilient-rifts",
+        "name": {
+          "zhCN": "刚硬裂隙",
+          "enUS": "Resilient Rifts",
+          "ruRU": "Стойкие разломы",
+          "koKR": "끈질긴 균열",
+          "frFR": "Resilient Rifts",
+          "deDE": "Resilient Rifts"
+        },
+        "sourceId": "ResilientRifts",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "just-die",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "silent-killer",
+        "name": {
+          "zhCN": "鬼魅杀手",
+          "enUS": "Silent Killer",
+          "ruRU": "Бесшумный убийца",
+          "koKR": "침묵의 암살자",
+          "frFR": "Silence de mort",
+          "deDE": "Lautloser Tod"
+        },
+        "sourceId": "SilentKiller",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "black-death",
+          "outbreak",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "call-it-a-comeback",
+        "name": {
+          "zhCN": "噩梦重临",
+          "enUS": "Call It a Comeback",
+          "ruRU": "Реванш",
+          "koKR": "과거로의 회귀",
+          "frFR": "Call It a Comeback",
+          "deDE": "Call It a Comeback"
+        },
+        "sourceId": "CallItAComeback",
+        "mapId": "temple-of-the-past",
+        "mutatorIds": [
+          "avenger",
+          "eminent-domain",
+          "just-die"
+        ]
+      },
+      {
+        "id": "explosive-hunt",
+        "name": {
+          "zhCN": "排爆行动",
+          "enUS": "Explosive Hunt",
+          "ruRU": "Взрывная охота",
+          "koKR": "폭발 사냥",
+          "frFR": "Explosive Hunt",
+          "deDE": "Explosive Hunt"
+        },
+        "sourceId": "ExplosiveHunt",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "minesweeper",
+          "slim-pickings"
+        ]
+      },
+      {
+        "id": "tax-day",
+        "name": {
+          "zhCN": "缴税日",
+          "enUS": "Tax Day",
+          "ruRU": "День транзакций",
+          "koKR": "납세일",
+          "frFR": "Tax Day",
+          "deDE": "Tax Day"
+        },
+        "sourceId": "TaxDay",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "fear",
+          "micro-transactions"
+        ]
+      },
+      {
+        "id": "aggressive-recruitment",
+        "name": {
+          "zhCN": "侵袭强征",
+          "enUS": "Aggressive Recruitment",
+          "ruRU": "Агрессивный набор",
+          "koKR": "Aggressive Recruitment",
+          "frFR": "Aggressive Recruitment",
+          "deDE": "Aggressive Recruitment"
+        },
+        "sourceId": "AggressiveRecruitment",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "propagators",
+          "speed-freaks",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "scary-scavengers",
+        "name": {
+          "zhCN": "坟场拾荒",
+          "enUS": "Scary Scavengers",
+          "ruRU": "Жуткая добыча",
+          "koKR": "무서운 착취자들",
+          "frFR": "Scary Scavengers",
+          "deDE": "Scary Scavengers"
+        },
+        "sourceId": "ScaryScavengers",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "outbreak",
+          "slim-pickings"
+        ]
+      },
+      {
+        "id": "call-of-the-void",
+        "name": {
+          "zhCN": "虚空召唤",
+          "enUS": "Call of the Void",
+          "ruRU": "Зов Пустоты",
+          "koKR": "공허의 부름",
+          "frFR": "Appel du Vide",
+          "deDE": "Ruf der Leere"
+        },
+        "sourceId": "CallOfTheVoid",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "void-reanimators",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "in-the-name-of-love",
+        "name": {
+          "zhCN": "因爱之名",
+          "enUS": "In the Name of Love",
+          "ruRU": "Во имя любви",
+          "koKR": "사랑의 이름으로",
+          "frFR": "Au nom de l’amour",
+          "deDE": "Wenn's mal wieder länger dauert"
+        },
+        "sourceId": "InTheNameOfLove",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "concussive-attacks",
+          "time-warp",
+          "purifier-beam"
+        ]
+      },
+      {
+        "id": "locked-and-loaded",
+        "name": {
+          "zhCN": "荷枪实弹",
+          "enUS": "Locked and Loaded",
+          "ruRU": "Надежный заслон",
+          "koKR": "장전 완료",
+          "frFR": "Parée à tirer",
+          "deDE": "Geladen und entsichert"
+        },
+        "sourceId": "LockedAndLoaded",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "kill-bots",
+          "mineral-shields",
+          "temporal-field"
+        ]
+      },
+      {
+        "id": "of-mines-and-miners",
+        "name": {
+          "zhCN": "雷劫难逃",
+          "enUS": "Of Mines and Miners",
+          "ruRU": "Шахты и шахтеры",
+          "koKR": "광부와 지뢰",
+          "frFR": "Of Mines and Miners",
+          "deDE": "Of Mines and Miners"
+        },
+        "sourceId": "OfMinesAndMiners",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "mag-nificent",
+          "minesweeper",
+          "missile-command"
+        ]
+      },
+      {
+        "id": "the-league-of-vermillains",
+        "name": {
+          "zhCN": "恶棍联盟",
+          "enUS": "The League of Vermillians",
+          "ruRU": "Вермиллион злодеев",
+          "koKR": "리그 오브 버밀리언",
+          "frFR": "The League of Vermillians",
+          "deDE": "The League of Vermillians"
+        },
+        "sourceId": "TheLeagueOfVermillains",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "evasive-maneuvers",
+          "heroes-from-the-storm"
+        ]
+      },
+      {
+        "id": "chain-explosion",
+        "name": {
+          "zhCN": "爆炸之链",
+          "enUS": "Chain Explosion",
+          "ruRU": "Цепной взрыв",
+          "koKR": "연쇄 폭발",
+          "frFR": "Chain Explosion",
+          "deDE": "Chain Explosion"
+        },
+        "sourceId": "ChainExplosion",
+        "mapId": "chain-of-ascension",
+        "mutatorIds": [
+          "lava-burst",
+          "walking-infested"
+        ]
+      },
+      {
+        "id": "operation-cooperation",
+        "name": {
+          "zhCN": "合作无间",
+          "enUS": "Operation Cooperation",
+          "ruRU": "Операция «Кооперация»",
+          "koKR": "합동 작전",
+          "frFR": "Opération : Coopération",
+          "deDE": "Operation Kooperation"
+        },
+        "sourceId": "OperationCooperation",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "polarity",
+          "propagators"
+        ]
+      },
+      {
+        "id": "hot-n-cold",
+        "name": {
+          "zhCN": "冰火之歌",
+          "enUS": "Hot n Cold",
+          "ruRU": "Жара и холод",
+          "koKR": "뜨겁고 차가운",
+          "frFR": "Chaud et froid",
+          "deDE": "Heißkalt"
+        },
+        "sourceId": "Hot'n'Cold",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "blizzard",
+          "lava-burst",
+          "scorched-earth"
+        ]
+      },
+      {
+        "id": "what-we-do-in-the-shadows",
+        "name": {
+          "zhCN": "吸血鬼生活",
+          "enUS": "What We Do in the Shadows",
+          "ruRU": "Чем мы заняты в тени",
+          "koKR": "어둠 속에서",
+          "frFR": "En toute intimité",
+          "deDE": "Im Schutz der Schatten"
+        },
+        "sourceId": "WhatWeDointheShadows",
+        "mapId": "void-thrashing",
+        "mutatorIds": [
+          "darkness",
+          "shortsighted",
+          "we-move-unseen"
+        ]
+      },
+      {
+        "id": "hardware-malfunction",
+        "name": {
+          "zhCN": "硬件故障",
+          "enUS": "Hardware Malfunction",
+          "ruRU": "Отказ оборудования",
+          "koKR": "하드웨어 장애",
+          "frFR": "Défaillance matérielle",
+          "deDE": "Hardwarefehler"
+        },
+        "sourceId": "HardwareMalfunction",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "kill-bots",
+          "laser-drill",
+          "minesweeper"
+        ]
+      },
+      {
+        "id": "shared-pain",
+        "name": {
+          "zhCN": "分担痛苦",
+          "enUS": "Shared Pain",
+          "ruRU": "Общая боль",
+          "koKR": "고통 분담",
+          "frFR": "Douleur partagée",
+          "deDE": "Leidensgenossen"
+        },
+        "sourceId": "SharedPain",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "diffusion",
+          "fatal-attraction"
+        ]
+      },
+      {
+        "id": "the-longest-night",
+        "name": {
+          "zhCN": "漫漫长夜",
+          "enUS": "The Longest Night",
+          "ruRU": "Долгая ночь",
+          "koKR": "기다긴 밤",
+          "frFR": "La nuit la plus longue",
+          "deDE": "Die längste Nacht"
+        },
+        "sourceId": "TheLongestNight",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "just-die",
+          "long-range",
+          "photon-overload"
+        ]
+      },
+      {
+        "id": "the-quick-and-the-undead",
+        "name": {
+          "zhCN": "迅捷亡尸",
+          "enUS": "The Quick and the Undead",
+          "ruRU": "Быстрый и не вполне мертвый",
+          "koKR": "빠른 자와 죽지 않는 자",
+          "frFR": "Morts-vivants et vifs",
+          "deDE": "Wettlauf mit dem Untod"
+        },
+        "sourceId": "TheQuickandtheUndead",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "speed-freaks",
+          "void-reanimators"
+        ]
+      },
+      {
+        "id": "decade-of-decadence",
+        "name": {
+          "zhCN": "征战十年",
+          "enUS": "Decade of Decadence",
+          "ruRU": "Век великолепия",
+          "koKR": "타락의 시기",
+          "frFR": "Décennie décadente",
+          "deDE": "Dekade der Dekadenz"
+        },
+        "sourceId": "DecadeofDecadence",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "fireworks",
+          "lucky-envelopes",
+          "gift-exchange"
+        ]
+      },
+      {
+        "id": "bubble-pop",
+        "name": {
+          "zhCN": "泡泡世界",
+          "enUS": "Bubble Pop",
+          "ruRU": "Волшебные пузырьки",
+          "koKR": "방울방울",
+          "frFR": "Éclatement de bulles",
+          "deDE": "Schildmanie"
+        },
+        "sourceId": "BubblePop",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "barrier",
+          "mineral-shields",
+          "time-warp"
+        ]
+      },
+      {
+        "id": "coordinated-defense",
+        "name": {
+          "zhCN": "协同防御",
+          "enUS": "Coordinated Defense",
+          "ruRU": "Скоординированная оборона",
+          "koKR": "케르베로스 방어",
+          "frFR": "Défense coordonnée",
+          "deDE": "Koordinierte Verteidigung"
+        },
+        "sourceId": "CoordinatedDefense",
+        "mapId": "map-e30c71c3d37c",
+        "mutatorIds": [
+          "missile-command",
+          "polarity"
+        ]
+      },
+      {
+        "id": "beggars-cant-be-choosers",
+        "name": {
+          "zhCN": "饥不择食",
+          "enUS": "Beggars Can't Be Choosers",
+          "ruRU": "На безрыбье",
+          "koKR": "찬밥 더운밥 가릴 때가 아니다",
+          "frFR": "On fait ce qu’on peut avec ce qu’on a",
+          "deDE": "Von Mineralien und Minen"
+        },
+        "sourceId": "BeggarsCan'tBeChoosers",
+        "mapId": "lock-and-load",
+        "mutatorIds": [
+          "mag-nificent",
+          "minesweeper",
+          "slim-pickings"
+        ]
+      },
+      {
+        "id": "my-bots",
+        "name": {
+          "zhCN": "我的机器人！",
+          "enUS": "My Bots",
+          "ruRU": "Мои роботы!",
+          "koKR": "내 로봇!",
+          "frFR": "Mes robots !",
+          "deDE": "Botmanie"
+        },
+        "sourceId": "MyBots!",
+        "mapId": "map-942b4d7d18ba",
+        "mutatorIds": [
+          "boom-bots",
+          "kill-bots"
+        ]
+      },
+      {
+        "id": "multitasking-trainer",
+        "name": {
+          "zhCN": "多线操作训练",
+          "enUS": "Multitasking Trainer",
+          "ruRU": "Разностороннее обучение",
+          "koKR": "멀티태스킹 트레이너",
+          "frFR": "Entraînement multitâches",
+          "deDE": "Multitasking-Trainer"
+        },
+        "sourceId": "MultitaskingTrainer",
+        "mapId": "map-77fa060614f3",
+        "mutatorIds": [
+          "micro-transactions",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "hello-my-old-friend",
+        "name": {
+          "zhCN": "老友重聚",
+          "enUS": "Hello My Old Friend",
+          "ruRU": "Здравствуй, старый друг",
+          "koKR": "안녕 오랜 친구여",
+          "frFR": "Bonjour, mon vieil ami",
+          "deDE": "Alles schwarz"
+        },
+        "sourceId": "HelloMyOldFriend",
+        "mapId": "map-420ba96ed84c",
+        "mutatorIds": [
+          "black-death",
+          "darkness",
+          "moment-of-silence"
+        ]
+      },
+      {
+        "id": "of-one-mind",
+        "name": {
+          "zhCN": "万众一心",
+          "enUS": "Of One Mind",
+          "ruRU": "Единомышленники",
+          "koKR": "한 마음으로",
+          "frFR": "D’une seule et même voix",
+          "deDE": "Untrennbar"
+        },
+        "sourceId": "OfOneMind",
+        "mapId": "rifts-to-korhal",
+        "mutatorIds": [
+          "boom-bots",
+          "polarity",
+          "sharing-is-caring"
+        ]
+      },
+      {
+        "id": "blasting-off-again",
+        "name": {
+          "zhCN": "发射升空",
+          "enUS": "Blasting Off Again",
+          "ruRU": "Новый старт",
+          "koKR": "다시 발사할 시간",
+          "frFR": "Nouveau lancement",
+          "deDE": "Eruption, Explosion"
+        },
+        "sourceId": "BlastingOffAgain",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "going-nuclear",
+          "lava-burst",
+          "power-overwhelming"
+        ]
+      },
+      {
+        "id": "enter-the-nexus",
+        "name": {
+          "zhCN": "进入时空枢纽",
+          "enUS": "Enter the Nexus",
+          "ruRU": "Добро пожаловать в Нексус",
+          "koKR": "시공의 폭풍 입장",
+          "frFR": "Entrer dans le Nexus",
+          "deDE": "Ins Auge des Nexus"
+        },
+        "sourceId": "EnterTheNexus",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "heroes-from-the-storm",
+          "blizzard"
+        ]
+      },
+      {
+        "id": "death-is-fleeting",
+        "name": {
+          "zhCN": "死亡转瞬即逝",
+          "enUS": "Death is Fleeting",
+          "ruRU": "Смерть мимолетна",
+          "koKR": "죽음은 잠깐이다",
+          "frFR": "La mort est éternelle",
+          "deDE": "Der Tod ist vergänglich"
+        },
+        "sourceId": "DeathIsFleeting",
+        "mapId": "map-00072c95164a",
+        "mutatorIds": [
+          "void-reanimators",
+          "just-die"
+        ]
+      },
+      {
+        "id": "mass-manufacturing",
+        "name": {
+          "zhCN": "批量生产",
+          "enUS": "Mass Manufacturing",
+          "ruRU": "Массовое производство",
+          "koKR": "대량생산",
+          "frFR": "Production de masse",
+          "deDE": "Massenproduktion"
+        },
+        "sourceId": "MassManufacturing",
+        "mapId": "map-63c69c9ba4f3",
+        "mutatorIds": [
+          "propagators",
+          "void-rifts"
+        ]
+      },
+      {
+        "id": "fire-in-the-hole",
+        "name": {
+          "zhCN": "小心手雷",
+          "enUS": "Fire in the Hole",
+          "ruRU": "Ложись!",
+          "koKR": "폭발 대피",
+          "frFR": "Ça va péter !",
+          "deDE": "Eine explosive Gegend"
+        },
+        "sourceId": "FireInTheHole",
+        "mapId": "map-f11bf0e27aab",
+        "mutatorIds": [
+          "boom-bots",
+          "missile-command"
+        ]
+      },
+      {
+        "id": "chaos-studios-6",
+        "name": {
+          "zhCN": "灾难之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Wheel of Misfortune",
+          "koKR": "Wheel of Misfortune",
+          "frFR": "Wheel of Misfortune",
+          "deDE": "Wheel of Misfortune"
+        },
+        "sourceId": "ChaosStudios6",
+        "mapId": "void-launch",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      },
+      {
+        "id": "chaos-studios-7",
+        "name": {
+          "zhCN": "灾难之轮",
+          "enUS": "Wheel of Misfortune",
+          "ruRU": "Колесо неудачи",
+          "koKR": "불운의 수레바퀴",
+          "frFR": "La roue de l’infortune",
+          "deDE": "Unglücksrad"
+        },
+        "sourceId": "ChaosStudios7",
+        "mapId": "map-933478d4ebff",
+        "mutatorIds": [
+          "chaos-studios"
+        ]
+      }
+    ],
+    "rotationOrder": [
+      "train-of-the-dead",
+      "first-strike",
+      "time-lock",
+      "bad-weather",
+      "white-out",
+      "war-is-hell",
+      "temple-of-pain",
+      "spear-of-your-doom",
+      "special-delivery",
+      "urban-warfare",
+      "chaos-studios-1",
+      "perfect-storm",
+      "pain-train",
+      "dark-ritual",
+      "comm-failure",
+      "countdown-to-destruction",
+      "trifecta",
+      "environmental-destruction",
+      "out-of-control",
+      "growing-threat",
+      "deadly-harvest",
+      "false-dichotomy",
+      "chaos-studios-2",
+      "terrazine-overload",
+      "oct-holiday",
+      "burning-tide",
+      "up-and-atom",
+      "nov-holiday",
+      "opo",
+      "shir-madness",
+      "survival-of-the-fittest",
+      "dec-holiday",
+      "terrors-in-the-mist",
+      "ultimate-price",
+      "underground-pound",
+      "shields-up",
+      "lunar-new-year",
+      "sick-micro",
+      "neutron-bomb",
+      "dank-portal",
+      "chaos-studios-3",
+      "occupational-hazard",
+      "grave-danger",
+      "injustice-league",
+      "mo-money-mo-problems",
+      "fields-of-death",
+      "dead-by-dawn",
+      "unseen-threat",
+      "chaos-studios-4",
+      "frostbite",
+      "certain-demise",
+      "delivery-guaranteed",
+      "dead-heat",
+      "cold-is-the-void",
+      "propagator-intro",
+      "hard-target",
+      "charnel-house",
+      "slow-and-steady",
+      "dangerous-ambition",
+      "unwelcome-visitors",
+      "moth-into-flame",
+      "tide-of-terror",
+      "chaos-studios-6",
+      "battle-bots",
+      "magnetic-pull",
+      "death-from-below",
+      "death-from-above",
+      "think-fast",
+      "eye-for-an-eye",
+      "bannable-offense",
+      "vampire-hybrids",
+      "night-drive",
+      "get-out-more",
+      "quick-killers",
+      "unstable-environment",
+      "remember-propagator",
+      "endless-infection",
+      "missile-commanders",
+      "chaos-studios-7",
+      "cold-adaptation",
+      "oct-holiday",
+      "bot-farm",
+      "negative-reinforcement",
+      "nov-holiday",
+      "karmatic-invaders",
+      "rise-from-ashes",
+      "warp-zone",
+      "well-trained",
+      "dec-holiday",
+      "nuke-from-orbit",
+      "safety-violation",
+      "double-life",
+      "frenzied-protectors",
+      "attrition-warfare",
+      "lunar-new-year",
+      "together-forever",
+      "spectre-of-death",
+      "distant-threat",
+      "radiation-zone",
+      "inner-power",
+      "moving-fees",
+      "memorable-boss",
+      "flip-my-base",
+      "firewall",
+      "death-and-taxes",
+      "chaos-studios-5",
+      "rubber-and-glue",
+      "hell-train",
+      "infection-detected",
+      "opportunities-unleashed",
+      "one-for-all",
+      "experimental-artillery",
+      "nuclear-family",
+      "die-together",
+      "burning-evacuation",
+      "assembly-of-vengeance",
+      "railroad-switch",
+      "hostile-territory",
+      "media-blackout",
+      "thunder-dome",
+      "dodge-this",
+      "binary-choice",
+      "the-ascended",
+      "enhanced-defenses",
+      "double-trouble",
+      "and-drops-and-rifts",
+      "catch-the-train",
+      "temple-of-terror",
+      "shining-bright",
+      "endless-sparkles",
+      "graveyard-shift",
+      "robotic-revival",
+      "secret-storm",
+      "undermined",
+      "astigmatism",
+      "never-say-die",
+      "medieval-times",
+      "onslaught",
+      "equivalent-exchange",
+      "encroaching-madness",
+      "season-of-giving",
+      "choices-choices",
+      "pure-vengeance",
+      "hot-are-the-nukes",
+      "bonus-rifts",
+      "blind-tribute",
+      "barrier-to-entry",
+      "descent-of-the-masses",
+      "getting-along",
+      "knock-knock",
+      "dance-dance-evolution",
+      "train-of-pain",
+      "resilient-rifts",
+      "chain-explosion",
+      "call-it-a-comeback",
+      "explosive-hunt",
+      "tax-day",
+      "aggressive-recruitment",
+      "scary-scavengers",
+      "call-of-the-void",
+      "in-the-name-of-love",
+      "locked-and-loaded",
+      "of-mines-and-miners",
+      "the-league-of-vermillains",
+      "operation-cooperation",
+      "hot-n-cold",
+      "what-we-do-in-the-shadows",
+      "hardware-malfunction",
+      "shared-pain",
+      "the-longest-night",
+      "the-quick-and-the-undead",
+      "decade-of-decadence",
+      "bubble-pop",
+      "coordinated-defense",
+      "beggars-cant-be-choosers",
+      "my-bots",
+      "multitasking-trainer",
+      "hello-my-old-friend",
+      "of-one-mind",
+      "blasting-off-again",
+      "enter-the-nexus",
+      "death-is-fleeting",
+      "mass-manufacturing",
+      "fire-in-the-hole"
+    ],
+    "schedules": [
+      {
+        "id": "weekly",
+        "rotation": [
+          "train-of-the-dead",
+          "first-strike",
+          "time-lock",
+          "bad-weather",
+          "white-out",
+          "war-is-hell",
+          "temple-of-pain",
+          "spear-of-your-doom",
+          "special-delivery",
+          "urban-warfare",
+          "chaos-studios-1",
+          "perfect-storm",
+          "pain-train",
+          "dark-ritual",
+          "comm-failure",
+          "countdown-to-destruction",
+          "trifecta",
+          "environmental-destruction",
+          "out-of-control",
+          "growing-threat",
+          "deadly-harvest",
+          "false-dichotomy",
+          "chaos-studios-2",
+          "terrazine-overload",
+          "oct-holiday",
+          "burning-tide",
+          "up-and-atom",
+          "nov-holiday",
+          "opo",
+          "shir-madness",
+          "survival-of-the-fittest",
+          "dec-holiday",
+          "terrors-in-the-mist",
+          "ultimate-price",
+          "underground-pound",
+          "shields-up",
+          "lunar-new-year",
+          "sick-micro",
+          "neutron-bomb",
+          "dank-portal",
+          "chaos-studios-3",
+          "occupational-hazard",
+          "grave-danger",
+          "injustice-league",
+          "mo-money-mo-problems",
+          "fields-of-death",
+          "dead-by-dawn",
+          "unseen-threat",
+          "chaos-studios-4",
+          "frostbite",
+          "certain-demise",
+          "delivery-guaranteed",
+          "dead-heat",
+          "cold-is-the-void",
+          "propagator-intro",
+          "hard-target",
+          "charnel-house",
+          "slow-and-steady",
+          "dangerous-ambition",
+          "unwelcome-visitors",
+          "moth-into-flame",
+          "tide-of-terror",
+          "chaos-studios-6",
+          "battle-bots",
+          "magnetic-pull",
+          "death-from-below",
+          "death-from-above",
+          "think-fast",
+          "eye-for-an-eye",
+          "bannable-offense",
+          "vampire-hybrids",
+          "night-drive",
+          "get-out-more",
+          "quick-killers",
+          "unstable-environment",
+          "remember-propagator",
+          "endless-infection",
+          "missile-commanders",
+          "chaos-studios-7",
+          "cold-adaptation",
+          "oct-holiday",
+          "bot-farm",
+          "negative-reinforcement",
+          "nov-holiday",
+          "karmatic-invaders",
+          "rise-from-ashes",
+          "warp-zone",
+          "well-trained",
+          "dec-holiday",
+          "nuke-from-orbit",
+          "safety-violation",
+          "double-life",
+          "frenzied-protectors",
+          "attrition-warfare",
+          "lunar-new-year",
+          "together-forever",
+          "spectre-of-death",
+          "distant-threat",
+          "radiation-zone",
+          "inner-power",
+          "moving-fees",
+          "memorable-boss",
+          "flip-my-base",
+          "firewall",
+          "death-and-taxes",
+          "chaos-studios-5",
+          "rubber-and-glue",
+          "hell-train",
+          "infection-detected",
+          "opportunities-unleashed",
+          "one-for-all",
+          "experimental-artillery",
+          "nuclear-family",
+          "die-together",
+          "burning-evacuation",
+          "assembly-of-vengeance",
+          "railroad-switch",
+          "hostile-territory",
+          "media-blackout",
+          "thunder-dome",
+          "dodge-this",
+          "binary-choice",
+          "the-ascended",
+          "enhanced-defenses",
+          "double-trouble",
+          "and-drops-and-rifts",
+          "catch-the-train",
+          "temple-of-terror",
+          "shining-bright",
+          "endless-sparkles",
+          "graveyard-shift",
+          "robotic-revival",
+          "secret-storm",
+          "undermined",
+          "astigmatism",
+          "never-say-die",
+          "medieval-times",
+          "onslaught",
+          "equivalent-exchange",
+          "encroaching-madness",
+          "season-of-giving",
+          "choices-choices",
+          "pure-vengeance",
+          "hot-are-the-nukes",
+          "bonus-rifts",
+          "blind-tribute",
+          "barrier-to-entry",
+          "descent-of-the-masses",
+          "getting-along",
+          "knock-knock",
+          "dance-dance-evolution",
+          "train-of-pain",
+          "resilient-rifts",
+          "chain-explosion",
+          "call-it-a-comeback",
+          "explosive-hunt",
+          "tax-day",
+          "aggressive-recruitment",
+          "scary-scavengers",
+          "call-of-the-void",
+          "in-the-name-of-love",
+          "locked-and-loaded",
+          "of-mines-and-miners",
+          "the-league-of-vermillains",
+          "operation-cooperation",
+          "hot-n-cold",
+          "what-we-do-in-the-shadows",
+          "hardware-malfunction",
+          "shared-pain",
+          "the-longest-night",
+          "the-quick-and-the-undead",
+          "decade-of-decadence",
+          "bubble-pop",
+          "coordinated-defense",
+          "beggars-cant-be-choosers",
+          "my-bots",
+          "multitasking-trainer",
+          "hello-my-old-friend",
+          "of-one-mind",
+          "blasting-off-again",
+          "enter-the-nexus",
+          "death-is-fleeting",
+          "mass-manufacturing",
+          "fire-in-the-hole"
+        ],
+        "startIndex": 0,
+        "intervalDays": 7,
+        "regions": [
+          {
+            "region": "CN",
+            "start": "2020-10-26T02:00:00+08:00",
+            "switch": {
+              "weekday": "monday",
+              "time": "02:00",
+              "utcOffset": "+08:00"
+            },
+            "verifiedAt": null
+          },
+          {
+            "region": "NA",
+            "start": "2020-10-26T10:00:00Z",
+            "switch": {
+              "weekday": "monday",
+              "time": "10:00",
+              "utcOffset": "+00:00"
+            },
+            "verifiedAt": null
+          },
+          {
+            "region": "EU",
+            "start": "2020-10-26T10:00:00Z",
+            "switch": {
+              "weekday": "monday",
+              "time": "10:00",
+              "utcOffset": "+00:00"
+            },
+            "verifiedAt": null
+          },
+          {
+            "region": "AS",
+            "start": "2020-10-26T10:00:00Z",
+            "switch": {
+              "weekday": "monday",
+              "time": "10:00",
+              "utcOffset": "+00:00"
+            },
+            "verifiedAt": null
+          }
+        ]
+      }
+    ],
+    "overrides": []
+  }
+}

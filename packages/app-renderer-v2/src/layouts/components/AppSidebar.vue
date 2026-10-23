@@ -5,6 +5,8 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import logo from '../../assets/logo.png'
 import campaignIcon from '../../assets/menu/Menu_GamePlay.png'
+import customizeIcon from '../../assets/menu/Menu_Customize.png'
+import coopIcon from '../../assets/menu/Menu_Coop.png'
 import settingsIcon from '../../assets/menu/Menu_Setting.png'
 
 defineOptions({ name: 'AppSidebar' })
@@ -19,7 +21,8 @@ const accountLabel = computed(() => `${t('account.title')} · ${accountName.valu
 const items = computed(() => [
   { label: t('ui.home'), image: logo, to: '/', exact: true },
   { label: t('campaign.title'), image: campaignIcon, to: '/campaign' },
-  { label: t('customize.title'), image: campaignIcon, to: '/customize' },
+  { label: t('customize.title'), image: customizeIcon, to: '/customize' },
+  { label: t('weekly.title'), image: coopIcon, to: '/weekly-mutations' },
   { label: t('ui.settings'), image: settingsIcon, to: '/settings' },
 ])
 </script>

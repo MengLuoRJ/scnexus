@@ -1,3 +1,4 @@
+import { constants } from 'node:fs'
 import { access, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -23,6 +24,10 @@ export async function verifySevenZipTarget(root, platform, arch) {
       ? join(root, 'bin', folder, '7zz')
       : join(root, 'bin', folder, arch, platform === 'win32' ? '7z.exe' : '7zzs')
   await access(binary)
+  // Windows cannot validate POSIX execute bits; check again on the macOS packaging host.
+  if (platform === 'darwin' && process.platform !== 'win32') {
+    await access(binary, constants.X_OK)
+  }
   await access(join(root, 'bin', folder, 'License.txt'))
   if (platform === 'win32') await access(join(root, 'bin', folder, arch, '7z.dll'))
   if (platform === 'darwin') {

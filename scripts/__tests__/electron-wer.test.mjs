@@ -4,6 +4,7 @@ import { mkdtemp, writeFile, readFile, rm, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import config from '../../packages/app-main/electron-builder.mjs'
+import { renameElectronWer } from '../../packages/app-main/scripts/electron-wer.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 for (const projectName of ['electron', 'custom-electron']) {
@@ -36,7 +37,7 @@ test('WER hook leaves other platforms, old Electron and unchanged names alone', 
     ['win32', '44.5.1', 'SCNexus'],
     ['win32', '45.0.0', 'electron'],
   ]) {
-    await config.afterPack({
+    await renameElectronWer({
       electronPlatformName: platform,
       packager: { config: { electronVersion: version }, appInfo: { productFilename: name } },
     })

@@ -42,9 +42,18 @@
   ],
   "mac": {
     "icon": "buildResources/application_icon.png",
-    "artifactName": "${productName}_${version}.${ext}",
+    "artifactName": "${productName}_${version}_mac_${arch}.${ext}",
+    "identity": null,
+    "notarize": false,
+    "publish": null,
     "target": [
-      "dmg"
+      {
+        "target": "dmg",
+        "arch": [
+          "arm64",
+          "x64"
+        ]
+      }
     ]
   },
   "win": {

@@ -1,25 +1,49 @@
+import { constants } from 'node:fs'
+import { basename, dirname } from 'node:path'
 import { spawn } from 'node:child_process'
-import { stat } from 'node:fs/promises'
+import { access, stat } from 'node:fs/promises'
 import { getGamePaths } from '../scii-game-setting'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type { GameExecutableParameters } from '@scnexus/app-shared/types/customize/client-launcher.type'
+export function launchCommand(path: string, args: string[], platform = process.platform) {
+  if (
+    platform === 'darwin' &&
+    basename(dirname(path)) === 'MacOS' &&
+    basename(dirname(dirname(path))) === 'Contents'
+  ) {
+    return {
+      executable: '/usr/bin/open',
+      args: ['-n', '-a', dirname(dirname(dirname(path))), '--args', ...args],
+    }
+  }
+  return { executable: path, args }
+}
 async function launch(path: string, args: string[]) {
   try {
-    if (!(await stat(path)).isFile()) throw new Error('Executable missing')
+    if (!path || !(await stat(path)).isFile()) throw new Error('Executable missing')
+    if (process.platform === 'darwin') await access(path, constants.X_OK)
+    const command = launchCommand(path, args)
     await new Promise<void>((resolve, reject) => {
-      const child = spawn(path, args, { windowsHide: false, stdio: 'ignore' })
+      const child = spawn(command.executable, command.args, { windowsHide: false, stdio: 'ignore' })
       child.once('error', reject)
       child.once('spawn', () => {
         child.unref()
-        resolve()
+        if (command.executable !== '/usr/bin/open') resolve()
       })
+      if (command.executable === '/usr/bin/open')
+        child.once('exit', (code) =>
+          code === 0 ? resolve() : reject(new Error('LaunchServices rejected launch')),
+        )
     })
   } catch (cause) {
     throw new AppError(ERRORS.GAME_LAUNCH_FAILED, {}, { cause })
   }
 }
 export async function runGameClient() {
-  await launch((await getGamePaths()).client, ['-sso=1', '-launch', '-uid', 's2'])
+  await launch(
+    (await getGamePaths()).client,
+    process.platform === 'darwin' ? [] : ['-sso=1', '-launch', '-uid', 's2'],
+  )
 }
 export async function runGameExecutable(parameters?: GameExecutableParameters) {
   const args: string[] = []

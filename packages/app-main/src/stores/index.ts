@@ -23,7 +23,11 @@ export function initAllStores(): Promise<void> {
 export async function initGameStore(reload = false): Promise<void> {
   const { app } = await import('electron')
   if (!app.isReady()) throw new AppError(ERRORS.APP_INITIALIZATION_FAILED)
-  configureGameDefaults(app.getPath('documents'))
+  configureGameDefaults(
+    process.platform === 'darwin'
+      ? join(app.getPath('home'), 'Library', 'Application Support', 'Blizzard')
+      : app.getPath('documents'),
+  )
   const directory = join(getApplicationDataDirectory(), 'SCNexusStorage')
   const backend = await createElectronBackend('store-scii-game-setting', directory)
   if (reload) sciiGameSettingRepository.reload(backend)
@@ -51,7 +55,11 @@ async function initialize(): Promise<void> {
     })
   const directory = join(getApplicationDataDirectory(), 'SCNexusStorage')
   configureSettingDefaults(app.getPath('downloads'))
-  configureGameDefaults(app.getPath('documents'))
+  configureGameDefaults(
+    process.platform === 'darwin'
+      ? join(app.getPath('home'), 'Library', 'Application Support', 'Blizzard')
+      : app.getPath('documents'),
+  )
   const oldProfile = join(directory, 'store-profile.json')
   const gameFile = join(directory, 'store-scii-game-setting.json')
   if (!existsSync(gameFile) && existsSync(oldProfile))

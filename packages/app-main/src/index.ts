@@ -1,6 +1,7 @@
 import { registerApplicationScheme, installApplicationProtocol } from './modules/window/protocol'
 import { isInstallingUpdate } from './modules/updater'
-import { app, dialog, Menu } from 'electron'
+import { app, dialog } from 'electron'
+import { initializeApplicationMenu } from './modules/app/menu'
 import { initLoggingModule, reportError } from './modules/logging'
 import { initModules, disposeModules } from './modules/init'
 import { captureDeepLink } from './modules/deep-link'
@@ -72,7 +73,7 @@ void app
   .whenReady()
   .then(async () => {
     installApplicationProtocol()
-    Menu.setApplicationMenu(null)
+    initializeApplicationMenu()
     const failures = await initModules()
     await restoreOrCreateWindow()
     if (failures.length)

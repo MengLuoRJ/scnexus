@@ -39,3 +39,23 @@ node-casclib/node-stormlib 虽在 workspace 中，但 app-main 未声明依赖�
 - `pnpm run test:native:electron`：使用 Electron 的 Node 模式执行相同测试，不启动业务或窗口。
 
 包装脚本将 TEMP/TMP/TMPDIR 指向仓库内隔离目录并清理，避免测试写入系统临时路径。2026-10-23 两个命令各 10 项通过、1 项跳过：MPQ 离线读写、BLTE raw/zlib 解码及兼容 bindings 已在现有二进制上真实执行；未配置 `CASCLIB_TEST_STORAGE`，真实安装 CASC 测试跳过。没有重新编译原生模块，没有验证真实 SC2 内容或打包后的原生库加载；N-API 可加载不等于业务集成或完整平台验证。
+
+## macOS 第一阶段构建
+
+本轮在Windows仅验证配置和文件契约，未生成或运行真实DMG。正式分发签名、公证与自动更新不在此阶段：mac配置显式identity=null、notarize=false、publish=null，仅生成内部测试的未签名包，macOS Gatekeeper仍会限制首次打开，不应宣称可直接正式分发或关闭系统安全设置。
+
+在具备Node26/pnpm及Xcode Command Line Tools的Mac构建机上执行（先按锁文件安装依赖）：
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm run build:app:prepare
+pnpm exec cross-env MODE=production pnpm run build
+pnpm run test:build
+pnpm --filter @scnexus/app-main exec electron-builder build --config electron-builder.mjs --mac --publish never
+```
+
+配置分别生成arm64和x64 DMG，文件名包含`_mac_${arch}`避免覆盖。要先检查目录包，可在最后命令添加`--dir`。应用本身的架构与SC2游戏进程架构分开；不自动安装Rosetta，也不由arm64应用包推断游戏为原生ARM。
+
+Windows regedit VBS仅由win.extraResources附带；mac排除该资源。7z保持双架构Mach-O及许可检查，并在非Windows打包机检查执行权限，afterPack再次检查.app内app.asar.unpacked中的真实helper，避免只验证开发依赖却漏包。Windows WER命名钩子仍执行，但在mac自然不处理。
+
+自动化：`pnpm run test:build` 24项通过，覆盖双架构文件名、平台资源隔离、mac打包后helper缺失拒绝和两种架构检查。真实Mac需独立验收DMG挂载/拖入Applications/首次启动、7z解压、Keychain、SC2识别和安装激活恢复卸载；未执行代码签名、公证或Mac自动更新。业务平台边界见[app-main-design.md](./app-main-design.md)。

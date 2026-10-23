@@ -62,7 +62,7 @@ test('app-main is the sole packaging application and includes v2 and external to
     'Let the dependency collector preserve Sentry versions; manual copies break nested resolution',
   )
   assert.equal(
-    config.extraResources[0].from,
+    config.win.extraResources[0].from,
     join(dirname(require.resolve('regedit/package.json')), 'vbs'),
   )
 })

@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { readdir, mkdtemp, rm, mkdir } from 'node:fs/promises'
+import { readdir, mkdtemp, rm, mkdir, cp } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import {
   sevenZipFileFilters,
@@ -74,5 +74,45 @@ test('missing target resources fail before packing', async () => {
     await assert.rejects(verifySevenZipTarget(temporary, 'win32', 'x64'), { code: 'ENOENT' })
   } finally {
     await rm(temporary, { recursive: true, force: true })
+  }
+})
+
+test('macOS phase-one artifacts are explicit unsigned arm64/x64 DMGs with Windows-only resources excluded', () => {
+  assert.deepEqual(config.mac.target, [{ target: 'dmg', arch: ['arm64', 'x64'] }])
+  assert.ok(config.mac.artifactName.includes('${arch}'))
+  assert.equal(config.mac.identity, null)
+  assert.equal(config.mac.notarize, false)
+  assert.equal(config.mac.publish, null)
+  assert.equal(config.extraResources, undefined)
+  assert.equal(config.win.extraResources[0].to, 'regedit/vbs')
+  assert.ok(config.mac.files.includes('!node_modules/regedit/vbs{,/**/*}'))
+})
+test('afterPack verifies the unpacked macOS helper and rejects a missing helper', async () => {
+  const out = await mkdtemp(
+    join(fileURLToPath(new URL('../../', import.meta.url)), '.mac-pack-test-'),
+  )
+  try {
+    const target = join(
+      out,
+      'SCNexus.app',
+      'Contents',
+      'Resources',
+      'app.asar.unpacked',
+      'node_modules',
+      '7z-bin',
+    )
+    const context = {
+      appOutDir: out,
+      electronPlatformName: 'darwin',
+      arch: Arch.arm64,
+      packager: { appInfo: { productFilename: 'SCNexus' } },
+    }
+    await assert.rejects(config.afterPack(context), { code: 'ENOENT' })
+    await mkdir(join(target, 'bin'), { recursive: true })
+    await cp(join(root, 'bin', 'mac'), join(target, 'bin', 'mac'), { recursive: true })
+    await config.afterPack(context)
+    await config.afterPack({ ...context, arch: Arch.x64 })
+  } finally {
+    await rm(out, { recursive: true, force: true })
   }
 })

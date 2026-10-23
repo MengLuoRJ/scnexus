@@ -346,3 +346,15 @@ M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；�
 2026-10-08 IPC 返回契约统一：main 的 ipcHandle/ipcHandleRegister 均返回 IpcResult，删除 ipcHandleTyped 和内部旧格式分支；preload 的 invoke 统一执行返回校验及 P001/R001 转换；renderer-v2 删除 legacyRequest 与 legacy.ts，bridge.ts 仅负责尚处于顶层桥接的白名单访问，不转换旧返回格式。旧 renderer v1 不再兼容。工坊上传失败抛出规范错误，不作为成功 data 返回 Error；工坊其他业务重构仍延期。事件和单向日志发送不适用请求结果信封。
 
 窗口就绪由 renderer-v2 主动握手，不再由 preload 的旧 renderer 兼容逻辑自动通知。握手早于主页面加载完成时，main 暂存请求，did-finish-load 后才投递队列和通知监听者；导航、关闭和 renderer 崩溃清除待完成握手，避免把新页面误标为已就绪。没有窗口仍返回 M018。加载期握手与跨导航清理测试通过。
+
+## macOS 第一阶段适配（2026-10-24）
+
+- Windows 的注册表、exe、原启动参数保持原行为；darwin 使用独立 mac-game 模块。手动选择安装根或 `.app` 都归一到安装根，`.app` 必须是目录。Versions/Base 数字 build 从大到小寻找具有执行权限的 `SC2.app/Contents/MacOS/SC2`，缺少可执行文件的更高 build 不抢占有效旧 build；根 SC2.app 仅作后备入口。
+- 自动发现依次读取 `~/Library/Application Support/Blizzard/StarCraft II/ExecuteInfo.txt`、兼容 Documents 下同名记录，截断 `/Versions/` 得到根；随后只读 Battle.net.config 的 `Client.Install.Default.s2.InstallPath`，最后检查 `/Applications/StarCraft II` 和 `~/Applications/StarCraft II`。候选均须重新验证。ExecuteInfo 不决定最终 build。配置大小有限制，坏 JSON 不当作安装位置。不运行 Spotlight、全盘扫描或猜测其他战网配置键；未匹配的机器使用手动选择。
+- 游戏用户目录使用 `~/Library/Application Support/Blizzard/StarCraft II`，应用自有数据仍是 `~/.scnexus`，不修改 Electron userData。Banks 属于 Accounts 下各账户，当前功能尚不管理账户 Banks；mac 的 banksRoot/arcadeBanksRoot 返回空字符串表示未提供，绝不自动创建游戏根 Banks 或擅自选一个账户。
+- 仅检测实际存在且有执行权限的 Switcher/编辑器候选；不存在时对应 capability=false，不把 `.app` 目录当可执行文件。已识别 bundle 通过 `/usr/bin/open -n -a <bundle> --args ...` 启动，参数逐项传递，不使用 shell；等待 open 的退出状态，不把 spawn 成功当作 LaunchServices 成功，也不把 open 的退出码当作游戏退出码。普通 mac 游戏启动不附 Windows 战网参数。没有可用 Switcher 时不猜测其他程序支持地图测试。
+- Mac 原生应用/编辑/视图/窗口菜单保留 Cmd+Q/C/V/A 等系统行为。关闭最后窗口不退出及 Dock activate 恢复窗口沿用已有逻辑。菜单栏图标缩至18px，不额外占用文字标题；托盘 SCNexus 项可恢复窗口。暂不新增无来源的单色模板图标。
+- 内容记录当前仍以 Maps/Mods 为规范逻辑路径。mac 配置提交前用可清理的临时目录检查游戏卷大小写行为，拒绝大小写敏感卷（含外置卷），避免与 lowercase maps/mods 形成两个物理目录；不声称已适配此类卷。既有权限/边界/事务回滚保护不放宽。普通大小写不敏感 APFS 下的真实 SC2 内容读写仍需 Mac 真机验收。
+- 自动更新保持 mac 不可用，使用手动下载安装。签名、公证、Rosetta、安装或更新真实游戏都不由应用静默执行。打包配置与命令见 [building.md](./building.md)。
+
+本轮 Windows 验证：主进程43文件390项通过、main类型检查及构建通过；改动文件ESLint与main Oxlint通过。测试使用真实临时文件夹验证最高build/入口选择、ExecuteInfo和配置读取，LaunchServices只验证命令构造，没有在Windows执行mac程序。尚未验收真实Mac窗口、Keychain、SC2/编辑器参数、战役安装激活恢复卸载闭环、用户账户Banks、TCC权限和DMG首次运行；这些是正式宣布支持前的真机验收项。

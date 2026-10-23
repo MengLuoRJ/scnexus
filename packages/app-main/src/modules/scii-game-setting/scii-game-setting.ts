@@ -1,3 +1,10 @@
+import { app } from 'electron'
+import {
+  discoverMacGame,
+  macGameRoot,
+  macGameExecutables,
+  assertMacContentVolume,
+} from './mac-game'
 import { join, resolve, isAbsolute } from 'node:path'
 import { stat, mkdir, realpath } from 'node:fs/promises'
 import { sciiGameSettingRepository } from '../../stores/scii-game-setting'
@@ -42,16 +49,31 @@ export function gamePaths(root: string, documents: string, revision = 0): GamePa
     arcadeBanksRoot: join(documents, 'StarCraft II', 'ArcadeBanks'),
   }
 }
+async function resolveGamePaths(root: string, documents: string, revision = 0): Promise<GamePaths> {
+  const paths = gamePaths(root, documents, revision)
+  if (process.platform !== 'darwin') {
+    if (!(await stat(paths.client)).isFile()) throw new Error('Missing client')
+    return paths
+  }
+  await macGameRoot(root)
+  const executables = await macGameExecutables(root)
+  const dataRoot = join(
+    app.getPath('home'),
+    'Library',
+    'Application Support',
+    'Blizzard',
+    'StarCraft II',
+  )
+  return { ...paths, ...executables, documentsRoot: dataRoot, banksRoot: '', arcadeBanksRoot: '' }
+}
 export async function getGamePaths(): Promise<GamePaths> {
   const data = sciiGameSettingRepository.getSnapshot()
   if (!data.gameRoot) throw new AppError(ERRORS.PROFILE_NOT_READY)
   try {
-    if (!(await stat(join(data.gameRoot, 'StarCraft II.exe'))).isFile())
-      throw new Error('Missing client')
+    return await resolveGamePaths(data.gameRoot, data.documentRoot, data._revision)
   } catch (cause) {
     throw new AppError(ERRORS.PROFILE_GAME_ROOT_INVALID, {}, { cause })
   }
-  return gamePaths(data.gameRoot, data.documentRoot, data._revision)
 }
 export async function configureGame(input: unknown) {
   if (busy) throw new AppError(ERRORS.PROFILE_CHANGE_BLOCKED)
@@ -62,14 +84,16 @@ export async function configureGame(input: unknown) {
 async function configureUnlocked(input: string) {
   let root: string
   try {
-    root = await realpath(resolve(input))
-    if (!(await stat(join(root, 'StarCraft II.exe'))).isFile()) throw new Error('Invalid client')
+    root = process.platform === 'darwin' ? await macGameRoot(input) : await realpath(resolve(input))
+    await resolveGamePaths(root, sciiGameSettingRepository.getSnapshot().documentRoot)
   } catch (cause) {
     throw new AppError(ERRORS.PROFILE_GAME_ROOT_INVALID, {}, { cause })
   }
   const old = sciiGameSettingRepository.getSnapshot()
-  const paths = gamePaths(root, old.documentRoot)
+  const paths = await resolveGamePaths(root, old.documentRoot)
   try {
+    // Content records use canonical Maps/Mods casing; never write to a different directory.
+    if (process.platform === 'darwin') await assertMacContentVolume(root)
     for (const dir of [paths.mapsRoot, paths.modsRoot, paths.customizeDataRoot, paths.ccmRoot])
       await mkdir(dir, { recursive: true })
   } catch (cause) {
@@ -88,10 +112,10 @@ export async function getGameSnapshot() {
   const setting = sciiGameSettingRepository.getSnapshot()
   try {
     const paths = await getGamePaths()
-    const capabilities = { client: true, switcher: false, editor: false }
+    const capabilities = { client: Boolean(paths.client), switcher: false, editor: false }
     for (const key of ['switcher', 'editor'] as const) {
       try {
-        capabilities[key] = (await stat(paths[key])).isFile()
+        capabilities[key] = Boolean(paths[key]) && (await stat(paths[key])).isFile()
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
       }
@@ -118,6 +142,11 @@ export async function initializeGame() {
 async function discoverGame() {
   const data = sciiGameSettingRepository.getSnapshot()
   if (data.gameRoot) return configureUnlocked(data.gameRoot)
+  if (process.platform === 'darwin') {
+    const root = await discoverMacGame(app.getPath('home'))
+    if (!root) throw new AppError(ERRORS.PROFILE_NOT_READY)
+    return configureUnlocked(root)
+  }
   if (process.platform !== 'win32') throw new AppError(ERRORS.PROFILE_NOT_READY)
   let value: unknown
   try {

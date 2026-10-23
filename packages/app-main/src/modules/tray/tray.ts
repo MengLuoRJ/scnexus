@@ -2,6 +2,7 @@ import { app, Menu, Tray, nativeImage } from 'electron'
 import type { MenuItem } from 'electron'
 import { join } from 'node:path'
 import { Logger } from '@/modules/logging'
+import { restoreOrCreateWindow } from '../window'
 
 let tray: Tray | undefined = undefined
 
@@ -23,7 +24,7 @@ export function initTray() {
     return
   }
   try {
-    tray = new Tray(trayIcon)
+    tray = new Tray(process.platform === 'darwin' ? trayIcon.resize({ height: 18 }) : trayIcon)
   } catch (error) {
     Logger.warn('Failed to create tray', error)
     return
@@ -32,7 +33,16 @@ export function initTray() {
   // contextMenu = new Menu();
 
   contextMenu = Menu.buildFromTemplate([
-    { id: 'scnexus', label: 'SCNexus', type: 'normal' },
+    {
+      id: 'scnexus',
+      label: 'SCNexus',
+      type: 'normal',
+      click: () => {
+        void restoreOrCreateWindow().catch((error) =>
+          Logger.warn('Unable to restore window', error),
+        )
+      },
+    },
     { id: 'sp1', label: 'separator1', type: 'separator' },
     {
       id: 'starter-scii-client',
@@ -54,7 +64,7 @@ export function initTray() {
   tray.setContextMenu(contextMenu)
 
   tray.setToolTip('SCNexus')
-  tray.setTitle('SCNexus')
+  if (process.platform !== 'darwin') tray.setTitle('SCNexus')
 
   return tray
 }

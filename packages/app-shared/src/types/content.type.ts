@@ -105,6 +105,7 @@ export type ContentRecord = {
   gameRoot: string
 }
 export type ActiveCampaign = {
+  ownershipUnknown?: boolean
   localId: string
   campaign: PackageCampaignType
   mode: 'scnexus' | 'ccm'

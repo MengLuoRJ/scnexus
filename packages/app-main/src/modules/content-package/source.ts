@@ -10,7 +10,7 @@ import {
   type ErrorDefinition,
 } from '@scnexus/app-shared/errors/app.error'
 import { sevenZip, SevenZipError, SevenZipTimeoutError } from '../../utils/7zip-wrapper'
-import { logicalPath, keyPath, safePath } from './paths'
+import { logicalPath, keyPath, safePath, walkReadOnly } from './paths'
 import { reportOperationWarning } from '../../utils/operation-warnings'
 import type { SevenZipResult } from '../../utils/7zip-wrapper/types'
 
@@ -182,26 +182,22 @@ export async function openSource(input: SourceInput): Promise<ContentSource> {
   let archiveHash: string | undefined
   let read: ContentSource['read']
   if (input.kind === 'directory') {
-    const walk = async (dir: string, prefix = '') => {
-      for (const item of await readdir(dir, { withFileTypes: true })) {
-        const path = prefix + item.name
+    await walkReadOnly(
+      input.path,
+      (_absolute, path, stat) => {
+        if (!path) return
         noteDescriptor(path)
-        const absolute = await safePath(input.path, path)
-        const stat = await lstat(absolute)
-        if (stat.isDirectory()) {
-          directories.push(path)
-          await walk(absolute, path + '/')
-        } else if (stat.isFile())
+        if (stat.isDirectory()) directories.push(path)
+        else
           entries.push({
             path,
             bytes: stat.size,
             modifiedAt: stat.mtimeMs,
             changedAt: stat.ctimeMs,
           })
-        else throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
-      }
-    }
-    await walk(input.path)
+      },
+      info,
+    )
     read = async (path) => readFile(await safePath(input.path, path))
   } else {
     archiveHash = await hashFile(input.path)

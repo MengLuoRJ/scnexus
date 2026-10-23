@@ -1249,6 +1249,126 @@ test.each(['keep', 'delete'] as const)(
     expect(await readFile(target, 'utf8')).toBe('user edit')
   },
 )
+test('SCNexus campaign import defers all game resource conflicts until activation', async () => {
+  const f = await fixture()
+  const target = join(f.paths.mapsRoot, 'Campaign', 'M.SC2Map')
+  await mkdir(target, { recursive: true })
+  await writeFile(join(target, 'old'), 'old map')
+  await mkdir(f.paths.modsRoot, { recursive: true })
+  await writeFile(join(f.paths.modsRoot, 'Core.SC2Mod'), 'old mod')
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('campaign', {
+        mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+      }),
+    ),
+    'Maps/Campaign/M.SC2Map/a': 'new map',
+    'Maps/Campaign/M.SC2Map/b': 'new map part',
+    'Mods/Core.SC2Mod/a': 'new mod',
+    'Mods/Core.SC2Mod/b': 'new mod part',
+  })
+  const analysis = await f.service.analyze('campaign', input)
+  expect(analysis.conflicts.find((group) => group.mode === 'scnexus')?.files).toEqual([])
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  expect(await readFile(join(target, 'old'), 'utf8')).toBe('old map')
+  expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod'), 'utf8')).toBe('old mod')
+  const activation = await f.service.prepareActivation(record.localId)
+  expect(activation.conflicts).toHaveLength(2)
+  expect(activation.conflicts.map((conflict) => conflict.local.path).sort()).toEqual(
+    [target, join(f.paths.modsRoot, 'Core.SC2Mod')].sort(),
+  )
+  expect(activation.conflicts.every((conflict) => !conflict.local.path.endsWith('/a'))).toBe(true)
+})
+test.each(['delete', 'keep'] as const)(
+  'scanned CCM without activation ownership requires whole-resource %s decisions before removing markers',
+  async (action) => {
+    const f = await fixture()
+    const directory = join(f.paths.ccmRoot, 'Discovered')
+    const target = join(f.paths.mapsRoot, 'Campaign', 'M.SC2Map')
+    await mkdir(directory, { recursive: true })
+    await writeFile(join(directory, 'metadata.txt'), 'title=Discovered\ncampaign=WOL')
+    await writeFile(join(directory, 'M.SC2Map'), 'library map')
+    await mkdir(join(target, 'Base.SC2Data'), { recursive: true })
+    await writeFile(join(target, 'Base.SC2Data', 'a'), 'active component')
+    await writeFile(
+      join(f.paths.mapsRoot, 'Campaign', 'metadata.txt'),
+      'title=Discovered\ncampaign=WOL',
+    )
+    const scan = await f.service.scan()
+    const record = scan.records[0]
+    expect(scan.active.WOL?.ownershipUnknown).toBe(true)
+    const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
+    expect(removal.files).toHaveLength(1)
+    expect(removal.files[0].file.target).toBe('Maps/Campaign/M.SC2Map')
+    await expect(f.service.remove(removal.removalId, [])).rejects.toMatchObject({ code: 'M051' })
+    expect(await readFile(join(f.paths.mapsRoot, 'Campaign', 'metadata.txt'), 'utf8')).toContain(
+      'Discovered',
+    )
+    await f.service.remove(removal.removalId, [{ conflictId: removal.files[0].conflictId, action }])
+    expect((await stat(target).catch(() => null)) !== null).toBe(action === 'keep')
+    await expect(stat(join(f.paths.mapsRoot, 'Campaign', 'metadata.txt'))).rejects.toMatchObject({
+      code: 'ENOENT',
+    })
+    const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
+    await f.service.remove(uninstall.removalId, [])
+    await expect(stat(directory)).rejects.toMatchObject({ code: 'ENOENT' })
+  },
+)
+test('active campaign removal still requires deactivation and deletes newly installed whole map groups', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'metadata.txt': 'title=Managed\ncampaign=WOL',
+    'M.SC2Map/a': 'part a',
+    'M.SC2Map/b': 'part b',
+  })
+  const analysis = await f.service.analyze('campaign', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'ccm',
+    decisions: [],
+  })
+  const activation = await f.service.prepareActivation(record.localId)
+  await f.service.activate(activation.activationId, [])
+  await expect(f.service.prepareRemoval(record.localId, 'uninstall')).rejects.toMatchObject({
+    code: 'M051',
+  })
+  const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
+  expect(removal.files).toEqual([])
+  await f.service.remove(removal.removalId, [])
+  await expect(stat(join(f.paths.mapsRoot, 'Campaign', 'M.SC2Map'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
+  const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
+  await f.service.remove(uninstall.removalId, [])
+  await expect(stat(record.managementDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
+})
+test('incomplete active map records cannot remove only the campaign marker', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'metadata.txt': 'title=Incomplete\ncampaign=WOL',
+    'M.SC2Map/a': 'map',
+  })
+  const analysis = await f.service.analyze('campaign', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'ccm',
+    decisions: [],
+  })
+  const preview = await f.service.prepareActivation(record.localId)
+  const active = await f.service.activate(preview.activationId, [])
+  f.active.update({ ...f.active.getSnapshot(), active: { WOL: { ...active, installedFiles: [] } } })
+  await expect(f.service.prepareRemoval(record.localId, 'deactivate')).rejects.toMatchObject({
+    code: 'M051',
+  })
+  expect(await readFile(join(f.paths.mapsRoot, 'Campaign', 'metadata.txt'), 'utf8')).toContain(
+    'Incomplete',
+  )
+  expect(await readFile(join(f.paths.mapsRoot, 'Campaign', 'M.SC2Map', 'a'), 'utf8')).toBe('map')
+})
 test('cancelled preview cannot install or leave a successful record', async () => {
   const f = await fixture()
   const input = await source(f.root, {

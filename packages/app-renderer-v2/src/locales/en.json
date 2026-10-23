@@ -95,6 +95,7 @@
   "campaign.keep": "Keep local file",
   "campaign.delete": "Delete shared file",
   "campaign.usedBy": "Also used by",
+  "campaign.unknownOwnership": "Scanning found this resource without a trusted activation record. Choose to keep or delete the whole resource. Deleted content cannot be restored automatically.",
   "campaign.removeConfirm": "Confirm removal. CCM Mods are not managed by this operation.",
   "campaign.cancel": "Cancel",
   "campaign.confirm": "Confirm",

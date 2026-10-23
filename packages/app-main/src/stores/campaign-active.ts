@@ -41,6 +41,8 @@ export function validateActive(value: unknown): asserts value is ActiveCampaign 
     typeof value.activatedAt !== 'number'
   )
     invalidData('Invalid active campaign')
+  if (value.ownershipUnknown !== undefined && typeof value.ownershipUnknown !== 'boolean')
+    invalidData('Invalid ownership state')
   if (value.resourceBackups !== undefined) {
     if (!Array.isArray(value.resourceBackups)) invalidData('Invalid resource backups')
     for (const backup of value.resourceBackups) {

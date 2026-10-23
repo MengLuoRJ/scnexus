@@ -317,12 +317,17 @@ export class ContentService {
     }
     return matches
   }
-  private async conflicts(files: PlannedFile[], paths: GamePaths): Promise<Conflict[]> {
+  private async conflicts(
+    files: PlannedFile[],
+    paths: GamePaths,
+    states = new Map<string, Awaited<ReturnType<typeof resourceState>>>(),
+  ) {
     const result: Conflict[] = []
     for (const group of resourceGroups(files)) {
       const file = group.files[0]!
       const target = await safePath(paths.gameRoot, group.target)
-      const info = await resourceState(target)
+      if (!states.has(target)) states.set(target, await resourceState(target))
+      const info = states.get(target)
       if (info) {
         result.push({
           conflictId: randomUUID(),
@@ -475,6 +480,7 @@ export class ContentService {
     const mode = recommended === 'SCNexus' ? 'scnexus' : recommended === 'CCM' ? 'ccm' : null
     if (mode && result.modes[mode]) result.recommendedMode = mode
     const hashes = new Map<string, string>(input.kind === 'directory' ? descriptorHashes : [])
+    const targetStates = new Map<string, Awaited<ReturnType<typeof resourceState>>>()
     for (const mode of ['scnexus', 'ccm', 'auto'] as const) {
       const preview = result.modes[mode]
       if (!preview) continue
@@ -484,12 +490,15 @@ export class ContentService {
         mode === 'auto' ? 'scnexus' : mode,
         paths,
       )
+      const conflictFiles =
+        type === 'campaign' && mode !== 'ccm'
+          ? []
+          : mode === 'ccm'
+            ? preview.files.filter((file) => file.type === 'mod')
+            : preview.files
       result.conflicts.push({
         mode,
-        files: await this.conflicts(
-          mode === 'ccm' ? preview.files.filter((f) => f.type === 'mod') : preview.files,
-          paths,
-        ),
+        files: await this.conflicts(conflictFiles, paths, targetStates),
       })
       if (input.kind === 'directory' && mode !== 'auto') {
         if (type === 'campaign')
@@ -505,7 +514,7 @@ export class ContentService {
     }
     for (const group of result.conflicts)
       for (const file of group.files)
-        hashes.set('local:' + file.local.path, (await resourceState(file.local.path))!.hash)
+        hashes.set('local:' + file.local.path, targetStates.get(file.local.path)!.hash)
     if (input.kind === 'archive') await verifyArchive(source)
     else
       for (const [path, digest] of descriptorHashes)
@@ -1075,17 +1084,18 @@ export class ContentService {
     await safePath(paths.gameRoot, relative(paths.gameRoot, record.managementDirectory))
     const files =
       record.mode === 'ccm' ? record.files.filter((f) => f.type === 'map') : record.files
+    const targetStates = new Map<string, Awaited<ReturnType<typeof resourceState>>>()
     const preview: ActivationPreview = {
       activationId: randomUUID(),
       localId,
       files,
-      conflicts: await this.conflicts(files, paths),
+      conflicts: await this.conflicts(files, paths, targetStates),
     }
     const hashes = new Map<string, string>()
     for (const f of files)
       hashes.set(f.source, await hashFile(await safePath(record.payloadDirectory, f.source)))
     for (const file of preview.conflicts)
-      hashes.set('local:' + file.local.path, (await resourceState(file.local.path))!.hash)
+      hashes.set('local:' + file.local.path, targetStates.get(file.local.path)!.hash)
     for (const group of resourceGroups(files)) {
       const file = group.files[0]!
       const sourceRoot = file.source.slice(
@@ -1259,6 +1269,15 @@ export class ContentService {
         paths,
       )
     const files = operation === 'deactivate' ? active!.installedFiles : record.installedFiles
+    if (
+      operation === 'deactivate' &&
+      record.files.some((file) => file.type === 'map') &&
+      !files.some((file) => file.type === 'map')
+    )
+      throw new AppError(ERRORS.TASK_CONFLICT, {
+        message:
+          'Active map ownership is missing; rebuild the installation index before removing campaign markers',
+      })
     const others = [
       ...this.customize
         .getSnapshot()
@@ -1286,8 +1305,12 @@ export class ContentService {
       operation,
       files: [],
     }
-    if (record.mode === 'scnexus')
-      for (const group of resourceGroups(files.filter((f) => !f.official && f.result !== 'kept'))) {
+    const ownershipUnknown = operation === 'deactivate' && active?.ownershipUnknown === true
+    if (record.mode === 'scnexus' || ownershipUnknown)
+      for (const group of resourceGroups(files).filter(
+        (group) =>
+          ownershipUnknown || group.files.every((file) => !file.official && file.result !== 'kept'),
+      )) {
         const usedBy = others
           .filter((o) =>
             resourceGroups(o.files).some(
@@ -1295,7 +1318,7 @@ export class ContentService {
             ),
           )
           .map(({ files: _files, ...o }) => o)
-        if (usedBy.length)
+        if (usedBy.length || ownershipUnknown)
           preview.files.push({
             conflictId: randomUUID(),
             file: {
@@ -1310,7 +1333,7 @@ export class ContentService {
     const hashes = new Map<string, string | null>()
     for (const group of resourceGroups(files).filter(
       (group) =>
-        group.files.every((file) => file.result !== 'kept') &&
+        (ownershipUnknown || group.files.every((file) => file.result !== 'kept')) &&
         (record.mode !== 'ccm' || group.files[0]!.type === 'map'),
     )) {
       const target = await safePath(paths.gameRoot, group.target)
@@ -1381,7 +1404,8 @@ export class ContentService {
       const removable = resourceGroups(files)
         .filter(
           (group) =>
-            group.files.every((file) => file.result !== 'kept') &&
+            ((context.active && active?.ownershipUnknown) ||
+              group.files.every((file) => file.result !== 'kept')) &&
             (record.mode !== 'ccm' || group.files[0]!.type === 'map'),
         )
         .flatMap((group) => group.files)

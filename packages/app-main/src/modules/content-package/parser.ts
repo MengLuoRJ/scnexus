@@ -94,8 +94,21 @@ export function buildPreview(
     (descriptor.includes('/') ? descriptor.slice(0, descriptor.lastIndexOf('/')) : '')
   const prefix = root ? root + '/' : ''
   const files: PlannedFile[] = []
+  const entriesByPath = new Map(source.entries.map((entry) => [entry.path, entry]))
+  const descendants = new Map<string, typeof source.entries>()
+  for (const entry of source.entries) {
+    const parts = entry.path.split('/')
+    for (let i = 1; i < parts.length; i++) {
+      const parent = parts.slice(0, i).join('/')
+      const children = descendants.get(parent) ?? []
+      children.push(entry)
+      descendants.set(parent, children)
+    }
+  }
+  const targets = new Map<string, PlannedFile>()
+  const targetDirectories = new Set<string>()
   const add = (path: string, target: string, type: PlannedFile['type']) => {
-    const entry = source.entries.find((e) => e.path === path)!
+    const entry = entriesByPath.get(path)!
     target = logicalPath(target)
     if (!/^(Maps|Mods)\//.test(target)) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
     if (
@@ -106,38 +119,41 @@ export function buildPreview(
       throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED, {
         message: 'Cross-campaign map target',
       })
-    const old = files.find((f) => keyPath(f.target) === keyPath(target))
+    const targetKey = keyPath(target)
+    const old = targets.get(targetKey)
     if (old) {
       if (old.source === path) return
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
         message: 'Conflicting package targets',
       })
     }
-    if (
-      files.some(
-        (file) =>
-          keyPath(file.target).startsWith(keyPath(target) + '/') ||
-          keyPath(target).startsWith(keyPath(file.target) + '/'),
-      )
-    )
+    const parts = targetKey.split('/')
+    const parents = parts.slice(0, -1).map((_, index) => parts.slice(0, index + 1).join('/'))
+    if (targetDirectories.has(targetKey) || parents.some((parent) => targets.has(parent)))
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
         message: 'Resource file/directory target collision',
       })
-    files.push({
+    const file: PlannedFile = {
       source: path,
       target,
       type,
       official: officialMap(target, pkg.campaign),
       bytes: entry.bytes,
       modifiedAt: entry.modifiedAt,
-    })
+    }
+    files.push(file)
+    targets.set(targetKey, file)
+    for (const parent of parents) targetDirectories.add(parent)
   }
   const resource = (src: string, target: string, type: PlannedFile['type']) => {
     const extension = type === 'map' ? '.sc2map' : '.sc2mod'
     if (!src.toLowerCase().endsWith(extension) || !target.toLowerCase().endsWith(extension))
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
     const path = prefix + src
-    const matches = source.entries.filter((e) => e.path === path || e.path.startsWith(path + '/'))
+    const exact = entriesByPath.get(path)
+    const matches = exact
+      ? [exact, ...(descendants.get(path) ?? [])]
+      : (descendants.get(path) ?? [])
     if (!matches.length)
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
         message: 'Missing declared resource',

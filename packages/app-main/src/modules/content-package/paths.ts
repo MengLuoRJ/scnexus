@@ -1,5 +1,6 @@
 import { relative, resolve, isAbsolute, sep, posix } from 'node:path'
-import { lstat, realpath } from 'node:fs/promises'
+import { lstat, realpath, readdir } from 'node:fs/promises'
+import type { Stats } from 'node:fs'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type { PackageCampaignType } from '@scnexus/app-shared/types/content.type'
 export const CAMPAIGNS = ['WOL', 'HOTS', 'LOTV', 'NCO'] as const
@@ -48,6 +49,32 @@ export async function safePath(root: string, logical: string): Promise<string> {
     }
   }
   return path
+}
+// Read-only traversal validates each node once, after its parent; never reuse this for writes.
+export async function walkReadOnly(
+  root: string,
+  visit: (absolute: string, path: string, info: Stats) => void | Promise<void>,
+  rootInfo?: Stats,
+): Promise<void> {
+  const resolvedRoot = await realpath(root)
+  const walk = async (absolute: string, path: string, info?: Stats): Promise<void> => {
+    const stat = info ?? (await lstat(absolute))
+    if (
+      stat.isSymbolicLink() ||
+      (!stat.isDirectory() && !stat.isFile()) ||
+      !below(resolvedRoot, await realpath(absolute))
+    )
+      throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+    await visit(absolute, path, stat)
+    if (stat.isDirectory())
+      for (const name of (await readdir(absolute)).sort()) {
+        const child = logicalPath(path ? path + '/' + name : name)
+        const childAbsolute = resolve(root, child)
+        if (!below(root, childAbsolute)) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+        await walk(childAbsolute, child)
+      }
+  }
+  await walk(resolve(root), '', rootInfo)
 }
 export function officialMap(target: string, campaign?: PackageCampaignType): boolean {
   if (!/\.sc2map(?:\/|$)/i.test(target)) return false

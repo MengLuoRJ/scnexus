@@ -45,6 +45,25 @@ export async function scanContent(
   const records: ContentRecord[] = []
   const active: Partial<Record<PackageCampaignType, ActiveCampaign>> = {}
   const diagnostics: { path: string; message: string }[] = []
+  const checkedPaths = new Map<string, Promise<string>>()
+  const scanPath = (root: string, logical: string) => {
+    const key = root + '\0' + logical
+    let path = checkedPaths.get(key)
+    if (!path) {
+      path = safePath(root, logical)
+      checkedPaths.set(key, path)
+    }
+    return path
+  }
+  const statCache = new Map<string, ReturnType<typeof lstat>>()
+  const scanStat = (path: string) => {
+    let info = statCache.get(path)
+    if (!info) {
+      info = lstat(path)
+      statCache.set(path, info)
+    }
+    return info
+  }
   const readDirectories = async (root: string) => {
     try {
       return await readdir(root, { withFileTypes: true })
@@ -53,9 +72,30 @@ export async function scanContent(
       throw error
     }
   }
+  const entries: import('./source').Entry[] = []
+  for (const prefix of ['Maps', 'Mods']) {
+    const root = await scanPath(paths.gameRoot, prefix)
+    try {
+      const source = await openSource({ kind: 'directory', path: root })
+      entries.push(
+        ...source.entries.map((entry) => ({
+          ...entry,
+          path: prefix + '/' + entry.path,
+        })),
+      )
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+  }
+  const gameSource = {
+    input: { kind: 'directory' as const, path: paths.gameRoot },
+    entries,
+    tree: makeTree(entries, 'GameRoot'),
+    read: async (path: string) => readFile(await scanPath(paths.gameRoot, path)),
+  }
   for (const dir of await readDirectories(paths.customizeDataRoot)) {
     if (!dir.isDirectory() || dir.isSymbolicLink()) continue
-    const directory = await safePath(paths.gameRoot, 'SCNexusCustomizeData/' + dir.name)
+    const directory = await scanPath(paths.gameRoot, 'SCNexusCustomizeData/' + dir.name)
     const raw = await optional(join(directory, 'install-manifest.json'))
     if (!raw) continue
     try {
@@ -80,7 +120,7 @@ export async function scanContent(
       for (const file of record.installedFiles) {
         let target: string
         try {
-          target = await safePath(paths.gameRoot, file.target)
+          target = await scanPath(paths.gameRoot, file.target)
         } catch (error) {
           if (
             record.package.type !== 'customize' ||
@@ -95,10 +135,10 @@ export async function scanContent(
       if (record.package.type === 'customize') {
         let shapeChanged = false
         for (const group of resourceGroups(record.installedFiles)) {
-          const root = await safePath(paths.gameRoot, group.target)
+          const root = await scanPath(paths.gameRoot, group.target)
           let info
           try {
-            info = await lstat(root)
+            info = await scanStat(root)
           } catch (error) {
             if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
           }
@@ -120,15 +160,15 @@ export async function scanContent(
           try {
             const parts = file.target.replaceAll('\\', '/').split('/')
             for (let index = 1; index < parts.length; index++) {
-              const parent = await safePath(paths.gameRoot, parts.slice(0, index).join('/'))
-              if (!(await lstat(parent)).isDirectory()) {
+              const parent = await scanPath(paths.gameRoot, parts.slice(0, index).join('/'))
+              if (!(await scanStat(parent)).isDirectory()) {
                 changed = true
                 break
               }
             }
             if (!changed) {
-              const target = await safePath(paths.gameRoot, file.target)
-              changed = !(await lstat(target)).isFile()
+              const target = await scanPath(paths.gameRoot, file.target)
+              changed = !(await scanStat(target)).isFile()
             }
           } catch (error) {
             const code = (error as NodeJS.ErrnoException).code
@@ -149,7 +189,7 @@ export async function scanContent(
         }
         const present = []
         for (const file of record.installedFiles) {
-          const data = await optional(await safePath(paths.gameRoot, file.target))
+          const data = await optional(await scanPath(paths.gameRoot, file.target))
           if (data) {
             file.bytes = data.length
             file.hash = createHash('sha256').update(data).digest('hex')
@@ -184,23 +224,41 @@ export async function scanContent(
       })
     }
   }
-  async function* ccmDirectories(root: string): AsyncGenerator<{ directory: string; raw: Buffer }> {
-    for (const dir of await readDirectories(root)) {
-      if (!dir.isDirectory() || dir.isSymbolicLink()) continue
-      const directory = await safePath(
-        paths.gameRoot,
-        relative(paths.gameRoot, join(root, dir.name)),
+  async function* ccmDirectories(
+    _root: string,
+  ): AsyncGenerator<{ directory: string; raw: Buffer }> {
+    const roots: string[] = []
+    for (const entry of entries
+      .filter(
+        (entry) =>
+          entry.path.startsWith('Maps/CustomCampaigns/') && entry.path.endsWith('/metadata.txt'),
       )
-      const raw = await optional(join(directory, 'metadata.txt'))
-      if (raw) yield { directory, raw }
-      else yield* ccmDirectories(directory)
+      .sort((a, b) => a.path.length - b.path.length)) {
+      const logical = entry.path.slice(0, -'/metadata.txt'.length)
+      if (
+        logical.split('/').some((part) => /\.sc2(?:map|mod)$/i.test(part)) ||
+        roots.some((root) => logical.startsWith(root + '/'))
+      )
+        continue
+      roots.push(logical)
+      const directory = await scanPath(paths.gameRoot, logical)
+      yield { directory, raw: await readFile(join(directory, 'metadata.txt')) }
     }
   }
   for await (const { directory, raw } of ccmDirectories(paths.ccmRoot)) {
     try {
       const decoded = decodeCcm(raw)
       const pkg = parseCcm(decoded.text)
-      const source = await openSource({ kind: 'directory', path: directory })
+      const prefix = relative(paths.gameRoot, directory).replaceAll('\\', '/') + '/'
+      const packageEntries = entries
+        .filter((entry) => entry.path.startsWith(prefix))
+        .map((entry) => ({ ...entry, path: entry.path.slice(prefix.length) }))
+      const source = {
+        input: { kind: 'directory' as const, path: directory },
+        entries: packageEntries,
+        tree: makeTree(packageEntries, directory.split(/[\\/]/).at(-1)!),
+        read: async (path: string) => readFile(await scanPath(directory, path)),
+      }
       const preview = buildPreview(source, 'metadata.txt', pkg, true)
       records.push({
         localId:
@@ -233,29 +291,8 @@ export async function scanContent(
       diagnostics.push({ path: directory, message: 'Invalid CCM package' })
     }
   }
-  const entries = []
-  for (const prefix of ['Maps', 'Mods']) {
-    const root = await safePath(paths.gameRoot, prefix)
-    try {
-      const source = await openSource({ kind: 'directory', path: root })
-      entries.push(
-        ...source.entries.map((entry) => ({
-          ...entry,
-          path: prefix + '/' + entry.path,
-        })),
-      )
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-    }
-  }
-  const gameSource = {
-    input: { kind: 'directory' as const, path: paths.gameRoot },
-    entries,
-    tree: makeTree(entries, 'GameRoot'),
-    read: async (path: string) => readFile(await safePath(paths.gameRoot, path)),
-  }
   for (const campaign of CAMPAIGNS) {
-    const directory = await safePath(paths.gameRoot, campaignRoots[campaign][0])
+    const directory = await scanPath(paths.gameRoot, campaignRoots[campaign][0])
     const json = await optional(join(directory, 'package.json'))
     const txt = await optional(join(directory, 'metadata.txt'))
     if (!json && !txt) continue
@@ -384,7 +421,7 @@ export async function scanContent(
                 })),
             )
         for (const file of planned) {
-          const target = await safePath(paths.gameRoot, file.target)
+          const target = await scanPath(paths.gameRoot, file.target)
           const data = await optional(target)
           if (data)
             installed.push({
@@ -396,7 +433,7 @@ export async function scanContent(
         }
       }
       for (const file of installed) {
-        const target = await safePath(paths.gameRoot, file.target)
+        const target = await scanPath(paths.gameRoot, file.target)
         if (target !== file.absolutePath)
           throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Invalid target path' })
       }
@@ -405,6 +442,7 @@ export async function scanContent(
         campaign,
         mode: json ? 'scnexus' : 'ccm',
         descriptorPath: join(directory, json ? 'package.json' : 'metadata.txt'),
+        ownershipUnknown: saved?.ownershipUnknown ?? !saved,
         installedFiles: installed,
         resourceBackups: saved?.resourceBackups,
         activatedAt: saved?.activatedAt ?? Date.now(),
@@ -448,7 +486,7 @@ export async function scanContent(
       const directory = join(paths.gameRoot, entry.path, '..')
       const installedFiles = []
       for (const file of preview.files) {
-        const absolutePath = await safePath(paths.gameRoot, file.target)
+        const absolutePath = await scanPath(paths.gameRoot, file.target)
         const data = await readFile(absolutePath)
         installedFiles.push({
           ...file,

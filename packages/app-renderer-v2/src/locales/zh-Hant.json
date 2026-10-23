@@ -95,6 +95,7 @@
   "campaign.keep": "保留本機檔案",
   "campaign.delete": "刪除共用檔案",
   "campaign.usedBy": "其他引用",
+  "campaign.unknownOwnership": "此資源由掃描發現，缺少可信的激活操作記錄。請明確選擇保留或刪除整個資源；刪除後無法自動恢復。",
   "campaign.removeConfirm": "請確認移除操作；CCM 模組不受此操作管理。",
   "campaign.cancel": "取消",
   "campaign.confirm": "確認執行",

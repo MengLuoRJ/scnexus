@@ -151,9 +151,10 @@ async function confirm() {
               class="space-y-1 rounded border border-warning p-2 text-sm"
             >
               <p class="break-all">{{ file.file.target }}</p>
-              <p>
+              <p v-if="file.usedBy.length">
                 {{ t('campaign.usedBy') }}: {{ file.usedBy.map((item) => item.name).join(', ') }}
               </p>
+              <p v-else class="text-xs text-muted">{{ t('campaign.unknownOwnership') }}</p>
               <USelect
                 class="w-full"
                 :placeholder="t('campaign.chooseConflict')"

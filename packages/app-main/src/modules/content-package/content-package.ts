@@ -57,6 +57,8 @@ import {
   CAMPAIGNS,
   safePath,
   officialMap,
+  gameAbsolutePath,
+  safeGamePath,
   keyPath,
   logicalPath,
   below,
@@ -124,10 +126,11 @@ export function validateActiveResources(
     active.mode !== record.mode ||
     active.campaign !== record.package.campaign ||
     active.descriptorPath !==
-      join(
-        paths.gameRoot,
-        campaignRoots[active.campaign][0],
-        active.mode === 'ccm' ? 'metadata.txt' : 'package.json',
+      gameAbsolutePath(
+        paths,
+        campaignRoots[active.campaign][0] +
+          '/' +
+          (active.mode === 'ccm' ? 'metadata.txt' : 'package.json'),
       )
   )
     throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
@@ -140,7 +143,7 @@ export function validateActiveResources(
     if (
       !(file.type === 'map' ? /^Maps\/.+\.sc2map$/i : /^Mods\/.+\.sc2mod$/i).test(root) ||
       allowed.get(keyPath(root)) !== file.type ||
-      file.absolutePath !== join(paths.gameRoot, logicalPath(file.target))
+      file.absolutePath !== gameAbsolutePath(paths, logicalPath(file.target))
     )
       throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
   }
@@ -279,8 +282,8 @@ export class ContentService {
         })
     }
     if (mode === 'ccm') {
-      const directory = await safePath(
-        paths.gameRoot,
+      const directory = await safeGamePath(
+        paths,
         relative(paths.gameRoot, join(paths.ccmRoot, ccmDirectoryName(preview.package.name))),
       )
       const info = await existing(directory)
@@ -325,7 +328,7 @@ export class ContentService {
     const result: Conflict[] = []
     for (const group of resourceGroups(files)) {
       const file = group.files[0]!
-      const target = await safePath(paths.gameRoot, group.target)
+      const target = await safeGamePath(paths, group.target)
       if (!states.has(target)) states.set(target, await resourceState(target))
       const info = states.get(target)
       if (info) {
@@ -558,7 +561,7 @@ export class ContentService {
     hashes: Map<string, string>,
   ) {
     for (const group of resourceGroups(files)) {
-      const target = await safePath(paths.gameRoot, group.target)
+      const target = await safeGamePath(paths, group.target)
       const actual = await resourceState(target)
       const old = conflicts.find((c) => keyPath(c.local.path) === keyPath(target))
       if (
@@ -599,7 +602,7 @@ export class ContentService {
   ) {
     const installed: InstalledFile[] = []
     for (const group of resourceGroups(files)) {
-      const root = await safePath(paths.gameRoot, group.target)
+      const root = await safeGamePath(paths, group.target)
       const local = await existing(root)
       if (choices.get(keyPath(root)) === 'keep') {
         const entries = local?.isDirectory()
@@ -609,7 +612,7 @@ export class ContentService {
             }))
           : [{ path: group.target, bytes: local!.size, modifiedAt: local!.mtimeMs }]
         for (const entry of entries) {
-          const absolutePath = await safePath(paths.gameRoot, entry.path)
+          const absolutePath = await safeGamePath(paths, entry.path)
           installed.push({
             ...group.files[0]!,
             source: entry.path,
@@ -651,7 +654,7 @@ export class ContentService {
             throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Payload changed while copying' })
           installed.push({
             ...f,
-            absolutePath: join(paths.gameRoot, f.target),
+            absolutePath: gameAbsolutePath(paths, f.target),
             result: local ? 'replaced' : 'copied',
             hash: digest,
           })
@@ -767,7 +770,7 @@ export class ContentService {
           : join(paths.customizeDataRoot, localId)
       const payload =
         type === 'campaign' ? (mode === 'ccm' ? management : join(management, 'payload')) : null
-      await safePath(paths.gameRoot, relative(paths.gameRoot, management))
+      await safeGamePath(paths, relative(paths.gameRoot, management))
       if (await existing(management))
         throw new AppError(ERRORS.TASK_CONFLICT, { message: 'Package directory already exists' })
       const staging = await mkdtemp(join(paths.gameRoot, '.scnexus-stage-'))
@@ -790,7 +793,8 @@ export class ContentService {
             ? preview.files
             : actualFiles.filter(
                 (file) =>
-                  choices.get(keyPath(join(paths.gameRoot, resourcePath(file.target)))) !== 'keep',
+                  choices.get(keyPath(gameAbsolutePath(paths, resourcePath(file.target)))) !==
+                  'keep',
               )
           ).map((file) => file.source),
           ...(preview.descriptorPath ? [preview.descriptorPath] : []),
@@ -892,7 +896,8 @@ export class ContentService {
           (direct
             ? actualFiles.filter(
                 (file) =>
-                  choices.get(keyPath(join(paths.gameRoot, resourcePath(file.target)))) !== 'keep',
+                  choices.get(keyPath(gameAbsolutePath(paths, resourcePath(file.target)))) !==
+                  'keep',
               ).length
             : 0) +
           1 +
@@ -1081,7 +1086,7 @@ export class ContentService {
       throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
     const paths = await this.paths()
     validateRecordPaths(record, paths)
-    await safePath(paths.gameRoot, relative(paths.gameRoot, record.managementDirectory))
+    await safeGamePath(paths, relative(paths.gameRoot, record.managementDirectory))
     const files =
       record.mode === 'ccm' ? record.files.filter((f) => f.type === 'map') : record.files
     const targetStates = new Map<string, Awaited<ReturnType<typeof resourceState>>>()
@@ -1129,7 +1134,7 @@ export class ContentService {
           message: 'Game configuration changed',
         })
       validateRecordPaths(record, paths)
-      await safePath(paths.gameRoot, relative(paths.gameRoot, record.managementDirectory))
+      await safeGamePath(paths, relative(paths.gameRoot, record.managementDirectory))
       const state = this.active.getSnapshot()
       const previous = state.active[record.package.campaign!]
       if (previous)
@@ -1159,10 +1164,10 @@ export class ContentService {
       return this.transaction(paths, async (write) => {
         const resourceBackups: { target: string; path: string }[] = []
         for (const group of record.mode === 'scnexus' ? resourceGroups(preview.files) : []) {
-          const target = await safePath(paths.gameRoot, group.target)
+          const target = await safeGamePath(paths, group.target)
           if (choices.get(keyPath(target)) === 'keep' || !(await existing(target))) continue
-          const backup = await safePath(
-            paths.gameRoot,
+          const backup = await safeGamePath(
+            paths,
             relative(
               paths.gameRoot,
               join(record.managementDirectory, '.activation-backup', randomUUID()),
@@ -1194,14 +1199,14 @@ export class ContentService {
           payloadSource.directories,
         )
         const root = campaignRoots[record.package.campaign!][0]
-        const descriptor = await safePath(
-          paths.gameRoot,
+        const descriptor = await safeGamePath(
+          paths,
           root + '/' + (record.mode === 'ccm' ? 'metadata.txt' : 'package.json'),
         )
         await write(descriptor, await readFile(record.descriptorPath))
         await write(
-          await safePath(
-            paths.gameRoot,
+          await safeGamePath(
+            paths,
             root + '/' + (record.mode === 'ccm' ? 'package.json' : 'metadata.txt'),
           ),
           null,
@@ -1251,7 +1256,7 @@ export class ContentService {
       throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
     const paths = await this.paths()
     validateRecordPaths(record, paths)
-    await safePath(paths.gameRoot, relative(paths.gameRoot, record.managementDirectory))
+    await safeGamePath(paths, relative(paths.gameRoot, record.managementDirectory))
     const active = this.active.getSnapshot().active[record.package.campaign!]
     if (operation === 'uninstall' && active?.localId === localId)
       throw new AppError(ERRORS.TASK_CONFLICT, {
@@ -1324,7 +1329,7 @@ export class ContentService {
             file: {
               ...group.files[0]!,
               target: group.target,
-              absolutePath: await safePath(paths.gameRoot, group.target),
+              absolutePath: await safeGamePath(paths, group.target),
               bytes: group.files.reduce((sum, file) => sum + file.bytes, 0),
             },
             usedBy,
@@ -1336,7 +1341,7 @@ export class ContentService {
         (ownershipUnknown || group.files.every((file) => file.result !== 'kept')) &&
         (record.mode !== 'ccm' || group.files[0]!.type === 'map'),
     )) {
-      const target = await safePath(paths.gameRoot, group.target)
+      const target = await safeGamePath(paths, group.target)
       hashes.set(group.target, (await resourceState(target))?.hash ?? null)
     }
     this.removals.set(preview.removalId, {
@@ -1367,7 +1372,7 @@ export class ContentService {
           message: 'Game configuration changed',
         })
       validateRecordPaths(record, paths)
-      await safePath(paths.gameRoot, relative(paths.gameRoot, record.managementDirectory))
+      await safeGamePath(paths, relative(paths.gameRoot, record.managementDirectory))
       const choices = new Map<string, string>()
       if (!Array.isArray(decisions)) throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
       for (const d of decisions) {
@@ -1394,9 +1399,7 @@ export class ContentService {
       const files = context.active ? active!.installedFiles : record.installedFiles
       for (const [target, digest] of context.hashes) {
         if (choices.get(target) === 'keep') continue
-        if (
-          ((await resourceState(await safePath(paths.gameRoot, target)))?.hash ?? null) !== digest
-        )
+        if (((await resourceState(await safeGamePath(paths, target)))?.hash ?? null) !== digest)
           throw new AppError(ERRORS.TASK_CONFLICT, {
             message: 'Removal resource changed; request a new preview',
           })
@@ -1414,12 +1417,12 @@ export class ContentService {
         async (write) => {
           for (const group of resourceGroups(removable)) {
             if (choices.get(group.target) === 'keep') continue
-            await write(await safePath(paths.gameRoot, group.target), null)
+            await write(await safeGamePath(paths, group.target), null)
           }
           for (const backup of context.active && record.mode === 'scnexus'
             ? (active?.resourceBackups ?? [])
             : []) {
-            const target = await safePath(paths.gameRoot, backup.target)
+            const target = await safeGamePath(paths, backup.target)
             if (
               !resourceGroups(removable).some(
                 (group) => keyPath(group.target) === keyPath(backup.target),
@@ -1430,7 +1433,7 @@ export class ContentService {
             const backupRoot = join(record.managementDirectory, '.activation-backup')
             if (!below(backupRoot, backup.path) || backup.path === backupRoot)
               throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
-            await safePath(paths.gameRoot, relative(paths.gameRoot, backup.path))
+            await safeGamePath(paths, relative(paths.gameRoot, backup.path))
             const saved = await resourceState(backup.path)
             if (!saved) throw new AppError(ERRORS.CAMPAIGN_RECOVERY_FAILED)
             if (saved.directory) {
@@ -1446,8 +1449,8 @@ export class ContentService {
           }
           if (context.active) {
             await write(
-              await safePath(
-                paths.gameRoot,
+              await safeGamePath(
+                paths,
                 campaignRoots[record.package.campaign!][0] +
                   '/' +
                   (record.mode === 'ccm' ? 'metadata.txt' : 'package.json'),

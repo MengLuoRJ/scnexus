@@ -3,7 +3,7 @@ import { validateCustomizeRecord } from '../../stores/customize'
 import { validateActive } from '../../stores/campaign-active'
 import { validateRecordPaths, validateActiveResources } from './content-package'
 import { readdir, readFile, lstat } from 'node:fs/promises'
-import { join, relative } from 'node:path'
+import { join, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import type {
   ContentRecord,
@@ -14,7 +14,16 @@ import type {
 import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
 import { isContentDiagnostic } from './diagnostics'
 import { openSource, makeTree } from './source'
-import { campaignRoots, CAMPAIGNS, safePath, officialMap, keyPath } from './paths'
+import {
+  campaignRoots,
+  CAMPAIGNS,
+  safePath,
+  safeGamePath,
+  gameAbsolutePath,
+  gameLogicalPath,
+  officialMap,
+  keyPath,
+} from './paths'
 import { resourceGroups } from './resources'
 import { resourcePath } from '@scnexus/app-shared/utils/content-files'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
@@ -50,7 +59,7 @@ export async function scanContent(
     const key = root + '\0' + logical
     let path = checkedPaths.get(key)
     if (!path) {
-      path = safePath(root, logical)
+      path = root === paths.gameRoot ? safeGamePath(paths, logical) : safePath(root, logical)
       checkedPaths.set(key, path)
     }
     return path
@@ -127,7 +136,7 @@ export async function scanContent(
             (error as NodeJS.ErrnoException).code !== 'ENOTDIR'
           )
             throw error
-          target = join(paths.gameRoot, file.target)
+          target = gameAbsolutePath(paths, file.target)
         }
         if (target !== file.absolutePath)
           throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Manifest path mismatch' })
@@ -249,7 +258,7 @@ export async function scanContent(
     try {
       const decoded = decodeCcm(raw)
       const pkg = parseCcm(decoded.text)
-      const prefix = relative(paths.gameRoot, directory).replaceAll('\\', '/') + '/'
+      const prefix = gameLogicalPath(paths, directory) + '/'
       const packageEntries = entries
         .filter((entry) => entry.path.startsWith(prefix))
         .map((entry) => ({ ...entry, path: entry.path.slice(prefix.length) }))
@@ -483,7 +492,7 @@ export async function scanContent(
         })
         continue
       }
-      const directory = join(paths.gameRoot, entry.path, '..')
+      const directory = dirname(gameAbsolutePath(paths, entry.path))
       const installedFiles = []
       for (const file of preview.files) {
         const absolutePath = await scanPath(paths.gameRoot, file.target)
@@ -504,7 +513,7 @@ export async function scanContent(
         source: null,
         rootRelativePath: '',
         managementDirectory: directory,
-        descriptorPath: join(paths.gameRoot, entry.path),
+        descriptorPath: gameAbsolutePath(paths, entry.path),
         payloadDirectory: null,
         ccmOriginal: null,
         files: preview.files,
@@ -519,7 +528,7 @@ export async function scanContent(
     } catch (error) {
       if (!isContentDiagnostic(error)) throw error
       diagnostics.push({
-        path: join(paths.gameRoot, entry.path, '..'),
+        path: dirname(gameAbsolutePath(paths, entry.path)),
         message: 'Invalid external customize package',
       })
     }
@@ -540,7 +549,7 @@ export async function scanContent(
       const decoded = decodeCcm(raw)
       const pkg = parseCcm(decoded.text)
       const preview = buildPreview(gameSource, entry.path, pkg, true)
-      const directory = join(paths.gameRoot, entry.path, '..')
+      const directory = dirname(gameAbsolutePath(paths, entry.path))
       records.push({
         external: true,
         localId: 'external-' + createHash('sha256').update(entry.path).digest('hex').slice(0, 24),
@@ -550,7 +559,7 @@ export async function scanContent(
         source: null,
         rootRelativePath: preview.rootRelativePath,
         managementDirectory: directory,
-        descriptorPath: join(paths.gameRoot, entry.path),
+        descriptorPath: gameAbsolutePath(paths, entry.path),
         payloadDirectory: null,
         ccmOriginal: decoded,
         files: preview.files,
@@ -565,7 +574,7 @@ export async function scanContent(
     } catch (error) {
       if (!isContentDiagnostic(error)) throw error
       diagnostics.push({
-        path: join(paths.gameRoot, entry.path, '..'),
+        path: dirname(gameAbsolutePath(paths, entry.path)),
         message: 'Invalid external CCM metadata',
       })
     }

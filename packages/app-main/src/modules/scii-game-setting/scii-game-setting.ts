@@ -1,10 +1,5 @@
 import { app } from 'electron'
-import {
-  discoverMacGame,
-  macGameRoot,
-  macGameExecutables,
-  assertMacContentVolume,
-} from './mac-game'
+import { discoverMacGame, macGameRoot, macGameExecutables, macResourceRoot } from './mac-game'
 import { join, resolve, isAbsolute } from 'node:path'
 import { stat, mkdir, realpath } from 'node:fs/promises'
 import { sciiGameSettingRepository } from '../../stores/scii-game-setting'
@@ -64,7 +59,18 @@ async function resolveGamePaths(root: string, documents: string, revision = 0): 
     'Blizzard',
     'StarCraft II',
   )
-  return { ...paths, ...executables, documentsRoot: dataRoot, banksRoot: '', arcadeBanksRoot: '' }
+  const mapsRoot = await macResourceRoot(root, 'Maps')
+  const modsRoot = await macResourceRoot(root, 'Mods')
+  return {
+    ...paths,
+    ...executables,
+    mapsRoot,
+    modsRoot,
+    ccmRoot: join(mapsRoot, 'CustomCampaigns'),
+    documentsRoot: dataRoot,
+    banksRoot: '',
+    arcadeBanksRoot: '',
+  }
 }
 export async function getGamePaths(): Promise<GamePaths> {
   const data = sciiGameSettingRepository.getSnapshot()
@@ -92,8 +98,6 @@ async function configureUnlocked(input: string) {
   const old = sciiGameSettingRepository.getSnapshot()
   const paths = await resolveGamePaths(root, old.documentRoot)
   try {
-    // Content records use canonical Maps/Mods casing; never write to a different directory.
-    if (process.platform === 'darwin') await assertMacContentVolume(root)
     for (const dir of [paths.mapsRoot, paths.modsRoot, paths.customizeDataRoot, paths.ccmRoot])
       await mkdir(dir, { recursive: true })
   } catch (cause) {

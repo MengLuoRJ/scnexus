@@ -354,7 +354,12 @@ M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；�
 - 游戏用户目录使用 `~/Library/Application Support/Blizzard/StarCraft II`，应用自有数据仍是 `~/.scnexus`，不修改 Electron userData。Banks 属于 Accounts 下各账户，当前功能尚不管理账户 Banks；mac 的 banksRoot/arcadeBanksRoot 返回空字符串表示未提供，绝不自动创建游戏根 Banks 或擅自选一个账户。
 - 仅检测实际存在且有执行权限的 Switcher/编辑器候选；不存在时对应 capability=false，不把 `.app` 目录当可执行文件。已识别 bundle 通过 `/usr/bin/open -n -a <bundle> --args ...` 启动，参数逐项传递，不使用 shell；等待 open 的退出状态，不把 spawn 成功当作 LaunchServices 成功，也不把 open 的退出码当作游戏退出码。普通 mac 游戏启动不附 Windows 战网参数。没有可用 Switcher 时不猜测其他程序支持地图测试。
 - Mac 原生应用/编辑/视图/窗口菜单保留 Cmd+Q/C/V/A 等系统行为。关闭最后窗口不退出及 Dock activate 恢复窗口沿用已有逻辑。菜单栏图标缩至18px，不额外占用文字标题；托盘 SCNexus 项可恢复窗口。暂不新增无来源的单色模板图标。
-- 内容记录当前仍以 Maps/Mods 为规范逻辑路径。mac 配置提交前用可清理的临时目录检查游戏卷大小写行为，拒绝大小写敏感卷（含外置卷），避免与 lowercase maps/mods 形成两个物理目录；不声称已适配此类卷。既有权限/边界/事务回滚保护不放宽。普通大小写不敏感 APFS 下的真实 SC2 内容读写仍需 Mac 真机验收。
+- 内容记录仍以 Maps/Mods 为规范逻辑路径，但mac资源根目录可沿用实际的 Maps/maps、Mods/mods（分别选择，允许混合大小写）；不存在时默认 Maps/Mods，不再拒绝大小写敏感卷。不创建或重命名已有资源目录，同类若同时存在多个不同大小写目录则拒绝配置，不擅自合并/选择。根目录必须为普通目录，不接受符号链接。通过统一映射转换到物理目录，安装、冲突检查、激活、备份恢复、卸载、扫描与活动记录验证均一致使用，逻辑包契约不改为小写。既有目录边界与符号链接保护保留。该适配解决资源根大小写，不自动纠正包内任意深层文件名大小写。
 - 自动更新保持 mac 不可用，使用手动下载安装。签名、公证、Rosetta、安装或更新真实游戏都不由应用静默执行。打包配置与命令见 [building.md](./building.md)。
 
 本轮 Windows 验证：主进程43文件390项通过、main类型检查及构建通过；改动文件ESLint与main Oxlint通过。测试使用真实临时文件夹验证最高build/入口选择、ExecuteInfo和配置读取，LaunchServices只验证命令构造，没有在Windows执行mac程序。尚未验收真实Mac窗口、Keychain、SC2/编辑器参数、战役安装激活恢复卸载闭环、用户账户Banks、TCC权限和DMG首次运行；这些是正式宣布支持前的真机验收项。
+
+
+### macOS 资源根大小写兼容补充
+
+新增回归涵盖 maps/mods 和混合 Maps/mods 布局下的组目录冲突、SCNexus激活后扫描/备份恢复/卸载、嵌套CCM扫描激活/卸载，以及自制作品安装扫描卸载；额外验证映射后路径不能越界或通过符号链接。Windows上的真实临时文件回归可验证选择路径与存储路径一致，但不能代替大小写敏感APFS真机验收。本轮不操作玩家目录。

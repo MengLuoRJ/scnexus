@@ -1,8 +1,8 @@
-import { relative, resolve, isAbsolute, sep, posix } from 'node:path'
+import { relative, resolve, isAbsolute, sep, posix, join, dirname, basename } from 'node:path'
 import { lstat, realpath, readdir } from 'node:fs/promises'
 import type { Stats } from 'node:fs'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
-import type { PackageCampaignType } from '@scnexus/app-shared/types/content.type'
+import type { GamePaths, PackageCampaignType } from '@scnexus/app-shared/types/content.type'
 export const CAMPAIGNS = ['WOL', 'HOTS', 'LOTV', 'NCO'] as const
 export const campaignRoots: Record<PackageCampaignType, string[]> = {
   WOL: ['Maps/Campaign'],
@@ -88,3 +88,32 @@ export function officialMap(target: string, campaign?: PackageCampaignType): boo
   return campaignRoots[campaign].some((root) => path.startsWith(root.toLowerCase() + '/'))
 }
 export const keyPath = (value: string) => posix.normalize(value.replaceAll('\\', '/')).toLowerCase()
+
+/** Package contracts retain Maps/Mods; only their physical root casing is platform-dependent. */
+export function gameAbsolutePath(paths: GamePaths, logical: string): string {
+  const value = logicalPath(logical)
+  const [prefix, ...rest] = value.split('/')
+  const root = /^maps$/i.test(prefix!)
+    ? paths.mapsRoot
+    : /^mods$/i.test(prefix!)
+      ? paths.modsRoot
+      : null
+  if (!root) return resolve(paths.gameRoot, value)
+  if (
+    dirname(resolve(root)) !== resolve(paths.gameRoot) ||
+    basename(root).toLowerCase() !== prefix!.toLowerCase()
+  )
+    throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+  return join(root, ...rest)
+}
+export async function safeGamePath(paths: GamePaths, logical: string): Promise<string> {
+  const target = gameAbsolutePath(paths, logical)
+  return safePath(paths.gameRoot, relative(paths.gameRoot, target))
+}
+export function gameLogicalPath(paths: GamePaths, absolute: string): string {
+  if (!below(paths.gameRoot, absolute)) throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
+  const value = relative(paths.gameRoot, absolute).replaceAll('\\', '/')
+  return value.replace(/^(maps|mods)(?=\/|$)/i, (prefix) =>
+    prefix.toLowerCase() === 'maps' ? 'Maps' : 'Mods',
+  )
+}

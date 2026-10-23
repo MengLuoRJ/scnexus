@@ -1,4 +1,4 @@
-import { access, readFile, readdir, realpath, stat, mkdtemp, rm } from 'node:fs/promises'
+import { access, readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { basename, dirname, isAbsolute, join } from 'node:path'
 
@@ -125,15 +125,12 @@ export async function discoverMacGame(home: string): Promise<string | null> {
   return null
 }
 
-export async function assertMacContentVolume(root: string): Promise<void> {
-  const probe = await mkdtemp(join(root, '.scnexus-case-'))
-  try {
-    const alternate = join(root, basename(probe).toUpperCase())
-    const original = await stat(probe)
-    const alias = await stat(alternate)
-    if (original.dev !== alias.dev || original.ino !== alias.ino)
-      throw new Error('Case-sensitive game volume is unsupported')
-  } finally {
-    await rm(probe, { recursive: true })
-  }
+export async function macResourceRoot(root: string, name: 'Maps' | 'Mods'): Promise<string> {
+  const entries = (await readdir(root, { withFileTypes: true })).filter(
+    (entry) => entry.name.toLowerCase() === name.toLowerCase(),
+  )
+  if (entries.some((entry) => !entry.isDirectory() || entry.isSymbolicLink()))
+    throw new Error('Resource root must be a regular directory')
+  if (entries.length > 1) throw new Error(`Ambiguous resource directories: ${name}`)
+  return join(root, entries[0]?.name ?? name)
 }

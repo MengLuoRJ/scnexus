@@ -24,13 +24,18 @@ function index<T extends { _revision: number }>(data: T) {
     },
   }
 }
-async function fixture() {
+async function fixture(mapName = 'Maps', modName = 'Mods') {
   const root = await mkdtemp(join(process.cwd(), '.scnexus-content-'))
   roots.push(root)
   const game = join(root, 'game')
   await mkdir(game)
   await writeFile(join(game, 'StarCraft II.exe'), 'stub')
-  const paths = gamePaths(game, join(root, 'documents'))
+  const paths = {
+    ...gamePaths(game, join(root, 'documents')),
+    mapsRoot: join(game, mapName),
+    modsRoot: join(game, modName),
+    ccmRoot: join(game, mapName, 'CustomCampaigns'),
+  }
   const campaign = index<ContentStore>({
     _schemaVersion: 2,
     _revision: 0,
@@ -1612,5 +1617,114 @@ test('damaged CCM metadata reports occupied directory without failing analysis',
     package: null,
     matchedBy: ['directory'],
     diagnostic: { code: 'M034', message: '已存在同名内容，但信息无法解析' },
+  })
+})
+
+test.each([
+  ['maps', 'mods'],
+  ['maps', 'Mods'],
+  ['Maps', 'mods'],
+])(
+  'mapped resource roots %s/%s survive group conflicts, scan, restore and uninstall',
+  async (maps, mods) => {
+    const f = await fixture(maps, mods)
+    const original = join(f.paths.mapsRoot, 'Campaign', 'Group.SC2Map', 'component')
+    await mkdir(join(original, '..'), { recursive: true })
+    await writeFile(original, 'original-map')
+    await mkdir(f.paths.modsRoot, { recursive: true })
+    await writeFile(join(f.paths.modsRoot, 'Core.SC2Mod'), 'original-mod')
+    const input = await source(f.root, {
+      'package.json': JSON.stringify(
+        pkg('campaign', { mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod' }] }),
+      ),
+      'Maps/Campaign/Group.SC2Map/component': 'new-map',
+      'Mods/Core.SC2Mod': 'new-mod',
+    })
+    const analysis = await f.service.analyze('campaign', input)
+    const record = await f.service.install({
+      analysisId: analysis.analysisId,
+      mode: 'scnexus',
+      decisions: [],
+    })
+    const activation = await f.service.prepareActivation(record.localId)
+    expect(activation.conflicts).toHaveLength(2)
+    await f.service.activate(
+      activation.activationId,
+      activation.conflicts.map((file) => ({
+        conflictId: file.conflictId,
+        action: 'overwrite' as const,
+      })),
+    )
+    expect(await readFile(original, 'utf8')).toBe('new-map')
+    const scanned = await f.service.scan()
+    expect(scanned.diagnostics).toEqual([])
+    expect(
+      scanned.active.WOL?.installedFiles.every((file) =>
+        file.absolutePath.startsWith(file.type === 'map' ? f.paths.mapsRoot : f.paths.modsRoot),
+      ),
+    ).toBe(true)
+    const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
+    await f.service.remove(removal.removalId, [])
+    expect(await readFile(original, 'utf8')).toBe('original-map')
+    expect(await readFile(join(f.paths.modsRoot, 'Core.SC2Mod'), 'utf8')).toBe('original-mod')
+    const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
+    await f.service.remove(uninstall.removalId, [])
+    expect(f.campaign.getSnapshot().records).toHaveLength(0)
+  },
+)
+test('lowercase maps root preserves nested CCM discovery, activation and uninstall paths', async () => {
+  const f = await fixture('maps', 'mods')
+  const directory = join(f.paths.ccmRoot, 'Nested', 'Package')
+  await mkdir(directory, { recursive: true })
+  await writeFile(
+    join(directory, 'metadata.txt'),
+    'title=CaseCCM\ndesc=test\nauthor=A\nversion=1\ncampaign=WOL',
+  )
+  await writeFile(join(directory, 'M.SC2Map'), 'map')
+  const scanned = await f.service.scan()
+  expect(scanned.diagnostics).toEqual([])
+  const record = scanned.records[0]!
+  expect(record.managementDirectory).toBe(directory)
+  const activation = await f.service.prepareActivation(record.localId)
+  await f.service.activate(activation.activationId, [])
+  expect(await readFile(join(f.paths.mapsRoot, 'Campaign', 'M.SC2Map'), 'utf8')).toBe('map')
+  expect((await f.service.scan()).active.WOL?.descriptorPath).toBe(
+    join(f.paths.mapsRoot, 'Campaign', 'metadata.txt'),
+  )
+  const removal = await f.service.prepareRemoval(record.localId, 'deactivate')
+  await f.service.remove(removal.removalId, [])
+  const uninstall = await f.service.prepareRemoval(record.localId, 'uninstall')
+  await f.service.remove(uninstall.removalId, [])
+})
+
+test('customize install and rebuilt records retain lowercase physical roots through uninstall', async () => {
+  const f = await fixture('maps', 'mods')
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('customize', {
+        maps: [{ name: 'Test.SC2Map', source_path: '/Maps/Test.SC2Map' }],
+        mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod' }],
+      }),
+    ),
+    'Maps/Test.SC2Map/component': 'map',
+    'Mods/Core.SC2Mod/component': 'mod',
+  })
+  const result = await f.service.analyze('customize', input)
+  const record = await f.service.install({
+    analysisId: result.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  expect(record.installedFiles.map((file) => file.absolutePath)).toContain(
+    join(f.paths.mapsRoot, 'Test.SC2Map', 'component'),
+  )
+  expect((await f.service.scan()).diagnostics).toEqual([])
+  const removal = await f.service.prepareRemoval(record.localId, 'uninstall')
+  await f.service.remove(removal.removalId, [])
+  await expect(stat(join(f.paths.mapsRoot, 'Test.SC2Map'))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
+  await expect(stat(join(f.paths.modsRoot, 'Core.SC2Mod'))).rejects.toMatchObject({
+    code: 'ENOENT',
   })
 })

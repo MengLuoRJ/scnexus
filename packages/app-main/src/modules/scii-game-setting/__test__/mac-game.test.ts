@@ -1,12 +1,7 @@
 import { afterEach, expect, test } from 'vitest'
-import { chmod, mkdir, mkdtemp, rm, writeFile, stat, readdir } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, rm, writeFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import {
-  discoverMacGame,
-  macGameExecutables,
-  macGameRoot,
-  assertMacContentVolume,
-} from '../mac-game'
+import { discoverMacGame, macGameExecutables, macGameRoot, macResourceRoot } from '../mac-game'
 
 const roots: string[] = []
 afterEach(async () => {
@@ -61,20 +56,18 @@ test('app markers must be directories, not files', async () => {
   await expect(macGameRoot(root)).rejects.toThrow('Invalid macOS game root')
 })
 
-test('case-sensitivity check uses file identity and always cleans its probe', async () => {
+test('resource roots preserve existing directory casing and default to Maps/Mods when absent', async () => {
   const { root } = await fixture()
-  const probe = join(root, 'case-marker')
-  await writeFile(probe, 'test')
-  let insensitive = true
-  try {
-    await stat(join(root, 'CASE-MARKER'))
-  } catch {
-    insensitive = false
-  }
-  const accepted = await assertMacContentVolume(root).then(
-    () => true,
-    () => false,
-  )
-  expect(accepted).toBe(insensitive)
-  expect((await readdir(root)).filter((name) => name.startsWith('.scnexus-case-'))).toEqual([])
+  expect(await macResourceRoot(root, 'Maps')).toBe(join(root, 'Maps'))
+  expect(await macResourceRoot(root, 'Mods')).toBe(join(root, 'Mods'))
+  await mkdir(join(root, 'maps'))
+  await mkdir(join(root, 'Mods'))
+  expect(await macResourceRoot(root, 'Maps')).toBe(join(root, 'maps'))
+  expect(await macResourceRoot(root, 'Mods')).toBe(join(root, 'Mods'))
+  expect((await readdir(root)).sort()).toEqual(['Mods', 'maps'].sort())
+})
+test('resource root files and symbolic links are rejected instead of writing outside the game', async () => {
+  const { root } = await fixture()
+  await writeFile(join(root, 'maps'), 'not a directory')
+  await expect(macResourceRoot(root, 'Maps')).rejects.toThrow('regular directory')
 })

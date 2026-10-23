@@ -67,6 +67,21 @@ watch(
     if (!activation.value && !removal.value) emit('close')
   },
 )
+const removalActions = computed(() => [
+  { label: t('campaign.keep'), value: 'keep' as const },
+  { label: t('campaign.delete'), value: 'delete' as const },
+])
+function allRemovalsSelected(action: RemovalDecision['action']) {
+  return (removal.value?.files ?? []).every((file) =>
+    removals.value.some((item) => item.conflictId === file.conflictId && item.action === action),
+  )
+}
+function chooseAllRemovals(action: RemovalDecision['action']) {
+  removals.value = (removal.value?.files ?? []).map((file) => ({
+    conflictId: file.conflictId,
+    action,
+  }))
+}
 function choose(id: string, action: 'keep' | 'delete') {
   removals.value = [
     ...removals.value.filter((item) => item.conflictId !== id),
@@ -146,6 +161,26 @@ async function confirm() {
           <template v-if="removal">
             <p class="text-sm text-muted">{{ t('campaign.removeConfirm') }}</p>
             <div
+              v-if="removal.files.length > 1"
+              class="flex items-center gap-2 rounded border border-default bg-elevated/50 p-2"
+              role="group"
+              :aria-label="t('campaign.applyAll')"
+            >
+              <span class="text-sm font-medium">{{ t('campaign.applyAll') }}</span>
+              <UButton
+                v-for="action in removalActions"
+                :key="action.value"
+                size="sm"
+                :color="allRemovalsSelected(action.value) ? 'primary' : 'neutral'"
+                :variant="allRemovalsSelected(action.value) ? 'solid' : 'outline'"
+                :aria-pressed="allRemovalsSelected(action.value)"
+                @click="chooseAllRemovals(action.value)"
+                >{{
+                  t(action.value === 'keep' ? 'campaign.keepAll' : 'campaign.deleteAll')
+                }}</UButton
+              >
+            </div>
+            <div
               v-for="file in removal.files"
               :key="file.conflictId"
               class="space-y-1 rounded border border-warning p-2 text-sm"
@@ -155,18 +190,35 @@ async function confirm() {
                 {{ t('campaign.usedBy') }}: {{ file.usedBy.map((item) => item.name).join(', ') }}
               </p>
               <p v-else class="text-xs text-muted">{{ t('campaign.unknownOwnership') }}</p>
-              <USelect
-                class="w-full"
-                :placeholder="t('campaign.chooseConflict')"
-                :items="[
-                  { label: t('campaign.keep'), value: 'keep' },
-                  { label: t('campaign.delete'), value: 'delete' },
-                ]"
-                :model-value="removals.find((item) => item.conflictId === file.conflictId)?.action"
-                @update:model-value="
-                  (value: string) => choose(file.conflictId, value as 'keep' | 'delete')
-                "
-              />
+              <div
+                class="flex gap-2"
+                role="group"
+                :aria-label="`${t('campaign.removeConfirm')} · ${file.file.target}`"
+              >
+                <UButton
+                  v-for="action in removalActions"
+                  :key="action.value"
+                  size="sm"
+                  :color="
+                    removals.find((item) => item.conflictId === file.conflictId)?.action ===
+                    action.value
+                      ? 'primary'
+                      : 'neutral'
+                  "
+                  :variant="
+                    removals.find((item) => item.conflictId === file.conflictId)?.action ===
+                    action.value
+                      ? 'solid'
+                      : 'outline'
+                  "
+                  :aria-pressed="
+                    removals.find((item) => item.conflictId === file.conflictId)?.action ===
+                    action.value
+                  "
+                  @click="choose(file.conflictId, action.value)"
+                  >{{ action.label }}</UButton
+                >
+              </div>
             </div>
           </template>
         </template>

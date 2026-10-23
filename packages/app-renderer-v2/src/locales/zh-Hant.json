@@ -161,6 +161,7 @@
   "campaign.applyAll": "統一設定",
   "campaign.overwriteAll": "全部覆寫",
   "campaign.keepAll": "全部保留",
+  "campaign.deleteAll": "全部刪除",
   "campaign.defaultOverwriteHint": "預設覆寫衝突檔案；可統一設定，或逐一切換為保留。",
   "campaign.autoDetected": "已按目錄結構自動識別",
   "campaign.autoDetectedHint": "僅在未找到 package.json 和 metadata.txt 時啟用。按標準戰役目錄識別類型，名稱取自目錄或來源文件名；作者、版本等未知信息不推測。使用 SCNexus 戰役庫安裝，激活後才寫入遊戲資源。",

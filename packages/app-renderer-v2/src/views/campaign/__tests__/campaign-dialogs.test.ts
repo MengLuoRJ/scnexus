@@ -380,6 +380,50 @@ test('mode changes and reopening installation reset conflicts to overwrite witho
   expect(state.confirm).toHaveBeenCalledWith([{ conflictId: 'ccm-file', action: 'overwrite' }], [])
 })
 
+test('removal requires explicit radio choices and supports bulk choices with individual overrides', async () => {
+  const state = service()
+  state.prepare.mockImplementation(async () => {
+    state.removal.value = {
+      removalId: 'removal',
+      files: ['a', 'b'].map((id) => ({
+        conflictId: id,
+        file: { target: `Maps/${id}.SC2Map` },
+        usedBy: [],
+      })),
+    } as never
+  })
+  const wrapper = render(CampaignOperationModal, {
+    service: state as unknown as ReturnType<typeof useCampaign>,
+    request: null,
+  })
+  await wrapper.setProps({ request: { record, action: 'deactivate' } })
+  await flushPromises()
+  const groups = wrapper
+    .findAll('[role="group"]')
+    .filter((group) => group.attributes('aria-label')?.includes('Maps/'))
+  expect(groups).toHaveLength(2)
+  const selected = () =>
+    groups.flatMap((group) =>
+      group.findAll('button[aria-pressed="true"]').map((item) => item.text()),
+    )
+  expect(selected()).toHaveLength(0)
+  await click(wrapper, '确认执行')
+  expect(state.confirm).not.toHaveBeenCalled()
+  await click(wrapper, '全部删除')
+  expect(selected()).toEqual(['删除共享文件', '删除共享文件'])
+  await click(wrapper, '全部保留')
+  expect(selected()).toEqual(['保留本地文件', '保留本地文件'])
+  await groups[1]!.findAll('button')[1]!.trigger('click')
+  await click(wrapper, '确认执行')
+  expect(state.confirm).toHaveBeenCalledWith(
+    [],
+    [
+      { conflictId: 'a', action: 'keep' },
+      { conflictId: 'b', action: 'delete' },
+    ],
+  )
+})
+
 test('activation conflicts still require an explicit decision rather than installation overwrite defaults', async () => {
   const state = service()
   state.conflicts.value = [{ conflictId: 'activation-conflict' }] as never

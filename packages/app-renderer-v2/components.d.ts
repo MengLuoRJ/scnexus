@@ -34,6 +34,7 @@ declare module 'vue' {
     UModal: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/Modal.vue')['default']
     UNavigationMenu: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/NavigationMenu.vue')['default']
     UProgress: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/Progress.vue')['default']
+    URadioGroup: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/RadioGroup.vue')['default']
     USelect: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/Select.vue')['default']
     USeparator: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/Separator.vue')['default']
     USwitch: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/components/Switch.vue')['default']

@@ -161,6 +161,7 @@
   "campaign.applyAll": "统一设置",
   "campaign.overwriteAll": "全部覆盖",
   "campaign.keepAll": "全部保留",
+  "campaign.deleteAll": "全部删除",
   "campaign.defaultOverwriteHint": "默认覆盖冲突文件；可统一设置，或逐个切换为保留。",
   "campaign.autoDetected": "已按目录结构自动识别",
   "campaign.autoDetectedHint": "仅在未找到 package.json 和 metadata.txt 时启用。按标准战役目录识别类型，名称取自目录或来源文件名；作者、版本等未知信息不推测。使用 SCNexus 战役库安装，激活后才写入游戏资源。",

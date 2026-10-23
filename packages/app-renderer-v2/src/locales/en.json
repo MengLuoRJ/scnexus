@@ -161,6 +161,7 @@
   "campaign.applyAll": "Apply to all",
   "campaign.overwriteAll": "Overwrite all",
   "campaign.keepAll": "Keep all",
+  "campaign.deleteAll": "Delete all",
   "campaign.defaultOverwriteHint": "Conflicting files default to overwrite. Apply a choice to all files or switch individual files to keep.",
   "campaign.autoDetected": "Detected from directory layout",
   "campaign.autoDetectedHint": "Available only when neither package.json nor metadata.txt is found. The campaign type is inferred from the standard layout and its name from the folder or source filename. Unknown author/version information is not guessed. Import uses the SCNexus library; game resources are written on activation.",

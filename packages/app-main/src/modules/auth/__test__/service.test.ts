@@ -35,10 +35,13 @@ function setup(getClientId?: () => string) {
     >()
     .mockImplementation(async () => pair())
   const storage = {
-    load: vi.fn<() => string | null>(() => disk),
-    save: vi.fn<(value: string) => void>((value: string) => {
-      disk = value
-    }),
+    load: vi.fn<() => Promise<string | null>>(async () => disk),
+    save: vi.fn<(value: string, beforeCommit: () => void) => Promise<void>>(
+      async (value, beforeCommit) => {
+        beforeCommit()
+        disk = value
+      },
+    ),
     clear: vi.fn<() => void>(() => {
       disk = null
     }),
@@ -70,6 +73,73 @@ afterEach(() => {
   vi.useRealTimers()
 })
 describe('desktop account service', () => {
+  it('rejects a delayed save after logout without restoring the session', async () => {
+    const { service, storage, disk, request } = setup()
+    const wait = deferred<void>()
+    const save = storage.save.getMockImplementation()!
+    storage.save.mockImplementationOnce(async (value, guard) => {
+      await wait.promise
+      await save(value, guard)
+    })
+    const login = service.login(input)
+    await vi.waitFor(() => expect(storage.save).toHaveBeenCalledOnce())
+    await service.logout()
+    wait.resolve()
+    await expect(login).rejects.toThrow('Account operation failed')
+    expect(disk()).toBeNull()
+    expect(service.getSnapshot().status).toBe('signed-out')
+    expect(request).toHaveBeenCalledWith(
+      'logout',
+      {},
+      expect.any(AbortSignal),
+      'a.payload.signature',
+    )
+  })
+  it('rejects pending encryption on dispose without publishing credentials', async () => {
+    const { service, storage, disk, events } = setup()
+    const wait = deferred<void>()
+    const save = storage.save.getMockImplementation()!
+    storage.save.mockImplementationOnce(async (value, guard) => {
+      await wait.promise
+      await save(value, guard)
+    })
+    const login = service.login(input)
+    await vi.waitFor(() => expect(storage.save).toHaveBeenCalledOnce())
+    service.dispose()
+    wait.resolve()
+    await expect(login).rejects.toThrow('Account operation failed')
+    expect(disk()).toBeNull()
+    expect(events.some((event) => event.status === 'signed-in')).toBe(false)
+  })
+  it('does not let an older failed save invalidate a newer login', async () => {
+    const { service, storage, disk, request, pair } = setup()
+    const wait = deferred<void>()
+    const save = storage.save.getMockImplementation()!
+    storage.save.mockImplementationOnce(async (value, guard) => {
+      await wait.promise
+      await save(value, guard)
+    })
+    const old = service.login(input)
+    await vi.waitFor(() => expect(storage.save).toHaveBeenCalledOnce())
+    request.mockResolvedValueOnce(pair('b'))
+    await service.login(input)
+    wait.resolve()
+    await expect(old).rejects.toThrow('Account operation failed')
+    expect(disk()).toBe('b'.repeat(43))
+    expect(service.getSnapshot().accessToken).toBe('b.payload.signature')
+  })
+  it('ignores startup decryption completed after a new login', async () => {
+    const { service, storage, request, disk } = setup()
+    const wait = deferred<string | null>()
+    storage.load.mockReturnValueOnce(wait.promise)
+    const startup = service.start()
+    await service.login(input)
+    wait.resolve('b'.repeat(43))
+    await startup
+    expect(request).toHaveBeenCalledOnce()
+    expect(disk()).toBe('a'.repeat(43))
+    expect(service.getSnapshot().status).toBe('signed-in')
+  })
   it('uses the installation client ID for login/register, not MFA/refresh', async () => {
     let installationId = id.toUpperCase()
     const { service, request, pair, advance } = setup(() => installationId)
@@ -363,7 +433,7 @@ describe('desktop account service', () => {
   })
   it('restores only once and does not replay failed persisted refresh', async () => {
     const { service, storage, request } = setup()
-    storage.load.mockReturnValue('a'.repeat(43))
+    storage.load.mockResolvedValue('a'.repeat(43))
     request.mockRejectedValueOnce(new Error('network'))
     await Promise.all([service.start(), service.start()])
     await service.start()

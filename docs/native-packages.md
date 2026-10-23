@@ -1,5 +1,9 @@
 # Native package maintenance
 
+The desktop runtime does not currently depend on or import these workspace packages.
+For isolated Node/Electron test commands and the verified integration boundaries, see
+[building.md](./building.md#原生库验证).
+
 ## API layers
 
 The main entries of node-stormlib and node-casclib serialize requests through

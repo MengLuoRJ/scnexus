@@ -15,27 +15,28 @@ import { randomUUID } from 'node:crypto'
 import { failure, refreshSecret } from './validation'
 
 export interface AuthStorage {
-  load(): string | null
-  save(refreshToken: string): void
+  load(): Promise<string | null>
+  save(refreshToken: string, beforeCommit: () => void): Promise<void>
   clear(): void
 }
 export interface SecretEncryption {
-  isEncryptionAvailable(): boolean
+  isAsyncEncryptionAvailable(): Promise<boolean>
   getSelectedStorageBackend(): string
-  encryptString(value: string): Buffer
-  decryptString(value: Buffer): string
+  encryptStringAsync(value: string): Promise<Buffer>
+  decryptStringAsync(value: Buffer): Promise<{ result: string }>
 }
 
-/** Synchronous commits keep epoch checks and credential replacement indivisible in main. */
+/** Encryption yields; the guarded file commit remains indivisible in main. */
 export function createAuthStorage(
   directory: string,
   encryption: SecretEncryption,
   platform = process.platform,
 ): AuthStorage {
   const path = join(directory, 'refresh.enc')
-  function supported() {
+  let revision = 0
+  async function supported() {
     if (
-      !encryption.isEncryptionAvailable() ||
+      !(await encryption.isAsyncEncryptionAvailable()) ||
       (platform === 'linux' &&
         !['gnome_libsecret', 'kwallet', 'kwallet5', 'kwallet6'].includes(
           encryption.getSelectedStorageBackend(),
@@ -51,9 +52,10 @@ export function createAuthStorage(
     }
   }
   return {
-    load() {
+    async load() {
+      const version = revision
       try {
-        supported()
+        await supported()
         let stat
         try {
           stat = lstatSync(path)
@@ -69,20 +71,23 @@ export function createAuthStorage(
           (platform !== 'win32' && (stat.mode & 0o077) !== 0)
         )
           throw failure()
-        const token = encryption.decryptString(readFileSync(path))
-        if (!refreshSecret(token)) throw failure()
+        const { result: token } = await encryption.decryptStringAsync(readFileSync(path))
+        if (version !== revision || !refreshSecret(token)) throw failure()
         return token
       } catch {
         throw failure()
       }
     },
-    save(token) {
+    async save(token, beforeCommit) {
+      const version = ++revision
       let staging: string | undefined
       try {
-        supported()
+        await supported()
         if (!refreshSecret(token)) throw failure()
-        const ciphertext = encryption.encryptString(token)
+        const ciphertext = await encryption.encryptStringAsync(token)
         if (!Buffer.isBuffer(ciphertext) || ciphertext.length === 0) throw failure()
+        if (version !== revision) throw failure()
+        beforeCommit()
         mkdirSync(directory, { recursive: true, mode: 0o700 })
         const stat = lstatSync(directory)
         if (!stat.isDirectory() || stat.isSymbolicLink()) throw failure()
@@ -104,6 +109,7 @@ export function createAuthStorage(
       }
     },
     clear() {
+      revision++
       remove(path)
     },
   }

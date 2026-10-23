@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { sevenZipFileFilters, verifySevenZipTarget } from './scripts/sevenzip-platform.mjs'
+import { renameElectronWer } from './scripts/electron-wer.mjs'
 
 const require = createRequire(import.meta.url)
 const config = require('./electron-builder.json')
@@ -17,6 +18,7 @@ export default {
   async beforePack(context) {
     await verifySevenZipTarget(sevenZipRoot, context.electronPlatformName, Arch[context.arch])
   },
+  afterPack: renameElectronWer,
   extraResources: [
     {
       from: join(dirname(require.resolve('regedit/package.json')), 'vbs'),

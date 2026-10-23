@@ -43,7 +43,7 @@
   "devDependencies": {
     "@scnexus/app-shared": "workspace:*",
     "@types/semver": "^7.5.8",
-    "electron": "^44.5.1",
+    "electron": "^45.0.0",
     "electron-builder": "^26.15.3",
     "scnexus-standard": "^0.0.13",
     "typescript": "^5.7.2",

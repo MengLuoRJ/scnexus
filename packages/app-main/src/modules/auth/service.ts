@@ -122,7 +122,7 @@ export function createAuthService(deps: AuthDependencies) {
       controllers.delete(controller)
     }
   }
-  function commit(value: unknown, epoch: number) {
+  async function commit(value: unknown, epoch: number) {
     current(epoch)
     let pair
     try {
@@ -131,10 +131,10 @@ export function createAuthService(deps: AuthDependencies) {
       throw failure('response')
     }
     try {
-      deps.storage.save(pair.refreshToken)
+      await deps.storage.save(pair.refreshToken, () => current(epoch))
     } catch {
-      invalidate()
       void revoke(pair.accessToken)
+      if (!disposed && snapshot.epoch === epoch) invalidate()
       throw failure('storage')
     }
     current(epoch)
@@ -196,7 +196,7 @@ export function createAuthService(deps: AuthDependencies) {
         timer.unref?.()
         return { ...snapshot }
       }
-      return commit(result, epoch)
+      return await commit(result, epoch)
     } catch (error) {
       if (!disposed && snapshot.epoch === epoch) invalidate()
       throw authFailure(error)
@@ -230,7 +230,7 @@ export function createAuthService(deps: AuthDependencies) {
             pair.sessionExpiresAt !== snapshot.sessionExpiresAt)
         )
           throw failure()
-        return commit(pair, epoch)
+        return await commit(pair, epoch)
       } catch (error) {
         if (!disposed && snapshot.epoch === epoch) invalidate()
         throw authFailure(error)
@@ -296,7 +296,7 @@ export function createAuthService(deps: AuthDependencies) {
       timer = undefined
       emit({ status: 'authenticating', mfaExpiresAt: null })
       try {
-        return commit(
+        return await commit(
           await request('mfa', { ...factor, challengeId, clientType: 'DESKTOP' }, epoch),
           epoch,
         )
@@ -360,7 +360,9 @@ export function createAuthService(deps: AuthDependencies) {
       const epoch = snapshot.epoch
       startup = (async () => {
         try {
-          secret = deps.storage.load()
+          const loaded = await deps.storage.load()
+          current(epoch)
+          secret = loaded
           if (secret) await rotate(epoch)
         } catch {
           if (!disposed && snapshot.epoch === epoch) {

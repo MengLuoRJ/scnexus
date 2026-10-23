@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { readdir, mkdtemp, rm, mkdir } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import {
   sevenZipFileFilters,
   verifySevenZipTarget,
@@ -66,7 +66,9 @@ test('unsupported targets fail instead of selecting the build host binary', asyn
 })
 
 test('missing target resources fail before packing', async () => {
-  const temporary = await mkdtemp(join(tmpdir(), 'sevenzip-target-test-'))
+  const temporary = await mkdtemp(
+    join(fileURLToPath(new URL('../../', import.meta.url)), '.sevenzip-target-test-'),
+  )
   try {
     await mkdir(join(temporary, 'bin', 'win', 'x64'), { recursive: true })
     await assert.rejects(verifySevenZipTarget(temporary, 'win32', 'x64'), { code: 'ENOENT' })

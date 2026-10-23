@@ -41,7 +41,10 @@
     "build:prepare": "pnpm run script:electron:targets && pnpm run build:standard",
     "script:electron:targets": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.js",
     "typecheck:shared": "tsc --noEmit -p packages/app-shared/tsconfig.json",
-    "test:build": "node --test scripts/__tests__/build-workflow.test.mjs scripts/__tests__/sevenzip-platform.test.mjs scripts/__tests__/standard-distribution.test.mjs"
+    "test:build": "node --test scripts/__tests__/build-workflow.test.mjs scripts/__tests__/sevenzip-platform.test.mjs scripts/__tests__/standard-distribution.test.mjs scripts/__tests__/electron-wer.test.mjs",
+    "test:electron": "node scripts/test-electron-smoke.mjs",
+    "test:native:electron": "node scripts/test-electron-smoke.mjs --native-tests",
+    "test:native:node": "node scripts/test-electron-smoke.mjs --native-tests --node"
   },
   "devDependencies": {
     "@scnexus/app-main": "workspace:*",
@@ -49,7 +52,7 @@
     "@types/node": "^24.19.1",
     "@vitest/eslint-plugin": "^1.6.27",
     "cross-env": "^7.0.3",
-    "electron": "^44.5.1",
+    "electron": "^45.0.0",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-oxlint": "~1.82.0",

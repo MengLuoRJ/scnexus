@@ -11,6 +11,8 @@
 - 对于新功能、新特性、新模块等贡献，请对 `upcoming-feat` 分支提交 Pull Request；
 - 对于 Bug / 漏洞修复、性能优化、小调整更新，请直接对 `main` 分支提交 Pull Request。
 
+构建、Electron 45 隔离冒烟及打包验证命令见 [构建指南](./docs/building.md)。
+
 ### 🛠 应用程序开发技术栈
 
 - Electron + electron-builder

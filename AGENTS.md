@@ -38,7 +38,7 @@
 以下为目标基线，不表示当前 manifest、构建脚本和业务已完成升级。本阶段只建设文档，不修改依赖与代码。
 
 - 开发环境：Node.js 26、pnpm monorepo。
-- 构建与打包：Vite 8（Rolldown）、Electron 44、electron-builder 36。
+- 构建与打包：Vite 8（Rolldown）、Electron 45、electron-builder 36。
 - 主进程：electron-store、electron-log。
 - 新界面：Vue 3（组合式 API）、Vue Router 5、Pinia、Axios、Nuxt UI（`@nuxt/ui`）、VueUse。
 - TypeScript 及插件版本在工具链升级时按兼容性确定，不继续将旧版固定为新架构要求。

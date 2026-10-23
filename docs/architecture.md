@@ -13,7 +13,7 @@
 | 开发环境      | Node.js 26                 | 安装、构建、测试和开发工具运行            |
 | 工作区        | pnpm monorepo              | 工作区依赖、统一锁文件、包级命令          |
 | 构建          | Vite 8 / Rolldown          | 主进程、preload、renderer 构建            |
-| 桌面运行时    | Electron 44                | 主进程、隔离桥接、Chromium 页面           |
+| 桌面运行时    | Electron 45                | 主进程、隔离桥接、Chromium 页面           |
 | 打包          | electron-builder 36        | 应用资源、安装包及发布产物                |
 | 主进程持久化  | electron-store v11         | 本地配置及小规模结构化状态                |
 | 应用日志      | electron-log               | main 归集三进程日志，共用等级，默认 error |
@@ -23,7 +23,7 @@
 
 注意：
 
-- Node 26 是开发工具链基线，不表示 Electron 内嵌 Node 的版本。主进程与 preload 的运行能力应以 Electron 44 实际运行时为准。
+- Node 26 是开发工具链基线，不表示 Electron 内嵌 Node 的版本。主进程与 preload 的运行能力应以 Electron 45 实际运行时为准。
 - renderer 的构建目标应匹配 Electron 的 Chromium，不按宿主 Node 设置。
 - Nuxt UI 用于普通 Vue/Vite 应用，不因此引入 Nuxt 服务端、SSR 或 Nitro。
 - Vite 8 使用 Rolldown；迁移时检查现有插件、external、输出格式和打包结果，不盲目复制旧 Rollup 配置。
@@ -214,11 +214,11 @@ src/
 
 当前 pnpm isolated 布局下，Sentry 依赖由 electron-builder 的生产依赖收集器保留，不再手工复制 browser SDK。`@sentry/electron@8.1.0` 使用 conventions 0.23，而其 browser 11.4 使用 conventions 0.25；将 browser 强行复制到 electron 的 node_modules 会令它误解析到上层 0.23，导致启动时报 `SENTRY_IS_LOCALHOST` 导出缺失。两份 conventions 共存是正常的，不能只按包名去重。修复验证：`pnpm run test:build` 14 项通过；`pnpm --filter @scnexus/app-main build:app --config.directories.output="C:\Users\mengl\.copilot\session-state\6824866d-f5c6-422c-871a-abc5e0e6fc35\files\sentry-package-validation" --config.win.signAndEditExecutable=false` 通过，ASAR 中 browser 位于顶层并使用 conventions 0.25，electron 自身保留嵌套 conventions 0.23。真实 Electron 加载该 ASAR main（临时 userData、模拟打包标志及资源根）成功显示首页和 preload 桥接，无错误对话框、退出码 0；未执行 NSIS 安装、签名或真实遥测发送。
 
-开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 已移除，应用只使用 renderer-v2。Node 26、Vite 8、Electron 44 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
+开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 已移除，应用只使用 renderer-v2。Node 26、Vite 8、Electron 45 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
 
 后续分阶段实施，每阶段独立验收：
 
-1. **工具链对齐**：Node 26、pnpm、Vite 8、Electron 44、electron-builder 36；确认插件、类型、开发启动及构建兼容。
+1. **工具链对齐**：Node 26、pnpm、Vite 8、Electron 45、electron-builder 36；确认插件、类型、开发启动及构建兼容。
 2. **三包运行闭环**：开发和生产入口接入 v2，preload 可用，打包后静态页面正常加载；旧 renderer 已移除，历史代码通过 Git 查看。
 3. **基础主进程与桥接**：electron-store、electron-log、配置生命周期、受控 API 及错误契约。
 4. **逐业务迁移**：先游戏配置与基础页面，再内容导入、安装/激活，最后工坊等扩展；同时补正确性和失败恢复测试。

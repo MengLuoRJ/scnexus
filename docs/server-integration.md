@@ -47,7 +47,7 @@
 
 `未登录 → 登录中 → MFA 待验证/已登录 → 刷新中 → 已登录/未登录`；启动恢复不阻断本地服务。MFA 待验证不是已登录，不发布 Access 或旧账号数据。challengeId 由 main 保持，UI 只提交 OTP 或恢复码。
 
-Refresh 仅 main 持有，用 Electron safeStorage 加密后原子落盘，Linux 拒绝 basic_text。加密不可用、密文损坏、写入失败均 fail closed，不明文回退。新 Refresh 安全保存后才发布对应 Access。正常退出应用保留有效密文供下次恢复；账号退出清除密文和内存。
+Refresh 仅 main 持有，用 Electron safeStorage 异步 API（`isAsyncEncryptionAvailable` / `encryptStringAsync` / `decryptStringAsync`）加密后原子落盘，Linux 拒绝 basic_text。读取解密返回对象的 `result`，兼容旧版同步 API 保存的密文；恢复后仍按既有流程轮换 Refresh。加密不可用、密文损坏、写入失败均 fail closed，不明文回退。异步加密完成后，在同步文件提交前再次校验存储修订号与会话 epoch，避免退出、切换账号或 dispose 期间的旧任务重新写入凭据；旧任务失败不得清除新会话。新 Refresh 安全保存后才发布对应 Access。正常退出应用保留有效密文供下次恢复；账号退出清除密文和内存。
 
 main 通过单飞 Promise 协调窗口续期；已有较新且仍有效 Access 时复用。Refresh 单次轮换禁止通用重试；结果不明确时清除会话并重新登录。账号退出/切换推进 epoch，晚到登录或刷新结果不得写入或广播。
 

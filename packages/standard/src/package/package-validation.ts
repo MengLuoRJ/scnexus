@@ -1,4 +1,4 @@
-import type { Package } from './package.type'
+import type { Package, PackageCampaign, PackageCustomize, PackageDependency } from './package.type'
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
@@ -6,7 +6,25 @@ function text(value: unknown) {
   return typeof value === 'string' && !value.includes('\0')
 }
 export function isPackage(value: unknown): value is Package {
-  if (!object(value) || !['campaign', 'customize'].includes(value.type as string)) return false
+  if (!object(value) || !['campaign', 'customize', 'dependency'].includes(value.type as string))
+    return false
+  if (value.type === 'dependency') {
+    const allowed = new Set([
+      '$schema',
+      'scnid',
+      'name',
+      'description',
+      'tags',
+      'version',
+      'author',
+      'type',
+      'mods',
+      'website',
+      'social',
+      'sponsor',
+    ])
+    if (Object.keys(value).some((key) => !allowed.has(key))) return false
+  }
   if (!['name', 'description', 'version', 'author'].every((key) => text(value[key]))) return false
   if (!(value.name as string).trim()) return false
   if (
@@ -98,6 +116,7 @@ export function isPackage(value: unknown): value is Package {
       ))
   )
     return false
+  if (value.$schema !== undefined && !text(value.$schema)) return false
   if (value.website !== undefined && !text(value.website)) return false
   for (const category of ['social', 'sponsor'])
     if (
@@ -106,4 +125,14 @@ export function isPackage(value: unknown): value is Package {
     )
       return false
   return true
+}
+
+export function isPackageCampaign(value: unknown): value is PackageCampaign {
+  return isPackage(value) && value.type === 'campaign'
+}
+export function isPackageCustomize(value: unknown): value is PackageCustomize {
+  return isPackage(value) && value.type === 'customize'
+}
+export function isPackageDependency(value: unknown): value is PackageDependency {
+  return isPackage(value) && value.type === 'dependency'
 }

@@ -1,5 +1,5 @@
-import type { Package, PackageCampaignType } from '@scnexus/standard/package'
-export type { Package, PackageCampaignType } from '@scnexus/standard/package'
+import type { PackageContent as Package, PackageCampaignType } from '@scnexus/standard/package'
+export type { PackageContent as Package, PackageCampaignType } from '@scnexus/standard/package'
 export type ContentType = 'campaign' | 'customize'
 export type InstallMode = 'scnexus' | 'ccm' | 'auto'
 export type ResourceType = 'map' | 'mod'

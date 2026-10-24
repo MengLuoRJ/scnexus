@@ -4,6 +4,23 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, stat, symlink } from 'node:fs/
 import { join } from 'node:path'
 import { ContentService, validateRecordPaths, validateActiveResources } from '../content-package'
 import { scanContent } from '../scanner'
+import { parsePackage } from '../parser'
+test('standard dependency packages are not accepted as installable client content yet', () => {
+  const value = {
+    type: 'dependency',
+    name: 'Core',
+    description: '',
+    version: '1',
+    author: 'A',
+    mods: [],
+  }
+  expect(() => parsePackage(JSON.stringify(value))).toThrow(
+    expect.objectContaining({ name: 'CONTENT-TYPE-UNSUPPORTED' }),
+  )
+  expect(() => parsePackage(JSON.stringify(value), 'campaign')).toThrow(
+    expect.objectContaining({ name: 'CONTENT-TYPE-UNSUPPORTED' }),
+  )
+})
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
 import type {
   ContentStore,

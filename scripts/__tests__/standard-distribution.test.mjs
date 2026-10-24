@@ -8,14 +8,14 @@ import { execFileSync } from 'node:child_process'
 
 const standard = new URL('../../packages/standard/', import.meta.url)
 const manifest = JSON.parse(await readFile(new URL('package.json', standard), 'utf8'))
-const subpaths = ['metadata', 'package']
+const subpaths = ['package']
 
 test('standard exports only ESM subpaths with matching declaration mappings', () => {
   assert.equal(manifest.type, 'module')
   assert.deepEqual(manifest.files, ['dist'])
   assert.deepEqual(
     Object.keys(manifest.exports).sort(),
-    subpaths.map((name) => `./${name}`),
+    ['./package.schema.json', ...subpaths.map((name) => `./${name}`)].sort(),
   )
   assert.deepEqual(Object.keys(manifest.typesVersions['*']).sort(), subpaths)
   assert.equal(manifest.main, undefined)
@@ -39,11 +39,12 @@ test('standard build removes legacy artifacts and emits no CommonJS', async () =
     )
   assert.deepEqual(
     relativeFiles.sort(),
-    subpaths
-      .flatMap((name) =>
+    [
+      'package.schema.json',
+      ...subpaths.flatMap((name) =>
         ['index.d.ts', 'index.js', 'index.js.map'].map((file) => `${name}/${file}`),
-      )
-      .sort(),
+      ),
+    ].sort(),
     'Build standard first; stale CJS and legacy declaration files must not remain',
   )
   for (const name of subpaths) {
@@ -52,7 +53,7 @@ test('standard build removes legacy artifacts and emits no CommonJS', async () =
   }
 })
 
-test('both standard subpaths support native ESM imports and reject require', () => {
+test('package subpath supports native ESM imports and rejects require', () => {
   execFileSync(
     process.execPath,
     [
@@ -61,15 +62,16 @@ test('both standard subpaths support native ESM imports and reject require', () 
       `
     import assert from 'node:assert/strict'
     import { isPackage } from '@scnexus/standard/package'
-    import * as metadata from '@scnexus/standard/metadata'
     assert.equal(typeof isPackage, 'function')
-    assert.equal(typeof metadata, 'object')
   `,
     ],
     { cwd: fileURLToPath(standard), stdio: 'pipe' },
   )
   const require = createRequire(new URL('package.json', standard))
-  for (const name of subpaths) {
+  assert.throws(() => require.resolve('@scnexus/standard/metadata'), {
+    code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  })
+  for (const name of [...subpaths, 'metadata']) {
     assert.throws(() => require(`@scnexus/standard/${name}`), {
       code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
     })
@@ -101,4 +103,219 @@ test('standard declarations resolve for NodeNext, Bundler and legacy TypeScript 
       )
     }
   }
+})
+
+test('dependency packages accept only the SCNexus mod-only contract', async () => {
+  const { isPackage } = await import(new URL('dist/package/index.js', standard))
+  const dependency = {
+    type: 'dependency',
+    scnid: 12,
+    name: 'Shared mod',
+    description: 'Dependency',
+    tags: ['mod'],
+    version: '1.0.0',
+    author: 'Author',
+    mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod', components: true }],
+  }
+  assert.equal(isPackage(dependency), true)
+  assert.equal(
+    isPackage({
+      ...dependency,
+      website: 'https://example.com',
+      social: { discord: 'community' },
+      sponsor: { afdian: 'support' },
+    }),
+    true,
+  )
+  for (const change of [
+    { website: 123 },
+    { social: { discord: false } },
+    { sponsor: { afdian: null } },
+  ])
+    assert.equal(isPackage({ ...dependency, ...change }), false)
+  for (const field of [
+    'manager',
+    'maps',
+    'campaign',
+    'localization',
+    'dependencies',
+    'luancher',
+    'bank_enable',
+    'banks',
+    'descriotion',
+    'unknown',
+  ])
+    assert.equal(isPackage({ ...dependency, [field]: null }), false, field)
+  assert.equal(
+    isPackage({ ...dependency, mods: [{ name: 'Bad.SC2Map', source_path: '/Maps/Bad.SC2Map' }] }),
+    false,
+  )
+  assert.equal(isPackage({ ...dependency, type: 'unknown' }), false)
+  assert.equal(isPackage({ ...dependency, scnid: -1 }), false)
+  for (const type of ['campaign', 'customize']) {
+    assert.equal(
+      isPackage({
+        ...dependency,
+        type,
+        campaign: 'WOL',
+        website: 'https://example.com',
+        social: { discord: 'community' },
+        sponsor: { afdian: 'support' },
+      }),
+      true,
+    )
+  }
+})
+test('named package types expose a discriminated dependency contract', async () => {
+  const { mkdtemp, writeFile, rm } = await import('node:fs/promises')
+  const folder = await mkdtemp(join(fileURLToPath(standard), '.types-test-'))
+  try {
+    const file = join(folder, 'consumer.mts')
+    await writeFile(
+      file,
+      `
+import { isPackageCampaign, isPackageCustomize, isPackageDependency } from '../dist/package/index.js'
+import type { Package, PackageContent, PackageDependency, PackageCampaign, PackageCustomize, PackageCampaignType, PackageResource, PackageMap, PackageMod, PackageSocial, PackageSponsor, PackageDependencyReference } from '../dist/package/index.js'
+const mod: PackageMod = { name: 'A.SC2Mod', source_path: '/Mods/A.SC2Mod' }
+const resource: PackageResource = mod
+const map: PackageMap = { name: 'A.SC2Map', source_path: '/Maps/A.SC2Map' }
+const social: PackageSocial = { discord: 'community' }
+const sponsor: PackageSponsor = { afdian: 'support' }
+const reference: PackageDependencyReference = { scnid: 1 }
+const dependency: PackageDependency = { name: 'dep', description: '', author: 'a', version: '1', type: 'dependency', mods: [mod], website: 'https://example.com', social, sponsor }
+const content: PackageContent = { ...dependency, type: 'customize', maps: [map], social, sponsor, dependencies: [reference] }
+const pkg: Package = dependency
+function narrow(value: unknown) {
+  if (isPackageCampaign(value)) { const campaign: PackageCampaignType = value.campaign; const pkg: PackageCampaign = value }
+  if (isPackageCustomize(value)) { const pkg: PackageCustomize = value; const type: 'customize' = value.type }
+  if (isPackageDependency(value)) {
+    const pkg: PackageDependency = value
+    // @ts-expect-error dependency guard does not expose content-only fields
+    value.maps
+  }
+}
+// @ts-expect-error dependency cannot declare an installation manager
+const invalid: PackageDependency = { ...dependency, manager: 'CCM' }
+// @ts-expect-error package types are closed
+const invalidType: Package = { ...dependency, type: 'other' }
+function read(value: Package) {
+  if (value.type === 'dependency') {
+    // @ts-expect-error dependency packages have no maps
+    value.maps
+  }
+}
+`,
+    )
+    const require = createRequire(import.meta.url)
+    const ts = require('typescript')
+    const program = ts.createProgram([file], {
+      strict: true,
+      noEmit: true,
+      skipLibCheck: true,
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    })
+    const errors = ts.getPreEmitDiagnostics(program)
+    assert.equal(
+      errors.length,
+      0,
+      ts.formatDiagnosticsWithColorAndContext(errors, {
+        getCanonicalFileName: (name) => name,
+        getCurrentDirectory: () => folder,
+        getNewLine: () => '\n',
+      }),
+    )
+  } finally {
+    await rm(folder, { recursive: true, force: true })
+  }
+})
+
+test('generated JSON Schema is deterministic, importable and enforces package field structure', async () => {
+  const before = await readFile(new URL('dist/package.schema.json', standard), 'utf8')
+  execFileSync(process.execPath, ['scripts/generate-schema.mjs'], {
+    cwd: fileURLToPath(standard),
+    stdio: 'pipe',
+  })
+  assert.equal(await readFile(new URL('dist/package.schema.json', standard), 'utf8'), before)
+  const require = createRequire(new URL('package.json', standard))
+  const schema = require('@scnexus/standard/package.schema.json')
+  assert.equal(schema.$schema, 'http://json-schema.org/draft-07/schema#')
+  const Ajv = require('ajv')
+  const validate = new Ajv({ strict: true }).compile(schema)
+  const { isPackage } = await import(new URL('dist/package/index.js', standard))
+  const base = {
+    name: 'Example',
+    description: '',
+    version: '1.0.0',
+    author: 'A',
+    $schema: './package.schema.json',
+  }
+  for (const type of ['campaign', 'customize', 'dependency']) {
+    const value = {
+      ...base,
+      type,
+      ...(type === 'campaign' ? { campaign: 'WOL' } : {}),
+      mods: [{ name: 'Core.SC2Mod', source_path: '/Mods/Core.SC2Mod' }],
+      website: 'https://example.com',
+      social: { discord: 'group' },
+      sponsor: { afdian: 'support' },
+    }
+    assert.equal(validate(value), true, JSON.stringify(validate.errors))
+    assert.equal(isPackage(value), true)
+  }
+  const dep = { ...base, type: 'dependency' }
+  for (const change of [
+    { maps: [] },
+    { manager: 'SCNexus' },
+    { unknown: true },
+    { $schema: 42 },
+    { scnid: -1 },
+    { scnid: 0.5 },
+    { scnid: Number.MAX_SAFE_INTEGER + 1 },
+    { name: '   ' },
+    { sponsor: { afdian: 1 } },
+    { mods: [{ name: 'A.SC2Map', source_path: '/Maps/A.SC2Map' }] },
+    { mods: [{ name: 'A.SC2Mod', source_path: '/Maps/A.SC2Mod' }] },
+  ]) {
+    assert.equal(validate({ ...dep, ...change }), false, JSON.stringify(change))
+    assert.equal(isPackage({ ...dep, ...change }), false, JSON.stringify(change))
+  }
+  execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '--eval',
+      `import schema from '@scnexus/standard/package.schema.json' with { type: 'json' }; if (!schema.definitions.Package) throw new Error('Missing schema definitions')`,
+    ],
+    { cwd: fileURLToPath(standard), stdio: 'pipe' },
+  )
+})
+
+test('specialized guards validate the entire package and only match their own kind', async () => {
+  const api = await import(new URL('dist/package/index.js', standard))
+  const guards = {
+    campaign: api.isPackageCampaign,
+    customize: api.isPackageCustomize,
+    dependency: api.isPackageDependency,
+  }
+  const base = { name: 'Example', description: '', version: '1', author: 'A' }
+  for (const [kind, guard] of Object.entries(guards)) {
+    for (const type of Object.keys(guards)) {
+      const value = { ...base, type, ...(type === 'campaign' ? { campaign: 'WOL' } : {}) }
+      assert.equal(guard(value), type === kind)
+      assert.equal(guard({ ...value, name: ' ' }), false)
+      assert.equal(
+        guard({
+          ...value,
+          mods: [{ name: 'Invalid.SC2Map', source_path: '/Maps/Invalid.SC2Map' }],
+        }),
+        false,
+      )
+    }
+    for (const value of [null, [], {}, { type: kind }, undefined, 42])
+      assert.equal(guard(value), false)
+  }
+  assert.equal(api.isPackageCampaign({ ...base, type: 'campaign' }), false)
+  assert.equal(api.isPackageDependency({ ...base, type: 'dependency', manager: 'CCM' }), false)
 })

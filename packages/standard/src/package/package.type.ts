@@ -1,170 +1,119 @@
-export type PackageType = 'campaign' | 'customize' | string
-
+export type PackageType = 'campaign' | 'customize' | 'dependency'
 export type PackageCampaignType = 'WOL' | 'HOTS' | 'LOTV' | 'NCO'
 
-export type PackageRichInfo = {
-  website?: string
-  social?: {
-    twitter?: string
-    discord?: string
-    youtube?: string
-    weibo?: string
-    bilibili?: string
-    qq_group?: string
-  }
-  sponsor?: {
-    paypal?: string
-    patreon?: string
-    buymeacoffee?: string
-    afdian?: string
-  }
+export type PackageResource = {
+  /** File or component-directory name, including the SC2Map/SC2Mod extension. */
+  name: string
+  description?: string
+  version?: string
+  /** Package-relative logical path beginning with /Maps/ or /Mods/. */
+  source_path: string
+  /** Installation target using the same logical prefix as source_path. */
+  target_path?: string
+  components?: boolean
 }
-
-export type Package = {
+export type PackageMap = Omit<PackageResource, 'name' | 'source_path' | 'target_path'> & {
+  /** @pattern \.[sS][cC]2[mM][aA][pP]$ */
+  name: string
+  /** @pattern ^/Maps/ */
+  source_path: string
+  /** @pattern ^/Maps/ */
+  target_path?: string
+}
+export type PackageMod = Omit<PackageResource, 'name' | 'source_path' | 'target_path'> & {
+  /** @pattern \.[sS][cC]2[mM][oO][dD]$ */
+  name: string
+  /** @pattern ^/Mods/ */
+  source_path: string
+  /** @pattern ^/Mods/ */
+  target_path?: string
+}
+export type PackageSocial = {
+  twitter?: string
+  discord?: string
+  youtube?: string
+  weibo?: string
+  bilibili?: string
+  qq_group?: string
+}
+export type PackageSponsor = {
+  paypal?: string
+  patreon?: string
+  buymeacoffee?: string
+  afdian?: string
+}
+export type PackageLocalization = {
+  /** Locale identifier, e.g. zh-CN. */
+  locale: string
+  name?: string
+  description?: string
+  author?: string
+  version?: string
+  translators?: string[]
+}
+/** A dependency reference, not the dependency package itself. */
+export type PackageDependencyReference = {
+  /**
+   * @asType integer
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
   scnid?: number
+  version?: string
+}
+export type PackageLauncher = {
+  /** Must match a declared maps entry. */
+  name: string
+  description?: string
+}
+export type PackageBank = {
+  name: string
+  description?: string
+}
+export type PackageBase = {
+  /** Optional editor schema association; never fetched by package validation. */
+  $schema?: string
+  /**
+   * @asType integer
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  scnid?: number
+  /** @pattern \S */
   name: string
   description: string
   tags?: string[]
   version: string
   author: string
-  localization?: {
-    /**
-     * The locale name, should be one of the supported locales.
-     * @example `zn-CN`
-     */
-    locale: string
-    /**
-     * The name of the Customize in this locale.
-     * @example `Wings of Liberty`
-     */
-    name?: string
-    /**
-     * The description of the Customize in this locale.
-     */
-    description?: string
-    /**
-     * The name of the author in this locale
-     */
-    author?: string
-    /**
-     * The semver version of the Customize in this locale.
-     * @example `0.0.1`
-     */
-    version?: string
-    /**
-     * The translaors of this localization.
-     */
-    translators?: string[]
-  }[]
-  /**
-   * Type of the metadata.
-   *
-   * `"campaign"` will turn this file set into Campaign Package,
-   * which will include the process of official campaigns' file in `<GameRoot>\Maps\Campaign`.
-   *
-   * `"customize"` means this file is a Customize Mod / Project.
-   *
-   * @value `campaign` | `customize`
-   */
-  type: PackageType
-  /**
-   * The campaign type of the Package if the type is `campaign`.
-   * @value `WOL` | `HOTS` | `LOTV` | `NCO`
-   * @default undefined
-   */
+  website?: string
+  social?: PackageSocial
+  sponsor?: PackageSponsor
+}
+export type PackageContent = PackageBase & {
+  type: 'campaign' | 'customize'
   campaign?: PackageCampaignType
-  /**
-   * Informations about *.SC2Map files.
-   */
-  maps?: {
-    /**
-     * Name of the map file, should with `.SC2Map` extension.
-     * @example `Level1.SC2Map`
-     */
-    name: string
-    description?: string
-    version?: string
-    /**
-     * Source path to the map file in the compress file or develop directory.
-     * @example '/Mods/Level1.SC2Map'
-     */
-    source_path: string
-    /**
-     * Taget path for the map file after decompress or install
-     * @example '/Mods/Level1.SC2Map'
-     */
-    target_path?: string
-    /**
-     * If the file is saved as Components files
-     * @default undefined
-     */
-    components?: boolean
-  }[]
-  /**
-   * Informations about *.SC2Mod files.
-   */
-  mods?: {
-    /**
-     * Name of the mod file, should with `.SC2Mod` extension.
-     * @example `CoreFeatures.SC2Mod`
-     */
-    name: string
-    description?: string
-    version?: string
-    /**
-     * Source path to the mod file in the compress file or develop directory.
-     * @example '/Mods/CoreFeatures.SC2Mod'
-     */
-    source_path: string
-    /**
-     * Taget path for the mod file after decompress or install
-     * @example '/Mods/CoreFeatures.SC2Mod'
-     */
-    target_path?: string
-    /**
-     * If the file is saved as Components files
-     * @default undefined
-     */
-    components?: boolean
-  }[]
-  /**
-   * Declear the dependencis will that be used, these usually to include mods files that not been delivered within this package.
-   *
-   * *This filed is designed to replace upsteam mods function.*
-   *
-   * @experimental
-   */
-  dependencies?: {
-    scnid?: number
-    version?: string
-  }[]
-  /**
-   * The luancher map file which will be run when player play this customize.
-   */
-  luancher?: {
-    /**
-     * Name of the map file, should with `.SC2Map` extension, and match one of the `maps`.
-     * @example `Luancher.SC2Map`
-     */
-    name: string
-    description?: string
-  }
-  /**
-   * Declear the bank type that be used when `type` set to `"Campaign"`
-   *
-   * `"official"` means using the banks that set in the official campaigns.
-   *
-   * `"custom"` means using customed bank that set by content creator,
-   * which should be set in `banks` field with their names.
-   */
+  localization?: PackageLocalization[]
+  maps?: PackageMap[]
+  mods?: PackageMod[]
+  /** Descriptive/experimental; the client does not resolve or install these automatically. */
+  dependencies?: PackageDependencyReference[]
+  /** Legacy spelling retained for existing packages. */
+  luancher?: PackageLauncher
+  /** Legacy spelling retained; bank migration is not implemented by this declaration. */
   bank_enable?: 'offcial' | 'custom'
-  banks?: {
-    name: string
-    description?: string
-  }[]
-  /**
-   * Author-recommended installation mode. The player may choose another available mode.
-   * No recommendation is supplied when this field is absent.
-   */
+  banks?: PackageBank[]
   manager?: 'SCNexus' | 'CCM'
-} & PackageRichInfo
+}
+/** Mod-only package for SCNexus management; CCM and client installation are not supported. */
+export type PackageDependency = PackageBase & {
+  type: 'dependency'
+  mods?: PackageMod[]
+}
+export type PackageCampaign = PackageContent & {
+  type: 'campaign'
+  campaign: PackageCampaignType
+}
+export type PackageCustomize = PackageContent & {
+  type: 'customize'
+}
+export type Package = PackageContent | PackageDependency

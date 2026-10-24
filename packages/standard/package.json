@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/standard",
-  "version": "0.0.21",
+  "version": "0.1.0",
   "description": "SCNexus Standard types, definitions, parsers and so on files.",
   "keywords": [
     "SCNexus"
@@ -21,21 +21,13 @@
   "type": "module",
   "typesVersions": {
     "*": {
-      "metadata": [
-        "./dist/metadata/index.d.ts"
-      ],
       "package": [
         "./dist/package/index.d.ts"
       ]
     }
   },
   "exports": {
-    "./metadata": {
-      "import": {
-        "types": "./dist/metadata/index.d.ts",
-        "default": "./dist/metadata/index.js"
-      }
-    },
+    "./package.schema.json": "./dist/package.schema.json",
     "./package": {
       "import": {
         "types": "./dist/package/index.d.ts",
@@ -44,8 +36,9 @@
     }
   },
   "scripts": {
-    "build": "tsup",
-    "watch": "npm run build -- --watch src",
+    "build": "tsup && pnpm run build:schema",
+    "build:schema": "node scripts/generate-schema.mjs",
+    "watch": "tsup --watch src --onSuccess \"pnpm run build:schema\"",
     "prepublish": "npm run build",
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard && pnpm -w exec eslint packages/standard",
     "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard",
@@ -55,6 +48,8 @@
     "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/standard"
   },
   "devDependencies": {
+    "ajv": "^8.20.0",
+    "ts-json-schema-generator": "^2.9.0",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5"
   }

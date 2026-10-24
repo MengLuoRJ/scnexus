@@ -9,5 +9,5 @@ export const tsup: Options = {
   minify: true,
   bundle: true,
   skipNodeModulesBundle: true,
-  entry: ['./src/**/index.ts'],
+  entry: { 'package/index': './src/package/index.ts' },
 }

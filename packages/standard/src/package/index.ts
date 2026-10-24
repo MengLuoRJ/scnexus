@@ -1,2 +1,7 @@
 export * from './package.type'
-export { isPackage } from './package-validation'
+export {
+  isPackage,
+  isPackageCampaign,
+  isPackageCustomize,
+  isPackageDependency,
+} from './package-validation'

@@ -16,7 +16,11 @@ export function parsePackage(text: string, type?: ContentType): Package {
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {}, { cause })
   }
   if (!isPackage(value)) throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
-  if (type !== undefined && value.type !== type) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
+  if (
+    !['campaign', 'customize'].includes(value.type) ||
+    (type !== undefined && value.type !== type)
+  )
+    throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
   for (const key of ['name', 'description', 'version', 'author'] as const)
     if (typeof value[key] !== 'string' || (key === 'name' && !value[key].trim()))
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)

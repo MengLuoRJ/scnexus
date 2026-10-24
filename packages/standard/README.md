@@ -24,6 +24,19 @@ import type { Package } from '@scnexus/standard/package'
 声明。`exports` 与 `typesVersions` 均指向这些文件；不提供包根入口或旧版
 `.mjs` / `.d.mts` / CommonJS 文件的兼容路径。请勿直接依赖 `dist` 内部路径。
 
+## 发布
+
+在 scnexus-client 根目录的交互终端运行：
+
+```sh
+npm login --registry=https://registry.npmjs.org
+pnpm run publish:standard
+```
+
+该命令先构建并运行 standard 分发测试，成功后仅发布 `@scnexus/standard` 到 npm 的
+`latest` 标签，版本取本包 package.json；不会发布整个工作区。发布会跳过 Git 干净状态检查，
+因此使用当前工作区内容，不自动提交或打标签。按 npm 提示完成额外认证，不在脚本中保存验证码或令牌。
+
 ## 验证
 
 在仓库根目录运行：

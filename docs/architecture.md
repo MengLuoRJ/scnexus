@@ -348,3 +348,7 @@ app-main 的 package.json 是唯一应用清单，main 字段仍为打包后的 
 beforePack 先校验目标可执行文件、许可证和 Windows DLL，缺文件或不支持的平台/架构立即停止打包。当前支持 Windows/Linux x64、ia32、arm64；macOS x64、arm64、universal 共用包中经 Mach-O 头验证的 x64/arm64 universal 7zz。Linux ARM32 的包目录 arm 与 electron-builder armv7l 不同，本轮不默认兼容该别名，目标 armv7l 会明确拒绝，而非错误携带本机二进制。
 
 验证：`pnpm run test:build` 14 项通过（含 Windows/Linux/macOS 九种目标、实际 builder FileMatcher 规则、目标资源缺失及不支持目标）；`pnpm --filter @scnexus/app-main build:app --config.directories.output=../../release/sevenzip-filter-check --config.win.signAndEditExecutable=false` Windows x64 未封装打包通过。检查 ASAR 与 unpacked 都只存在 bin/win/x64 的 7z.exe/7z.dll 和 bin/win/License.txt，源依赖仍有 win/linux/mac。执行产物 7z.exe 创建 ZIP、列举与解压，并比对内容通过。定向 ESLint/oxlint 与 git diff --check 通过。Linux/macOS 的选择规则有测试，未在本机实际构建/执行这些平台的产物；未上传或发布安装器。临时打包与验证目录结束后清理。
+
+## 作者工具箱（renderer-v2）
+
+作者工具箱为独立本地工具入口，不依赖Workshop开关、登录或创作者资格。工具首页以图标列表进入具体页面。首个编码转换工具使用浏览器TextEncoder保留可打印ASCII字母数字符号及空格，仅将非ASCII及控制字节转换为小写、两位的 `\xhh`，可选直接转码、英文双引号String字面量、StringToText以及TriggerDebugOutput格式。双引号和反斜杠分别使用代码转义，避免破坏字符串。输入不trim、不上传、不持久化；结果只读，复制成功/失败用toast反馈。未增加main/preload接口或依赖。按1000×700验证，内容区840×644，无横向溢出。

@@ -6,6 +6,18 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      path: '/editor-toolbox',
+      name: 'editor-toolbox',
+      component: () => import('../views/editor-toolbox/EditorToolboxView.vue'),
+      meta: { titleKey: 'toolbox.title' },
+    },
+    {
+      path: '/editor-toolbox/encoding',
+      name: 'editor-toolbox-encoding',
+      component: () => import('../views/editor-toolbox/EncodingView.vue'),
+      meta: { titleKey: 'toolbox.encoding' },
+    },
+    {
       path: '/workshop/:scnid?',
       name: 'workshop',
       component: () => import('../views/workshop/WorkshopView.vue'),

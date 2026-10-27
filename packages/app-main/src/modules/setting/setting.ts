@@ -10,6 +10,7 @@ import { getSettingStore, updateSettingStore } from '../../stores/setting'
 import { applyLogLevel, reportError } from '../logging/logging'
 import { disableTelemetry, enableTelemetry, setSavedTelemetryEnabled } from '../telemetry/telemetry'
 import { getMainWindow, onWindowReady } from '../window/window'
+import { setWorkshopEnabled } from '../workshop-lifecycle'
 import { setAnalyticsEnabled } from '../analytics-lifecycle'
 import { resolveDisplayLanguage, validatePreferencePatch } from './setting-validation'
 
@@ -76,6 +77,7 @@ async function applyUpdate(raw: unknown, complete: boolean): Promise<SettingSnap
       throw new AppError(ERRORS.LOGGING_CONFIGURATION_FAILED, {}, { cause })
     }
   }
+  if ('workshopEnabled' in patch) setWorkshopEnabled(saved.workshopEnabled)
   if ('analyticsEnabled' in patch) setAnalyticsEnabled(saved.analyticsEnabled)
   if (saved.telemetryEnabled && 'telemetryEnabled' in patch) {
     try {
@@ -101,6 +103,7 @@ export function updateSettingKey(key: unknown, value: unknown) {
 export function initializeSetting() {
   const data = getSettingStore()
   applyLogLevel(data.logLevel)
+  setWorkshopEnabled(data.workshopEnabled)
   setAnalyticsEnabled(data.analyticsEnabled)
   if (data.telemetryEnabled) {
     try {

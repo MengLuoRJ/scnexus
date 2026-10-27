@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, reactive, ref, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { useAuthStore } from '../../stores/auth'
 import { ipcAppGetDeviceName } from '../../ipcs/app'
+import CreatorStatus from './CreatorStatus.vue'
 import logo from '../../assets/logo.png'
 import { apiRegistrationPolicy, accountErrorKey } from '../../apis'
 import { usePersonalCenter } from './usePersonalCenter'
@@ -20,6 +22,20 @@ defineOptions({ name: 'AccountView' })
 const { t } = useI18n()
 const toast = useToast()
 const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+watch(
+  () => auth.signedIn,
+  (signedIn) => {
+    const target = route.query.redirect
+    if (
+      signedIn &&
+      typeof target === 'string' &&
+      /^\/(workshop(?:\/\d+)?|downloads|creator|uploads)$/.test(target)
+    )
+      void router.replace(target)
+  },
+)
 const center = usePersonalCenter()
 const { experience, loading: experienceLoading, saving, checking, error: experienceError } = center
 const editingNickname = ref(false)
@@ -291,6 +307,7 @@ async function logout() {
         <UBadge color="success" variant="subtle" size="lg">{{ t('account.signedIn') }}</UBadge>
       </div>
     </div>
+    <CreatorStatus />
     <div class="grid grid-cols-2 items-start gap-3">
       <UCard
         class="min-w-0"

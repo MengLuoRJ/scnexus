@@ -1,7 +1,34 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-export default createRouter({
+import { useAuthStore } from '../stores/auth'
+import { useCreatorStore } from '../stores/creator'
+import { useContentCenterStore } from '../stores/content-center'
+const router = createRouter({
   history: createWebHashHistory(),
   routes: [
+    {
+      path: '/workshop/:scnid?',
+      name: 'workshop',
+      component: () => import('../views/workshop/WorkshopView.vue'),
+      meta: { workshop: true, titleKey: 'workshop.title' },
+    },
+    {
+      path: '/creator',
+      name: 'creator',
+      component: () => import('../views/creator/CreatorView.vue'),
+      meta: { workshop: true, creator: true, titleKey: 'contentCenter.creator' },
+    },
+    {
+      path: '/downloads',
+      name: 'downloads',
+      component: () => import('../views/downloads/DownloadsView.vue'),
+      meta: { workshop: true, titleKey: 'contentCenter.downloads' },
+    },
+    {
+      path: '/uploads',
+      name: 'uploads',
+      component: () => import('../views/uploads/UploadsView.vue'),
+      meta: { workshop: true, creator: true, titleKey: 'contentCenter.uploads' },
+    },
     {
       path: '/account',
       name: 'account',
@@ -27,3 +54,26 @@ export default createRouter({
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
+
+router.beforeEach(async (to) => {
+  if (!to.meta.workshop) return
+  const center = useContentCenterStore()
+  try {
+    await center.initialize()
+  } catch {
+    return '/settings'
+  }
+  if (!center.enabled) return '/settings'
+  if (to.meta.login || to.meta.creator) {
+    const auth = useAuthStore()
+    if (!auth.signedIn) await auth.initialize()
+    if (!auth.signedIn) return { path: '/account', query: { redirect: to.fullPath } }
+    if (to.meta.creator) {
+      if (!auth.authorization) await auth.loadAccount()
+      const creator = useCreatorStore()
+      await creator.load()
+      if (!creator.active) return '/account'
+    }
+  }
+})
+export default router

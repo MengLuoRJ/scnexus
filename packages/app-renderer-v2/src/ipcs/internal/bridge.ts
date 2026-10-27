@@ -19,10 +19,6 @@ type Channel =
   | 'updater:check-for-updates-and-notify'
   | 'updater:download-update'
   | 'updater:quit-and-install'
-  | 'workshop:get-file-md5'
-  | 'workshop:get-file-md5-wasm'
-  | 'workshop:write-metadata'
-  | 'workshop:upload-compressed-file'
 type Event =
   | 'updater:checking-for-update'
   | 'updater:update-available'

@@ -7,6 +7,7 @@ import { sciiGameSettingRepository, configureGameDefaults } from './scii-game-se
 import { existsSync, copyFileSync, constants } from 'node:fs'
 import { campaignRepository } from './campaign'
 import { campaignActiveRepository } from './campaign-active'
+import { dependencyRepository } from './dependency'
 import { customizeRepository } from './customize'
 
 let initialization: Promise<void> | undefined
@@ -42,6 +43,7 @@ export async function initContentStores(): Promise<void> {
     ['store-campaign', campaignRepository],
     ['store-campaign-active', campaignActiveRepository],
     ['store-customize', customizeRepository],
+    ['store-dependency', dependencyRepository],
   ] as const) {
     if (!repository.isInitialized()) repository.init(await createElectronBackend(name, directory))
   }
@@ -71,6 +73,7 @@ async function initialize(): Promise<void> {
     ['store-campaign', campaignRepository],
     ['store-campaign-active', campaignActiveRepository],
     ['store-customize', customizeRepository],
+    ['store-dependency', dependencyRepository],
   ] as const) {
     try {
       repository.init(await createElectronBackend(name, directory))

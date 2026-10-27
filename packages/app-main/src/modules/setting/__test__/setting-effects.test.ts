@@ -4,15 +4,18 @@ const mocks = vi.hoisted(() => ({
     logLevel: 'error',
     telemetryEnabled: false,
     analyticsEnabled: true,
+    workshopEnabled: true,
     clientId: 'client',
     displayLanguage: 'zh',
   },
+  workshop: vi.fn<(enabled: boolean) => void>(),
   analytics: vi.fn<(enabled: boolean) => void>(),
   apply: vi.fn<typeof import('../../logging/logging').applyLogLevel>(),
   enable: vi.fn<typeof import('../../telemetry/telemetry').enableTelemetry>(),
   disable: vi.fn<typeof import('../../telemetry/telemetry').disableTelemetry>(async () => {}),
   send: vi.fn<typeof import('../../window/window').sendWhenReady>(),
 }))
+vi.mock('../../workshop-lifecycle', () => ({ setWorkshopEnabled: mocks.workshop }))
 vi.mock('../../analytics-lifecycle', () => ({ setAnalyticsEnabled: mocks.analytics }))
 vi.mock('electron', () => ({
   app: { getPreferredSystemLanguages: () => ['zh'] },
@@ -68,4 +71,13 @@ test('online analytics is persisted and applied immediately, independently from 
   await updateSetting({ analyticsEnabled: true })
   expect(mocks.data.analyticsEnabled).toBe(true)
   expect(mocks.analytics).toHaveBeenLastCalledWith(true)
+})
+
+test('Workshop consent updates are persisted and applied immediately', async () => {
+  await updateSetting({ workshopEnabled: false })
+  expect(mocks.data.workshopEnabled).toBe(false)
+  expect(mocks.workshop).toHaveBeenLastCalledWith(false)
+  await updateSetting({ workshopEnabled: true })
+  expect(mocks.data.workshopEnabled).toBe(true)
+  expect(mocks.workshop).toHaveBeenLastCalledWith(true)
 })

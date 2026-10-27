@@ -34,6 +34,8 @@ declare global {
   const apiCampaignScan: typeof import('./src/ipcs/campaign').apiCampaignScan
   const apiCampaignUninstall: typeof import('./src/ipcs/campaign').apiCampaignUninstall
   const apiContentAnalyze: typeof import('./src/ipcs/content').apiContentAnalyze
+  const apiCreatorRedeem: typeof import('./src/apis/creator').apiCreatorRedeem
+  const apiCreatorState: typeof import('./src/apis/creator').apiCreatorState
   const apiCustomizeAnalyze: typeof import('./src/ipcs/customize').apiCustomizeAnalyze
   const apiCustomizeCancel: typeof import('./src/ipcs/customize').apiCustomizeCancel
   const apiCustomizeInstall: typeof import('./src/ipcs/customize').apiCustomizeInstall
@@ -46,6 +48,7 @@ declare global {
   const apiDeepLinkOnWorkshop: typeof import('./src/ipcs/deep-link').apiDeepLinkOnWorkshop
   const apiDialogShowOpenDialog: typeof import('./src/ipcs/dialog').apiDialogShowOpenDialog
   const apiDialogShowOpenDialogSync: typeof import('./src/ipcs/dialog').apiDialogShowOpenDialogSync
+  const apiFileRead: typeof import('./src/apis/files').apiFileRead
   const apiGameSettingConfigure: typeof import('./src/ipcs/scii-game-setting').apiGameSettingConfigure
   const apiGameSettingGet: typeof import('./src/ipcs/scii-game-setting').apiGameSettingGet
   const apiGameSettingInitialize: typeof import('./src/ipcs/scii-game-setting').apiGameSettingInitialize
@@ -92,9 +95,18 @@ declare global {
   const apiWindowReady: typeof import('./src/ipcs/window').apiWindowReady
   const apiWindowSetMaximized: typeof import('./src/ipcs/window').apiWindowSetMaximized
   const apiWindowShow: typeof import('./src/ipcs/window').apiWindowShow
+  const apiWorkshopCancelCandidate: typeof import('./src/apis/workshop').apiWorkshopCancelCandidate
+  const apiWorkshopCreate: typeof import('./src/apis/workshop').apiWorkshopCreate
+  const apiWorkshopCreateVersion: typeof import('./src/apis/workshop').apiWorkshopCreateVersion
+  const apiWorkshopDetail: typeof import('./src/apis/workshop').apiWorkshopDetail
+  const apiWorkshopFileRead: typeof import('./src/apis/files').apiWorkshopFileRead
   const apiWorkshopGetFileMd5: typeof import('./src/ipcs/workshop').apiWorkshopGetFileMd5
   const apiWorkshopGetFileMd5Wasm: typeof import('./src/ipcs/workshop').apiWorkshopGetFileMd5Wasm
+  const apiWorkshopList: typeof import('./src/apis/workshop').apiWorkshopList
+  const apiWorkshopMine: typeof import('./src/apis/workshop').apiWorkshopMine
+  const apiWorkshopUpdate: typeof import('./src/apis/workshop').apiWorkshopUpdate
   const apiWorkshopUploadCompressedFile: typeof import('./src/ipcs/workshop').apiWorkshopUploadCompressedFile
+  const apiWorkshopVersions: typeof import('./src/apis/workshop').apiWorkshopVersions
   const apiWorkshopWriteMetadata: typeof import('./src/ipcs/workshop').apiWorkshopWriteMetadata
   const computed: typeof import('vue').computed
   const createApp: typeof import('vue').createApp
@@ -155,6 +167,10 @@ declare global {
   const ipcCustomizeUninstall: typeof import('./src/ipcs/customize').ipcCustomizeUninstall
   const ipcDeepLinkOnAuthentication: typeof import('./src/ipcs/deep-link').ipcDeepLinkOnAuthentication
   const ipcDeepLinkOnWorkshop: typeof import('./src/ipcs/deep-link').ipcDeepLinkOnWorkshop
+  const ipcDependencyInstall: typeof import('./src/ipcs/dependency').ipcDependencyInstall
+  const ipcDependencyList: typeof import('./src/ipcs/dependency').ipcDependencyList
+  const ipcDependencyPrepareUninstall: typeof import('./src/ipcs/dependency').ipcDependencyPrepareUninstall
+  const ipcDependencyUninstall: typeof import('./src/ipcs/dependency').ipcDependencyUninstall
   const ipcDialogShowOpenDialog: typeof import('./src/ipcs/dialog').ipcDialogShowOpenDialog
   const ipcDialogShowOpenDialogSync: typeof import('./src/ipcs/dialog').ipcDialogShowOpenDialogSync
   const ipcGameSettingConfigure: typeof import('./src/ipcs/scii-game-setting').ipcGameSettingConfigure
@@ -195,8 +211,18 @@ declare global {
   const ipcWindowReady: typeof import('./src/ipcs/window').ipcWindowReady
   const ipcWindowSetMaximized: typeof import('./src/ipcs/window').ipcWindowSetMaximized
   const ipcWindowShow: typeof import('./src/ipcs/window').ipcWindowShow
+  const ipcWorkshopCancel: typeof import('./src/ipcs/workshop').ipcWorkshopCancel
+  const ipcWorkshopDownload: typeof import('./src/ipcs/workshop').ipcWorkshopDownload
   const ipcWorkshopGetFileMd5: typeof import('./src/ipcs/workshop').ipcWorkshopGetFileMd5
   const ipcWorkshopGetFileMd5Wasm: typeof import('./src/ipcs/workshop').ipcWorkshopGetFileMd5Wasm
+  const ipcWorkshopInstallSource: typeof import('./src/ipcs/workshop').ipcWorkshopInstallSource
+  const ipcWorkshopList: typeof import('./src/ipcs/workshop').ipcWorkshopList
+  const ipcWorkshopOnChanged: typeof import('./src/ipcs/workshop').ipcWorkshopOnChanged
+  const ipcWorkshopPause: typeof import('./src/ipcs/workshop').ipcWorkshopPause
+  const ipcWorkshopResume: typeof import('./src/ipcs/workshop').ipcWorkshopResume
+  const ipcWorkshopSelectImage: typeof import('./src/ipcs/workshop').ipcWorkshopSelectImage
+  const ipcWorkshopSelectPackage: typeof import('./src/ipcs/workshop').ipcWorkshopSelectPackage
+  const ipcWorkshopUpload: typeof import('./src/ipcs/workshop').ipcWorkshopUpload
   const ipcWorkshopUploadCompressedFile: typeof import('./src/ipcs/workshop').ipcWorkshopUploadCompressedFile
   const ipcWorkshopWriteMetadata: typeof import('./src/ipcs/workshop').ipcWorkshopWriteMetadata
   const isProxy: typeof import('vue').isProxy
@@ -204,6 +230,7 @@ declare global {
   const isReadonly: typeof import('vue').isReadonly
   const isRef: typeof import('vue').isRef
   const isShallow: typeof import('vue').isShallow
+  const isStrictSemver: typeof import('./src/apis/workshop').isStrictSemver
   const markRaw: typeof import('vue').markRaw
   const mutationLanguages: typeof import('./src/apis/weekly-mutations').mutationLanguages
   const mutationRegions: typeof import('./src/apis/weekly-mutations').mutationRegions
@@ -224,26 +251,38 @@ declare global {
   const onUnmounted: typeof import('vue').onUnmounted
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
+  const parseFileReads: typeof import('./src/apis/files').parseFileReads
+  const parseOwner: typeof import('./src/apis/workshop').parseOwner
+  const parseProject: typeof import('./src/apis/workshop').parseProject
+  const parseVersion: typeof import('./src/apis/workshop').parseVersion
   const provide: typeof import('vue').provide
   const reactive: typeof import('vue').reactive
   const readonly: typeof import('vue').readonly
+  const record: typeof import('./src/apis/workshop').record
   const ref: typeof import('vue').ref
   const resolveComponent: typeof import('vue').resolveComponent
+  const scnid: typeof import('./src/apis/workshop').scnid
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+  const socialKeys: typeof import('./src/apis/workshop').socialKeys
+  const sponsorKeys: typeof import('./src/apis/workshop').sponsorKeys
+  const text: typeof import('./src/apis/workshop').text
   const toRaw: typeof import('vue').toRaw
   const toRef: typeof import('vue').toRef
   const toRefs: typeof import('vue').toRefs
   const toValue: typeof import('vue').toValue
   const triggerRef: typeof import('vue').triggerRef
   const unref: typeof import('vue').unref
+  const unwrapWorkshop: typeof import('./src/stores/workshop').unwrapWorkshop
   const useAppConfig: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js').useAppConfig
   const useAttrs: typeof import('vue').useAttrs
   const useAuthStore: typeof import('./src/stores/auth').useAuthStore
+  const useContentCenterStore: typeof import('./src/stores/content-center').useContentCenterStore
   const useContentImportStore: typeof import('./src/stores/content-import').useContentImportStore
   const useContentSearch: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch').useContentSearch
   const useCounterStore: typeof import('./src/stores/counter').useCounterStore
+  const useCreatorStore: typeof import('./src/stores/creator').useCreatorStore
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
   const useFileUpload: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload').useFileUpload
@@ -262,6 +301,8 @@ declare global {
   const useTemplateRef: typeof import('vue').useTemplateRef
   const useToast: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useToast').useToast
   const useTour: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
+  const useWorkshopStore: typeof import('./src/stores/workshop').useWorkshopStore
+  const uuid: typeof import('./src/apis/workshop').uuid
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
@@ -279,6 +320,12 @@ declare global {
   export type { UpdaterStatus } from './src/ipcs/updater'
   import('./src/ipcs/updater')
   // @ts-ignore
+  export type { CreatorState } from './src/apis/creator'
+  import('./src/apis/creator')
+  // @ts-ignore
+  export type { FileRead } from './src/apis/files'
+  import('./src/apis/files')
+  // @ts-ignore
   export type { RegistrationPolicy, AccountUser, AccountAuthorization } from './src/apis/account'
   import('./src/apis/account')
   // @ts-ignore
@@ -287,6 +334,9 @@ declare global {
   // @ts-ignore
   export type { MutationRegion, MutationLanguage, MutationName, MutationMap, Mutator, WeeklyMutation, MutatorCatalog } from './src/apis/weekly-mutations'
   import('./src/apis/weekly-mutations')
+  // @ts-ignore
+  export type { ProjectInput, WorkshopProject, OwnerProject, WorkshopVersion } from './src/apis/workshop'
+  import('./src/apis/workshop')
 }
 
 // for vue template auto import
@@ -297,6 +347,9 @@ declare module 'vue' {
     readonly AccountError: UnwrapRef<typeof import('./src/apis/index')['AccountError']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly accountErrorKey: UnwrapRef<typeof import('./src/apis/index')['accountErrorKey']>
+    readonly apiCreatorRedeem: UnwrapRef<typeof import('./src/apis/creator')['apiCreatorRedeem']>
+    readonly apiCreatorState: UnwrapRef<typeof import('./src/apis/creator')['apiCreatorState']>
+    readonly apiFileRead: UnwrapRef<typeof import('./src/apis/files')['apiFileRead']>
     readonly apiMutatorCatalog: UnwrapRef<typeof import('./src/apis/weekly-mutations')['apiMutatorCatalog']>
     readonly apiRegistrationPolicy: UnwrapRef<typeof import('./src/apis/account')['apiRegistrationPolicy']>
     readonly apiUserAuthorization: UnwrapRef<typeof import('./src/apis/account')['apiUserAuthorization']>
@@ -305,6 +358,15 @@ declare module 'vue' {
     readonly apiUserMe: UnwrapRef<typeof import('./src/apis/account')['apiUserMe']>
     readonly apiUserNickname: UnwrapRef<typeof import('./src/apis/personal-center')['apiUserNickname']>
     readonly apiWeeklyMutation: UnwrapRef<typeof import('./src/apis/weekly-mutations')['apiWeeklyMutation']>
+    readonly apiWorkshopCancelCandidate: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopCancelCandidate']>
+    readonly apiWorkshopCreate: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopCreate']>
+    readonly apiWorkshopCreateVersion: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopCreateVersion']>
+    readonly apiWorkshopDetail: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopDetail']>
+    readonly apiWorkshopFileRead: UnwrapRef<typeof import('./src/apis/files')['apiWorkshopFileRead']>
+    readonly apiWorkshopList: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopList']>
+    readonly apiWorkshopMine: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopMine']>
+    readonly apiWorkshopUpdate: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopUpdate']>
+    readonly apiWorkshopVersions: UnwrapRef<typeof import('./src/apis/workshop')['apiWorkshopVersions']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
@@ -363,6 +425,10 @@ declare module 'vue' {
     readonly ipcCustomizeUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeUninstall']>
     readonly ipcDeepLinkOnAuthentication: UnwrapRef<typeof import('./src/ipcs/deep-link')['ipcDeepLinkOnAuthentication']>
     readonly ipcDeepLinkOnWorkshop: UnwrapRef<typeof import('./src/ipcs/deep-link')['ipcDeepLinkOnWorkshop']>
+    readonly ipcDependencyInstall: UnwrapRef<typeof import('./src/ipcs/dependency')['ipcDependencyInstall']>
+    readonly ipcDependencyList: UnwrapRef<typeof import('./src/ipcs/dependency')['ipcDependencyList']>
+    readonly ipcDependencyPrepareUninstall: UnwrapRef<typeof import('./src/ipcs/dependency')['ipcDependencyPrepareUninstall']>
+    readonly ipcDependencyUninstall: UnwrapRef<typeof import('./src/ipcs/dependency')['ipcDependencyUninstall']>
     readonly ipcDialogShowOpenDialog: UnwrapRef<typeof import('./src/ipcs/dialog')['ipcDialogShowOpenDialog']>
     readonly ipcDialogShowOpenDialogSync: UnwrapRef<typeof import('./src/ipcs/dialog')['ipcDialogShowOpenDialogSync']>
     readonly ipcGameSettingConfigure: UnwrapRef<typeof import('./src/ipcs/scii-game-setting')['ipcGameSettingConfigure']>
@@ -403,15 +469,22 @@ declare module 'vue' {
     readonly ipcWindowReady: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowReady']>
     readonly ipcWindowSetMaximized: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowSetMaximized']>
     readonly ipcWindowShow: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowShow']>
-    readonly ipcWorkshopGetFileMd5: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopGetFileMd5']>
-    readonly ipcWorkshopGetFileMd5Wasm: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopGetFileMd5Wasm']>
-    readonly ipcWorkshopUploadCompressedFile: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopUploadCompressedFile']>
-    readonly ipcWorkshopWriteMetadata: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopWriteMetadata']>
+    readonly ipcWorkshopCancel: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopCancel']>
+    readonly ipcWorkshopDownload: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopDownload']>
+    readonly ipcWorkshopInstallSource: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopInstallSource']>
+    readonly ipcWorkshopList: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopList']>
+    readonly ipcWorkshopOnChanged: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopOnChanged']>
+    readonly ipcWorkshopPause: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopPause']>
+    readonly ipcWorkshopResume: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopResume']>
+    readonly ipcWorkshopSelectImage: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopSelectImage']>
+    readonly ipcWorkshopSelectPackage: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopSelectPackage']>
+    readonly ipcWorkshopUpload: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopUpload']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
+    readonly isStrictSemver: UnwrapRef<typeof import('./src/apis/workshop')['isStrictSemver']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
     readonly mutationLanguages: UnwrapRef<typeof import('./src/apis/weekly-mutations')['mutationLanguages']>
     readonly mutationRegions: UnwrapRef<typeof import('./src/apis/weekly-mutations')['mutationRegions']>
@@ -432,26 +505,38 @@ declare module 'vue' {
     readonly onUnmounted: UnwrapRef<typeof import('vue')['onUnmounted']>
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
+    readonly parseFileReads: UnwrapRef<typeof import('./src/apis/files')['parseFileReads']>
+    readonly parseOwner: UnwrapRef<typeof import('./src/apis/workshop')['parseOwner']>
+    readonly parseProject: UnwrapRef<typeof import('./src/apis/workshop')['parseProject']>
+    readonly parseVersion: UnwrapRef<typeof import('./src/apis/workshop')['parseVersion']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly reactive: UnwrapRef<typeof import('vue')['reactive']>
     readonly readonly: UnwrapRef<typeof import('vue')['readonly']>
+    readonly record: UnwrapRef<typeof import('./src/apis/workshop')['record']>
     readonly ref: UnwrapRef<typeof import('vue')['ref']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
+    readonly scnid: UnwrapRef<typeof import('./src/apis/workshop')['scnid']>
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly socialKeys: UnwrapRef<typeof import('./src/apis/workshop')['socialKeys']>
+    readonly sponsorKeys: UnwrapRef<typeof import('./src/apis/workshop')['sponsorKeys']>
+    readonly text: UnwrapRef<typeof import('./src/apis/workshop')['text']>
     readonly toRaw: UnwrapRef<typeof import('vue')['toRaw']>
     readonly toRef: UnwrapRef<typeof import('vue')['toRef']>
     readonly toRefs: UnwrapRef<typeof import('vue')['toRefs']>
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
+    readonly unwrapWorkshop: UnwrapRef<typeof import('./src/stores/workshop')['unwrapWorkshop']>
     readonly useAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/vue/composables/useAppConfig.js')['useAppConfig']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
     readonly useAuthStore: UnwrapRef<typeof import('./src/stores/auth')['useAuthStore']>
+    readonly useContentCenterStore: UnwrapRef<typeof import('./src/stores/content-center')['useContentCenterStore']>
     readonly useContentImportStore: UnwrapRef<typeof import('./src/stores/content-import')['useContentImportStore']>
     readonly useContentSearch: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useContentSearch')['useContentSearch']>
     readonly useCounterStore: UnwrapRef<typeof import('./src/stores/counter')['useCounterStore']>
+    readonly useCreatorStore: UnwrapRef<typeof import('./src/stores/creator')['useCreatorStore']>
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>
     readonly useFileUpload: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useFileUpload')['useFileUpload']>
@@ -470,6 +555,8 @@ declare module 'vue' {
     readonly useTemplateRef: UnwrapRef<typeof import('vue')['useTemplateRef']>
     readonly useToast: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useToast')['useToast']>
     readonly useTour: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_2b82da35e0d1146ea101428deba7da6b/node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
+    readonly useWorkshopStore: UnwrapRef<typeof import('./src/stores/workshop')['useWorkshopStore']>
+    readonly uuid: UnwrapRef<typeof import('./src/apis/workshop')['uuid']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchEffect: UnwrapRef<typeof import('vue')['watchEffect']>
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>

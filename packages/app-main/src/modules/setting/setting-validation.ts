@@ -7,6 +7,7 @@ export const PREFERENCE_KEYS = [
   'logLevel',
   'telemetryEnabled',
   'analyticsEnabled',
+  'workshopEnabled',
 ] as const
 export function validatePreferencePatch(raw: unknown, complete = false): Record<string, unknown> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
@@ -24,7 +25,10 @@ export function validatePreferencePatch(raw: unknown, complete = false): Record<
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (key === 'displayLanguage' && !['system', 'zh', 'en', 'zh-Hant'].includes(value as string))
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
-    if ((key === 'telemetryEnabled' || key === 'analyticsEnabled') && typeof value !== 'boolean')
+    if (
+      (key === 'telemetryEnabled' || key === 'analyticsEnabled' || key === 'workshopEnabled') &&
+      typeof value !== 'boolean'
+    )
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (
       key === 'downloadDirectory' &&

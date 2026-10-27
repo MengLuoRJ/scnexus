@@ -73,6 +73,9 @@ importers:
       '@sentry/electron':
         specifier: ^8.1.0
         version: 8.1.0(@babel/core@7.29.7(supports-color@8.1.1))(rollup@4.28.1)
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       axios:
         specifier: ^1.20.0
         version: 1.20.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
@@ -153,6 +156,9 @@ importers:
       '@scnexus/app-shared':
         specifier: workspace:*
         version: link:../app-shared
+      '@tiptap/core':
+        specifier: ^3.31.4
+        version: 3.31.4(@tiptap/pm@3.31.4)
       '@vueuse/core':
         specifier: ^15.0.0
         version: 15.0.0(vue@3.5.43(typescript@6.0.3))
@@ -168,6 +174,9 @@ importers:
       pinia:
         specifier: ^4.0.3
         version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.43(typescript@6.0.3))
+      semver:
+        specifier: ^7.8.5
+        version: 7.8.5
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -199,6 +208,9 @@ importers:
       '@types/node':
         specifier: ^24.13.4
         version: 24.19.1
+      '@types/semver':
+        specifier: ^7.5.8
+        version: 7.5.8
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.9(vite@8.3.2(@types/node@24.19.1)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.19.2))(vue@3.5.43(typescript@6.0.3))
@@ -9325,7 +9337,7 @@ snapshots:
       lazy-val: 1.0.5
       lodash.escaperegexp: 4.1.2
       lodash.isequal: 4.5.0
-      semver: 7.6.3
+      semver: 7.8.5
       tiny-typed-emitter: 2.1.0
     transitivePeerDependencies:
       - supports-color
@@ -10518,7 +10530,7 @@ snapshots:
       graceful-fs: 4.2.11
       nopt: 10.0.1
       proc-log: 7.0.0
-      semver: 7.6.3
+      semver: 7.8.5
       tar: 7.5.22
       tinyglobby: 0.2.17
       undici: 8.11.2

@@ -12,7 +12,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 3,
+      _schemaVersion: 4,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
@@ -22,10 +22,11 @@ export function createSettingRepository(downloadDirectory: () => string) {
       logLevel: 'error',
       telemetryEnabled: false,
       analyticsEnabled: true,
+      workshopEnabled: true,
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 3 },
+      _schemaVersion: { const: 4 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -43,15 +44,23 @@ export function createSettingRepository(downloadDirectory: () => string) {
       },
       telemetryEnabled: { type: 'boolean' },
       analyticsEnabled: { type: 'boolean' },
+      workshopEnabled: { type: 'boolean' },
     },
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if (data._schemaVersion === 3)
+        return {
+          ...data,
+          _schemaVersion: defaults._schemaVersion,
+          workshopEnabled: true,
+        } as SettingData
       if (data._schemaVersion === 2) {
         return {
           ...data,
           _schemaVersion: defaults._schemaVersion,
           analyticsEnabled: defaults.analyticsEnabled,
+          workshopEnabled: true,
         } as SettingData
       }
       if (data._schemaVersion === 1) {
@@ -65,6 +74,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
           _schemaVersion: defaults._schemaVersion,
           displayLanguage: languages[data.displayLanguage as string] ?? data.displayLanguage,
           analyticsEnabled: defaults.analyticsEnabled,
+          workshopEnabled: true,
         } as SettingData
       }
       keys(data, ['IS_INITIAL', 'CLIENT_ID', 'DOWNLOAD_FOLDER', 'LAST_UPDATED_TIME', 'PRESETS'])

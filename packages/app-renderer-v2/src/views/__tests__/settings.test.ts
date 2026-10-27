@@ -10,6 +10,9 @@ import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import SettingsView from '../SettingsView.vue'
 import zh from '../../locales/zh.json'
 
+vi.mock('../../stores/content-center', () => ({
+  useContentCenterStore: () => ({ accept: () => {} }),
+}))
 const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
   settings: vi.fn<() => Promise<IpcResult<SettingSnapshot>>>(),

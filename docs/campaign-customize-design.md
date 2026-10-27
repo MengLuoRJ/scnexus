@@ -70,7 +70,8 @@ SCNexus 隐式覆盖地图的源布局与上述目录一一对应：/Maps/Campai
 
 新 Package 包含 scnid、name、description、tags、version、author、localization、网站/社交/赞助信息，type/campaign、maps/mods、dependencies、luancher、bank_enable/banks、manager 等字段；不再包含 manager_mode。
 
-- type 使用小写 campaign/customize。虽然 PackageType 允许其他 string，当前安装只支持这两类。
+- type 使用小写 campaign/customize/dependency。dependency 为独立管理的 mods-only 包：仅接受显式 package.json、使用 SCNexus 模式，不支持 CCM、自动探测、战役激活或地图安装。显式下载的缓存归档可作为 SourceInput 进入同一分析/安装流程，不自动解析依赖引用。
+- dependency 安装记录单独持久化于 store-dependency；管理清单沿用 SCNexusCustomizeData/<localId>，扫描可重建记录。安装使用完整资源组冲突确认、事务备份和失败回滚；卸载与 customize/活动战役共享所有权检查，keep 不获得删除权限，也不自动恢复安装前文件。逻辑 Mods 路径仍映射平台实际目录，并保留目录边界和符号链接校验。
 - campaign 必须为 WOL/HOTS/LOTV/NCO，customize 不按战役根映射。
 - scnid 是可选远程标识，不是本地唯一安装 ID；新记录不使用旧 snid 字段。
 - 保留目前类型实际拼写 luancher、offcial。纠正拼写属于后续标准契约变更，本次文档不擅自改名。
@@ -323,7 +324,7 @@ modifiedAt 为 Unix 毫秒时间戳，归档未提供时用 null；不得用分�
 - SCNexus 自制作品扫描在过滤缺失条目前，先将历史混合所有权资源组统一降为 kept；因此即使原 kept 条目缺失，存留条目仍保留整组不可删除的事实，不把用户新增文件纳入删除范围。扫描先检查资源根、内部文件及其父目录的实际形态；与清单不符（包括内部文件变成目录、内部父目录变成文件）时保留原安装记录并报告该资源诊断，继续扫描其他包，不按目录调用 readFile，也不推断新的所有权。
 - 自制作品正常扫描后，`installedFiles`、界面使用的 `files`、`fileCount`、`bytes` 和目标文件树统一按仍存在的已记录文件更新；标准数量与识别数量使用同一批存留文件，不继续展示缺失资源的旧统计。异常形态记录保留原统计并伴随诊断，不冒充已完成重建。
 - 移除预览仅对可能删除或恢复的资源建立内容快照；整组 kept、CCM Mods 及最终共享决策选择保留的资源不因内容变化阻止移除管理记录。实际删除/恢复的资源仍须与预览快照一致，变化时拒绝写入并要求重新预览。
-- SCNexus 卸载/取消激活时按完整资源遍历其他已激活战役与已安装 customize 维护表；官方战役覆盖地图不做引用确认，其余资源只有被其他内容引用时才返回逐资源保留/删除选择，未被引用的资源整组移除。旧记录若同一组存在 kept 内部文件，保守保留整个资源，不扩大历史删除权限。customize 卸载不自动恢复安装前文件；CCM 的 Mod 管理恢复不纳入此设计目标。
+- SCNexus 卸载/取消激活时按完整资源遍历其他已激活战役、CCM 库已记录 Mods、已安装 customize 与 dependency 维护表；官方战役覆盖地图不做引用确认，其余资源只有被其他内容引用时才返回逐资源保留/删除选择，未被引用的资源整组移除。旧记录若同一组存在 kept 内部文件，保守保留整个资源，不扩大历史删除权限。customize 卸载不自动恢复安装前文件；CCM 的 Mod 管理恢复不纳入此设计目标。
 - SCNexus 激活在管理目录的 `.activation-backup` 保存被覆盖的完整资源及原始文件/目录形态，并在 `active-manifest.json` 保存受控恢复映射。取消激活恢复原资源，没有旧资源时整组移除；提交失败回滚完整资源。扫描及移除执行前必须重新校验活动记录的模式、战役、标记路径、资源类型、Maps/Mods 目标及其对安装计划资源组的归属，备份只能关联该安装实际写入的资源及受控备份目录，不能仅以游戏根目录边界作为授权依据。
 - CCM 不生成、不读取、不恢复 `active-manifest.json` 或 `.activation-backup`；已有同名文件不作为可信状态，也不主动清理。仅操作期间保留临时事务备份，失败时回滚，成功后清理。取消激活删除本应用写入的地图而不恢复激活前内容，保留用户选择 kept 的完整资源，Mods 仍不参与删除与恢复。
 - CCM 扫描优先使用本应用活动索引与当前元数据匹配的安装 ID，保留 copied/replaced/kept 决策，即使库中存在同元数据副本也不丢失活动关联。没有可信索引的活动记录标记 ownershipUnknown，不自动推断删除权；取消激活时逐完整资源要求明确保留/删除，未决定前不移除标记。该状态与用户明确选择的 kept 区分，后者始终保留；CCM Mods 仍不纳入删除。多个同元数据包无法确定活动归属时报告诊断，不创建可破坏性操作的外部记录。仅有旧索引、没有备份的 SCNexus 活动记录不凭空恢复原文件。进程突然终止时的完整事务重放仍不在当前保证内。

@@ -18,7 +18,8 @@ import { initSciiGameSettingModule } from './scii-game-setting'
 import { initContentPackageModule } from './content-package'
 import { initCampaignModule } from './campaign'
 import { initCustomizeModule } from './customize'
-import { initWorkshopModule } from './workshop'
+import { startWorkshop, stopWorkshop } from './workshop-runtime'
+import { initDependencyIpc } from './dependency/dependency.ipc'
 import { getMainWindow } from './window'
 import { reportError } from './logging'
 
@@ -33,6 +34,7 @@ export async function initModules() {
     initContentPackageModule()
     initCampaignModule()
     initCustomizeModule()
+    initDependencyIpc()
     contentStarted = true
   })
   const failures = []
@@ -54,7 +56,7 @@ export async function initModules() {
     ['tray', initTrayModule],
     ['updater', initUpdaterModule],
     ['scii-game-setting', initSciiGameSettingModule],
-    ['workshop', initWorkshopModule],
+    ['workshop', startWorkshop],
   ]
   for (const [scope, initialize] of initializers) {
     try {
@@ -74,6 +76,7 @@ export async function initModules() {
 export async function disposeModules() {
   onGameConfigured(undefined)
   cleanup.splice(0).forEach((dispose) => dispose())
+  await stopWorkshop()
   disposeAuth()
   disposeSetting()
   destroyTray()

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { ContentService, validateRecordPaths, validateActiveResources } from '../content-package'
 import { scanContent } from '../scanner'
 import { parsePackage } from '../parser'
-test('standard dependency packages are not accepted as installable client content yet', () => {
+test('standard dependency packages are accepted separately from campaign content', () => {
   const value = {
     type: 'dependency',
     name: 'Core',
@@ -14,9 +14,7 @@ test('standard dependency packages are not accepted as installable client conten
     author: 'A',
     mods: [],
   }
-  expect(() => parsePackage(JSON.stringify(value))).toThrow(
-    expect.objectContaining({ name: 'CONTENT-TYPE-UNSUPPORTED' }),
-  )
+  expect(parsePackage(JSON.stringify(value))).toEqual(value)
   expect(() => parsePackage(JSON.stringify(value), 'campaign')).toThrow(
     expect.objectContaining({ name: 'CONTENT-TYPE-UNSUPPORTED' }),
   )

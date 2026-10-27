@@ -64,6 +64,11 @@ vi.mock('../window', () => ({
   onWindowReady: () => vi.fn<() => void>(),
   getMainWindow: () => null,
 }))
+vi.mock('../workshop-runtime', () => ({
+  startWorkshop: async () => {},
+  stopWorkshop: async () => {},
+}))
+vi.mock('../dependency/dependency.ipc', () => ({ initDependencyIpc: () => {} }))
 vi.mock('../workshop', () => ({
   initWorkshopModule: vi.fn<typeof import('../workshop').initWorkshopModule>(),
 }))

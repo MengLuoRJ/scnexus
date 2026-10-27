@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import { workshopApi } from './workshop.js'
 import { invoke, subscribeTyped } from '../ipc-common.js'
 import type { DesktopApi, LogInput } from '@scnexus/app-shared/types/desktop.type'
 
 function contentApi(
-  domain: 'campaign' | 'customize',
+  domain: 'campaign' | 'customize' | 'dependency',
 ): import('@scnexus/app-shared/types/content-api.type').ContentApi {
   return {
     cancel: (id) => invoke('content-package:cancel', id),
@@ -16,6 +17,8 @@ function contentApi(
   }
 }
 const api: DesktopApi = {
+  workshop: workshopApi,
+  dependency: contentApi('dependency'),
   auth: {
     getSnapshot: () => invoke('auth:getSnapshot'),
     login: (input) => invoke('auth:login', input),

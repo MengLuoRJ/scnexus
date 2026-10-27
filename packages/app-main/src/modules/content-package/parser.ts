@@ -17,7 +17,7 @@ export function parsePackage(text: string, type?: ContentType): Package {
   }
   if (!isPackage(value)) throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
   if (
-    !['campaign', 'customize'].includes(value.type) ||
+    !['campaign', 'customize', 'dependency'].includes(value.type) ||
     (type !== undefined && value.type !== type)
   )
     throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)

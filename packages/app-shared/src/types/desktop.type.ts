@@ -6,7 +6,12 @@ export type LogLevel = (typeof LOG_LEVELS)[number]
 export type DisplayLanguage = 'system' | 'zh' | 'en' | 'zh-Hant'
 export type SettingPreferences = Pick<
   SettingData,
-  'downloadDirectory' | 'displayLanguage' | 'logLevel' | 'telemetryEnabled' | 'analyticsEnabled'
+  | 'downloadDirectory'
+  | 'displayLanguage'
+  | 'logLevel'
+  | 'telemetryEnabled'
+  | 'analyticsEnabled'
+  | 'workshopEnabled'
 >
 export type WindowStatus = {
   state: 'absent' | 'loading' | 'ready' | 'failed'
@@ -29,6 +34,8 @@ export type SettingSnapshot = SettingData & {
 }
 
 export interface DesktopApi {
+  dependency: import('./content-api.type.js').ContentApi
+  workshop: import('./workshop.type.js').WorkshopApi
   auth: import('./auth.type.js').AuthApi
   content: import('./content-api.type.js').ContentAnalysisApi
   campaign: import('./content-api.type.js').CampaignApi

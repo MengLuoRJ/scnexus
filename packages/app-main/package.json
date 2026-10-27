@@ -30,6 +30,7 @@
     "7z-bin": "0.0.3",
     "@scnexus/standard": "workspace:*",
     "@sentry/electron": "^8.1.0",
+    "ajv": "^8.20.0",
     "axios": "^1.20.0",
     "electron-log": "^5.4.4",
     "electron-store": "^11.0.2",

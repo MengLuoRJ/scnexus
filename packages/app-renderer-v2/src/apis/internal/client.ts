@@ -3,6 +3,8 @@ import { resolveServerApiBase } from '@scnexus/app-shared/config/server'
 import type { AuthSnapshot } from '@scnexus/app-shared/types/auth.type'
 
 export type ApiErrorKind =
+  | 'notFound'
+  | 'conflict'
   | 'badRequest'
   | 'unauthorized'
   | 'forbidden'
@@ -41,6 +43,8 @@ function failure(error: unknown): AccountError {
     400: 'badRequest',
     401: 'unauthorized',
     403: 'forbidden',
+    404: 'notFound',
+    409: 'conflict',
     429: 'rateLimited',
     503: 'unavailable',
   }

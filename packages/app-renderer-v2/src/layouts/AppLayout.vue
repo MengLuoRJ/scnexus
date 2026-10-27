@@ -1,22 +1,71 @@
 <script lang="ts" setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
+import { useContentCenterStore } from '../stores/content-center'
+import { useCreatorStore } from '../stores/creator'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useI18n } from 'vue-i18n'
 import { RouterView, useRoute } from 'vue-router'
 import { ipcSettingGetSnapshot, ipcSettingOnChanged, ipcWindowReady } from '../ipcs'
 import type { SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
+import { useWorkshopStore } from '../stores/workshop'
+import { useToast } from '@nuxt/ui/composables/useToast'
 import AppSidebar from './components/AppSidebar.vue'
 defineOptions({ name: 'AppLayout' })
 const { t, locale } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
+const contentCenter = useContentCenterStore()
+const creator = useCreatorStore()
+const router = useRouter()
+const transfers = useWorkshopStore()
+const toast = useToast()
+let stopTransfers: (() => void) | undefined
+watch(
+  () => contentCenter.enabled && auth.signedIn,
+  (enabled) => {
+    stopTransfers?.()
+    stopTransfers = undefined
+    if (enabled && window.scnexus) stopTransfers = transfers.connect()
+  },
+  { immediate: true },
+)
+const completed = new Set<string>()
+watch(
+  () => transfers.tasks,
+  (tasks) => {
+    for (const task of tasks)
+      if (task.status === 'completed' && !completed.has(task.taskId)) {
+        completed.add(task.taskId)
+        toast.add({
+          color: 'success',
+          title: t(task.kind === 'download' ? 'workshop.downloadDone' : 'workshop.uploadDone'),
+        })
+      }
+  },
+)
+onUnmounted(() => stopTransfers?.())
+watch(
+  () => creator.active,
+  (active) => {
+    if (!active && !creator.loading && route.meta.creator) void router.replace('/account')
+  },
+)
+watch(
+  () => contentCenter.enabled,
+  (enabled) => {
+    if (!enabled && route.meta.workshop) void router.replace('/')
+  },
+)
 onUnmounted(() => auth.dispose())
 function syncLanguage(value: SettingSnapshot) {
+  contentCenter.accept(value)
   locale.value = value.effectiveLanguage
   document.documentElement.lang = value.effectiveLanguage
 }
 if (window.scnexus) ipcSettingOnChanged(syncLanguage)
 onMounted(async () => {
+  void contentCenter.initialize().catch(() => {})
   void auth.initialize()
   if (window.scnexus) {
     const result = await ipcSettingGetSnapshot()
@@ -35,17 +84,19 @@ onMounted(async () => {
         <h1 class="shrink-0 font-semibold">
           {{
             t(
-              route.name === 'campaign'
-                ? 'campaign.title'
-                : route.name === 'weekly-mutations'
-                  ? 'weekly.title'
-                  : route.name === 'customize'
-                    ? 'customize.title'
-                    : route.name === 'settings'
-                      ? 'ui.settings'
-                      : route.name === 'account'
-                        ? 'account.title'
-                        : 'ui.home',
+              route.meta.titleKey
+                ? (route.meta.titleKey as string)
+                : route.name === 'campaign'
+                  ? 'campaign.title'
+                  : route.name === 'weekly-mutations'
+                    ? 'weekly.title'
+                    : route.name === 'customize'
+                      ? 'customize.title'
+                      : route.name === 'settings'
+                        ? 'ui.settings'
+                        : route.name === 'account'
+                          ? 'account.title'
+                          : 'ui.home',
             )
           }}
         </h1>

@@ -180,3 +180,37 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 - 本轮只接入既有本周与因子功能的新版契约，不增加管理发布入口或将轮换目录当成本周安排。
 
 验证：`pnpm run test:renderer` 31 文件 293 项通过；`pnpm run typecheck:renderer`、`pnpm run build:renderer`、renderer Oxlint 与修改文件 ESLint 通过。本地公开 EU/deDE 请求成功返回对应 displayName；1000×700 页面两列各402px同高，无横向溢出。未修改后端或用户提交的默认JSON，未执行生产环境联调。
+
+## 2026-10-27 Workshop 客户端重建
+
+以最新 `workshop-api.md`、`client/workshop-electron.md`、`workshop-creators.md`、`files.md` 和 `workshop-worker.md` 为准。未修改后端，未增加管理员工作台；未实现后端尚不存在的点赞/收藏/评论接口。
+
+### 浏览、设置与资格
+
+- 新增匿名公开作品列表、12项分页、关键词搜索和scnid详情；正文为受限Tiptap JSON，纯文本/白名单VNode渲染，不使用HTML。创建/编辑使用title/description/detail/fileIds，不发slug、旧UUID项目ID或summary/content。
+- 下载须登录，匿名点击前往个人中心并保存受限本地返回路径。后台已签发的文件能力不等于用户Access；二者不混用。公开互动接口尚未交付，因此不添加可点击但无真实操作的互动按钮。
+- 设置新增“内容中心 / SCNexus Workshop”，默认true，setting schema4；旧设置迁移保留偏好并启用Workshop。关闭隐藏导航、路由拒绝访问、停止页面请求并暂停在途任务；不删除文件/记录，重新开启不自动恢复。后续后台检查同样必须受此开关控制。
+- 个人中心显示NONE/ACTIVE/REVOKED/BLOCKED资格，创作邀请码对话框用Zod校验8–64位base64url字符。通过本人专用API兑换，随后重新读取授权。创作者导航/路由要求资格ACTIVE和三项创作权限，不凭角色名推测；权限错误不得自动重新赋权。管理员审核不实现。
+
+### 作者与资源
+
+- 我的作品列表、创建、字段编辑、Nuxt UI Editor、版本列表、候选取消、压缩包选择/验证、清单人工预填、更新日志和上传任务已接入。输入表单使用Zod；响应和IPC仍用普通TypeScript校验。冲突409保留编辑、不自动覆盖；放弃并重读由用户明确选择。
+- 发布版本使用严格SemVer 2.0.0，支持预发布和build metadata，拒绝v前缀、空白、不完整版本和数字前导零。标准Schema与isPackage共同预检。package.name预填title，scnid不由客户端分配；填写的manifest scnid需匹配当前项目。只保存草稿不代表公开发布。
+- Editor只启用合同允许的节点/marks；图片使用READY fileId，显式保存项目引用后才能用于版本日志，不保存预签名URL。公开/本人读取能力按fileIds批量申请，存内存并临近到期续签，组件卸载清理；地址必须匹配精确配置Files origin。CSP只加该HTTPS图片origin并设no-referrer，不开放任意https。图片上传失败不重PUT原对象。
+
+### 任务与本地安装
+
+- 旧workshop metadata.json改包、任意URL整包PUT和未完成下载代码全部移除；MD5计算保留在utils/file-md5.ts，旧IPC不再暴露。
+- main持有选择文件路径和短期Worker token，renderer只使用selectionId/taskId。根package.json恰好一份且≤128KiB，严格UTF-8及重复键检查，拒绝不安全归档路径/链接/大小写冲突并限制展开规模；核对资源引用。SHA-256及每16MiB的base64 MD5从本地实际字节计算。
+- 上传按控制面状态获取分片能力，当前串行分片（不超过4路上限）；异常先DB状态/reconcile，UNKNOWN不能再PUT，Complete不确定只对账不重复提交。取消由后端持久清理，不承诺立即删除远端字节。传输记录不包含短期token。
+- 下载按16MiB Range，最多4路，严格206/Content-Range/长度/ETag；能力过期有限重新授权；完整SHA-256成功后原子转入缓存。再次安装重新哈希，缓存不能被符号链接替换。下载完成toast提示，必须在下载管理点击安装并确认冲突，不自动安装或激活。
+- 任务持久化到应用自有workshop目录，重启后未完成任务暂停；关闭模块/身份切换会中止在途。任务按认证session隔离，退出重登的新session不会自动接管旧会话任务；同一持久化session恢复可手动续传。当前只支持workshop来源，git/github仅保留来源判别契约，传入会明确拒绝，不开放任意URL。
+- dependency新增独立store、安装/扫描/卸载桥接和下载管理中的已安装列表。仅SCNexus模式，mods-only，资源组冲突、共享所有权、保留和事务回滚复用内容系统；不自动解析远程依赖或删除其他项目文件。
+
+### 配置与验收限制
+
+用户确认Workshop与Files Worker均未部署。本轮默认不填猜测域名，JSON浏览/编辑不依赖R2；下载/上传提示WORKSHOP_STORAGE_NOT_CONFIGURED。部署后main配置 `SCNEXUS_WORKSHOP_ORIGIN`、`SCNEXUS_FILES_ORIGIN`，renderer构建配置 `VITE_SCNEXUS_FILES_ORIGIN`，均必须为精确HTTPS origin，Files两处一致。现有API仍按开发loopback/生产固定地址使用。此环境变量接线用于受控部署，不允许页面设置任意域名。签名私钥和内部Worker secret不进客户端。
+
+已执行模拟传输的Range校验、摘要失败、token续签、禁用暂停、Complete丢响应恢复、UNKNOWN拒写、旧会话隔离，及dependency冲突/回滚/共享文件保护。当前本地后端未运行，浏览器公开列表/详情与匿名下载登录跳转用合成响应验证，未进行真实作者写请求、邀请码消费、Worker/R2上传/下载。浏览器后续连接中断，完整创作者1000×700/真实图片续签和下载页真机验收仍需后续完成；实际Nuxt Editor在组件测试中已挂载为contenteditable，而非用替身冒充编辑器。
+
+本轮最终本地验证：`pnpm run test:main` 46文件426项通过，`pnpm run test:preload` 10项通过，`pnpm run test:renderer` 38文件329项通过；`pnpm run typecheck`、main/preload/renderer构建及仓库Oxlint通过，新增业务与接线文件ESLint通过。最后修复CreatorStatus取消按钮多语句模板被格式化后生产解析失败，renderer已重新构建成功。未打包/发布应用，不宣称真实R2、工坊文件域名或macOS安装器验收。

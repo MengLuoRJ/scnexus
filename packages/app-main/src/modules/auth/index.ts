@@ -1,3 +1,4 @@
+import { notifyWorkshopAuthenticationChanged } from '../workshop-lifecycle'
 import { BrowserWindow, safeStorage, type IpcMainInvokeEvent } from 'electron'
 import { getApplicationDataDirectory } from '../../utils/application-data'
 import { join } from 'node:path'
@@ -20,6 +21,7 @@ export { createAuthService } from './service'
 export { createAuthStorage } from './storage'
 export { createAuthTransport } from './transport'
 let service: AuthService | undefined
+let workshopIdentity = ''
 const methods = [
   'getSnapshot',
   'login',
@@ -39,6 +41,11 @@ export function initAuthModule(): void {
     transport: createAuthTransport(),
     getClientId: () => settingRepository.getSnapshot().clientId,
     changed(snapshot) {
+      const identity = `${snapshot.epoch}:${snapshot.sessionId ?? ''}`
+      if (identity !== workshopIdentity) {
+        workshopIdentity = identity
+        notifyWorkshopAuthenticationChanged()
+      }
       analyticsAuthenticationChanged(snapshot)
       for (const window of BrowserWindow.getAllWindows()) {
         try {
@@ -101,6 +108,14 @@ export function initAuthModule(): void {
       }
     }
   })
+}
+export function getAuthSnapshot() {
+  if (!service) throw new Error('Authentication not initialized')
+  return service.getSnapshot()
+}
+export async function refreshAuthSession() {
+  if (!service) throw new Error('Authentication not initialized')
+  return service.refresh()
 }
 export function disposeAuth(): void {
   disposeAnalytics()

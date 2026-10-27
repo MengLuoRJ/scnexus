@@ -1,9 +1,16 @@
 import { initWorkshopIpc } from './workshop.ipc'
-export * from './workshop'
+import { createWorkshopService, type WorkshopDependencies } from './service'
+export { createWorkshopService, trustedOrigin } from './service'
+export type { WorkshopDependencies, WorkshopService } from './service'
 
-let registered = false
-export async function initWorkshopModule() {
-  if (registered) return
-  initWorkshopIpc()
-  registered = true
+export async function initWorkshopModule(deps: WorkshopDependencies) {
+  const service = await createWorkshopService(deps)
+  const cleanup = initWorkshopIpc(service)
+  return {
+    ...service,
+    async dispose() {
+      cleanup()
+      await service.dispose()
+    },
+  }
 }

@@ -3,6 +3,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { useContentCenterStore } from '../../stores/content-center'
+import { useCreatorStore } from '../../stores/creator'
+import workshopIcon from '../../assets/menu/Menu_Creator.png'
 import logo from '../../assets/logo.png'
 import campaignIcon from '../../assets/menu/Menu_GamePlay.png'
 import customizeIcon from '../../assets/menu/Menu_Customize.png'
@@ -13,6 +16,8 @@ defineOptions({ name: 'AppSidebar' })
 const { t } = useI18n()
 const collapsed = ref(false)
 const auth = useAuthStore()
+const contentCenter = useContentCenterStore()
+const creator = useCreatorStore()
 const route = useRoute()
 const accountName = computed(() =>
   auth.signedIn ? auth.user?.nickname || t('account.loading') : t('account.notSignedIn'),
@@ -23,6 +28,18 @@ const items = computed(() => [
   { label: t('campaign.title'), image: campaignIcon, to: '/campaign' },
   { label: t('customize.title'), image: customizeIcon, to: '/customize' },
   { label: t('weekly.title'), image: coopIcon, to: '/weekly-mutations' },
+  ...(contentCenter.enabled
+    ? [
+        { label: t('contentCenter.workshop'), image: workshopIcon, to: '/workshop' },
+        { label: t('contentCenter.downloads'), image: campaignIcon, to: '/downloads' },
+      ]
+    : []),
+  ...(creator.active
+    ? [
+        { label: t('contentCenter.creator'), image: workshopIcon, to: '/creator' },
+        { label: t('contentCenter.uploads'), image: campaignIcon, to: '/uploads' },
+      ]
+    : []),
   { label: t('ui.settings'), image: settingsIcon, to: '/settings' },
 ])
 </script>

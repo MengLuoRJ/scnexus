@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import * as desktopIpc from '../ipcs'
+import { useContentCenterStore } from '../stores/content-center'
 import SettingsDirectoryField from './components/SettingsDirectoryField.vue'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import type {
@@ -15,6 +16,7 @@ import type { IpcResult, AppErrorDto } from '@scnexus/app-shared/errors/app.erro
 defineOptions({ name: 'SettingsView' })
 const { t } = useI18n()
 const toast = useToast()
+const contentCenter = useContentCenterStore()
 const settings = ref<SettingSnapshot | null>(null)
 const game = ref<GameSnapshot | null>(null)
 const logDirectory = ref('')
@@ -44,6 +46,7 @@ const languages = computed(() => [
 const tabs = computed(() => [
   { label: t('ui.preferences'), value: 'basic', slot: 'basic' },
   { label: t('ui.game'), value: 'game', slot: 'game' },
+  { label: t('contentCenter.title'), value: 'content', slot: 'content' },
   { label: t('ui.logging'), value: 'logging', slot: 'logging' },
 ])
 const levels: LogLevel[] = ['error', 'warn', 'info', 'verbose', 'debug', 'silly']
@@ -63,6 +66,7 @@ function accept<T>(result: IpcResult<T>): T | undefined {
 }
 function sync(value: SettingSnapshot) {
   settings.value = value
+  contentCenter.accept(value)
 }
 async function run(action: () => Promise<void>) {
   if (busy.value) return
@@ -348,6 +352,20 @@ onMounted(async () => {
             </div>
           </UCard>
         </div>
+      </template>
+      <template #content>
+        <UCard :ui="{ header: 'p-3 sm:p-3', body: 'p-3 sm:p-3' }">
+          <template #header
+            ><h2 class="font-semibold">{{ t('contentCenter.title') }}</h2></template
+          >
+          <USwitch
+            :model-value="settings?.workshopEnabled ?? true"
+            :disabled="!available || busy"
+            :label="t('contentCenter.workshop')"
+            :description="t('contentCenter.description')"
+            @update:model-value="(value: boolean) => save({ workshopEnabled: value })"
+          />
+        </UCard>
       </template>
       <template #logging>
         <div class="space-y-2">

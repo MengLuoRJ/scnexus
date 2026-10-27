@@ -7,6 +7,11 @@ import { createI18n } from 'vue-i18n'
 import AccountView from '../AccountView.vue'
 import { useAuthStore } from '../../../stores/auth'
 
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ replace: async () => {} }),
+}))
+vi.mock('../CreatorStatus.vue', () => ({ default: { template: '<div />' } }))
 const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
   deviceName: vi.fn<() => Promise<{ ok: true; data: string }>>(),

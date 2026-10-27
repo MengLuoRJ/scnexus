@@ -65,6 +65,7 @@ import {
 } from './paths'
 import { campaignRepository } from '../../stores/campaign'
 import { customizeRepository } from '../../stores/customize'
+import { dependencyRepository } from '../../stores/dependency'
 import { campaignActiveRepository } from '../../stores/campaign-active'
 import { getGamePaths, withGameLock } from '../scii-game-setting'
 const detector = (type: ContentType) => (type === 'campaign' ? detectCampaign : detectCustomize)
@@ -110,6 +111,8 @@ export function validateRecordPaths(record: ContentRecord, paths: GamePaths) {
     if (
       !/^(Maps|Mods)\//.test(logicalPath(f.target)) ||
       f.official !== officialMap(f.target, record.package.campaign) ||
+      (record.package.type === 'dependency' &&
+        (f.type !== 'mod' || !logicalPath(f.target).startsWith('Mods/'))) ||
       (record.package.campaign && !officialScope(f.target, record.package.campaign))
     )
       throw new AppError(ERRORS.FILESYSTEM_PATH_REJECTED)
@@ -244,9 +247,29 @@ export class ContentService {
     private customize: Index<ContentStore>,
     private active: Index<CampaignActiveStoreData>,
     private lock: <T>(run: () => Promise<T>) => Promise<T> = withGameLock,
+    private dependency: Index<ContentStore> = (() => {
+      let data: ContentStore = {
+        _schemaVersion: 2,
+        _revision: 0,
+        records: [],
+        legacyRecords: [],
+        scannedAt: null,
+      }
+      return {
+        getSnapshot: () => structuredClone(data),
+        update: (next: ContentStore) => {
+          data = structuredClone({ ...next, _revision: data._revision + 1 })
+          return structuredClone(data)
+        },
+      }
+    })(),
   ) {}
   private index(type: ContentType) {
-    return type === 'campaign' ? this.campaign : this.customize
+    return type === 'campaign'
+      ? this.campaign
+      : type === 'dependency'
+        ? this.dependency
+        : this.customize
   }
   private prune() {
     for (const map of [this.analyses, this.activations, this.removals])
@@ -378,7 +401,8 @@ export class ContentService {
     )
   }
   async analyze(type: ContentType, input: SourceInput): Promise<AnalysisResult> {
-    if (!['campaign', 'customize'].includes(type)) throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    if (!['campaign', 'customize', 'dependency'].includes(type))
+      throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
     this.prune()
     const paths = await this.paths()
     return this.analyzeSource(type, input, paths, await openSource(input))
@@ -462,7 +486,8 @@ export class ContentService {
         origin: 'ccm-converted',
       }
     }
-    const automatic = detector(type)(source)
+    const automatic =
+      type === 'dependency' ? { preview: null, diagnostic: undefined } : detector(type)(source)
     result.modes.auto = automatic.preview
     if (automatic.diagnostic) result.diagnostics.push(automatic.diagnostic)
     for (const name of ['scnexus', 'ccm'] as const) {
@@ -482,6 +507,7 @@ export class ContentService {
         : undefined
     const mode = recommended === 'SCNexus' ? 'scnexus' : recommended === 'CCM' ? 'ccm' : null
     if (mode && result.modes[mode]) result.recommendedMode = mode
+    if (type === 'dependency' && result.modes.scnexus) result.recommendedMode = 'scnexus'
     const hashes = new Map<string, string>(input.kind === 'directory' ? descriptorHashes : [])
     const targetStates = new Map<string, Awaited<ReturnType<typeof resourceState>>>()
     for (const mode of ['scnexus', 'ccm', 'auto'] as const) {
@@ -742,7 +768,7 @@ export class ContentService {
             )
       }
       const type = context.result.contentType
-      if (type === 'customize' && selectedMode !== 'auto' && source.input.kind === 'directory')
+      if (type !== 'campaign' && selectedMode !== 'auto' && source.input.kind === 'directory')
         for (const file of preview.files)
           context.hashes.set(
             file.source,
@@ -753,7 +779,7 @@ export class ContentService {
         throw new AppError(ERRORS.TASK_CONFLICT, {
           message: 'Matching content is already installed; request a new analysis',
         })
-      const direct = type === 'customize' || mode === 'ccm'
+      const direct = type !== 'campaign' || mode === 'ccm'
       const actualFiles =
         mode === 'ccm' ? preview.files.filter((f) => f.type === 'mod') : preview.files
       const conflicts = context.result.conflicts
@@ -776,7 +802,7 @@ export class ContentService {
       const staging = await mkdtemp(join(paths.gameRoot, '.scnexus-stage-'))
       try {
         const originalCcmPath =
-          type === 'customize' ||
+          type !== 'campaign' ||
           preview.origin === 'auto-detected' ||
           context.descriptorChoice === 'package-json'
             ? undefined
@@ -988,7 +1014,7 @@ export class ContentService {
             for (const file of record.installedFiles)
               if (file.result !== 'kept') completed(file.absolutePath)
           }
-          if (type === 'customize') {
+          if (type !== 'campaign') {
             record.targetTree = makeTree(
               record.installedFiles.map((f) => ({
                 path: f.target,
@@ -1071,7 +1097,7 @@ export class ContentService {
       })
   }
   private find(localId: string): ContentRecord {
-    for (const index of [this.campaign, this.customize]) {
+    for (const index of [this.campaign, this.customize, this.dependency]) {
       const record = index.getSnapshot().records.find((r) => r.localId === localId)
       if (record) return structuredClone(record)
     }
@@ -1242,6 +1268,7 @@ export class ContentService {
     return JSON.stringify([
       this.campaign.getSnapshot()._revision,
       this.customize.getSnapshot()._revision,
+      this.dependency.getSnapshot()._revision,
       this.active.getSnapshot()._revision,
     ])
   }
@@ -1284,13 +1311,16 @@ export class ContentService {
           'Active map ownership is missing; rebuild the installation index before removing campaign markers',
       })
     const others = [
-      ...this.customize
-        .getSnapshot()
-        .records.filter((r) => r.gameRoot === paths.gameRoot)
+      ...[
+        ...this.customize.getSnapshot().records,
+        ...this.dependency.getSnapshot().records,
+        ...this.campaign.getSnapshot().records.filter((record) => record.mode === 'ccm'),
+      ]
+        .filter((r) => r.gameRoot === paths.gameRoot)
         .map((r) => ({
           localId: r.localId,
           name: r.package.name,
-          type: 'customize' as const,
+          type: r.package.type as ContentType,
           files: r.installedFiles,
         })),
       ...Object.values(this.active.getSnapshot().active)
@@ -1487,11 +1517,15 @@ export class ContentService {
         this.campaign.getSnapshot().records,
         this.active.getSnapshot().active,
       )
-      const previous = [this.campaign.getSnapshot(), this.customize.getSnapshot()]
+      const previous = [
+        this.campaign.getSnapshot(),
+        this.customize.getSnapshot(),
+        this.dependency.getSnapshot(),
+      ]
       const oldActive = this.active.getSnapshot()
       const stamp = Date.now()
       try {
-        for (const [i, type] of (['campaign', 'customize'] as const).entries()) {
+        for (const [i, type] of (['campaign', 'customize', 'dependency'] as const).entries()) {
           const old = previous[i]
           const outside = old.records.filter((r) => r.gameRoot !== paths.gameRoot)
           const retained = old.records.filter(
@@ -1519,6 +1553,7 @@ export class ContentService {
       } catch (cause) {
         this.campaign.update(previous[0])
         this.customize.update(previous[1])
+        this.dependency.update(previous[2])
         this.active.update(oldActive)
         throw cause
       }
@@ -1537,4 +1572,6 @@ export const contentService = new ContentService(
   campaignRepository,
   customizeRepository,
   campaignActiveRepository,
+  withGameLock,
+  dependencyRepository,
 )

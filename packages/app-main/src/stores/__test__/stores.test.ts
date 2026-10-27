@@ -99,7 +99,7 @@ test('first run writes validated defaults only once and snapshots are detached',
   const repository = setting()
   const backend = await fileBackend()
   const snapshot = repository.init(backend)
-  assert.equal(snapshot._schemaVersion, 3)
+  assert.equal(snapshot._schemaVersion, 4)
   assert.equal(snapshot._revision, 0)
   assert.equal(snapshot.lastUpdatedAt, null)
   assert.equal(snapshot.displayLanguage, 'system')
@@ -207,8 +207,8 @@ test('invalid JSON and schema back up without overwriting or becoming usable', a
 
 test('future versions cannot be overwritten, even by migration', async () => {
   for (const data of [
-    { _schemaVersion: 4, _revision: 10 },
-    { schemaVersion: 4, revision: 10 },
+    { _schemaVersion: 5, _revision: 10 },
+    { schemaVersion: 5, revision: 10 },
   ]) {
     const backend = await fileBackend(data)
     assert.throws(() => setting().init(backend), code(ERRORS.STORE_VERSION_UNSUPPORTED.code))
@@ -242,7 +242,7 @@ test('previous unprefixed model migrates exactly once without losing business fi
   }
   const backend = await fileBackend(original)
   const migrated = setting().init(backend)
-  assert.equal(migrated._schemaVersion, 3)
+  assert.equal(migrated._schemaVersion, 4)
   assert.equal(migrated._revision, 17)
   assert.equal(migrated._lastConfirmedVersion, '0.0.20')
   assert.equal(migrated.clientId, original.clientId)
@@ -381,7 +381,7 @@ test('setting v1 language codes migrate without losing user preferences', async 
     assert.equal(result.displayLanguage, next)
     assert.equal(result._revision, 9)
     assert.equal(result.telemetryEnabled, true)
-    assert.equal(result._schemaVersion, 3)
+    assert.equal(result._schemaVersion, 4)
     assert.equal(backend.backups.length, 1)
   }
 })
@@ -399,7 +399,7 @@ test('v2 settings migrate once with online analytics enabled and preserve disabl
   const repository = setting()
   const migrated = repository.init(backend)
   assert.equal(migrated.analyticsEnabled, true)
-  assert.equal(migrated._schemaVersion, 3)
+  assert.equal(migrated._schemaVersion, 4)
   assert.equal(migrated.displayLanguage, 'en')
   assert.equal(migrated.clientId, previous.clientId)
   assert.equal(migrated._revision, 12)
@@ -408,4 +408,17 @@ test('v2 settings migrate once with online analytics enabled and preserve disabl
   const reloaded = setting().init(backend)
   assert.equal(reloaded.analyticsEnabled, false)
   assert.equal(backend.backups.length, 1)
+})
+
+test('v3 settings enable Workshop by default and preserve the disabled preference', async () => {
+  const defaults = setting().init(await fileBackend())
+  const { workshopEnabled: _workshopEnabled, ...old } = defaults
+  const backend = await fileBackend({ ...old, _schemaVersion: 3, analyticsEnabled: false })
+  const repository = setting()
+  const migrated = repository.init(backend)
+  assert.equal(migrated.workshopEnabled, true)
+  assert.equal(migrated.analyticsEnabled, false)
+  assert.equal(migrated._schemaVersion, 4)
+  repository.update({ ...migrated, workshopEnabled: false })
+  assert.equal(setting().init(backend).workshopEnabled, false)
 })

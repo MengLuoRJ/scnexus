@@ -12,6 +12,7 @@ export type SettingData = {
   logLevel: LogLevel
   telemetryEnabled: boolean
   analyticsEnabled: boolean
+  workshopEnabled: boolean
 }
 
 export type LegacySettingStore = {

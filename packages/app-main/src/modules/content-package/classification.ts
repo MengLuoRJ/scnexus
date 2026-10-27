@@ -80,9 +80,7 @@ export async function classifySource(
     delete descriptors[choice === 'package-json' ? 'metadata-txt' : 'package-json']
   }
   const type: ContentType = selected
-    ? selected.type === 'campaign'
-      ? 'campaign'
-      : 'customize'
+    ? selected.type
     : hasOfficialDirectory(source)
       ? 'campaign'
       : 'customize'

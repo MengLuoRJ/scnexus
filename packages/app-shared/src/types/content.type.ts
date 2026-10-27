@@ -1,6 +1,21 @@
-import type { PackageContent as Package, PackageCampaignType } from '@scnexus/standard/package'
-export type { PackageContent as Package, PackageCampaignType } from '@scnexus/standard/package'
-export type ContentType = 'campaign' | 'customize'
+import type {
+  PackageContent,
+  PackageDependency,
+  PackageCampaignType,
+} from '@scnexus/standard/package'
+export type { PackageCampaignType, PackageDependency } from '@scnexus/standard/package'
+export type Package =
+  | PackageContent
+  | (PackageDependency & {
+      campaign?: never
+      maps?: never
+      manager?: never
+      dependencies?: never
+      luancher?: never
+      bank_enable?: never
+      banks?: never
+    })
+export type ContentType = 'campaign' | 'customize' | 'dependency'
 export type InstallMode = 'scnexus' | 'ccm' | 'auto'
 export type ResourceType = 'map' | 'mod'
 export type SourceInput = { kind: 'archive' | 'directory'; path: string }
@@ -182,4 +197,10 @@ export type GamePaths = {
   documentsRoot: string
   banksRoot: string
   arcadeBanksRoot: string
+}
+
+export type DependencyContentRecord = ContentRecord & {
+  package: PackageDependency
+  mode: 'scnexus'
+  payloadDirectory: null
 }

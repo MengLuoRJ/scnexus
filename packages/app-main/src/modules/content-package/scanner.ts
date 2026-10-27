@@ -1,4 +1,5 @@
 import { validateCampaignRecord } from '../../stores/campaign'
+import { validateDependencyRecord } from '../../stores/dependency'
 import { validateCustomizeRecord } from '../../stores/customize'
 import { validateActive } from '../../stores/campaign-active'
 import { validateRecordPaths, validateActiveResources } from './content-package'
@@ -110,6 +111,7 @@ export async function scanContent(
     try {
       const record = parseManifest(raw) as ContentRecord
       if (record.package?.type === 'campaign') validateCampaignRecord(record)
+      else if (record.package?.type === 'dependency') validateDependencyRecord(record)
       else validateCustomizeRecord(record)
       validateRecordPaths(record, paths)
       if (
@@ -122,17 +124,14 @@ export async function scanContent(
       )
         throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Invalid manifest' })
       const packageRaw = await readFile(join(directory, 'package.json'))
-      record.package = parsePackage(
-        packageRaw.toString(),
-        record.package.type as 'campaign' | 'customize',
-      )
+      record.package = parsePackage(packageRaw.toString(), record.package.type)
       for (const file of record.installedFiles) {
         let target: string
         try {
           target = await scanPath(paths.gameRoot, file.target)
         } catch (error) {
           if (
-            record.package.type !== 'customize' ||
+            record.package.type === 'campaign' ||
             (error as NodeJS.ErrnoException).code !== 'ENOTDIR'
           )
             throw error
@@ -141,7 +140,7 @@ export async function scanContent(
         if (target !== file.absolutePath)
           throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Manifest path mismatch' })
       }
-      if (record.package.type === 'customize') {
+      if (record.package.type !== 'campaign') {
         let shapeChanged = false
         for (const group of resourceGroups(record.installedFiles)) {
           const root = await scanPath(paths.gameRoot, group.target)

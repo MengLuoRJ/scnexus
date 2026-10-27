@@ -4,11 +4,23 @@ import { extname, join, relative, isAbsolute, sep } from 'node:path'
 import { applicationResourcePath } from './origin'
 import { PRODUCTION_SERVER_API } from '@scnexus/app-shared/config/server'
 
+function filesImageOrigin() {
+  const value = process.env.SCNEXUS_FILES_ORIGIN
+  if (!value) return ''
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && url.origin === value && !url.username && !url.password
+      ? value
+      : ''
+  } catch {
+    return ''
+  }
+}
 const policy = [
   "default-src 'none'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${filesImageOrigin()}`,
   "font-src 'self' data:",
   `connect-src 'self' ${PRODUCTION_SERVER_API}`,
   "object-src 'none'",
@@ -56,6 +68,7 @@ export function installApplicationProtocol() {
         headers: {
           'Content-Type': types[extname(path)] ?? 'application/octet-stream',
           'Content-Security-Policy': policy,
+          'Referrer-Policy': 'no-referrer',
           'X-Content-Type-Options': 'nosniff',
         },
       })

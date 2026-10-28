@@ -88,6 +88,7 @@ async function external(run: () => Promise<{ ok: boolean; error?: AppErrorDto }>
   try {
     const result = await run()
     if (!result.ok && result.error) notifyError(result.error)
+    return result.ok
   } catch (value) {
     notifyError(toErrorDto(normalizeError(value)))
   }
@@ -96,7 +97,8 @@ async function launch() {
   if (locked.value) return
   busy.value = true
   try {
-    await external(ipcCampaignLaunch)
+    if (await external(ipcCampaignLaunch))
+      toast.add({ color: 'success', title: t('campaign.battleNetStarted'), duration: 8000 })
   } finally {
     busy.value = false
   }

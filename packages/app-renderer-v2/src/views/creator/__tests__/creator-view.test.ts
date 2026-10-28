@@ -125,7 +125,7 @@ test('manifest name prefills project title only after explicit action and creati
   expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('')
   await wrapper
     .findAll('button')
-    .find((button) => button.text() === '从清单预填')!
+    .find((button) => button.text() === '从安装包填写资料')!
     .trigger('click')
   expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('Manifest title')
   await wrapper.find('form').trigger('submit')

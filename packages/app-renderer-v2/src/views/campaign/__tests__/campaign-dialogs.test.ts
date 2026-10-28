@@ -587,3 +587,30 @@ test('when every mode is unavailable, malformed descriptor diagnostics cannot be
     'Invalid descriptor: package.json',
   )
 })
+
+test('customize analysis displays selected launcher and forwards only user-editable choice', async () => {
+  const state = service()
+  state.preview.value = {
+    ...preview,
+    package: { ...record.package, type: 'customize' },
+    launcher: {
+      source: 'detected',
+      target: 'Maps/Launcher.SC2Map',
+      candidates: [
+        { name: 'Launcher.SC2Map', target: 'Maps/Launcher.SC2Map' },
+        { name: 'Start.SC2Map', target: 'Maps/Start.SC2Map' },
+      ],
+    },
+  } as never
+  const wrapper = render(CampaignInstallModal, {
+    open: true,
+    contentType: 'customize',
+    service: state,
+  })
+  expect(wrapper.text()).toContain('已按名称自动匹配')
+  const chooser = wrapper.findComponent({ name: 'ContentLauncherChoice' })
+  chooser.vm.$emit('update:modelValue', 'Maps/Start.SC2Map')
+  await nextTick()
+  await click(wrapper, '确认安装')
+  expect(state.confirm).toHaveBeenCalledWith([], [], 'Maps/Start.SC2Map')
+})

@@ -140,3 +140,10 @@ test('transport rejection still produces P001 when forwarding a log also fails',
   })
   expect(await api.campaign.list()).toMatchObject({ ok: false, error: { code: 'P001' } })
 })
+
+test('customize launch forwards only a local record ID through its dedicated channel', async () => {
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: undefined })
+  await api.customize.launch('local-record')
+  expect(mocks.invoke).toHaveBeenLastCalledWith('customize:launch', 'local-record')
+})

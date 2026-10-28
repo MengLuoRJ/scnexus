@@ -26,6 +26,7 @@ import {
   keyPath,
 } from './paths'
 import { resourceGroups } from './resources'
+import { restoreLauncher } from './launcher'
 import { resourcePath } from '@scnexus/app-shared/utils/content-files'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 function parseManifest(raw: Buffer) {
@@ -575,6 +576,26 @@ export async function scanContent(
       diagnostics.push({
         path: dirname(gameAbsolutePath(paths, entry.path)),
         message: 'Invalid external CCM metadata',
+      })
+    }
+  }
+  for (const record of records) {
+    if (record.package.type !== 'customize') continue
+    const previous = previousRecords.find(
+      (item) => item.localId === record.localId && item.gameRoot === record.gameRoot,
+    )
+    if (previous && Object.hasOwn(previous, 'launcherTarget')) {
+      record.launcherTarget = previous.launcherTarget
+      if (previous.launcherCustomized !== undefined) record.launcherCustomized = previous.launcherCustomized
+    }
+    try {
+      restoreLauncher(record)
+    } catch (error) {
+      if (!isContentDiagnostic(error)) throw error
+      record.launcherTarget = null
+      diagnostics.push({
+        path: record.managementDirectory,
+        message: 'Installed launcher is missing or invalid',
       })
     }
   }

@@ -1,4 +1,5 @@
 import { test, expect, vi } from 'vitest'
+vi.mock('electron', () => ({ app: { isPackaged: false } }))
 const register = vi.hoisted(() => vi.fn<typeof import('../../../utils/ipc-util').ipcHandle>())
 vi.mock('../../../utils/ipc-util', () => ({
   ipcHandle: register,
@@ -28,6 +29,7 @@ test('customize registers install/uninstall and launch, never activation', () =>
     'customize:prepare-uninstall',
     'customize:uninstall',
     'customize:run-game-client',
+    'customize:launch',
   ])
     expect(names).toContain(channel)
   expect(names.some((name) => name.includes('activate'))).toBe(false)

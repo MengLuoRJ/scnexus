@@ -254,8 +254,16 @@ function isActive(record: ContentRecord) {
           <p class="text-muted">{{ t('campaign.description') }}</p>
           <p class="whitespace-pre-wrap">{{ selected.package.description || '—' }}</p>
         </div>
-        <p class="break-all text-xs text-muted">{{ selected.managementDirectory }}</p>
-        <FileTree :tree="selected.targetTree" />
+        <div class="text-sm">
+          <p class="text-muted">{{ t('campaign.installDirectory') }}</p>
+          <p class="break-all">{{ selected.managementDirectory }}</p>
+        </div>
+        <div class="space-y-2">
+          <p class="text-sm text-muted">{{ t('campaign.targetTree') }}</p>
+          <div class="max-h-72 overflow-auto rounded border border-default p-2">
+            <FileTree :tree="selected.targetTree" />
+          </div>
+        </div>
       </template>
     </template>
   </UModal>

@@ -352,5 +352,15 @@
   "toolbox.mode.raw": "Raw escapes",
   "toolbox.mode.string": "String literal",
   "toolbox.mode.text": "Text expression",
-  "toolbox.mode.debug": "Trigger debug"
+  "toolbox.mode.debug": "Trigger debug",
+  "customize.launcher": "Launcher map",
+  "customize.launcherManifest": "Specified by package.json.",
+  "customize.launcherDetected": "Detected by filename. You can choose another launcher map.",
+  "customize.launcherMissing": "No launcher detected. Select a map or leave it unset.",
+  "customize.launcherNone": "No launcher",
+  "customize.launch": "Launch",
+  "customize.launchStarted": "Launch requested",
+  "campaign.installDirectory": "Installation directory",
+  "customize.saveLauncher": "Save launcher",
+  "customize.launcherSaved": "Launcher saved"
 }

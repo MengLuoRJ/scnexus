@@ -1,4 +1,5 @@
 import { isPackage } from '@scnexus/standard/package'
+import { resolveLauncher } from './launcher'
 import type {
   Package,
   ContentType,
@@ -40,7 +41,10 @@ export function parsePackage(text: string, type?: ContentType): Package {
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
   if (value.scnid !== undefined && (!Number.isSafeInteger(value.scnid) || value.scnid < 0))
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
-  if (value.luancher && !(value.maps ?? []).some((map) => map.name === value.luancher!.name))
+  if (
+    value.luancher !== undefined &&
+    (value.maps ?? []).filter((map) => map.name === value.luancher!.name).length !== 1
+  )
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
       message: 'Launcher is not a declared map',
     })
@@ -214,6 +218,7 @@ export function buildPreview(
       message: 'No installable content',
     })
   return {
+    launcher: resolveLauncher(pkg, files),
     package: pkg,
     rootRelativePath: root,
     descriptorPath: descriptor,

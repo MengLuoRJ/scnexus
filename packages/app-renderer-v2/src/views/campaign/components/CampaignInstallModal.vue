@@ -12,6 +12,7 @@ import type {
 import type { useCampaign } from '../useCampaign'
 import FileTree from './FileTree.vue'
 import { countSourceRecognizedFiles } from '../countSourceRecognizedFiles'
+import LauncherChoice from '../../../components/content/LauncherChoice.vue'
 import ConflictChoices from './ConflictChoices.vue'
 defineOptions({ name: 'CampaignInstallModal' })
 type InstallService = Pick<
@@ -24,9 +25,14 @@ type InstallService = Pick<
   | 'existing'
   | 'conflicts'
   | 'installProgress'
-  | 'confirm'
   | 'close'
->
+> & {
+  confirm(
+    decisions: ConflictDecision[],
+    removals: import('@scnexus/app-shared/types/content.type').RemovalDecision[],
+    launcherTarget?: string | null,
+  ): Promise<{ installed: ContentRecord | null } | undefined>
+}
 const props = withDefaults(defineProps<{ service: InstallService; contentType?: ContentType }>(), {
   contentType: 'campaign',
 })
@@ -41,6 +47,14 @@ const percentage = computed(() => {
   if (!progress.totalFiles) return undefined
   return Math.floor((progress.completedFiles / progress.totalFiles) * 100)
 })
+const launcherTarget = ref<string | null>(null)
+watch(
+  [preview, open],
+  () => {
+    launcherTarget.value = preview.value?.launcher?.target ?? null
+  },
+  { immediate: true },
+)
 const installed = ref<ContentRecord | null>(null)
 const installing = ref(false)
 const decisions = ref<ConflictDecision[]>([])
@@ -92,7 +106,13 @@ watch(
 async function install() {
   if (!canInstall.value || busy.value || installing.value) return
   installing.value = true
-  const result = await props.service.confirm(decisions.value, [])
+  const result = await props.service.confirm(
+    decisions.value,
+    [],
+    ...(props.contentType === 'customize' && preview.value?.launcher?.source !== 'manifest'
+      ? [launcherTarget.value]
+      : []),
+  )
   installing.value = false
   if (result?.installed) installed.value = result.installed
 }
@@ -308,6 +328,12 @@ function activate() {
               </div>
             </section>
           </div>
+          <LauncherChoice
+            v-if="props.contentType === 'customize'"
+            v-model="launcherTarget"
+            :preview="preview"
+            :disabled="busy || installing"
+          />
           <section class="space-y-2">
             <h3 class="font-semibold">{{ t('campaign.conflicts') }} ({{ conflicts.length }})</h3>
             <p v-if="conflicts.length" class="text-sm text-muted">

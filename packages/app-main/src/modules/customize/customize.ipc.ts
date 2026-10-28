@@ -46,6 +46,8 @@ export function initCustomizeIpc() {
       }),
     true,
   )
+  ipcHandle('customize:set-launcher', service.setLauncher)
+  ipcHandle('customize:launch', service.launch)
   ipcHandle('customize:list', service.list)
   ipcHandle('customize:scan', service.scan)
   ipcHandle('customize:prepare-uninstall', service.prepareUninstall)

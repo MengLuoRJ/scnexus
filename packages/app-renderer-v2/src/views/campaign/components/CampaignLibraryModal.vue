@@ -8,7 +8,7 @@ import type {
   ActiveCampaign,
   PackageCampaignType,
 } from '@scnexus/app-shared/types/content.type'
-import FileTree from './FileTree.vue'
+import RecordDetails from '../../../components/content/RecordDetails.vue'
 defineOptions({ name: 'CampaignLibraryModal' })
 const props = defineProps<{
   records: ContentRecord[]
@@ -127,24 +127,15 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
     "
   >
     <template #body>
-      <div v-if="selected" class="space-y-2 text-sm">
-        <p class="whitespace-pre-wrap">{{ selected.package.description }}</p>
-        <p>
-          {{ t('campaign.standardFiles') }}: {{ selected.fileCount }} ·
-          {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(selected.files) }} ·
-          {{ formatFileSize(selected.bytes) }}
-        </p>
-        <p class="break-all">{{ selected.managementDirectory }}</p>
+      <RecordDetails v-if="selected" :record="selected">
         <UButton
           icon="i-tabler-folder"
           color="neutral"
           variant="outline"
           @click="emit('folder', selected)"
+          >{{ t('campaign.openFolder') }}</UButton
         >
-          {{ t('campaign.openFolder') }}
-        </UButton>
-        <FileTree :tree="selected.targetTree" />
-      </div>
+      </RecordDetails>
     </template>
   </UModal>
 </template>

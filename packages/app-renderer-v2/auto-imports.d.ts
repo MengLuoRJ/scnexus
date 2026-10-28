@@ -160,10 +160,12 @@ declare global {
   const ipcCustomizeAnalyze: typeof import('./src/ipcs/customize').ipcCustomizeAnalyze
   const ipcCustomizeCancel: typeof import('./src/ipcs/customize').ipcCustomizeCancel
   const ipcCustomizeInstall: typeof import('./src/ipcs/customize').ipcCustomizeInstall
+  const ipcCustomizeLaunch: typeof import('./src/ipcs/customize').ipcCustomizeLaunch
   const ipcCustomizeList: typeof import('./src/ipcs/customize').ipcCustomizeList
   const ipcCustomizeOnInstallProgress: typeof import('./src/ipcs/customize').ipcCustomizeOnInstallProgress
   const ipcCustomizePrepareUninstall: typeof import('./src/ipcs/customize').ipcCustomizePrepareUninstall
   const ipcCustomizeScan: typeof import('./src/ipcs/customize').ipcCustomizeScan
+  const ipcCustomizeSetLauncher: typeof import('./src/ipcs/customize').ipcCustomizeSetLauncher
   const ipcCustomizeUninstall: typeof import('./src/ipcs/customize').ipcCustomizeUninstall
   const ipcDeepLinkOnAuthentication: typeof import('./src/ipcs/deep-link').ipcDeepLinkOnAuthentication
   const ipcDeepLinkOnWorkshop: typeof import('./src/ipcs/deep-link').ipcDeepLinkOnWorkshop
@@ -418,10 +420,12 @@ declare module 'vue' {
     readonly ipcCustomizeAnalyze: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeAnalyze']>
     readonly ipcCustomizeCancel: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeCancel']>
     readonly ipcCustomizeInstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeInstall']>
+    readonly ipcCustomizeLaunch: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeLaunch']>
     readonly ipcCustomizeList: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeList']>
     readonly ipcCustomizeOnInstallProgress: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeOnInstallProgress']>
     readonly ipcCustomizePrepareUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizePrepareUninstall']>
     readonly ipcCustomizeScan: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeScan']>
+    readonly ipcCustomizeSetLauncher: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeSetLauncher']>
     readonly ipcCustomizeUninstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeUninstall']>
     readonly ipcDeepLinkOnAuthentication: UnwrapRef<typeof import('./src/ipcs/deep-link')['ipcDeepLinkOnAuthentication']>
     readonly ipcDeepLinkOnWorkshop: UnwrapRef<typeof import('./src/ipcs/deep-link')['ipcDeepLinkOnWorkshop']>

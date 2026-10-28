@@ -55,6 +55,11 @@ export type ModeDiagnostic = {
   message?: string
 }
 export type InstallPreview = {
+  launcher: {
+    source: 'manifest' | 'detected' | 'none'
+    target: string | null
+    candidates: { name: string; target: string }[]
+  }
   package: Package
   rootRelativePath: string
   descriptorPath: string
@@ -99,6 +104,8 @@ export type InstalledFile = PlannedFile & {
   hash: string
 }
 export type ContentRecord = {
+  launcherCustomized?: boolean
+  launcherTarget?: string | null
   external?: boolean
   localId: string
   package: Package
@@ -142,6 +149,7 @@ export type RemovalPreview = {
 }
 export type RemovalDecision = { conflictId: string; action: 'delete' | 'keep' }
 export type InstallSelection = {
+  launcherTarget?: string | null
   analysisId: string
   taskId?: string
   mode: InstallMode

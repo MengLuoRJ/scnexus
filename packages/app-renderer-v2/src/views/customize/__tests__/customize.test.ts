@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   unsubscribe: vi.fn<() => void>(),
   prepare: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   uninstall: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  launch: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   scan: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }))
 vi.mock('../../../ipcs/scii-game-setting', () => ({
@@ -29,6 +30,7 @@ vi.mock('../../../ipcs/customize', () => ({
   ipcCustomizePrepareUninstall: mocks.prepare,
   ipcCustomizeUninstall: mocks.uninstall,
   ipcCustomizeScan: mocks.scan,
+  ipcCustomizeLaunch: mocks.launch,
 }))
 import { useCustomize } from '../useCustomize'
 const scopes: ReturnType<typeof effectScope>[] = []
@@ -183,4 +185,18 @@ test('adopts classified preview without repeating IPC analysis and rejects wrong
   expect(service.acceptAnalysis({ ...analysis, contentType: 'campaign' } as AnalysisResult)).toBe(
     false,
   )
+})
+
+test('custom install forwards player-selected launcher while launch sends only localId', async () => {
+  const service = setup()
+  mocks.analyze.mockResolvedValue({ ok: true, data: analysis })
+  mocks.install.mockResolvedValue({ ok: true, data: record })
+  await service.analyze({ kind: 'directory', path: 'D:\\Custom' })
+  await service.confirm([], [], 'Maps/Project/Start.SC2Map')
+  expect(mocks.install).toHaveBeenCalledWith(
+    expect.objectContaining({ launcherTarget: 'Maps/Project/Start.SC2Map' }),
+  )
+  mocks.launch.mockResolvedValue({ ok: true, data: undefined })
+  expect(await service.launch(record)).toBe(true)
+  expect(mocks.launch).toHaveBeenCalledWith(record.localId)
 })

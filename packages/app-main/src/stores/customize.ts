@@ -49,6 +49,19 @@ export function validateCustomizeRecord(value: unknown): asserts value is Conten
     !value.installedFiles.every(installed)
   )
     invalidData('Invalid installed resources')
+  if (value.launcherCustomized !== undefined && typeof value.launcherCustomized !== 'boolean') invalidData('Invalid launcher preference')
+  if (
+    value.launcherTarget !== undefined &&
+    value.launcherTarget !== null &&
+    (!string(value.launcherTarget) ||
+      !/^Maps\/.+\.sc2map$/i.test(value.launcherTarget as string) ||
+      (value.launcherTarget as string)
+        .split('/')
+        .some((part) => !part || part === '.' || part === '..') ||
+      /[\\:]/.test(value.launcherTarget as string) ||
+      [...(value.launcherTarget as string)].some((character) => character.charCodeAt(0) < 32))
+  )
+    invalidData('Invalid launcher target')
   if (!isRecord(value.targetTree) || (value.sourceTree !== null && !isRecord(value.sourceTree)))
     invalidData('Invalid file trees')
   if (
@@ -78,6 +91,7 @@ const recordSchema = {
     'managementDirectory',
   ],
   properties: {
+    launcherTarget: { type: ['string', 'null'] },
     localId: { type: 'string', minLength: 1 },
     package: {
       type: 'object',

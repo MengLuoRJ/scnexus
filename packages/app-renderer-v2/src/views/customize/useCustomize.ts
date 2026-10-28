@@ -96,7 +96,11 @@ export function useCustomize() {
       if (disposed) await close()
     })
   }
-  function confirm(decisions: ConflictDecision[], removals: RemovalDecision[]) {
+  function confirm(
+    decisions: ConflictDecision[],
+    removals: RemovalDecision[],
+    launcherTarget?: string | null,
+  ) {
     return execute(async () => {
       let installed: ContentRecord | null = null
       if (analysis.value) {
@@ -109,7 +113,13 @@ export function useCustomize() {
         })
         try {
           installed = data(
-            await ipc.ipcCustomizeInstall({ analysisId, taskId, mode: mode.value, decisions }),
+            await ipc.ipcCustomizeInstall({
+              analysisId,
+              taskId,
+              mode: mode.value,
+              decisions,
+              ...(launcherTarget === undefined ? {} : { launcherTarget }),
+            }),
           )
         } finally {
           stopProgress()
@@ -150,6 +160,19 @@ export function useCustomize() {
     analyze,
     acceptAnalysis,
     prepare,
+    setLauncher: (record: ContentRecord, target: string | null) =>
+      execute(async () => {
+        const updated = data(await ipc.ipcCustomizeSetLauncher(record.localId, target))
+        records.value = records.value.map((item) =>
+          item.localId === updated.localId ? updated : item,
+        )
+        return updated
+      }),
+    launch: (record: ContentRecord) =>
+      execute(async () => {
+        data(await ipc.ipcCustomizeLaunch(record.localId))
+        return true
+      }),
     confirm,
     close: () => execute(close),
     refresh: () => execute(refresh),

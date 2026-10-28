@@ -10,6 +10,7 @@ import ui from '@nuxt/ui/vite'
 
 import { visualizer } from 'rollup-plugin-visualizer'
 
+import { localIconNames } from './scripts/local-icons.ts'
 import electronVendorsCache from '../app-main/.electron-vendors.cache.json' with { type: 'json' }
 
 const PACKAGE_ROOT = fileURLToPath(new URL('.', import.meta.url))
@@ -89,9 +90,11 @@ export default defineConfig({
     vueJsx(),
     vueDevTools(),
     ui({
+      root: PACKAGE_ROOT,
       ui: { icons: uiIcons },
       icon: {
         clientBundle: {
+          icons: localIconNames(PACKAGE_ROOT, uiIcons),
           scan: true,
         },
       },

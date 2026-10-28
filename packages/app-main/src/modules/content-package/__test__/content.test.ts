@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, stat, symlink } from 'node:fs/
 import { join } from 'node:path'
 import { ContentService, validateRecordPaths, validateActiveResources } from '../content-package'
 import { scanContent } from '../scanner'
+import { validateCustomizeRecord } from '../../../stores/customize'
 import { parsePackage } from '../parser'
 test('standard dependency packages are accepted separately from campaign content', () => {
   const value = {
@@ -1742,4 +1743,121 @@ test('customize install and rebuilt records retain lowercase physical roots thro
   await expect(stat(join(f.paths.modsRoot, 'Core.SC2Mod'))).rejects.toMatchObject({
     code: 'ENOENT',
   })
+})
+
+test('customize launcher selection is validated, persisted and retained by scan including explicit null', async () => {
+  const f = await fixture('maps', 'mods')
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(
+      pkg('customize', {
+        maps: [
+          {
+            name: 'start.SC2Map',
+            source_path: '/Maps/launcher.SC2Map',
+            target_path: '/Maps/Start.SC2Map',
+          },
+          { name: 'level.SC2Map', source_path: '/Maps/Group.SC2Map' },
+        ],
+      }),
+    ),
+    'Maps/launcher.SC2Map': 'start',
+    'Maps/Group.SC2Map/MapInfo': 'component',
+    'Maps/Group.SC2Map/Triggers': 'triggers',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  expect(analysis.modes.scnexus!.launcher).toEqual({
+    source: 'detected',
+    target: 'Maps/Start.SC2Map',
+    candidates: [
+      { name: 'Start.SC2Map', target: 'Maps/Start.SC2Map' },
+      { name: 'Group.SC2Map', target: 'Maps/Group.SC2Map' },
+    ],
+  })
+  const selection = { analysisId: analysis.analysisId, mode: 'scnexus', decisions: [] }
+  await expect(
+    f.service.install({ ...selection, launcherTarget: '../escape.SC2Map' }),
+  ).rejects.toMatchObject({ name: 'IPC-INVALID-ARGUMENT' })
+  const record = await f.service.install({ ...selection, launcherTarget: null })
+  expect(record.launcherTarget).toBeNull()
+  expect(() => validateCustomizeRecord(record)).not.toThrow()
+  for (const launcherTarget of [
+    123,
+    '../outside.SC2Map',
+    'Maps/../outside.SC2Map',
+    'Mods/Core.SC2Mod',
+    'Maps\\Start.SC2Map',
+    'Maps/Start.SC2Map/MapInfo',
+  ]) {
+    expect(() => validateCustomizeRecord({ ...record, launcherTarget })).toThrow(/./)
+  }
+  expect(
+    JSON.parse(await readFile(join(record.managementDirectory, 'install-manifest.json'), 'utf8'))
+      .launcherTarget,
+  ).toBeNull()
+  expect((await f.service.scan()).records[0]!.launcherTarget).toBeNull()
+  const manifest = JSON.parse(
+    await readFile(join(record.managementDirectory, 'install-manifest.json'), 'utf8'),
+  )
+  delete manifest.launcherTarget
+  await writeFile(
+    join(record.managementDirectory, 'install-manifest.json'),
+    JSON.stringify(manifest),
+  )
+  const rebuilt = await scanContent(f.paths)
+  expect(rebuilt.records[0]!.launcherTarget).toBe('Maps/Start.SC2Map')
+})
+
+test('manifest launcher overrides detected names, rejects duplicate declarations and cannot be replaced', async () => {
+  const f = await fixture()
+  const data = pkg('customize', {
+    luancher: { name: 'entry.SC2Map' },
+    maps: [
+      {
+        name: 'entry.SC2Map',
+        source_path: '/Maps/Other.SC2Map',
+        target_path: '/Maps/Renamed.SC2Map',
+      },
+      { name: 'fallback.SC2Map', source_path: '/Maps/launcher.SC2Map' },
+    ],
+  })
+  expect(() =>
+    parsePackage(JSON.stringify({ ...data, maps: [...data.maps!, data.maps![0]] })),
+  ).toThrow(/./)
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(data),
+    'Maps/Other.SC2Map/MapInfo': 'group',
+    'Maps/launcher.SC2Map': 'fallback',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  expect(analysis.modes.scnexus!.launcher).toMatchObject({
+    source: 'manifest',
+    target: 'Maps/Renamed.SC2Map',
+  })
+  const selection = { analysisId: analysis.analysisId, mode: 'scnexus', decisions: [] }
+  await expect(f.service.install({ ...selection, launcherTarget: null })).rejects.toMatchObject({
+    name: 'IPC-INVALID-ARGUMENT',
+  })
+  const record = await f.service.install(selection)
+  expect(record.launcherTarget).toBe('Maps/Renamed.SC2Map')
+  expect((await f.service.scan()).records[0]!.launcherTarget).toBe('Maps/Renamed.SC2Map')
+})
+
+test('ambiguous detected launchers require selection and any logical map root can be selected', async () => {
+  const f = await fixture()
+  const input = await source(f.root, {
+    'Maps/launcher.SC2Map': 'one',
+    'Maps/启动器.SC2Map/MapInfo': 'two',
+    'Maps/Mission.SC2Map': 'three',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  expect(analysis.modes.auto!.launcher).toMatchObject({ source: 'detected', target: null })
+  expect(analysis.modes.auto!.launcher.candidates).toHaveLength(3)
+  const installed = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'auto',
+    decisions: [],
+    launcherTarget: 'Maps/Mission.SC2Map',
+  })
+  expect(installed.launcherTarget).toBe('Maps/Mission.SC2Map')
+  expect((await f.service.scan()).records[0]!.launcherTarget).toBe('Maps/Mission.SC2Map')
 })

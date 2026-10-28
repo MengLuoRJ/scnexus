@@ -352,5 +352,15 @@
   "toolbox.mode.raw": "直接轉碼",
   "toolbox.mode.string": "作為字符（String）",
   "toolbox.mode.text": "作為文本（Text）",
-  "toolbox.mode.debug": "觸發調試（TriggerDebug）"
+  "toolbox.mode.debug": "觸發調試（TriggerDebug）",
+  "customize.launcher": "啟動器地圖",
+  "customize.launcherManifest": "由 package.json 明確指定。",
+  "customize.launcherDetected": "已按名稱自動匹配，可更改啟動器地圖。",
+  "customize.launcherMissing": "未識別到啟動器，請選擇地圖；也可暫不設置。",
+  "customize.launcherNone": "不設置啟動器",
+  "customize.launch": "啟動",
+  "customize.launchStarted": "已請求啟動作品",
+  "campaign.installDirectory": "安裝目錄",
+  "customize.saveLauncher": "保存啟動器",
+  "customize.launcherSaved": "啟動器已保存"
 }

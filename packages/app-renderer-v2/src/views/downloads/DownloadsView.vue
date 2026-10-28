@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onScopeDispose, onMounted, ref } from 'vue'
+import { onScopeDispose, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
@@ -26,6 +26,7 @@ import type {
   ContentRecord,
 } from '@scnexus/app-shared/types/content.type'
 import type { RemovalPreview, RemovalDecision } from '@scnexus/app-shared/types/content.type'
+import LauncherChoice from '../../components/content/LauncherChoice.vue'
 import ConflictChoices from '../campaign/components/ConflictChoices.vue'
 defineOptions({ name: 'DownloadsView' })
 const store = useWorkshopStore()
@@ -34,7 +35,11 @@ const toast = useToast()
 if (window.scnexus) onScopeDispose(store.connect())
 const analysis = ref<AnalysisResult | null>(null)
 const mode = ref<InstallMode>('scnexus')
+const launcherTarget = ref<string | null>(null)
 const choices = ref<ConflictDecision[]>([])
+watch(mode, () => {
+  launcherTarget.value = analysis.value?.modes[mode.value]?.launcher?.target ?? null
+})
 const busy = ref(false)
 const dependencies = ref<ContentRecord[]>([])
 const removal = ref<RemovalPreview | null>(null)
@@ -86,6 +91,7 @@ async function install(taskId: string) {
       ? 'scnexus'
       : (analysis.value.recommendedMode ?? 'auto')
     choices.value = []
+    launcherTarget.value = analysis.value.modes[mode.value]?.launcher?.target ?? null
   } catch {
     toast.add({ color: 'error', title: t('workshop.installError') })
   } finally {
@@ -105,6 +111,10 @@ async function confirm() {
       analysisId: analysis.value.analysisId,
       mode: mode.value,
       decisions: choices.value,
+      ...(analysis.value.modes[mode.value]?.package.type === 'customize' &&
+      analysis.value.modes[mode.value]?.launcher?.source !== 'manifest'
+        ? { launcherTarget: launcherTarget.value }
+        : {}),
     }
     const type = analysis.value.modes[mode.value]?.package.type
     let record: ContentRecord
@@ -286,6 +296,12 @@ async function confirm() {
                 .map((value) => ({ value, label: value.toUpperCase() }))
             "
             @update:model-value="choices = []"
+          />
+          <LauncherChoice
+            v-if="analysis.modes[mode]"
+            v-model="launcherTarget"
+            :preview="analysis.modes[mode]!"
+            :disabled="busy"
           />
           <ConflictChoices
             v-model="choices"

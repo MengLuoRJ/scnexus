@@ -34,7 +34,9 @@ const api: DesktopApi = {
     analyze: (input, choice) => invoke('content-package:analyze', input, choice),
   },
   customize: {
+    launch: (id) => invoke('customize:launch', id),
     ...contentApi('customize'),
+    setLauncher: (id, target) => invoke('customize:set-launcher', id, target),
     onInstallProgress: (listener) => subscribeTyped('customize:install-progress', listener),
   },
   campaign: {

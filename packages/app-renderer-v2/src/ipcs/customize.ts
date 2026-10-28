@@ -15,9 +15,13 @@ export const ipcCustomizeAnalyze = (input: SourceInput) =>
   ipcRequest(() => ipcDesktop().customize.analyze(ipcSnapshot(input)))
 export const ipcCustomizeInstall = (selection: InstallSelection) =>
   ipcRequest(() => ipcDesktop().customize.install(ipcSnapshot(selection)))
+export const ipcCustomizeLaunch = (id: string) =>
+  ipcRequest(() => ipcDesktop().customize.launch(id))
 export const ipcCustomizeList = () => ipcRequest(() => ipcDesktop().customize.list())
 export const ipcCustomizeScan = () => ipcRequest(() => ipcDesktop().customize.scan())
 export const ipcCustomizePrepareUninstall = (id: string) =>
   ipcRequest(() => ipcDesktop().customize.prepareUninstall(id))
 export const ipcCustomizeUninstall = (id: string, decisions: RemovalDecision[]) =>
   ipcRequest(() => ipcDesktop().customize.uninstall(id, ipcSnapshot(decisions)))
+
+export const ipcCustomizeSetLauncher = (id: string, target: string | null) => ipcRequest(() => ipcDesktop().customize.setLauncher(id, target))

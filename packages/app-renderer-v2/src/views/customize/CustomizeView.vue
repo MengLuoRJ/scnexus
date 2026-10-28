@@ -13,7 +13,8 @@ import { useCustomize } from './useCustomize'
 import { formatFileSize } from '../campaign/formatFileSize'
 import CampaignSourcePicker from '../campaign/components/CampaignSourcePicker.vue'
 import CampaignInstallModal from '../campaign/components/CampaignInstallModal.vue'
-import FileTree from '../campaign/components/FileTree.vue'
+import RecordDetails from '../../components/content/RecordDetails.vue'
+import { resourcePath } from '@scnexus/app-shared/utils/content-files'
 import CustomizeUninstallModal from './components/CustomizeUninstallModal.vue'
 defineOptions({ name: 'CustomizeView' })
 const { t } = useI18n()
@@ -28,6 +29,33 @@ const installOpen = ref(false)
 const uninstall = ref<ContentRecord | null>(null)
 const selectedId = ref<string | null>(null)
 const selected = computed(() => records.value.find((record) => record.localId === selectedId.value))
+const launcherChoice = ref('__none__')
+const launcherItems = computed(() => [
+  { label: t('customize.launcherNone'), value: '__none__' },
+  ...[
+    ...new Set(
+      (selected.value?.installedFiles ?? [])
+        .filter((file) => file.type === 'map')
+        .map((file) => resourcePath(file.target)),
+    ),
+  ].map((value) => ({ label: value, value })),
+])
+watch(
+  () => selected.value,
+  (record) => {
+    launcherChoice.value = record?.launcherTarget ?? '__none__'
+  },
+)
+async function saveLauncher() {
+  if (!selected.value) return
+  if (
+    await service.setLauncher(
+      selected.value,
+      launcherChoice.value === '__none__' ? null : launcherChoice.value,
+    )
+  )
+    toast.add({ color: 'success', title: t('customize.launcherSaved') })
+}
 const locked = computed(
   () =>
     busy.value ||
@@ -66,6 +94,10 @@ async function refresh(scan = false) {
       color: 'success',
       title: t(scan ? 'customize.scanComplete' : 'customize.refreshComplete'),
     })
+}
+async function launch(record: ContentRecord) {
+  if (await service.launch(record))
+    toast.add({ color: 'success', title: t('customize.launchStarted') })
 }
 async function folder(record: ContentRecord) {
   try {
@@ -151,7 +183,15 @@ onMounted(() => {
         >
           {{ record.package.description }}
         </p>
+        <p v-if="record.launcherTarget" class="break-all text-xs text-muted">
+          {{ t('customize.launcher') }}: {{ record.launcherTarget }}
+        </p>
         <div class="flex flex-wrap gap-2">
+          <UButton
+            :disabled="locked || !available || !record.launcherTarget"
+            @click="launch(record)"
+            >{{ t('customize.launch') }}</UButton
+          >
           <UButton
             icon="i-tabler-info-circle"
             color="neutral"
@@ -192,21 +232,33 @@ onMounted(() => {
         }
       "
       ><template #body
-        ><div v-if="selected" class="space-y-3 text-sm">
-          <p class="whitespace-pre-wrap">{{ selected.package.description }}</p>
-          <p>
-            {{ t('campaign.standardFiles') }}: {{ selected.fileCount }} ·
-            {{ t('campaign.recognizedFiles') }}: {{ countRecognizedFiles(selected.files) }} ·
-            {{ formatFileSize(selected.bytes) }}
-          </p>
-          <p class="break-all">{{ selected.managementDirectory }}</p>
+        ><RecordDetails v-if="selected" :record="selected">
+          <div class="space-y-2">
+            <p class="text-muted">{{ t('customize.launcher') }}</p>
+            <div class="flex gap-2">
+              <USelect
+                v-model="launcherChoice"
+                :items="launcherItems"
+                :disabled="busy"
+                class="min-w-0 flex-1"
+                :aria-label="t('customize.launcher')"
+              /><UButton
+                :loading="busy"
+                :disabled="launcherChoice === (selected.launcherTarget ?? '__none__')"
+                @click="saveLauncher"
+                >{{ t('customize.saveLauncher') }}</UButton
+              >
+            </div>
+          </div>
           <UButton
             icon="i-tabler-folder"
             color="neutral"
             variant="outline"
             @click="folder(selected)"
             >{{ t('campaign.openFolder') }}</UButton
-          ><FileTree :tree="selected.targetTree" /></div></template
-    ></UModal>
+          >
+        </RecordDetails></template
+      ></UModal
+    >
   </div>
 </template>

@@ -696,6 +696,7 @@ export class ContentService {
     selection: {
       analysisId: string
       taskId?: string
+      launcherTarget?: string | null
       mode: string
       decisions: ConflictDecision[]
     },
@@ -736,6 +737,16 @@ export class ContentService {
       const mode = selectedMode === 'auto' ? 'scnexus' : selectedMode
       const preview = context.result.modes[selectedMode as 'scnexus' | 'ccm' | 'auto']
       if (!preview) throw new AppError(ERRORS.CONTENT_TYPE_UNSUPPORTED)
+      if (
+        selection.launcherTarget !== undefined &&
+        (context.result.contentType !== 'customize' ||
+          preview.launcher.source === 'manifest' ||
+          (selection.launcherTarget !== null &&
+            !preview.launcher.candidates.some((item) => item.target === selection.launcherTarget)))
+      )
+        throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+      const launcherTarget =
+        selection.launcherTarget === undefined ? preview.launcher.target : selection.launcherTarget
       const paths = await this.paths()
       if (context.root !== paths.gameRoot || context.gameRevision !== paths._revision)
         throw new AppError(ERRORS.TASK_CONFLICT)
@@ -898,6 +909,7 @@ export class ContentService {
               : f.source,
         }))
         const record: ContentRecord = {
+          ...(type === 'customize' ? { launcherTarget } : {}),
           localId,
           package: pkg,
           mode: mode as 'scnexus' | 'ccm',
@@ -1514,7 +1526,7 @@ export class ContentService {
       const { scanContent } = await import('./scanner')
       const result = await scanContent(
         paths,
-        this.campaign.getSnapshot().records,
+        [...this.campaign.getSnapshot().records, ...this.customize.getSnapshot().records],
         this.active.getSnapshot().active,
       )
       const previous = [

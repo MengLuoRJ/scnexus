@@ -77,7 +77,7 @@ it('injects the existing setting repository installation ID', async () => {
   await expect(
     login({ subject: 'test@example.com', password: 'legacy', deviceName: 'Desktop' }),
   ).rejects.toThrow('Account operation failed')
-  expect(mocks.settings).toHaveBeenCalledOnce()
+  expect(mocks.settings).toHaveBeenCalledTimes(2)
   expect(mocks.request).toHaveBeenCalledWith(
     'login',
     expect.objectContaining({ clientId: '7d6b0c48-40c8-4ae0-9197-95e41f11cced' }),

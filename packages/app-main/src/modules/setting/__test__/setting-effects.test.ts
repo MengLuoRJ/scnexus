@@ -4,10 +4,13 @@ const mocks = vi.hoisted(() => ({
     logLevel: 'error',
     telemetryEnabled: false,
     analyticsEnabled: true,
+    officialServicesEnabled: true,
+    weeklyMutationCalibrationEnabled: true,
     workshopEnabled: true,
     clientId: 'client',
     displayLanguage: 'zh',
   },
+  officialServices: vi.fn<(enabled: boolean) => void>(),
   workshop: vi.fn<(enabled: boolean) => void>(),
   analytics: vi.fn<(enabled: boolean) => void>(),
   apply: vi.fn<typeof import('../../logging/logging').applyLogLevel>(),
@@ -15,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   disable: vi.fn<typeof import('../../telemetry/telemetry').disableTelemetry>(async () => {}),
   send: vi.fn<typeof import('../../window/window').sendWhenReady>(),
 }))
+vi.mock('../../auth', () => ({ setOfficialServicesEnabled: mocks.officialServices }))
 vi.mock('../../workshop-lifecycle', () => ({ setWorkshopEnabled: mocks.workshop }))
 vi.mock('../../analytics-lifecycle', () => ({ setAnalyticsEnabled: mocks.analytics }))
 vi.mock('electron', () => ({
@@ -80,4 +84,36 @@ test('Workshop consent updates are persisted and applied immediately', async () 
   await updateSetting({ workshopEnabled: true })
   expect(mocks.data.workshopEnabled).toBe(true)
   expect(mocks.workshop).toHaveBeenLastCalledWith(true)
+})
+
+test('credential cleanup failure still applies independent analytics, Workshop consent and settings publication', async () => {
+  await updateSetting({ officialServicesEnabled: true })
+  vi.clearAllMocks()
+  mocks.officialServices.mockImplementationOnce(() => {
+    throw new Error('credential file locked')
+  })
+  await expect(updateSetting({ officialServicesEnabled: false })).rejects.toThrow(
+    'credential file locked',
+  )
+  expect(mocks.data.officialServicesEnabled).toBe(false)
+  expect(mocks.analytics).toHaveBeenCalledWith(mocks.data.analyticsEnabled)
+  expect(mocks.workshop).toHaveBeenCalledWith(false)
+  expect(mocks.send).toHaveBeenCalled()
+  await updateSetting({ officialServicesEnabled: true })
+})
+
+test('official service changes apply auth, analytics and effective Workshop consent without losing preferences', async () => {
+  await updateSetting({ weeklyMutationCalibrationEnabled: false })
+  await updateSetting({ officialServicesEnabled: false })
+  expect(mocks.officialServices).toHaveBeenLastCalledWith(false)
+  expect(mocks.workshop).toHaveBeenLastCalledWith(false)
+  expect(mocks.analytics).toHaveBeenLastCalledWith(true)
+  expect(mocks.data.workshopEnabled).toBe(true)
+  expect(mocks.data.weeklyMutationCalibrationEnabled).toBe(false)
+  await updateSetting({ workshopEnabled: true })
+  expect(mocks.workshop).toHaveBeenLastCalledWith(false)
+  await updateSetting({ officialServicesEnabled: true })
+  expect(mocks.officialServices).toHaveBeenLastCalledWith(true)
+  expect(mocks.workshop).toHaveBeenLastCalledWith(true)
+  expect(mocks.data.weeklyMutationCalibrationEnabled).toBe(false)
 })

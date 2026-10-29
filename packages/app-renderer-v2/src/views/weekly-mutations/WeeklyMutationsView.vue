@@ -94,7 +94,7 @@ function date(value: string) {
       >
     </div>
     <template v-if="tab === 'weekly'">
-      <div v-if="weeklyLoading" role="status" class="space-y-2">
+      <div v-if="weeklyLoading && !weekly" role="status" class="space-y-2">
         <p class="text-sm text-muted">{{ t('weekly.loading') }}</p>
         <UProgress />
       </div>
@@ -177,7 +177,7 @@ function date(value: string) {
           t('weekly.count', { count: factors.length })
         }}</span>
       </div>
-      <div v-if="catalogLoading" role="status" class="space-y-2">
+      <div v-if="catalogLoading && !catalog" role="status" class="space-y-2">
         <p class="text-sm text-muted">{{ t('weekly.loading') }}</p>
         <UProgress />
       </div>

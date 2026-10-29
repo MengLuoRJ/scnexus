@@ -1,8 +1,12 @@
 {
   "contentCenter.title": "內容中心",
   "contentCenter.workshop": "創意工坊",
-  "contentCenter.description": "啟用創意工坊、創作者和傳輸功能。關閉後暫停全部工坊任務，保留任務和文件；重新開啟後手動恢復。",
+  "contentCenter.description": "啟用創意工坊、創作者及工坊傳輸。關閉後暫停工坊任務並保留任務和文件；重新開啟後手動恢復，不影響 GitHub 下載。",
   "contentCenter.downloads": "下載管理",
   "contentCenter.uploads": "上傳管理",
-  "contentCenter.creator": "創作者中心"
+  "contentCenter.creator": "創作者中心",
+  "contentCenter.officialServices": "星際樞紐官方服務",
+  "contentCenter.officialServicesHelp": "啟用賬號、每週突變在線校準和創意工坊。關閉後清除本地登錄，重新開啟後需再次登錄；保留子功能偏好，本地功能和 GitHub 下載仍可使用。在線統計由獨立開關控制，保持開啟時回退到匿名統計。",
+  "contentCenter.weeklyCalibration": "每週突變在線校準",
+  "contentCenter.weeklyCalibrationHelp": "使用官方服務校準本地每週突變結果。關閉後仍使用本地數據與規則顯示突變。"
 }

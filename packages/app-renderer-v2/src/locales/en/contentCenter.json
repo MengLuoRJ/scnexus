@@ -1,8 +1,12 @@
 {
   "contentCenter.title": "Content center",
   "contentCenter.workshop": "SCNexus Workshop",
-  "contentCenter.description": "Enable Workshop, creator and transfer features. Disabling pauses Workshop tasks and keeps files and records. Resume manually after enabling.",
+  "contentCenter.description": "Enable Workshop, creator features, and Workshop transfers. Turning this off pauses Workshop tasks and preserves tasks and files; resume manually after re-enabling. GitHub downloads are unaffected.",
   "contentCenter.downloads": "Downloads",
   "contentCenter.uploads": "Uploads",
-  "contentCenter.creator": "Creator center"
+  "contentCenter.creator": "Creator center",
+  "contentCenter.officialServices": "SCNexus official services",
+  "contentCenter.officialServicesHelp": "Enable account services, weekly mutation online calibration, and Workshop. Turning this off clears local sign-in; sign in again after re-enabling. Feature preferences, local features, and GitHub downloads are preserved. Analytics has an independent switch and falls back to anonymous statistics when left enabled.",
+  "contentCenter.weeklyCalibration": "Weekly mutation online calibration",
+  "contentCenter.weeklyCalibrationHelp": "Use official services to calibrate local weekly mutation results. Local data and rules remain available when this is off."
 }

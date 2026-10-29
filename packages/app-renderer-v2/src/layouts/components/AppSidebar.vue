@@ -67,6 +67,7 @@ const items = computed(() => [
     </UNavigationMenu>
     <div class="border-t border-default p-2">
       <RouterLink
+        v-if="contentCenter.officialServicesEnabled"
         to="/account"
         :aria-label="accountLabel"
         :title="accountLabel"

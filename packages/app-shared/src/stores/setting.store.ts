@@ -12,6 +12,8 @@ export type SettingData = {
   logLevel: LogLevel
   telemetryEnabled: boolean
   analyticsEnabled: boolean
+  officialServicesEnabled: boolean
+  weeklyMutationCalibrationEnabled: boolean
   workshopEnabled: boolean
 }
 

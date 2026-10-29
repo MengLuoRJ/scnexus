@@ -100,5 +100,6 @@
   "account.error.credentialStorage": "Secure credential storage is unavailable or saving failed. No local login was established. Check the system credential service before retrying.",
   "account.error.registrationRejected": "The server rejected the submitted information. Check the challenge code, expiry, email, password and invitation. Do not repeatedly resubmit registration.",
   "account.error.notFound": "Content was not found or is not visible.",
-  "account.error.conflict": "State changed or revision conflicts. Reload and confirm your changes."
+  "account.error.conflict": "State changed or revision conflicts. Reload and confirm your changes.",
+  "account.servicesDisabled": "SCNexus official services are disabled. Re-enable them in Settings. Local features remain available."
 }

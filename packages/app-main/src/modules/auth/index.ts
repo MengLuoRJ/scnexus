@@ -62,6 +62,7 @@ export function initAuthModule(): void {
     },
   })
   service = instance
+  instance.setEnabled(settingRepository.getSnapshot().officialServicesEnabled !== false)
   for (const method of methods) {
     ipcHandleRegister(`auth:${method}`, async (...args: unknown[]) => {
       const takesInput = !['getSnapshot', 'refresh', 'logout'].includes(method)
@@ -108,6 +109,9 @@ export function initAuthModule(): void {
       }
     }
   })
+}
+export function setOfficialServicesEnabled(enabled: boolean): void {
+  service?.setEnabled(enabled)
 }
 export function getAuthSnapshot() {
   if (!service) throw new Error('Authentication not initialized')

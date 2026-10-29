@@ -500,6 +500,15 @@ test('legacy records without account ownership remain hidden, Github records rem
   await expect(restarted.removeDownload(legacy.taskId, false)).rejects.toThrow(
     'AUTH_SESSION_CHANGED',
   )
+  f.deps.getSnapshot = vi.fn<() => never>(() => {
+    throw new Error('AUTH_NOT_INITIALIZED')
+  })
+  expect(await restarted.list()).toMatchObject([{ taskId: github.taskId }])
+  await restarted.removeDownload(github.taskId, false)
+  expect(await restarted.list()).toEqual([])
+  const stored = JSON.parse(await readFile(join(f.root, 'tasks.json'), 'utf8')).tasks
+  expect(stored).toHaveLength(1)
+  expect(stored[0]).toMatchObject(legacy)
 })
 test('account download history survives service restart while upload and image remain session-scoped', async () => {
   const f = await setup(

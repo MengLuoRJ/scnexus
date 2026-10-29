@@ -85,11 +85,29 @@ test('downloads navigation stays visible with workshop disabled and no login', a
   const { wrapper } = await render()
   const { useContentCenterStore } = await import('../../stores/content-center')
   const center = useContentCenterStore()
-  center.enabled = false
+  center.workshopEnabled = false
   await wrapper.vm.$nextTick()
   const items = wrapper.findComponent(navigation).props('items') as {
     to: string
   }[]
   expect(items.some((item) => item.to === '/downloads')).toBe(true)
   expect(items.some((item) => item.to === '/workshop')).toBe(false)
+  center.officialServicesEnabled = false
+  center.workshopEnabled = true
+  await wrapper.vm.$nextTick()
+  expect(wrapper.find('a[href="/account"]').exists()).toBe(false)
+  const disabledItems = wrapper.findComponent(navigation).props('items') as { to: string }[]
+  for (const path of [
+    '/campaign',
+    '/customize',
+    '/weekly-mutations',
+    '/editor-toolbox',
+    '/downloads',
+  ])
+    expect(disabledItems.some((item) => item.to === path)).toBe(true)
+  expect(disabledItems.some((item) => item.to === '/workshop')).toBe(false)
+  center.officialServicesEnabled = true
+  await wrapper.vm.$nextTick()
+  expect(center.enabled).toBe(true)
+  expect(wrapper.find('a[href="/account"]').exists()).toBe(true)
 })

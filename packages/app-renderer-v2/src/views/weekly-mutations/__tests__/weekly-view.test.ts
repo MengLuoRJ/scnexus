@@ -1,4 +1,6 @@
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { useContentCenterStore } from '../../../stores/content-center'
 import { defineComponent } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
@@ -33,8 +35,15 @@ const alert = defineComponent({
 })
 const passthrough = defineComponent({ template: '<div><slot /></div>' })
 const wrappers: { unmount(): void }[] = []
+beforeEach(() => {
+  setActivePinia(createPinia())
+  useContentCenterStore().initialized = true
+  vi.useFakeTimers()
+  vi.setSystemTime('2026-10-23T00:00:00Z')
+})
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
+  vi.useRealTimers()
   vi.resetAllMocks()
 })
 function render(locale = 'zh') {
@@ -67,12 +76,23 @@ const factor = {
   description: '<b>纯文本</b>',
   communityScore: -1,
 }
+test('pending calibration renders local schedule and searchable catalog instead of a loading screen', async () => {
+  mocks.weekly.mockReturnValue(new Promise(() => {}))
+  mocks.catalog.mockReturnValue(new Promise(() => {}))
+  const wrapper = render()
+  expect(wrapper.findAll('article').length).toBeGreaterThan(0)
+  expect(wrapper.find('[role="status"]').exists()).toBe(false)
+  await wrapper.findAllComponents(tabs)[0]!.findAll('button')[1]!.trigger('click')
+  expect(wrapper.findAll('article').length).toBeGreaterThan(0)
+  expect(wrapper.find('input').exists()).toBe(true)
+  expect(wrapper.find('[role="status"]').exists()).toBe(false)
+})
 test('renders projected status and plain text, then searches catalog in Chinese and English', async () => {
   mocks.weekly.mockResolvedValue({
     available: true,
     dataStatus: 'projected',
-    startsAt: '2099-01-01T00:00:00Z',
-    endsAt: '2099-01-08T00:00:00Z',
+    startsAt: '2026-10-19T00:00:00Z',
+    endsAt: '2026-10-26T00:00:00Z',
     lastVerifiedAt: null,
     mutation: {
       name: { zhCN: '测试主题' },
@@ -95,7 +115,7 @@ test('renders projected status and plain text, then searches catalog in Chinese 
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(new Date('2099-01-01T00:00:00Z'))
+  }).format(new Date('2026-10-19T00:00:00Z'))
   expect(wrapper.text()).toContain(expectedStart)
   expect(wrapper.text()).not.toContain('北京时间')
   expect(wrapper.text()).not.toContain('不代表本周已逐项人工核验')
@@ -116,7 +136,8 @@ test.each(['NO_SCHEDULE', 'OUTSIDE_VALIDITY'])(
     mocks.catalog.mockResolvedValue({ revision: 1, items: [] })
     const wrapper = render()
     await flushPromises()
-    expect(wrapper.text()).toContain('暂无本周安排')
+    expect(wrapper.text()).not.toContain('暂无本周安排')
+    expect(wrapper.findAll('article').length).toBeGreaterThan(0)
     expect(mocks.toast).not.toHaveBeenCalled()
   },
 )

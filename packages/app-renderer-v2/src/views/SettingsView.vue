@@ -358,13 +358,33 @@ onMounted(async () => {
           <template #header
             ><h2 class="font-semibold">{{ t('contentCenter.title') }}</h2></template
           >
-          <USwitch
-            :model-value="settings?.workshopEnabled ?? true"
-            :disabled="!available || busy"
-            :label="t('contentCenter.workshop')"
-            :description="t('contentCenter.description')"
-            @update:model-value="(value: boolean) => save({ workshopEnabled: value })"
-          />
+          <div class="space-y-4">
+            <USwitch
+              :model-value="settings?.officialServicesEnabled ?? true"
+              :disabled="!available || !settings || busy"
+              :label="t('contentCenter.officialServices')"
+              :description="t('contentCenter.officialServicesHelp')"
+              @update:model-value="(value: boolean) => save({ officialServicesEnabled: value })"
+            />
+            <div class="space-y-4 border-l border-default pl-4">
+              <USwitch
+                :model-value="settings?.weeklyMutationCalibrationEnabled ?? true"
+                :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
+                :label="t('contentCenter.weeklyCalibration')"
+                :description="t('contentCenter.weeklyCalibrationHelp')"
+                @update:model-value="
+                  (value: boolean) => save({ weeklyMutationCalibrationEnabled: value })
+                "
+              />
+              <USwitch
+                :model-value="settings?.workshopEnabled ?? true"
+                :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
+                :label="t('contentCenter.workshop')"
+                :description="t('contentCenter.description')"
+                @update:model-value="(value: boolean) => save({ workshopEnabled: value })"
+              />
+            </div>
+          </div>
         </UCard>
       </template>
       <template #logging>

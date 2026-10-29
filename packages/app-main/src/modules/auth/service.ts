@@ -52,13 +52,14 @@ export function createAuthService(deps: AuthDependencies) {
   let secret: string | null = null
   let mfa: string | null = null
   let disposed = false
+  let enabled = true
   let loggingOut = false
   let startup: Promise<void> | undefined
   let flight: Promise<AuthSnapshot> | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
   const controllers = new Set<AbortController>()
   function active() {
-    if (disposed || loggingOut) throw failure()
+    if (disposed || !enabled || loggingOut) throw failure()
   }
   function current(epoch: number) {
     if (disposed || snapshot.epoch !== epoch) throw failure()
@@ -145,7 +146,7 @@ export function createAuthService(deps: AuthDependencies) {
     try {
       await deps.storage.save(pair.refreshToken, () => current(epoch))
     } catch {
-      void revoke(pair.accessToken)
+      if (enabled) void revoke(pair.accessToken)
       if (!disposed && snapshot.epoch === epoch) invalidate()
       throw failure('storage')
     }
@@ -278,8 +279,13 @@ export function createAuthService(deps: AuthDependencies) {
     }
   }
   return {
+    setEnabled(value: boolean) {
+      if (enabled === value || disposed) return
+      enabled = value
+      if (!enabled) invalidate()
+    },
     getSnapshot() {
-      active()
+      if (disposed) throw failure()
       return { ...snapshot }
     },
     login(value: unknown) {
@@ -369,7 +375,7 @@ export function createAuthService(deps: AuthDependencies) {
     },
     start(): Promise<void> {
       if (startup) return startup
-      if (disposed) return Promise.resolve()
+      if (disposed || !enabled) return Promise.resolve()
       const epoch = snapshot.epoch
       startup = (async () => {
         try {

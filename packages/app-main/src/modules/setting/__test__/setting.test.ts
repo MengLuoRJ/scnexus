@@ -35,6 +35,8 @@ test('settings accept only editable flat fields and valid values', () => {
     { logLevel: 'off' },
     { telemetryEnabled: 'true' },
     { workshopEnabled: 'true' },
+    { officialServicesEnabled: 'true' },
+    { weeklyMutationCalibrationEnabled: 1 },
     { displayLanguage: 'de' },
     [],
   ]) {

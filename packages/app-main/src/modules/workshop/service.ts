@@ -196,10 +196,15 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   }
   function visible(task: StoredTask) {
     if (task.kind === 'download' && task.source?.kind === 'github') return true
-    const snapshot = deps.getSnapshot()
+    if (!enabled || !deps.enabled()) return false
+    let snapshot: AuthSnapshot
+    try {
+      snapshot = deps.getSnapshot()
+    } catch {
+      // Private tasks stay hidden while authentication is unavailable.
+      return false
+    }
     return (
-      enabled &&
-      deps.enabled() &&
       !!snapshot.sessionId &&
       !!snapshot.accessToken &&
       (task.kind === 'download'
@@ -224,7 +229,11 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   }
   function allowed(task?: StoredTask, signal?: AbortSignal) {
     signal?.throwIfAborted()
-    if (task?.kind === 'download' && task.source?.kind === 'github') return deps.getSnapshot()
+    if (task?.kind === 'download' && task.source?.kind === 'github') return
+    workshopAllowed(task, signal)
+  }
+  function workshopAllowed(task?: StoredTask, signal?: AbortSignal) {
+    signal?.throwIfAborted()
     assert(enabled && deps.enabled(), 'WORKSHOP_DISABLED')
     const snapshot = deps.getSnapshot()
     if (task) {
@@ -244,7 +253,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     task?: StoredTask,
     signal?: AbortSignal,
   ): Promise<T> {
-    let snapshot = allowed(task, signal)
+    let snapshot = workshopAllowed(task, signal)
     assert(snapshot.accessToken, 'AUTH_REQUIRED')
     const send = () =>
       request(apiOrigin + path, {
@@ -851,7 +860,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     return publicTask(task)
   }
   function make(kind: WorkshopTask['kind'], name: string, size: number): StoredTask {
-    const snapshot = allowed()
+    const snapshot = workshopAllowed()
     assert(snapshot.sessionId && snapshot.accessToken, 'AUTH_REQUIRED')
     if (kind === 'download') assert(snapshot.userId, 'AUTH_IDENTITY_REQUIRED')
     return {
@@ -887,7 +896,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       return [...tasks.values()].filter(visible).map(publicTask)
     },
     async selectPackage() {
-      assert(allowed().accessToken, 'AUTH_REQUIRED')
+      assert(workshopAllowed().accessToken, 'AUTH_REQUIRED')
       const path = await deps.selectFile('package')
       if (!path) return null
       const checked = await precheckPackage(path)
@@ -1005,7 +1014,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       const task = taskById(id)
       if (task.source?.kind === 'github') return launch(task)
       assert(visible(task), 'AUTH_SESSION_CHANGED')
-      const snapshot = allowed()
+      const snapshot = workshopAllowed()
       if (task.kind !== 'download')
         assert(snapshot.sessionId === task.ownerSession, 'AUTH_SESSION_CHANGED')
       if (task.kind === 'download') assert(workshopOrigin, 'WORKSHOP_STORAGE_NOT_CONFIGURED')

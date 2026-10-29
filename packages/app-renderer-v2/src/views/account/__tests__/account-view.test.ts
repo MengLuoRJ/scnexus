@@ -6,6 +6,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import AccountView from '../AccountView.vue'
 import { useAuthStore } from '../../../stores/auth'
+import { useContentCenterStore } from '../../../stores/content-center'
 import { AccountError } from '../../../apis/internal/client'
 
 vi.mock('vue-router', () => ({
@@ -85,6 +86,7 @@ const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
   vi.resetAllMocks()
   setActivePinia(createPinia())
+  useContentCenterStore().initialized = true
   vi.stubGlobal('scnexus', {})
   Object.defineProperty(globalThis.navigator, 'clipboard', {
     value: { writeText: mocks.writeText },
@@ -152,6 +154,16 @@ function mfa(store: ReturnType<typeof useAuthStore>) {
     mfaExpiresAt: Date.now() + 60000,
   }
 }
+test('official services disabled keeps account forms and policy requests inactive', async () => {
+  useContentCenterStore().officialServicesEnabled = false
+  const wrapper = await render()
+  expect(wrapper.find('form').exists()).toBe(false)
+  expect(mocks.policy).not.toHaveBeenCalled()
+  useContentCenterStore().officialServicesEnabled = true
+  await flushPromises()
+  expect(wrapper.find('form').exists()).toBe(true)
+  expect(mocks.policy).toHaveBeenCalledOnce()
+})
 test.each(['network', 'forbidden', 'invalidResponse'] as const)(
   'policy failure %s reports unavailable registration without an internal reload button',
   async (kind) => {

@@ -30,10 +30,12 @@ export function startAnalytics(snapshot: AuthSnapshot | null): void {
       transport: createAnalyticsTransport(),
       getClientId: () => settingRepository.getSnapshot().clientId,
     })
-    service.setEnabled(settingRepository.getSnapshot().analyticsEnabled)
+    const settings = settingRepository.getSnapshot()
+    const enabled = settings.analyticsEnabled
+    service.setEnabled(enabled)
     observeNetwork()
-    void service.startup(snapshot)
-    if (settingRepository.getSnapshot().analyticsEnabled) startNetworkObserver()
+    void service.startup(settings.officialServicesEnabled === false ? null : snapshot)
+    if (enabled) startNetworkObserver()
   } catch {
     /* Optional analytics must not fail application initialization. */
   }
@@ -53,10 +55,12 @@ export function setAnalyticsEnabled(enabled: boolean): void {
   service?.setEnabled(enabled)
 }
 export function analyticsAuthenticationChanged(snapshot: AuthSnapshot): void {
-  service?.authenticationChanged(snapshot)
+  if (settingRepository.getSnapshot().officialServicesEnabled === false) void service?.logout()
+  else service?.authenticationChanged(snapshot)
 }
 export function analyticsLogin(snapshot: AuthSnapshot): void {
-  void service?.login(snapshot)
+  if (settingRepository.getSnapshot().officialServicesEnabled === false) void service?.logout()
+  else void service?.login(snapshot)
 }
 export function analyticsLogout(): void {
   void service?.logout()

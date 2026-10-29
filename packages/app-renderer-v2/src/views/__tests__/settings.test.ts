@@ -51,6 +51,9 @@ const snapshot = {
   logLevel: 'info',
   telemetryEnabled: false,
   analyticsEnabled: true,
+  officialServicesEnabled: true,
+  weeklyMutationCalibrationEnabled: true,
+  workshopEnabled: true,
 } as SettingSnapshot
 const game = {
   gameRoot: 'D:\\Game',
@@ -61,7 +64,8 @@ const game = {
   capabilities: { client: true, editor: true, switcher: true },
 } as GameSnapshot
 const tabs = defineComponent({
-  template: '<div><slot name="basic"/><slot name="game"/><slot name="logging"/></div>',
+  template:
+    '<div><slot name="basic"/><slot name="game"/><slot name="content"/><slot name="logging"/></div>',
 })
 const card = defineComponent({ template: '<div><slot name="header"/><slot/></div>' })
 const field = defineComponent({ props: ['label'], template: '<label>{{ label }}<slot/></label>' })
@@ -290,11 +294,37 @@ test('online analytics appears in privacy settings with persisted default and up
   const wrapper = await render()
   expect(wrapper.text()).toContain('在线分析')
   const switches = wrapper.findAllComponents({ name: 'Switch' })
-  const control = switches.find(
-    (item) => item.attributes('modelvalue') === 'true' || item.props('modelValue') === true,
+  const control = switches.find((item) =>
+    item.element.closest('label')?.textContent?.includes('在线分析'),
   )
   expect(control).toBeDefined()
   control!.vm.$emit('update:modelValue', false)
   await flushPromises()
   expect(mocks.update).toHaveBeenCalledWith({ analyticsEnabled: false })
+})
+
+test('official service master disables subcontrols while preserving saved preferences', async () => {
+  const wrapper = await render()
+  const switchByLabel = (label: string) =>
+    wrapper
+      .findAllComponents({ name: 'Switch' })
+      .find((item) => item.attributes('label') === label)!
+  const master = switchByLabel('星际枢纽官方服务')
+  const weekly = switchByLabel('每周突变在线校准')
+  const workshop = switchByLabel('创意工坊')
+  expect(master).toBeDefined()
+  expect(weekly.attributes('modelvalue')).toBe('true')
+  master.vm.$emit('update:modelValue', false)
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ officialServicesEnabled: false })
+  expect(weekly.attributes('disabled')).toBe('true')
+  expect(workshop.attributes('disabled')).toBe('true')
+  expect(weekly.attributes('modelvalue')).toBe('true')
+  expect(workshop.attributes('modelvalue')).toBe('true')
+  master.vm.$emit('update:modelValue', true)
+  await flushPromises()
+  expect(weekly.attributes('disabled')).toBe('false')
+  weekly.vm.$emit('update:modelValue', false)
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ weeklyMutationCalibrationEnabled: false })
 })

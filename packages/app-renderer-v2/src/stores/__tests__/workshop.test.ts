@@ -42,7 +42,7 @@ test('anonymous GitHub tasks remain loadable when workshop is disabled and the a
   const stop = store.connect()
   await vi.waitFor(() => expect(store.downloads).toHaveLength(1))
   const center = useContentCenterStore()
-  center.enabled = false
+  center.workshopEnabled = false
   const auth = useAuthStore()
   auth.snapshot = { ...auth.snapshot, epoch: auth.snapshot.epoch + 1 }
   await nextTick()
@@ -81,7 +81,7 @@ test('workshop download rejects anonymous, disabled and invalid scnid before loo
   await expect(store.previewDownload()).rejects.toThrow('WORKSHOP_SCNID_INVALID')
   store.openDownload(42)
   await expect(store.previewDownload()).rejects.toThrow('WORKSHOP_LOGIN_REQUIRED')
-  useContentCenterStore().enabled = false
+  useContentCenterStore().workshopEnabled = false
   store.openDownload(42)
   await expect(store.previewDownload()).rejects.toThrow('WORKSHOP_DISABLED')
   expect(mocks.detail).not.toHaveBeenCalled()
@@ -154,9 +154,9 @@ test('account or workshop toggle changes invalidate a previously approved previe
   mocks.detail.mockResolvedValue({ scnid: 42, approvedVersionId: 'v1' })
   await store.previewDownload()
   const stale = store.preview
-  useContentCenterStore().enabled = false
+  useContentCenterStore().workshopEnabled = false
   await nextTick()
-  useContentCenterStore().enabled = true
+  useContentCenterStore().workshopEnabled = true
   await nextTick()
   store.preview = stale
   await expect(store.confirmDownload()).rejects.toThrow('WORKSHOP_SESSION_CHANGED')

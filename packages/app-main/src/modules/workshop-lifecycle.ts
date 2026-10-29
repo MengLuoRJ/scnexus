@@ -1,5 +1,6 @@
 let apply: ((enabled: boolean) => void) | undefined
 let enabled = true
+// This is the effective official-services + workshop networking gate, not download lifecycle.
 export function setWorkshopEnabled(value: boolean) {
   enabled = value
   apply?.(value)

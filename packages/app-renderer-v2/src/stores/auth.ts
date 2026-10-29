@@ -90,6 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
   let updatedNickname: string | null = null
   let invalidatedEpoch = -1
   let stop: (() => void) | undefined
+  let initializationGeneration = 0
   function clearProfile() {
     profileGeneration++
     nicknameRevision = 0
@@ -199,30 +200,44 @@ export const useAuthStore = defineStore('auth', () => {
   }
   async function initialize() {
     if (!window.scnexus || stop) return
+    const generation = ++initializationGeneration
     try {
       stop = ipcAuthOnChanged((value) => {
+        if (generation !== initializationGeneration) return
         try {
           accept(value)
         } catch {
           profileError.value = new AccountError('invalidResponse')
         }
       })
-      accept(unwrap(await ipcAuthGetSnapshot()))
+      const result = await ipcAuthGetSnapshot()
+      if (generation !== initializationGeneration) return
+      accept(unwrap(result))
     } catch {
+      if (generation !== initializationGeneration) return
       stop?.()
       stop = undefined
       profileError.value = new AccountError('desktop')
     }
   }
   function dispose() {
+    initializationGeneration++
     stop?.()
     stop = undefined
+  }
+  function disable() {
+    dispose()
+    snapshot.value = signedOut()
+    clearProfile()
   }
   async function operation(run: () => Promise<IpcResult<AuthSnapshot>>) {
     if (busy.value) return
     busy.value = true
+    const generation = initializationGeneration
     try {
-      accept(unwrap(await run()))
+      const result = await run()
+      if (generation !== initializationGeneration) return
+      accept(unwrap(result))
     } finally {
       busy.value = false
     }
@@ -237,7 +252,9 @@ export const useAuthStore = defineStore('auth', () => {
     await synchronize()
   }
   async function synchronize() {
-    accept(unwrap(await ipcAuthGetSnapshot()))
+    const generation = initializationGeneration
+    const result = await ipcAuthGetSnapshot()
+    if (generation === initializationGeneration) accept(unwrap(result))
   }
   async function logout() {
     if (busy.value) return
@@ -263,6 +280,7 @@ export const useAuthStore = defineStore('auth', () => {
     updateNickname,
     initialize,
     dispose,
+    disable,
     login,
     register,
     completeMfa,

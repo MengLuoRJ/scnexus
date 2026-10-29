@@ -11,8 +11,11 @@ export type SettingPreferences = Pick<
   | 'logLevel'
   | 'telemetryEnabled'
   | 'analyticsEnabled'
+  | 'officialServicesEnabled'
+  | 'weeklyMutationCalibrationEnabled'
   | 'workshopEnabled'
 >
+export type SettingPatchKeys = keyof SettingPreferences
 export type WindowStatus = {
   state: 'absent' | 'loading' | 'ready' | 'failed'
   minimized: boolean

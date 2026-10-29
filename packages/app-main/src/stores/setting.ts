@@ -9,10 +9,12 @@ export function createSettingRepository(downloadDirectory: () => string) {
     const data = record(value)
     if (typeof data.clientId !== 'string' || !data.clientId.trim()) invalidData('Missing client ID')
     directory(data.downloadDirectory)
+    bool(data.officialServicesEnabled)
+    bool(data.weeklyMutationCalibrationEnabled)
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 4,
+      _schemaVersion: 5,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
@@ -22,11 +24,13 @@ export function createSettingRepository(downloadDirectory: () => string) {
       logLevel: 'error',
       telemetryEnabled: false,
       analyticsEnabled: true,
+      officialServicesEnabled: true,
+      weeklyMutationCalibrationEnabled: true,
       workshopEnabled: true,
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 4 },
+      _schemaVersion: { const: 5 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -44,11 +48,19 @@ export function createSettingRepository(downloadDirectory: () => string) {
       },
       telemetryEnabled: { type: 'boolean' },
       analyticsEnabled: { type: 'boolean' },
+      officialServicesEnabled: { type: 'boolean' },
+      weeklyMutationCalibrationEnabled: { type: 'boolean' },
       workshopEnabled: { type: 'boolean' },
     },
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if ([1, 2, 3, 4].includes(data._schemaVersion as number)) {
+        data.officialServicesEnabled = defaults.officialServicesEnabled
+        data.weeklyMutationCalibrationEnabled = defaults.weeklyMutationCalibrationEnabled
+      }
+      if (data._schemaVersion === 4)
+        return { ...data, _schemaVersion: defaults._schemaVersion } as SettingData
       if (data._schemaVersion === 3)
         return {
           ...data,

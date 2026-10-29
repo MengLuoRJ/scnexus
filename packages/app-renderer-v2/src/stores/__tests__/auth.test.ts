@@ -76,6 +76,30 @@ beforeEach(() => {
   mocks.authorization.mockResolvedValue({ roles: ['USER'], permissions: ['read'] })
   mocks.logout.mockResolvedValue(ok({ remoteRevoked: true }))
 })
+test('disabling discards in-flight login and initialization without fetching profiles', async () => {
+  const initial = deferred<unknown>()
+  const login = deferred<unknown>()
+  mocks.get.mockReturnValueOnce(initial.promise)
+  mocks.login.mockReturnValueOnce(login.promise)
+  const store = useAuthStore()
+  const initializing = store.initialize()
+  const signingIn = store.login({
+    subject: 'user@example.test',
+    password: 'secret',
+    deviceName: 'PC',
+  })
+  store.disable()
+  mocks.listener?.(state('signed-in', 1, 2))
+  initial.resolve(ok(state('signed-in', 1, 1)))
+  login.resolve(ok(state('signed-in', 1, 3)))
+  await Promise.all([initializing, signingIn])
+  expect(store.signedIn).toBe(false)
+  expect(store.user).toBeNull()
+  expect(mocks.me).not.toHaveBeenCalled()
+  expect(mocks.stop).toHaveBeenCalledOnce()
+  await store.initialize()
+  expect(mocks.subscribe).toHaveBeenCalledTimes(2)
+})
 test('subscribes before initialization and ignores older epochs and same-epoch versions', async () => {
   const initial = deferred<unknown>()
   mocks.get.mockReturnValueOnce(initial.promise)

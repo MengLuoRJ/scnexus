@@ -1,5 +1,9 @@
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
-import { LOG_LEVELS, type DisplayLanguage } from '@scnexus/app-shared/types/desktop.type'
+import {
+  LOG_LEVELS,
+  type DisplayLanguage,
+  type SettingPatchKeys,
+} from '@scnexus/app-shared/types/desktop.type'
 
 export const PREFERENCE_KEYS = [
   'downloadDirectory',
@@ -7,8 +11,10 @@ export const PREFERENCE_KEYS = [
   'logLevel',
   'telemetryEnabled',
   'analyticsEnabled',
+  'officialServicesEnabled',
+  'weeklyMutationCalibrationEnabled',
   'workshopEnabled',
-] as const
+] as const satisfies readonly SettingPatchKeys[]
 export function validatePreferencePatch(raw: unknown, complete = false): Record<string, unknown> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     throw new AppError(ERRORS.SETTING_INVALID_VALUE)
@@ -26,7 +32,11 @@ export function validatePreferencePatch(raw: unknown, complete = false): Record<
     if (key === 'displayLanguage' && !['system', 'zh', 'en', 'zh-Hant'].includes(value as string))
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (
-      (key === 'telemetryEnabled' || key === 'analyticsEnabled' || key === 'workshopEnabled') &&
+      (key === 'telemetryEnabled' ||
+        key === 'analyticsEnabled' ||
+        key === 'officialServicesEnabled' ||
+        key === 'weeklyMutationCalibrationEnabled' ||
+        key === 'workshopEnabled') &&
       typeof value !== 'boolean'
     )
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)

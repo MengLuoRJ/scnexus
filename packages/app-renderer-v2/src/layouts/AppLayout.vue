@@ -68,7 +68,8 @@ onUnmounted(() => stopTransfers?.())
 watch(
   () => creator.active,
   (active) => {
-    if (!active && !creator.loading && route.meta.creator) void router.replace('/account')
+    if (!active && !creator.loading && route.meta.creator)
+      void router.replace(contentCenter.officialServicesEnabled ? '/account' : '/')
   },
 )
 watch(
@@ -84,9 +85,16 @@ function syncLanguage(value: SettingSnapshot) {
   document.documentElement.lang = value.effectiveLanguage
 }
 if (window.scnexus) ipcSettingOnChanged(syncLanguage)
+watch(
+  () => contentCenter.initialized && contentCenter.officialServicesEnabled,
+  (enabled) => {
+    if (enabled) void auth.initialize()
+    else auth.disable()
+  },
+  { immediate: true },
+)
 onMounted(async () => {
   void contentCenter.initialize().catch(() => {})
-  void auth.initialize()
   if (window.scnexus) {
     const result = await ipcSettingGetSnapshot()
     if (result.ok) syncLanguage(result.data)

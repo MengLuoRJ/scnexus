@@ -9,6 +9,7 @@ import { onWorkshopEnabled, onWorkshopAuthenticationChanged } from './workshop-l
 import { assertIpcSource } from '../utils/ipc-source'
 import type { IpcMainInvokeEvent } from 'electron'
 let service: Awaited<ReturnType<typeof initWorkshopModule>> | undefined
+// Keep download IPC and public GitHub transfers alive independently of optional workshop access.
 export async function startWorkshop() {
   if (service) return
   service = await initWorkshopModule({
@@ -20,7 +21,10 @@ export async function startWorkshop() {
     getSnapshot: getAuthSnapshot,
     getDownloadDirectory: () => settingRepository.getSnapshot().downloadDirectory,
     refresh: refreshAuthSession,
-    enabled: () => settingRepository.getSnapshot().workshopEnabled,
+    enabled: () => {
+      const settings = settingRepository.getSnapshot()
+      return settings.officialServicesEnabled && settings.workshopEnabled
+    },
     onEnabledChanged(listener) {
       onWorkshopEnabled(listener)
       return () => onWorkshopEnabled(undefined)

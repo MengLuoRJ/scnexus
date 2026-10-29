@@ -1,8 +1,12 @@
 {
   "contentCenter.title": "内容中心",
   "contentCenter.workshop": "创意工坊",
-  "contentCenter.description": "启用创意工坊、创作者和传输功能。关闭后暂停全部工坊任务，保留任务和文件；重新开启后手动恢复。",
+  "contentCenter.description": "启用创意工坊、创作者及工坊传输。关闭后暂停工坊任务并保留任务和文件；重新开启后手动恢复，不影响 GitHub 下载。",
   "contentCenter.downloads": "下载管理",
   "contentCenter.uploads": "上传管理",
-  "contentCenter.creator": "创作者中心"
+  "contentCenter.creator": "创作者中心",
+  "contentCenter.officialServices": "星际枢纽官方服务",
+  "contentCenter.officialServicesHelp": "启用账号、每周突变在线校准和创意工坊。关闭后清除本地登录，重新开启后需再次登录；保留子功能偏好，本地功能和 GitHub 下载仍可使用。在线统计由独立开关控制，保持开启时回退到匿名统计。",
+  "contentCenter.weeklyCalibration": "每周突变在线校准",
+  "contentCenter.weeklyCalibrationHelp": "使用官方服务校准本地每周突变结果。关闭后仍使用本地数据与规则显示突变。"
 }

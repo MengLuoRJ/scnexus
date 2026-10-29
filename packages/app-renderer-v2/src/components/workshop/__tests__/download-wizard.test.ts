@@ -170,7 +170,7 @@ test('workshop preview shows basic detail but not rich text, and cancel does not
 test('disabled workshop never automatically enables or fetches project information', async () => {
   const { wrapper } = render(42)
   const center = useContentCenterStore()
-  center.enabled = false
+  center.workshopEnabled = false
   await wrapper.get('form').trigger('submit')
   await flushPromises()
   expect(center.enabled).toBe(false)

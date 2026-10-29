@@ -11,14 +11,27 @@ const mocks = vi.hoisted(() => ({
   deepLink: vi.fn<(listener: (intent: DeepLinkWorkshop) => void) => () => void>(() => () => {}),
   toast: vi.fn<(value: unknown) => void>(),
   connect: vi.fn<() => () => void>(),
+  disable: vi.fn<() => void>(),
+  initialize: vi.fn<() => Promise<void>>(async () => {}),
   stop: vi.fn<() => void>(),
 }))
 const transfers = reactive({ tasks: [] as WorkshopTask[], connect: mocks.connect })
 vi.mock('../../stores/workshop', () => ({ useWorkshopStore: () => transfers }))
 vi.mock('../../stores/auth', () => ({
-  useAuthStore: () => ({ signedIn: false, initialize: async () => {}, dispose: () => {} }),
+  useAuthStore: () => ({
+    signedIn: false,
+    initialize: mocks.initialize,
+    disable: mocks.disable,
+    dispose: () => {},
+  }),
 }))
-const center = reactive({ enabled: false, initialize: async () => {}, accept: () => {} })
+const center = reactive({
+  initialized: true,
+  officialServicesEnabled: true,
+  enabled: false,
+  initialize: async () => {},
+  accept: () => {},
+})
 vi.mock('../../stores/content-center', () => ({
   useContentCenterStore: () => center,
 }))
@@ -62,6 +75,13 @@ test('anonymous GitHub transfers stay subscribed with workshop disabled and comp
   try {
     await flushPromises()
     expect(mocks.connect).toHaveBeenCalledOnce()
+    center.officialServicesEnabled = false
+    await nextTick()
+    expect(mocks.disable).toHaveBeenCalledOnce()
+    expect(mocks.stop).not.toHaveBeenCalled()
+    center.officialServicesEnabled = true
+    await nextTick()
+    expect(mocks.initialize).toHaveBeenCalledTimes(2)
     const task: WorkshopTask = {
       taskId: 'github',
       kind: 'download',

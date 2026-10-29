@@ -100,5 +100,6 @@
   "account.error.credentialStorage": "系統安全存儲不可用或憑據保存失敗。未建立本地登錄，請檢查系統憑據服務後重試。",
   "account.error.registrationRejected": "服務端未接受提交信息，請檢查驗證碼是否屬於本次申請、是否過期，以及郵箱、密碼和邀請碼；不要連續重複註冊。",
   "account.error.notFound": "內容不存在或当前不可见。",
-  "account.error.conflict": "状態已變更或存在修訂衝突，請重新讀取後确認。"
+  "account.error.conflict": "状態已變更或存在修訂衝突，請重新讀取後确認。",
+  "account.servicesDisabled": "星際樞紐官方服務已關閉，可在設置中重新開啟。本地功能仍可使用。"
 }

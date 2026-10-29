@@ -145,6 +145,9 @@ test('anonymous disabled downloads verify wrapped ZIP and cache, survive account
   zip = await readFile(archive)
   const downloadDirectory = join(f.root, 'configured-downloads')
   f.deps.getDownloadDirectory = () => downloadDirectory
+  f.deps.getSnapshot = vi.fn<() => never>(() => {
+    throw new Error('AUTH_NOT_INITIALIZED')
+  })
   const task = await f.service.download(source)
   f.changeAccount()
   await f.service.authenticationChanged()
@@ -170,6 +173,15 @@ test('anonymous disabled downloads verify wrapped ZIP and cache, survive account
   await restarted.installSource(task.taskId)
   await writeFile(cached.path, 'tampered')
   await expect(restarted.installSource(task.taskId)).rejects.toThrow('CACHE_NOT_VERIFIED')
+  expect(await restarted.inspectDownload(task.taskId)).toEqual({ fileExists: true })
+  const openDirectory = vi.fn<(path: string) => Promise<string>>(async () => '')
+  f.deps.openDirectory = openDirectory
+  await restarted.openDownloadLocation(task.taskId)
+  expect(openDirectory).toHaveBeenCalledWith(downloadDirectory)
+  await restarted.removeDownload(task.taskId, true)
+  expect(await restarted.list()).toEqual([])
+  expect(f.deps.getSnapshot).not.toHaveBeenCalled()
+  expect(f.deps.refresh).not.toHaveBeenCalled()
 })
 test('pause, account changes, restart and cancellation preserve isolation and remove partial cache', async () => {
   let requested!: () => void
@@ -185,6 +197,9 @@ test('pause, account changes, restart and cancellation preserve isolation and re
     )
   })
   const f = await setup(fetch)
+  f.deps.getSnapshot = vi.fn<() => never>(() => {
+    throw new Error('AUTH_NOT_INITIALIZED')
+  })
   const task = await f.service.download(source)
   await started
   await f.service.authenticationChanged()
@@ -196,8 +211,13 @@ test('pause, account changes, restart and cancellation preserve isolation and re
   const restarted = await createWorkshopService(f.deps)
   services.push(restarted)
   expect((await restarted.list())[0].status).toBe('paused')
+  await restarted.resume(task.taskId)
+  await restarted.pause(task.taskId)
+  expect((await restarted.list())[0].status).toBe('paused')
   await restarted.cancel(task.taskId)
   expect((await restarted.list())[0].status).toBe('cancelled')
+  expect(f.deps.getSnapshot).not.toHaveBeenCalled()
+  expect(f.deps.refresh).not.toHaveBeenCalled()
   expect(await readdir(join(f.root, 'cache'))).toEqual([])
   await expect(restarted.resume(task.taskId)).rejects.toThrow('TASK_CONFLICT')
 })

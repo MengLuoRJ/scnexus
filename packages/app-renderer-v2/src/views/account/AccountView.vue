@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { useAuthStore } from '../../stores/auth'
+import { useContentCenterStore } from '../../stores/content-center'
 import { ipcAppGetDeviceName } from '../../ipcs/app'
 import CreatorStatus from './CreatorStatus.vue'
 import logo from '../../assets/logo.png'
@@ -22,6 +23,7 @@ defineOptions({ name: 'AccountView' })
 const { t } = useI18n()
 const toast = useToast()
 const auth = useAuthStore()
+const contentCenter = useContentCenterStore()
 const route = useRoute()
 const router = useRouter()
 watch(
@@ -130,7 +132,14 @@ const expiresSeconds = computed(() =>
 const mfaSeconds = computed(() =>
   Math.max(0, Math.ceil(((auth.snapshot.mfaExpiresAt ?? 0) - now.value) / 1000)),
 )
-const locked = computed(() => !available || auth.busy || submitting.value || challengeBusy.value)
+const locked = computed(
+  () =>
+    !contentCenter.officialServicesEnabled ||
+    !available ||
+    auth.busy ||
+    submitting.value ||
+    challengeBusy.value,
+)
 const modes = computed(() =>
   ['login', 'register', 'reset'].map((value) => ({ value, label: t(`account.${value}`) })),
 )
@@ -173,12 +182,18 @@ watch(
     challenge.value = null
   },
 )
+let policyGeneration = 0
 async function loadPolicy() {
+  const generation = ++policyGeneration
   policyReady.value = false
+  if (!contentCenter.initialized || !contentCenter.officialServicesEnabled) return
   try {
-    invitationRequired.value = (await apiRegistrationPolicy()).invitationRequired
+    const policy = await apiRegistrationPolicy()
+    if (generation !== policyGeneration) return
+    invitationRequired.value = policy.invitationRequired
     policyReady.value = true
   } catch (error) {
+    if (generation !== policyGeneration) return
     toast.add({
       color: 'error',
       title: t('account.policyUnavailable'),
@@ -186,7 +201,24 @@ async function loadPolicy() {
     })
   }
 }
-onMounted(loadPolicy)
+watch(
+  () => contentCenter.initialized && contentCenter.officialServicesEnabled,
+  () => {
+    showingUserId.value = false
+    fields.password = ''
+    fields.proof = ''
+    factor.value = ''
+    challenge.value = null
+    void loadPolicy()
+  },
+  { immediate: true },
+)
+onMounted(() => {
+  void contentCenter.initialize().catch(notify)
+})
+onUnmounted(() => {
+  policyGeneration++
+})
 onMounted(async () => {
   if (!available) return
   const result = await ipcAppGetDeviceName()
@@ -304,7 +336,14 @@ async function logout() {
 }
 </script>
 <template>
-  <section v-if="auth.signedIn" class="w-full space-y-3 p-3" :aria-label="t('account.dashboard')">
+  <section v-if="!contentCenter.officialServicesEnabled" class="p-3">
+    <UAlert color="neutral" :title="t('account.servicesDisabled')" />
+  </section>
+  <section
+    v-else-if="auth.signedIn"
+    class="w-full space-y-3 p-3"
+    :aria-label="t('account.dashboard')"
+  >
     <div class="relative overflow-hidden rounded-xl border border-default bg-elevated/50 p-4">
       <div
         aria-hidden="true"

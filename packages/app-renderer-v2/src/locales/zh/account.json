@@ -100,5 +100,6 @@
   "account.error.credentialStorage": "系统安全存储不可用或凭据保存失败。未建立本地登录，请检查系统凭据服务后重试。",
   "account.error.registrationRejected": "服务端未接受提交信息，请检查验证码是否属于本次申请、是否过期，以及邮箱、密码和邀请码；不要连续重复注册。",
   "account.error.notFound": "内容不存在或当前不可见。",
-  "account.error.conflict": "状态已变更或存在修订冲突，请重新读取后确认。"
+  "account.error.conflict": "状态已变更或存在修订冲突，请重新读取后确认。",
+  "account.servicesDisabled": "星际枢纽官方服务已关闭，可在设置中重新开启。本地功能仍可使用。"
 }

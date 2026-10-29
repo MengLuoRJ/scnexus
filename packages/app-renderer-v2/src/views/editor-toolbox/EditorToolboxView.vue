@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
-import toolIcon from '../../assets/menu/Menu_Customize_Test.png'
+import toolIcon from '../../assets/menu/Menu_Toolbox.png'
 defineOptions({ name: 'EditorToolboxView' })
 const { t } = useI18n()
 </script>

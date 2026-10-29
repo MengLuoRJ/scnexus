@@ -30,6 +30,10 @@ SCNexus 唯一桌面界面，后续页面与功能均在此包维护。旧 `app-
 
 下载桥接封装集中在 `src/ipcs/workshop.ts`，向导状态位于 `src/stores/workshop.ts`，全局对话框为 `src/components/workshop/DownloadWizard.vue`。
 
+## 创作工具
+
+侧栏和工具首页统一称为“创作工具”。各工具子页面共用标题栏右侧的“返回创作工具”入口，返回 `/editor-toolbox`；内容区域不再重复放置返回按钮，工具首页不显示该入口。
+
 ## 语言资源
 
 语言资源按语言与模块存放在 `src/locales/{zh,en,zh-Hant}/{module}.json`，模块名取扁平键的首段，例如 `downloads.openLocation` 位于 `downloads.json`。每种语言的 `index.ts` 显式导入并合并全部模块；新增模块时须同步更新三个语言入口，保持三语键集合一致，不使用旧单体 JSON 或兼容壳。

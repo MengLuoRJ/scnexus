@@ -28,9 +28,6 @@ async function copy() {
 </script>
 <template>
   <section class="space-y-3">
-    <UButton to="/editor-toolbox" size="sm" color="neutral" variant="outline">{{
-      t('toolbox.back')
-    }}</UButton>
     <p class="text-xs text-muted">{{ t('toolbox.localHint') }}</p>
     <UFormField :label="t('toolbox.source')">
       <UTextarea

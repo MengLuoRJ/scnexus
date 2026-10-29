@@ -1,9 +1,9 @@
 {
-  "toolbox.title": "作者工具箱",
+  "toolbox.title": "創作工具",
   "toolbox.intro": "選擇工具，輔助製作與調試你的作品。",
   "toolbox.encoding": "編碼轉換",
   "toolbox.encodingHint": "將文本轉換為 UTF-8 十六進制轉義及 Galaxy 代碼。",
-  "toolbox.back": "返回工具箱",
+  "toolbox.back": "返回創作工具",
   "toolbox.localHint": "全部轉換在本地完成，不上傳或保存輸入內容。",
   "toolbox.source": "原始文本",
   "toolbox.placeholder": "輸入需要轉換的文本，例如：測試",

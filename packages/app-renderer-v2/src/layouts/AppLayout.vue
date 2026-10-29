@@ -124,7 +124,17 @@ onMounted(async () => {
         <div
           id="page-actions"
           class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1"
-        />
+        >
+          <UButton
+            v-if="route.path.startsWith('/editor-toolbox/')"
+            to="/editor-toolbox"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            icon="i-tabler-arrow-left"
+            >{{ t('toolbox.back') }}</UButton
+          >
+        </div>
       </header>
       <main class="min-h-0 flex-1 overflow-y-auto" :class="route.name === 'account' ? '' : 'p-3'">
         <div

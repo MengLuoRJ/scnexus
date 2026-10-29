@@ -134,3 +134,38 @@ test('layout routes typed workshop links and warns instead of enabling a disable
     center.enabled = false
   }
 })
+
+test('creation tool subpages share a back link in the title bar, hidden on the tools index', async () => {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/editor-toolbox', component: { template: '<div data-tools />' } },
+      { path: '/editor-toolbox/encoding', component: { template: '<div data-tool />' } },
+    ],
+  })
+  await router.push('/editor-toolbox/encoding')
+  const wrapper = mount(AppLayout, {
+    global: {
+      plugins: [
+        router,
+        createI18n({ legacy: false, flatJson: true, locale: 'zh', messages: { zh } }),
+      ],
+      stubs: {
+        AppSidebar: true,
+        DownloadWizard: true,
+        Button: { props: ['to'], template: '<a :href="to"><slot /></a>' },
+      },
+    },
+  })
+  try {
+    const link = wrapper.get('header #page-actions a')
+    expect(link.text()).toBe('返回创作工具')
+    expect(link.attributes('href')).toBe('/editor-toolbox')
+    expect(wrapper.find('main a').exists()).toBe(false)
+    await router.push('/editor-toolbox')
+    await flushPromises()
+    expect(wrapper.find('header #page-actions a').exists()).toBe(false)
+  } finally {
+    wrapper.unmount()
+  }
+})

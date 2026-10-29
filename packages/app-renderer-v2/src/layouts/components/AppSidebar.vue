@@ -9,7 +9,9 @@ import workshopIcon from '../../assets/menu/Menu_Creator.png'
 import logo from '../../assets/logo.png'
 import campaignIcon from '../../assets/menu/Menu_GamePlay.png'
 import customizeIcon from '../../assets/menu/Menu_Customize.png'
-import coopIcon from '../../assets/menu/Menu_Coop.png'
+import mutationIcon from '../../assets/menu/Menu_Mutation.png'
+import downloadIcon from '../../assets/menu/Menu_Download.png'
+import toolboxIcon from '../../assets/menu/Menu_Toolbox.png'
 import settingsIcon from '../../assets/menu/Menu_Setting.png'
 
 defineOptions({ name: 'AppSidebar' })
@@ -27,12 +29,12 @@ const items = computed(() => [
   { label: t('ui.home'), image: logo, to: '/', exact: true },
   { label: t('campaign.title'), image: campaignIcon, to: '/campaign' },
   { label: t('customize.title'), image: customizeIcon, to: '/customize' },
-  { label: t('weekly.title'), image: coopIcon, to: '/weekly-mutations' },
-  { label: t('toolbox.title'), image: customizeIcon, to: '/editor-toolbox' },
+  { label: t('weekly.title'), image: mutationIcon, to: '/weekly-mutations' },
+  { label: t('toolbox.title'), image: toolboxIcon, to: '/editor-toolbox' },
   ...(contentCenter.enabled
     ? [{ label: t('contentCenter.workshop'), image: workshopIcon, to: '/workshop' }]
     : []),
-  { label: t('contentCenter.downloads'), image: campaignIcon, to: '/downloads' },
+  { label: t('contentCenter.downloads'), image: downloadIcon, to: '/downloads' },
   ...(creator.active
     ? [
         { label: t('contentCenter.creator'), image: workshopIcon, to: '/creator' },

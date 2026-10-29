@@ -171,12 +171,6 @@ importers:
       comark:
         specifier: ^0.8.1
         version: 0.8.1
-      electron-log:
-        specifier: 5.4.4
-        version: 5.4.4
-      electron-store:
-        specifier: ^11.0.2
-        version: 11.0.2
       pinia:
         specifier: ^4.0.3
         version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.43(typescript@6.0.3))

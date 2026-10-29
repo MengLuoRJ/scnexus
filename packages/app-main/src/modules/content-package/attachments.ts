@@ -58,36 +58,75 @@ function descriptorSibling(preview: InstallPreview): string {
       ? preview.rootRelativePath + '/'
       : ''
 }
-export function attachmentCandidates(source: ContentSource, preview?: InstallPreview): string[] {
+function primaryCandidates(pkg: Package, sibling: string): string[] {
+  const imageKey = pkg.type === 'campaign' ? 'banner' : 'cover'
+  const image =
+    pkg.type === 'campaign' ? pkg.banner : pkg.type === 'customize' ? pkg.cover : undefined
+  return [
+    ...(pkg.type === 'dependency'
+      ? []
+      : image !== undefined
+        ? [image]
+        : [`${imageKey}.jpg`, `${imageKey}.png`, `${imageKey}.webp`].map((path) => sibling + path)),
+    ...(pkg.readme !== undefined
+      ? [pkg.readme]
+      : ['README.txt', 'README.md', 'readme.txt', 'readme.md'].map((path) => sibling + path)),
+    ...(pkg.changelog !== undefined
+      ? [pkg.changelog]
+      : ['CHANGELOG.txt', 'CHANGELOG.md', 'changelog.txt', 'changelog.md'].map(
+          (path) => sibling + path,
+        )),
+    ...(pkg.docs ?? []),
+  ]
+}
+
+export function matchesAsset(path: string, pattern: unknown): boolean {
+  if (
+    typeof pattern !== 'string' ||
+    /[?{}![\]]/.test(pattern) ||
+    !attachmentPath(pattern.replaceAll('*', 'x')) ||
+    pattern.split('/').some((part) => part !== '**' && part.includes('**')) ||
+    !attachmentPath(path)
+  )
+    return false
+  const expression = pattern
+    .split('/')
+    .map((part, index, parts) => {
+      if (part === '**') return index === parts.length - 1 ? '(?:[^/]+(?:/[^/]+)*)?' : '(?:[^/]+/)*'
+      return (
+        part
+          .split('*')
+          .map((literal) => literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+          .join('[^/]*') + (index === parts.length - 1 ? '' : '/')
+      )
+    })
+    .join('')
+  return new RegExp('^' + expression + '$').test(path)
+}
+
+function allowedAttachment(pkg: Package, sibling: string, path: string): boolean {
+  if (
+    !attachmentPath(path) ||
+    !kind(path) ||
+    /(?:^|\/)metadata\.txt$/i.test(path) ||
+    /\.sc2(?:map|mod)\//i.test(path)
+  )
+    return false
+  return (
+    primaryCandidates(pkg, sibling).includes(path) ||
+    (Array.isArray(pkg.assets) && pkg.assets.some((pattern) => matchesAsset(path, pattern)))
+  )
+}
+
+export function attachmentCandidates(source: ContentSource, preview: InstallPreview): string[] {
   let entries = source.entries
-  if (preview) {
-    const sibling = descriptorSibling(preview)
-    const pkg = preview.package
-    const imageKey = pkg.type === 'campaign' ? 'banner' : 'cover'
-    const preferred = [
-      ...(pkg.type === 'dependency'
-        ? []
-        : (pkg.type === 'campaign' ? pkg.banner : pkg.cover) !== undefined
-          ? [pkg.type === 'campaign' ? pkg.banner : pkg.cover]
-          : [`${imageKey}.jpg`, `${imageKey}.png`, `${imageKey}.webp`].map(
-              (path) => sibling + path,
-            )),
-      ...(pkg.readme !== undefined
-        ? [pkg.readme]
-        : ['README.txt', 'README.md', 'readme.txt', 'readme.md'].map((path) => sibling + path)),
-      ...(pkg.changelog !== undefined
-        ? [pkg.changelog]
-        : ['CHANGELOG.txt', 'CHANGELOG.md', 'changelog.txt', 'changelog.md'].map(
-            (path) => sibling + path,
-          )),
-      ...(pkg.docs ?? []),
-    ]
-    const priority = new Map(preferred.map((path, index) => [path, index]))
-    entries = [...entries].sort(
-      (left, right) =>
-        (priority.get(left.path) ?? Infinity) - (priority.get(right.path) ?? Infinity),
-    )
-  }
+  const sibling = descriptorSibling(preview)
+  const pkg = preview.package
+  const preferred = primaryCandidates(pkg, sibling)
+  const priority = new Map(preferred.map((path, index) => [path, index]))
+  entries = [...entries].sort(
+    (left, right) => (priority.get(left.path) ?? Infinity) - (priority.get(right.path) ?? Infinity),
+  )
   let bytes = 0
   return entries
     .filter((entry) => {
@@ -97,6 +136,7 @@ export function attachmentCandidates(source: ContentSource, preview?: InstallPre
           : kind(entry.path)
       if (
         !type ||
+        !allowedAttachment(pkg, sibling, entry.path) ||
         !attachmentPath(entry.path) ||
         entry.bytes < 0 ||
         entry.bytes > (type === 'image' ? IMAGE_LIMIT : DOCUMENT_LIMIT) ||
@@ -254,6 +294,8 @@ export async function readAttachment(
   record: ContentRecord,
   path: string,
 ): Promise<ContentAsset | null> {
+  const sibling = record.attachments && record.rootRelativePath ? record.rootRelativePath + '/' : ''
+  if (!allowedAttachment(record.package, sibling, path)) return null
   if (!record.attachments) return readLegacyAttachment(record, path)
   if (
     !attachmentPath(path) ||
@@ -320,7 +362,13 @@ async function legacyFiles(record: ContentRecord) {
         continue
       }
       const type = kind(path)
-      if (!entry.isFile() || !type || /(?:^|\/)metadata\.txt$/i.test(path)) continue
+      if (
+        !entry.isFile() ||
+        !type ||
+        /(?:^|\/)metadata\.txt$/i.test(path) ||
+        !allowedAttachment(record.package, '', path)
+      )
+        continue
       const absolute = await safePath(root, path)
       const stat = await lstat(absolute)
       if (

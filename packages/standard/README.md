@@ -63,7 +63,7 @@ package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata �
 
 `PackageDependency` 只包含 `scnid?`、`name`、`description`、`tags?`、`version`、
 `author`、`type: 'dependency'`、`mods?`、`website?`、`social?`、`sponsor?`、`$schema?`、
-`readme?`、`changelog?`、`docs?`。沿用基础字段和 mods 的可选性，不强制 scnid
+`readme?`、`changelog?`、`docs?`、`assets?`。沿用基础字段和 mods 的可选性，不强制 scnid
 或非空 mods。`isPackage` 拒绝 dependency 中任何其他顶层字段，包括 manager/maps。
 该类型仅面向 SCNexus 管理，不声明 manager；当前客户端支持依赖包独立安装与卸载，
 但不按作品的 dependencies 声明自动解析、下载或安装依赖，也不按 CCM 处理。
@@ -82,7 +82,7 @@ package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata �
 为兼容现有类型使用，`PackageContent` 中的 `campaign` 字段仍可选；
 `PackageCampaign` 和运行时战役校验仍要求有效的战役值。
 
-三种类型均支持 `readme?: string`、`changelog?: string`、`docs?: string[]`。
+三种类型均支持 `readme?: string`、`changelog?: string`、`docs?: string[]`、`assets?: string[]`。
 这些只是路径声明：显式路径相对于压缩包根目录（推荐 `images/banner.webp`、
 `docs/guide.md` 这种不带起始 `/` 的写法），不是资源的 `/Maps/`、`/Mods/` 逻辑路径。
 `isPackage` 和 Schema 只校验字段结构，不访问路径、不检查文件是否存在、可读或可解码，
@@ -100,6 +100,16 @@ package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata �
   显式文档路径缺失或不可接受时忽略该文档，不回退探测默认名称；`docs` 仅使用声明的路径列表。
 - 文档引用及文档中的图片只能指向包内文件；客户端解析时必须限制在包内，
   不允许外部网址、绝对路径、目录穿越或符号链接逃逸。
+- 显式图片、`readme`、`changelog`、`docs` 与字段省略时的默认候选自动成为附件候选；
+  其他附件（包括链接文档和图片）必须匹配 `assets`，省略或 `[]` 不授权任何额外文件。
+  白名单在保存和每次读取时执行，包括现存 `.attachments` 及旧安装目录的按需读取。
+- `assets`（不是 `aseets`）是包根目录相对路径白名单，大小写精确匹配。只支持单段内
+  `*` 与独立段 `**`（零或多个路径段）；`images/*.png` 仅匹配同级文件，
+  `images/**/*.png` 也匹配 `images/a.png` 和任意深度的子目录，`**/*.md` 可匹配根目录文档。
+  不支持 `?`、方括号、花括号、否定或段内 `**`；无效规则不授权文件。
+  不允许绝对路径、反斜杠或目录穿越，也不授权可执行文件或放宽扩展名、解码和大小限制。
+  `isPackage` 仅要求 `assets` 是无 NUL 的字符串数组，Schema 检查字符串数组结构；
+  通配符和文件安全规则由客户端执行，不在 standard 中访问文件。
 
 客户端已实现附件读取：接受 JPEG / PNG / WebP 图片，单个图片上限 8 MiB，
 经 Electron `nativeImage` 解码后重新编码为 PNG；文档限 UTF-8 的 `.md` / `.txt`，

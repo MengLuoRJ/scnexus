@@ -92,6 +92,8 @@ export type PackageBase = {
   changelog?: string
   /** Archive-root-relative additional documentation paths. */
   docs?: string[]
+  /** Archive-root-relative attachment allowlist; only segment-local * and whole-segment **. */
+  assets?: string[]
   social?: PackageSocial
   sponsor?: PackageSponsor
 }

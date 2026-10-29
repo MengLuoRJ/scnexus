@@ -26,8 +26,6 @@
     "@vueuse/core": "^15.0.0",
     "axios": "^1.20.0",
     "comark": "^0.8.1",
-    "electron-log": "5.4.4",
-    "electron-store": "^11.0.2",
     "pinia": "^4.0.3",
     "semver": "^7.8.5",
     "tailwindcss": "^4.3.3",

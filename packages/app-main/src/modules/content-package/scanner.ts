@@ -293,7 +293,7 @@ export async function scanContent(
         mode: 'ccm',
         origin: 'metadata-txt',
         source: null,
-        rootRelativePath: '',
+        rootRelativePath: previous?.attachments ? previous.rootRelativePath : '',
         managementDirectory: directory,
         descriptorPath: join(directory, 'metadata.txt'),
         payloadDirectory: directory,

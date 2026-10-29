@@ -203,7 +203,7 @@ const reference: PackageDependencyReference = { scnid: 1 }
 const dependency: PackageDependency = { name: 'dep', description: '', author: 'a', version: '1', type: 'dependency', mods: [mod], website: 'https://example.com', social, sponsor }
 const content: PackageContent = { ...dependency, type: 'customize', maps: [map], social, sponsor, dependencies: [reference] }
 const pkg: Package = dependency
-const documentation = { readme: 'docs/intro.md', changelog: 'docs/changes.txt', docs: ['docs/guide.md'] }
+const documentation = { readme: 'docs/intro.md', changelog: 'docs/changes.txt', docs: ['docs/guide.md'], assets: ['images/**'] }
 const documentedDependency: PackageDependency = { ...dependency, ...documentation }
 const legacyCampaign: PackageContent = { name: 'campaign', description: '', version: '1', author: 'a', type: 'campaign' }
 const campaignBanner: PackageCampaign = { ...legacyCampaign, type: 'campaign', campaign: 'WOL', banner: 'images/banner.png', ...documentation }
@@ -344,6 +344,12 @@ test('presentation paths are declarations only with type-specific images and com
       assert.equal(guard(input), expected, JSON.stringify(input))
     }
     check({}, true)
+    check({ assets: undefined }, true)
+    check({ assets: [] }, true)
+    check({ assets: ['**/*.png', 'images/*', 'missing.md', '../outside'] }, true)
+    for (const invalid of [null, 42, false, {}, 'image.png', [null], [1]])
+      check({ assets: invalid }, false)
+    assert.equal(api.isPackage({ ...value, assets: ['bad\0path'] }), false)
     check({ readme: undefined, changelog: undefined, docs: undefined }, true)
     if (type !== 'dependency')
       check({ [type === 'campaign' ? 'banner' : 'cover']: undefined }, true)

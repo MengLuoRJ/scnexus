@@ -23,6 +23,7 @@ export function isPackage(value: unknown): value is Package {
       'readme',
       'changelog',
       'docs',
+      'assets',
       'social',
       'sponsor',
     ])
@@ -131,8 +132,9 @@ export function isPackage(value: unknown): value is Package {
     return false
   for (const key of ['readme', 'changelog'])
     if (value[key] !== undefined && !text(value[key])) return false
-  if (value.docs !== undefined && (!Array.isArray(value.docs) || !value.docs.every(text)))
-    return false
+  for (const key of ['docs', 'assets'])
+    if (value[key] !== undefined && (!Array.isArray(value[key]) || !value[key].every(text)))
+      return false
   if (value.$schema !== undefined && !text(value.$schema)) return false
   if (value.website !== undefined && !text(value.website)) return false
   for (const category of ['social', 'sponsor'])

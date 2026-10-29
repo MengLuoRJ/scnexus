@@ -13,7 +13,7 @@ vi.mock('electron', () => ({
 }))
 import { ContentService } from '../content-package'
 import { gamePaths } from '../../scii-game-setting/scii-game-setting'
-import { attachmentCandidates, attachmentPath } from '../attachments'
+import { attachmentCandidates, attachmentPath, attachmentName, matchesAsset } from '../attachments'
 import { openSource } from '../source'
 import type { ContentStore, CampaignActiveStoreData } from '@scnexus/app-shared/types/content.type'
 const roots: string[] = []
@@ -133,7 +133,7 @@ const png = (text: string) =>
 test('exact sibling probes skip corrupt image; retained package-only references survive source deletion, scan and uninstall', async () => {
   const f = await fixture(
     'customize',
-    {},
+    { assets: ['Nested/docs/**'] },
     {
       'Nested/cover.jpg': 'invalid',
       'Nested/cover.png': png('valid'),
@@ -233,7 +233,13 @@ test('selection bounds file size and total bytes and does not accept active cont
     modifiedAt: null,
   }))
   source.entries.push({ path: 'too-big.md', bytes: 1024 * 1024 + 1, modifiedAt: null })
-  expect(attachmentCandidates(source)).toHaveLength(8)
+  expect(
+    attachmentCandidates(source, {
+      package: { ...f.record.package, assets: ['**'] },
+      descriptorPath: 'Nested/package.json',
+      rootRelativePath: 'Nested',
+    } as import('@scnexus/app-shared/types/content.type').InstallPreview),
+  ).toHaveLength(8)
   expect(
     ['a/../x.md', 'C:/x.md', '//host/x.md', 'a\\x.md', 'a/CON.md', 'x.md '].some(attachmentPath),
   ).toBe(false)
@@ -242,7 +248,7 @@ test('selection bounds file size and total bytes and does not accept active cont
 test.each([false, true])('archive attachments persist with source removed; CCM=%s', async (ccm) => {
   const f = await fixture(
     'campaign',
-    {},
+    { assets: ['Nested/docs/**'] },
     {
       'Nested/README.md': '# Archive\n[Guide](docs/guide.md)\n![Image](docs/picture.png)',
       'Nested/banner.png': png('valid'),
@@ -262,7 +268,7 @@ test.each([false, true])('archive attachments persist with source removed; CCM=%
     docs: [],
   }
   for (const path of ['Nested/docs/guide.md', 'Nested/docs/picture.png'])
-    expect(await f.service.asset(f.record.localId, path)).not.toBeNull()
+    expect((await f.service.asset(f.record.localId, path)) !== null).toBe(!ccm)
   expect(await f.service.assets(f.record.localId)).toEqual(expected)
   await f.service.scan()
   expect(await f.service.assets(f.record.localId)).toEqual(expected)
@@ -380,6 +386,7 @@ test.each([
             }
           : {}),
         docs: [prefix + 'guide.md'],
+        assets: [prefix + 'picture.png'],
       },
       files,
       archive,
@@ -417,8 +424,9 @@ test.each([
             readme: 'assets/README.md',
             changelog: 'assets/CHANGELOG.md',
             docs: ['assets/guide.md'],
+            assets: ['assets/picture.png'],
           }
-        : { docs: ['Nested/docs/guide.md'] },
+        : { docs: ['Nested/docs/guide.md'], assets: ['Nested/docs/picture.png'] },
       explicit
         ? {
             'assets/cover.png': png('valid'),
@@ -460,3 +468,144 @@ test.each([
     expect(await f.service.asset(f.record.localId, picture)).not.toBeNull()
   },
 )
+
+test.each([
+  ['guide.md', '**/*.md', true],
+  ['docs/guide.md', '**/*.md', true],
+  ['docs/a/b/guide.md', 'docs/**/*.md', true],
+  ['docs/guide.md', 'docs/**/*.md', true],
+  ['docs/a.md', 'docs/*.md', true],
+  ['docs/a/b.md', 'docs/*.md', false],
+  ['Docs/a.md', 'docs/**', false],
+  ['a.md', '*.md', true],
+  ['docs/a.md', '*.md', false],
+  ['a.md', '**', true],
+  ['docs/a.md', 'docs/**', true],
+  ['docs/a.md', 'docs/***.md', false],
+  ['a.md', '?.md', false],
+  ['a.md', '{a,b}.md', false],
+  ['a.md', '!a.md', false],
+  ['a.md', '[a].md', false],
+  ['../a.md', '**', false],
+  ['a.md', '../**', false],
+  ['a.md', '/**', false],
+  ['a.md', 'C:/**', false],
+  ['a.md', '**/../a.md', false],
+])('asset pattern %s against %s = %s', (path, pattern, expected) => {
+  expect(matchesAsset(path, pattern)).toBe(expected)
+})
+
+test.each([false, true])(
+  'strict allowlist persists only declared additions; ZIP=%s',
+  async (archive) => {
+    const f = await fixture(
+      'customize',
+      {
+        docs: ['root-guide.md'],
+        assets: ['**/allowed*.png', 'Nested/docs/*.md', 'executable.exe', '../secret.md'],
+      },
+      {
+        'Nested/README.md': '![allowed](../allowed.png) [denied](private.md)',
+        'allowed.png': png('valid'),
+        'Nested/docs/allowed.png': png('valid'),
+        'Nested/docs/guide.md': '# Guide',
+        'Nested/docs/deep/private.md': 'secret',
+        'Nested/docs/private.png': png('valid'),
+        'Nested/docs/Allowed.png': png('valid'),
+        'root-guide.md': '# Root',
+        'executable.exe': 'MZ executable',
+      },
+      archive,
+    )
+    expect(f.record.attachments!.files.sort()).toEqual(
+      [
+        'Nested/README.md',
+        'Nested/docs/allowed.png',
+        'Nested/docs/guide.md',
+        'allowed.png',
+        'root-guide.md',
+      ].sort(),
+    )
+    for (const path of [
+      'Nested/docs/deep/private.md',
+      'Nested/docs/private.png',
+      'Nested/docs/Allowed.png',
+      'executable.exe',
+    ])
+      expect(await f.service.asset(f.record.localId, path)).toBeNull()
+    for (const path of [
+      'allowed.png',
+      'Nested/docs/allowed.png',
+      'Nested/docs/guide.md',
+      'root-guide.md',
+    ])
+      expect(await f.service.asset(f.record.localId, path)).not.toBeNull()
+  },
+)
+
+test.each([undefined, []])(
+  'missing/empty assets denies old retained and lazy files: %s',
+  async (assets) => {
+    const f = await fixture(
+      'customize',
+      { assets, cover: 'bad.png', readme: 'missing.md' },
+      {
+        'Nested/CHANGELOG.md': 'changes',
+        'Nested/cover.png': png('valid'),
+        'Nested/README.md': 'no fallback',
+        'Nested/private.md': 'secret',
+      },
+    )
+    expect(f.record.attachments!.files).toEqual(['Nested/CHANGELOG.md'])
+    const state = f.customize.getSnapshot()
+    const record = state.records[0]!
+    record.attachments!.index.docs = ['Nested/private.md']
+    for (const path of ['Nested/private.md', 'Nested/README.md', 'Nested/cover.png']) {
+      record.attachments!.files.push(path)
+      await writeFile(
+        join(record.managementDirectory, '.attachments', attachmentName(path)),
+        path.endsWith('.png') ? png('valid') : 'secret',
+      )
+    }
+    f.customize.update(state)
+    for (const path of ['Nested/private.md', 'Nested/README.md', 'Nested/cover.png'])
+      expect(await f.service.asset(record.localId, path)).toBeNull()
+    expect(await f.service.asset(record.localId, 'Nested/CHANGELOG.md')).not.toBeNull()
+    expect((await f.service.assets(record.localId)).docs).toEqual([])
+    delete record.attachments
+    await writeFile(join(record.managementDirectory, 'private.md'), 'secret')
+    await writeFile(join(record.managementDirectory, 'README.md'), 'no fallback')
+    await writeFile(join(record.managementDirectory, 'cover.png'), png('valid'))
+    await writeFile(join(record.managementDirectory, 'CHANGELOG.md'), 'changes')
+    f.customize.update(state)
+    for (const path of ['private.md', 'README.md', 'cover.png'])
+      expect(await f.service.asset(record.localId, path)).toBeNull()
+    expect(await f.service.assets(record.localId)).toEqual({
+      image: null,
+      readme: null,
+      changelog: 'CHANGELOG.md',
+      docs: [],
+    })
+  },
+)
+
+test('legacy lazy attachment allowlist is archive-root-relative, exact case, and rechecked', async () => {
+  const f = await fixture('customize', { assets: ['**/allowed.md', 'images/*.png'] })
+  const state = f.customize.getSnapshot()
+  const record = state.records[0]!
+  delete record.attachments
+  await mkdir(join(record.managementDirectory, 'images'))
+  await mkdir(join(record.managementDirectory, 'docs'))
+  for (const path of ['allowed.md', 'docs/allowed.md', 'docs/Allowed.md', 'docs/private.md'])
+    await writeFile(join(record.managementDirectory, path), '# Text')
+  await writeFile(join(record.managementDirectory, 'images/picture.png'), png('valid'))
+  f.customize.update(state)
+  for (const path of ['allowed.md', 'docs/allowed.md', 'images/picture.png'])
+    expect(await f.service.asset(record.localId, path)).not.toBeNull()
+  for (const path of ['docs/Allowed.md', 'docs/private.md', '../allowed.md'])
+    expect(await f.service.asset(record.localId, path)).toBeNull()
+  record.package.assets = []
+  f.customize.update(state)
+  for (const path of ['allowed.md', 'docs/allowed.md', 'images/picture.png'])
+    expect(await f.service.asset(record.localId, path)).toBeNull()
+})

@@ -39,8 +39,22 @@ watch(
 const center = usePersonalCenter()
 const { experience, loading: experienceLoading, saving, checking, error: experienceError } = center
 const editingNickname = ref(false)
+const showingUserId = ref(false)
 const nicknameForm = reactive({ nickname: '' })
 const nicknameError = ref('')
+function openUserId() {
+  if (!auth.user?.id) return
+  showingUserId.value = true
+}
+async function copyUserId() {
+  if (!auth.user?.id) return
+  try {
+    await navigator.clipboard.writeText(auth.user.id)
+    toast.add({ color: 'success', title: t('campaign.copied') })
+  } catch {
+    toast.add({ color: 'error', title: t('account.copyFailed') })
+  }
+}
 function editNickname() {
   nicknameForm.nickname = auth.user?.nickname ?? ''
   nicknameError.value = ''
@@ -321,9 +335,20 @@ async function logout() {
           footer: 'px-4 py-3 sm:px-4 sm:py-3',
         }"
       >
-        <template #header
-          ><h3 class="font-semibold">{{ t('account.profile') }}</h3></template
-        >
+        <template #header>
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-semibold">{{ t('account.profile') }}</h3>
+            <UButton
+              icon="i-tabler-id-badge-2"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :disabled="!auth.user?.id"
+              @click="openUserId"
+              >{{ t('account.viewId') }}</UButton
+            >
+          </div>
+        </template>
         <div class="space-y-4">
           <div class="space-y-2">
             <div class="flex items-center justify-between gap-2">
@@ -456,6 +481,23 @@ async function logout() {
         </div>
       </UCard>
     </div>
+    <UModal v-model:open="showingUserId" :title="t('account.userId')">
+      <template #body>
+        <p class="break-all font-mono text-sm font-medium">
+          {{ auth.user?.id ?? t('account.loading') }}
+        </p>
+      </template>
+      <template #footer>
+        <UButton
+          icon="i-tabler-copy"
+          color="neutral"
+          variant="outline"
+          :disabled="!auth.user?.id"
+          @click="copyUserId"
+          >{{ t('account.copy') }}</UButton
+        >
+      </template>
+    </UModal>
   </section>
   <section v-else class="flex flex-1">
     <div class="grid min-h-full w-full bg-default grid-cols-[0.85fr_1.15fr]">

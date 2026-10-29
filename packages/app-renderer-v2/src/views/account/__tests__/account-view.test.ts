@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   checkIn: vi.fn<() => Promise<unknown>>(),
   loadExperience: vi.fn<() => Promise<void>>(),
   policy: vi.fn<() => Promise<unknown>>(),
+  writeText: vi.fn<(text: string) => Promise<void>>(),
 }))
 vi.mock('../usePersonalCenter', async () => {
   const { ref } = await import('vue')
@@ -75,13 +76,23 @@ const form = defineComponent({
   emits: ['submit'],
   template: '<form @submit.prevent="$emit(\'submit\')"><slot/></form>',
 })
+const modal = defineComponent({
+  props: ['open'],
+  emits: ['update:open'],
+  template: '<div v-if="open"><slot name="body"/><slot name="footer"/><slot/></div>',
+})
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
   vi.resetAllMocks()
   setActivePinia(createPinia())
   vi.stubGlobal('scnexus', {})
+  Object.defineProperty(globalThis.navigator, 'clipboard', {
+    value: { writeText: mocks.writeText },
+    configurable: true,
+  })
   mocks.deviceName.mockResolvedValue({ ok: true, data: 'Detected PC' })
   mocks.policy.mockResolvedValue({ invitationRequired: false })
+  mocks.writeText.mockResolvedValue()
 })
 afterEach(() => {
   for (const wrapper of wrappers.splice(0)) wrapper.unmount()
@@ -111,6 +122,7 @@ async function render() {
         Icon: true,
         Button: button,
         Form: form,
+        Modal: modal,
         Alert: true,
         Progress: true,
         Badge: true,
@@ -368,6 +380,30 @@ test('signed-in dashboard shows real account data instead of login forms or cred
   await nextTick()
   expect(wrapper.find('form').exists()).toBe(true)
   expect(wrapper.text()).not.toContain('user-id')
+})
+test('viewing user id only shows it in a modal after click', async () => {
+  const store = useAuthStore()
+  store.snapshot = {
+    ...store.snapshot,
+    status: 'signed-in',
+    accessToken: 'token',
+    sessionId: 'session-id',
+  }
+  store.user = {
+    id: 'user-id',
+    sessionId: 'session-id',
+    clientType: 'DESKTOP',
+    twoFactorEnabled: true,
+    nickname: 'Nexus_123',
+    email: null,
+  }
+  const wrapper = await render()
+  expect(wrapper.text()).not.toContain('user-id')
+  await namedButton(wrapper, 'viewId').trigger('click')
+  await nextTick()
+  expect(wrapper.text()).toContain('user-id')
+  await namedButton(wrapper, 'copy').trigger('click')
+  expect(mocks.writeText).toHaveBeenCalledExactlyOnceWith('user-id')
 })
 
 test('device name is detected automatically and remains editable', async () => {

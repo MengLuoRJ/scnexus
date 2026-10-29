@@ -17,6 +17,8 @@ export default tseslint.config(
       '**/release/**',
       '**/.cache/**',
       '**/.nuxt-ui/**',
+      'packages/standard/.types-test-*/**',
+      '.electron-smoke-*/**',
       '**/auto-imports.d.ts',
       '**/components.d.ts',
       '.agents/**',

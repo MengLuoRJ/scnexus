@@ -15,6 +15,12 @@
 
 Electron 45 移除了 sandbox preload 的 events/timers/url shim 和 Buffer/setImmediate 等全局；模拟 Electron 的单元测试不能覆盖这项兼容性，必须执行真实冒烟。
 
+## TypeScript 配置与静态检查
+
+各包保留现有编译器版本，不依赖 `ignoreDeprecations` 隐藏迁移问题。为兼容 TypeScript 7 移除的 `baseUrl`，项目配置已删除该选项；`paths` 的目标均以 `./` 开头，相对于所属配置文件解析。现有 TypeScript 5.7 与 6.0 检查通过不等于已在 TypeScript 7 编译器下验收。
+
+ESLint 默认禁止显式 `any`；异构 IPC 回调及保留兼容性的无类型 JSON API 使用带原因的逐行例外，不对整个文件或全仓库关闭规则。两组 lint 均排除测试生成并清理的 `packages/standard/.types-test-*` 和 `.electron-smoke-*` 临时目录，避免与测试并行时误检合成消费者或遍历已删除的目录。
+
 ## Windows WER 与打包边界
 
 当前 electron-builder 26.15.3 只重命名 Electron exe，没有同步重命名 Electron 45 分发中的 `electron_wer.dll`。`afterPack` 精准将 Windows Electron 45+ 的 helper 改为 `${productFilename}_wer.dll`（当前为 `SCNexus_wer.dll`），并支持 electronBranding.projectName。旧 Electron、其他平台和未改名 exe 不处理；缺失 DLL 报错，不静默省略。升级 builder 后须重新检查其实现，避免重复重命名。

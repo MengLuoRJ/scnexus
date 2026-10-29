@@ -10,11 +10,14 @@ import {
 } from '@scnexus/app-shared/errors/app.error'
 
 export type ApiResult<T = unknown> = IpcResult<T>
+// These bridge signatures accept different parameter types for each exposed channel.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ApiListener = (event: object, ...args: any[]) => void
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ExposedApi = (...args: any[]) => Promise<unknown> | (() => void)
 
 export const subscribe = (channel: string, listener: ApiListener) => {
-  const wrapped = (_event: Electron.IpcRendererEvent, ...args: any[]) => listener({}, ...args)
+  const wrapped = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => listener({}, ...args)
   ipcRenderer.on(channel, wrapped)
   return () => ipcRenderer.removeListener(channel, wrapped)
 }

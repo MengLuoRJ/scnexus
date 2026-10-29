@@ -642,6 +642,8 @@ export class Archive {
    * @param filename - Name of the JSON file
    * @returns Parsed JSON object
    */
+  // Preserve the untyped JSON convenience API; callers may supply an explicit result type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readFileAsJson<T = any>(filename: string): T {
     return JSON.parse(this.readFileAsString(filename, 'utf-8')) as T
   }

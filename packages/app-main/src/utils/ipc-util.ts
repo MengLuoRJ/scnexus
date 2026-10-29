@@ -10,7 +10,11 @@ async function guard(channel: string, event: IpcMainInvokeEvent) {
   if (/^(campaign|customize):/.test(channel)) await getGamePaths()
 }
 
-function register(channel: string, func: (...args: any[]) => any, passEvent: boolean) {
+// IPC handlers have channel-specific parameters validated by each handler.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IpcHandler = (...args: any[]) => any
+
+function register(channel: string, func: IpcHandler, passEvent: boolean) {
   ipcMain.removeHandler(channel)
   ipcMain.handle(channel, async (event, ...args: unknown[]) => {
     try {
@@ -31,21 +35,17 @@ function register(channel: string, func: (...args: any[]) => any, passEvent: boo
     }
   })
 }
-export function ipcHandleRegister(
-  channel: string,
-  func: (...args: any[]) => any,
-  passEvent = false,
-) {
+export function ipcHandleRegister(channel: string, func: IpcHandler, passEvent = false) {
   register(channel, func, passEvent)
 }
 export function ipcHandleRemove(channel: string) {
   ipcMain.removeHandler(channel)
 }
-export function ipcHandle(channel: string, func: (...args: any[]) => any, passEvent = false) {
+export function ipcHandle(channel: string, func: IpcHandler, passEvent = false) {
   register(channel, func, passEvent)
 }
 export type ipcHandleConfig = {
   channel: string
-  function: (...args: any[]) => any
+  function: IpcHandler
   passEvent: boolean
 }

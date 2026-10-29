@@ -1901,7 +1901,9 @@ test('scan normalizes only installed legacy package spellings without rewriting 
   expect(await readFile(packagePath, 'utf8')).toBe(packageRaw)
   expect(await readFile(manifestPath, 'utf8')).toBe(manifestRaw)
   expect(await readFile(join(input.path, 'package.json'), 'utf8')).toBe(JSON.stringify(data))
-  expect(() => parsePackage(packageRaw)).toThrow()
+  expect(() => parsePackage(packageRaw)).toThrow(
+    expect.objectContaining({ name: 'ARCHIVE-METADATA-INVALID' }),
+  )
   const launcherOnly = { ...legacyPackage, bank_enable: 'official' }
   expect(parsePackage(JSON.stringify(launcherOnly)).launcher).toBeUndefined()
   await writeFile(

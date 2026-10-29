@@ -73,7 +73,7 @@ Windows regedit VBS仅由win.extraResources附带；mac排除该资源。7z保�
 - 所有工作区直接声明的 TypeScript 统一为 `~6.0.3`，不升级 TypeScript 7。第三方工具内部的 TypeScript 依赖仍遵守上游要求，例如 Schema 生成器内部的 5.9，不用 override 强行替换。
 - Electron 三处统一 `^45.1.0`，electron-builder `^26.18.0`、electron-updater `^6.8.11`、electron-store `^12.0.0`；Vite `^8.3.5`、Vitest `^5.0.5`、Vue I18n `^11.4.16`。同步升级常规工具与自动导入插件，保留既有 API 和持久化契约。
 - standard 删除 tsup，使用固定 `tsdown@0.23.2` 和 Vitest 5。0.23.4 处于发布时间保护窗口，按用户确认不用例外放行。保留 `dist/package/index.js`、`index.d.ts`、`index.js.map` 及 JSON Schema，仍为 ESM-only；包级业务测试与根分发测试分别执行。根 `test` 和 `publish:standard` 均加入 `test:standard`，本轮未发布。
-- Nuxt UI 编辑器的 Tiptap 族统一到保护窗口外的 3.32.0，通过 workspace overrides 保证扩展和 core/pm 类型与运行时一致；不升级独立版本体系的 `@tiptap/y-tiptap`。升级依赖后先构建 renderer 刷新生成声明，避免旧声明指向过期 pnpm 实体目录。
+- Nuxt UI 编辑器依赖按其声明的 `^3.31.4` 范围正常安装，项目直接使用的 `@tiptap/core` 同步采用该范围；移除整组 Tiptap overrides 及仅针对 Nuxt UI 4.11.3 的过期 packageExtensions。安装、去重后锁文件解析为单一 `@tiptap/core@3.32.0`，无 peer 冲突，不强制覆盖间接依赖。升级依赖后先构建 renderer 刷新生成声明，避免旧声明指向过期 pnpm 实体目录。
 - 保留 `7z-bin@0.0.3`、已弃用但仍有类型引用的 `scnexus-standard@0.0.13` 和既有 Node 类型版本策略；这些不在此次自动迁移范围。没有放宽发布时间保护，没有新增 npm/yarn 锁文件。
 
 验证命令及结果：

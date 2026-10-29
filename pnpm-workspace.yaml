@@ -1,8 +1,3 @@
-packageExtensions:
-  # Nuxt UI 4.11.3 omits the Vue peer used by its plugin type declarations.
-  '@nuxt/ui@4.11.3':
-    peerDependencies:
-      vue: '^3.5.0'
 allowBuilds:
   electron: true
   electron-winstaller: true
@@ -11,43 +6,3 @@ allowBuilds:
 packages:
   - "packages/*"
   - "!**/test/**"
-
-# Keep Nuxt UI editor extensions on the same Tiptap runtime and types.
-overrides:
-  '@tiptap/core': 3.32.0
-  '@tiptap/extension-blockquote': 3.32.0
-  '@tiptap/extension-bold': 3.32.0
-  '@tiptap/extension-bubble-menu': 3.32.0
-  '@tiptap/extension-bullet-list': 3.32.0
-  '@tiptap/extension-code': 3.32.0
-  '@tiptap/extension-code-block': 3.32.0
-  '@tiptap/extension-collaboration': 3.32.0
-  '@tiptap/extension-document': 3.32.0
-  '@tiptap/extension-drag-handle': 3.32.0
-  '@tiptap/extension-drag-handle-vue-3': 3.32.0
-  '@tiptap/extension-dropcursor': 3.32.0
-  '@tiptap/extension-floating-menu': 3.32.0
-  '@tiptap/extension-gapcursor': 3.32.0
-  '@tiptap/extension-hard-break': 3.32.0
-  '@tiptap/extension-heading': 3.32.0
-  '@tiptap/extension-horizontal-rule': 3.32.0
-  '@tiptap/extension-image': 3.32.0
-  '@tiptap/extension-italic': 3.32.0
-  '@tiptap/extension-link': 3.32.0
-  '@tiptap/extension-list': 3.32.0
-  '@tiptap/extension-list-item': 3.32.0
-  '@tiptap/extension-list-keymap': 3.32.0
-  '@tiptap/extension-mention': 3.32.0
-  '@tiptap/extension-node-range': 3.32.0
-  '@tiptap/extension-ordered-list': 3.32.0
-  '@tiptap/extension-paragraph': 3.32.0
-  '@tiptap/extension-placeholder': 3.32.0
-  '@tiptap/extension-strike': 3.32.0
-  '@tiptap/extension-text': 3.32.0
-  '@tiptap/extension-underline': 3.32.0
-  '@tiptap/extensions': 3.32.0
-  '@tiptap/markdown': 3.32.0
-  '@tiptap/pm': 3.32.0
-  '@tiptap/starter-kit': 3.32.0
-  '@tiptap/suggestion': 3.32.0
-  '@tiptap/vue-3': 3.32.0

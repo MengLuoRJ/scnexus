@@ -22,7 +22,7 @@
     "@iconify/vue": "^5.0.4",
     "@nuxt/ui": "^4.12.0",
     "@scnexus/app-shared": "workspace:*",
-    "@tiptap/core": "3.32.0",
+    "@tiptap/core": "^3.31.4",
     "@vueuse/core": "^15.0.0",
     "axios": "^1.21.0",
     "comark": "^0.8.1",

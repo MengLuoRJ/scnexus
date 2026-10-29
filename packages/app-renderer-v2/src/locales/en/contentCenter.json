@@ -1,4 +1,5 @@
 {
+  "contentCenter.featureManagement": "Feature management",
   "contentCenter.title": "Content center",
   "contentCenter.workshop": "SCNexus Workshop",
   "contentCenter.description": "Enable Workshop, creator features, and Workshop transfers. Turning this off pauses Workshop tasks and preserves tasks and files; resume manually after re-enabling. GitHub downloads are unaffected.",

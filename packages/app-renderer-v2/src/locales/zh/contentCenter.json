@@ -1,4 +1,5 @@
 {
+  "contentCenter.featureManagement": "功能管理",
   "contentCenter.title": "内容中心",
   "contentCenter.workshop": "创意工坊",
   "contentCenter.description": "启用创意工坊、创作者及工坊传输。关闭后暂停工坊任务并保留任务和文件；重新开启后手动恢复，不影响 GitHub 下载。",

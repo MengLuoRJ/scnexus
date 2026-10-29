@@ -46,7 +46,7 @@ const languages = computed(() => [
 const tabs = computed(() => [
   { label: t('ui.preferences'), value: 'basic', slot: 'basic' },
   { label: t('ui.game'), value: 'game', slot: 'game' },
-  { label: t('contentCenter.title'), value: 'content', slot: 'content' },
+  { label: t('contentCenter.featureManagement'), value: 'content', slot: 'content' },
   { label: t('ui.logging'), value: 'logging', slot: 'logging' },
 ])
 const levels: LogLevel[] = ['error', 'warn', 'info', 'verbose', 'debug', 'silly']
@@ -356,7 +356,7 @@ onMounted(async () => {
       <template #content>
         <UCard :ui="{ header: 'p-3 sm:p-3', body: 'p-3 sm:p-3' }">
           <template #header
-            ><h2 class="font-semibold">{{ t('contentCenter.title') }}</h2></template
+            ><h2 class="font-semibold">{{ t('contentCenter.officialServices') }}</h2></template
           >
           <div class="space-y-4">
             <USwitch
@@ -368,6 +368,13 @@ onMounted(async () => {
             />
             <div class="space-y-4 border-l border-default pl-4">
               <USwitch
+                :model-value="settings?.workshopEnabled ?? true"
+                :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
+                :label="t('contentCenter.workshop')"
+                :description="t('contentCenter.description')"
+                @update:model-value="(value: boolean) => save({ workshopEnabled: value })"
+              />
+              <USwitch
                 :model-value="settings?.weeklyMutationCalibrationEnabled ?? true"
                 :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
                 :label="t('contentCenter.weeklyCalibration')"
@@ -375,13 +382,6 @@ onMounted(async () => {
                 @update:model-value="
                   (value: boolean) => save({ weeklyMutationCalibrationEnabled: value })
                 "
-              />
-              <USwitch
-                :model-value="settings?.workshopEnabled ?? true"
-                :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
-                :label="t('contentCenter.workshop')"
-                :description="t('contentCenter.description')"
-                @update:model-value="(value: boolean) => save({ workshopEnabled: value })"
               />
             </div>
           </div>

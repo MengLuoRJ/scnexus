@@ -64,6 +64,7 @@ const game = {
   capabilities: { client: true, editor: true, switcher: true },
 } as GameSnapshot
 const tabs = defineComponent({
+  props: ['items'],
   template:
     '<div><slot name="basic"/><slot name="game"/><slot name="content"/><slot name="logging"/></div>',
 })
@@ -309,6 +310,14 @@ test('official service master disables subcontrols while preserving saved prefer
     wrapper
       .findAllComponents({ name: 'Switch' })
       .find((item) => item.attributes('label') === label)!
+  expect(wrapper.findComponent(tabs).props('items')).toEqual(
+    expect.arrayContaining([expect.objectContaining({ label: '功能管理', value: 'content' })]),
+  )
+  expect(wrapper.findAll('h2').map((heading) => heading.text())).toContain('星际枢纽官方服务')
+  const labels = wrapper
+    .findAllComponents({ name: 'Switch' })
+    .map((item) => item.attributes('label'))
+  expect(labels.indexOf('创意工坊')).toBeLessThan(labels.indexOf('每周突变在线校准'))
   const master = switchByLabel('星际枢纽官方服务')
   const weekly = switchByLabel('每周突变在线校准')
   const workshop = switchByLabel('创意工坊')

@@ -26,8 +26,8 @@ const rotateOpen = ref(false)
 const tab = ref('configuration')
 const tabs = computed(() => [
   { label: t('aiAssistant.configuration'), value: 'configuration', slot: 'configuration' as const },
-  { label: t('aiAssistant.history'), value: 'history', slot: 'history' as const },
   { label: t('aiAssistant.capabilities'), value: 'capabilities', slot: 'capabilities' as const },
+  { label: t('aiAssistant.history'), value: 'history', slot: 'history' as const },
 ])
 const tools = [
   { name: 'get_app_status', limit: 'noParameters' },

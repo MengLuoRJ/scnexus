@@ -302,8 +302,8 @@ test('tabs separate configuration, history and the six read-only capabilities in
   const wrapper = await render()
   expect(wrapper.findAll('[role="tab"]').map((item) => item.text())).toEqual([
     '服务配置',
+    'MCP 能力',
     '操作记录',
-    '可用 MCP 能力',
   ])
   expect(wrapper.get('[aria-selected="true"]').text()).toBe('服务配置')
   expect(wrapper.find('h1').exists()).toBe(false)
@@ -313,7 +313,7 @@ test('tabs separate configuration, history and the six read-only capabilities in
   await click(wrapper, '操作记录')
   expect(wrapper.text()).toContain('暂无操作记录')
   expect(wrapper.find('input').exists()).toBe(false)
-  await click(wrapper, '可用 MCP 能力')
+  await click(wrapper, 'MCP 能力')
   expect(wrapper.findAll('code').map((item) => item.text())).toEqual([
     'get_app_status',
     'list_campaigns',
@@ -367,7 +367,7 @@ test.each(['显示令牌', '复制令牌', '复制连接配置'])(
         }),
     )
     await click(wrapper, label)
-    await click(wrapper, '可用 MCP 能力')
+    await click(wrapper, 'MCP 能力')
     await click(wrapper, '服务配置')
     resolve({ ok: true, data: { url: 'http://127.0.0.1:17861/mcp', token: 'SECRET' } })
     await flushPromises()

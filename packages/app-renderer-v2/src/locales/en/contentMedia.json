@@ -1,0 +1,14 @@
+{
+  "contentMedia.relatedDocuments": "Related documents",
+  "contentMedia.payloadDirectory": "Payload directory",
+  "contentMedia.documents": "Package documents",
+  "contentMedia.readme": "Readme",
+  "contentMedia.changelog": "Changelog",
+  "contentMedia.noImage": "No cover available",
+  "contentMedia.loading": "Loading package document…",
+  "contentMedia.error": "Cannot read this package document. It may be missing or unavailable.",
+  "contentMedia.empty": "This package has no bundled documents.",
+  "contentMedia.retry": "Retry",
+  "contentMedia.imageError": "Some package images are missing or unsupported.",
+  "contentMedia.localOnly": "Only documents and images inside this package are available. External links are disabled."
+}

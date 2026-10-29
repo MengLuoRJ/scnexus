@@ -300,6 +300,7 @@ describe('desktop account service', () => {
       accessExpiresAt: null,
       sessionId: null,
       clientId: null,
+      userId: null,
       sessionExpiresAt: null,
       mfaExpiresAt: null,
     })
@@ -518,4 +519,21 @@ it('registration response failure is distinct from credential storage failure', 
     storage.service.register({ ...input, password: 'Strong1!', challengeId: id, proof: '012345' }),
   ).rejects.toMatchObject({ message: 'Account operation failed: storage' })
   expect(storage.service.getSnapshot().status).toBe('signed-out')
+})
+
+describe('account history identity', () => {
+  it.each([true, false])(
+    'extracts only valid access-token account subject with matching session (matching=%s)',
+    async (matching) => {
+      const f = setup()
+      const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      const claims = Buffer.from(
+        JSON.stringify({ sub: userId, sid: matching ? id : 'other' }),
+      ).toString('base64url')
+      f.request.mockResolvedValueOnce({ ...f.pair(), accessToken: `header.${claims}.signature` })
+      expect((await f.service.login(input)).userId).toBe(matching ? userId : null)
+      await f.service.logout()
+      expect(f.service.getSnapshot().userId).toBeNull()
+    },
+  )
 })

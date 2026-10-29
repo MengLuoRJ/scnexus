@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
 import CampaignSourcePicker from '../components/CampaignSourcePicker.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 
 const mocks = vi.hoisted(() => ({
   dialog:

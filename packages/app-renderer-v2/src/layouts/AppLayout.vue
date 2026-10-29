@@ -10,6 +10,8 @@ import { ipcSettingGetSnapshot, ipcSettingOnChanged, ipcWindowReady } from '../i
 import type { SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
 import { useWorkshopStore } from '../stores/workshop'
 import { useToast } from '@nuxt/ui/composables/useToast'
+import { ipcDeepLinkOnWorkshop } from '../ipcs/deep-link'
+import DownloadWizard from '../components/workshop/DownloadWizard.vue'
 import AppSidebar from './components/AppSidebar.vue'
 defineOptions({ name: 'AppLayout' })
 const { t, locale } = useI18n()
@@ -20,14 +22,40 @@ const creator = useCreatorStore()
 const router = useRouter()
 const transfers = useWorkshopStore()
 const toast = useToast()
+let deepLinkGeneration = 0
+if (window.scnexus)
+  ipcDeepLinkOnWorkshop(async (intent) => {
+    const current = ++deepLinkGeneration
+    try {
+      await contentCenter.initialize()
+      if (current !== deepLinkGeneration) return
+      if (!contentCenter.enabled) {
+        toast.add({ color: 'warning', title: t('workshop.disabled') })
+        return
+      }
+      await router.push({
+        path: `/workshop/${intent.scnid}`,
+        query: intent.download ? { download: 'true' } : {},
+      })
+    } catch {
+      toast.add({ color: 'error', title: t('workshop.operationError') })
+    }
+  })
+onUnmounted(() => {
+  deepLinkGeneration++
+})
 let stopTransfers: (() => void) | undefined
 if (window.scnexus) stopTransfers = transfers.connect()
 const completed = new Set<string>()
 watch(
   () => transfers.tasks,
-  (tasks) => {
+  (tasks, previous = []) => {
     for (const task of tasks)
-      if (task.status === 'completed' && !completed.has(task.taskId)) {
+      if (
+        task.status === 'completed' &&
+        !completed.has(task.taskId) &&
+        previous.some((old) => old.taskId === task.taskId && old.status === 'running')
+      ) {
         completed.add(task.taskId)
         toast.add({
           color: 'success',
@@ -69,6 +97,7 @@ onMounted(async () => {
 <template>
   <div class="flex h-full bg-default text-default">
     <AppSidebar />
+    <DownloadWizard />
     <div class="flex min-w-0 flex-1 flex-col">
       <header
         class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-default px-3 py-2"

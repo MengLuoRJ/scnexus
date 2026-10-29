@@ -14,6 +14,7 @@ export type AuthSnapshot = {
   accessExpiresAt: number | null
   sessionId: string | null
   clientId?: string | null
+  userId?: string | null
   sessionExpiresAt: string | null
   mfaExpiresAt: number | null
 }

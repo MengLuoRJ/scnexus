@@ -19,7 +19,22 @@ SCNexus 唯一桌面界面，后续页面与功能均在此包维护。旧 `app-
 
 ## 下载管理
 
-`/downloads` 无需登录，关闭 Workshop 后仍可访问。“新建任务”目前仅提供公开 GitHub 仓库来源：输入 `https://github.com/owner/repository` 地址和分支（默认 `main`），先校验仓库根清单，再创建下载任务。支持战役、自制作品与依赖包；不自动安装。完成后有全局 toast，用户点击任务中的“安装”继续既有内容分析与冲突确认流程。工坊任务仍遵守原有认证及开关限制。详见 [GitHub 下载说明](../../docs/server-integration.md#github-仓库下载2026-10-29)。
+`/downloads` 无需登录，关闭 Workshop 后仍可访问，GitHub 历史始终显示。手动新建、工坊页下载及 `download=true` 深链共用全局下载向导：**输入来源 → 确认获取信息 → 预览 → 确认下载**。获取预览不会创建传输任务；取消预览也不会开始下载。
+
+- GitHub：输入 `https://github.com/owner/repository` 和分支（默认 `main`），`previewGithub` 展示根目录 `package.json` 基本资料；确认时以 `previewId` 下载已固定的 revision。
+- 工坊：输入 SCNID，从 `apiWorkshopDetail` 提取标题、简介、SCNID 和当前审核版本，不复制富文本详情；确认时使用预览中的 `approvedVersionId`，不重新追随最新版本。要求登录且启用 Workshop；未登录跳转个人中心并保留来源意图，不自动启用开关。账号或开关变化使旧工坊预览失效。
+- 列表分“进行中”和“历史记录”，展示名称、来源、创建/完成时间、进度、字节与速度；历史持久化及账号隔离由 main 负责。运行任务先暂停或取消才能删除。删除前调用 `inspectDownload`：文件存在时选择“仅删除记录”或“记录和文件”，不存在时只删除记录；成功后刷新，忽略迟到的已删除任务事件。
+- 仅运行 → 完成转换触发全局 toast，初次加载历史不提示。支持战役、自制作品与依赖包；不自动安装，点击“安装”继续既有内容分析及冲突确认流程。
+
+任务记录保存在 `.scnexus`，新下载文件使用设置中的下载目录，每个任务保留创建时的位置。下载管理顶部“打开下载位置”打开当前设置目录；无桌面桥接时禁用。旧任务文件不自动搬移。
+
+下载桥接封装集中在 `src/ipcs/workshop.ts`，向导状态位于 `src/stores/workshop.ts`，全局对话框为 `src/components/workshop/DownloadWizard.vue`。
+
+## 语言资源
+
+语言资源按语言与模块存放在 `src/locales/{zh,en,zh-Hant}/{module}.json`，模块名取扁平键的首段，例如 `downloads.openLocation` 位于 `downloads.json`。每种语言的 `index.ts` 显式导入并合并全部模块；新增模块时须同步更新三个语言入口，保持三语键集合一致，不使用旧单体 JSON 或兼容壳。
+
+`src/locales/index.ts` 导出运行时 `i18n` 与完整扁平资源 `messages`，默认语言和回退语言均为 `zh`。测试按需导入 `src/locales/zh` 等合并结果，不单独拼接工坊资源。`src/locales/__tests__/locales.test.ts` 检查模块归属、重复键、入口完整性、三语键集合、语言加载及回退。
 
 ## IPC 调用约定
 

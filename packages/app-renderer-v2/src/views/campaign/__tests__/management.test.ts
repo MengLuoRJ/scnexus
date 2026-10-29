@@ -5,7 +5,7 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { ActiveCampaign, ContentRecord } from '@scnexus/app-shared/types/content.type'
 import CampaignManagement from '../components/CampaignManagement.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 
 const records = [
   {

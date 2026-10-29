@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { computed, onScopeDispose, onMounted, reactive, ref, watch } from 'vue'
-import { z } from 'zod'
+import { computed, onScopeDispose, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
 import {
-  ipcWorkshopDownload,
+  ipcWorkshopOpenDownloadLocation,
+  ipcWorkshopInspectDownload,
   ipcWorkshopPause,
   ipcWorkshopResume,
   ipcWorkshopCancel,
@@ -31,53 +32,74 @@ import type { RemovalPreview, RemovalDecision } from '@scnexus/app-shared/types/
 import LauncherChoice from '../../components/content/LauncherChoice.vue'
 import RecordDetails from '../../components/content/RecordDetails.vue'
 const detail = ref<ContentRecord | null>(null)
+const history = ref(false)
+const openingLocation = ref(false)
+const desktopAvailable = Boolean(window.scnexus)
+async function openDownloadLocation() {
+  if (openingLocation.value) return
+  openingLocation.value = true
+  try {
+    unwrapWorkshop(await ipcWorkshopOpenDownloadLocation())
+  } catch {
+    toast.add({ color: 'error', title: t('downloads.openLocationError') })
+  } finally {
+    openingLocation.value = false
+  }
+}
+const removalTask = ref<{ taskId: string; name: string; fileExists: boolean } | null>(null)
+const deleting = ref(false)
+const visibleTasks = computed(() =>
+  store.downloads.filter(
+    (task) => history.value === ['completed', 'cancelled', 'failed'].includes(task.status),
+  ),
+)
+function formatBytes(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return '0 B'
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
+  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
+  return `${(value / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`
+}
+function formatTime(value?: string) {
+  return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : '—'
+}
+async function inspectRemoval(taskId: string, name: string) {
+  if (deleting.value) return
+  deleting.value = true
+  try {
+    const result = unwrapWorkshop(await ipcWorkshopInspectDownload(taskId))
+    removalTask.value = { taskId, name, fileExists: result.fileExists }
+  } catch {
+    toast.add({ color: 'error', title: t('workshop.operationError') })
+  } finally {
+    deleting.value = false
+  }
+}
+async function removeTask(deleteFile: boolean) {
+  if (!removalTask.value || deleting.value) return
+  deleting.value = true
+  try {
+    await store.removeDownload(removalTask.value.taskId, deleteFile)
+    removalTask.value = null
+    toast.add({ color: 'success', title: t('downloads.removed') })
+  } catch {
+    toast.add({ color: 'error', title: t('workshop.operationError') })
+  } finally {
+    deleting.value = false
+  }
+}
 import ConflictChoices from '../campaign/components/ConflictChoices.vue'
 defineOptions({ name: 'DownloadsView' })
 const store = useWorkshopStore()
 const { t } = useI18n()
 const toast = useToast()
-const newTaskOpen = ref(false)
-const creating = ref(false)
-const newTask = reactive({ kind: 'github' as const, repository: '', revision: 'main' })
-const taskSchema = computed(() =>
-  z.object({
-    kind: z.literal('github'),
-    repository: z
-      .string()
-      .trim()
-      .regex(
-        /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/i,
-        t('downloads.invalidRepository'),
-      ),
-    revision: z.string().trim().min(1, t('downloads.invalidBranch')).max(255),
-  }),
-)
-async function createTask() {
-  if (creating.value) return
-  const parsed = taskSchema.value.safeParse(newTask)
-  if (!parsed.success) return
-  creating.value = true
-  try {
-    const result = await ipcWorkshopDownload(parsed.data)
-    if (!result.ok) {
-      toast.add({
-        color: 'error',
-        title: t('downloads.createError'),
-        description: t('downloads.checkRepository'),
-      })
-      return
-    }
-    store.accept(result.data)
-    newTaskOpen.value = false
-    newTask.repository = ''
-    newTask.revision = 'main'
-    toast.add({ color: 'success', title: t('downloads.created'), description: result.data.name })
-  } catch {
-    toast.add({ color: 'error', title: t('downloads.createError') })
-  } finally {
-    creating.value = false
+const route = useRoute()
+const router = useRouter()
+onMounted(() => {
+  if (route.query.download === 'resume') {
+    store.wizardOpen = true
+    void router.replace('/downloads')
   }
-}
+})
 if (window.scnexus) onScopeDispose(store.connect())
 const analysis = ref<AnalysisResult | null>(null)
 const mode = ref<InstallMode>('scnexus')
@@ -185,7 +207,7 @@ async function confirm() {
   <section class="space-y-3">
     <p class="text-sm text-muted">{{ t('workshop.downloadManagerHint') }}</p>
     <div class="flex items-center gap-2">
-      <UButton size="sm" icon="i-tabler-plus" @click="newTaskOpen = true">{{
+      <UButton size="sm" icon="i-tabler-plus" @click="store.openDownload()">{{
         t('downloads.newTask')
       }}</UButton>
       <UButton
@@ -196,72 +218,81 @@ async function confirm() {
         @click="store.load()"
         >{{ t('workshop.reload') }}</UButton
       >
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="outline"
+        icon="i-tabler-folder"
+        :loading="openingLocation"
+        :disabled="!desktopAvailable"
+        @click="openDownloadLocation"
+        >{{ t('downloads.openLocation') }}</UButton
+      >
     </div>
-    <UModal
-      v-model:open="newTaskOpen"
-      :title="t('downloads.newTask')"
-      :description="t('downloads.githubHint')"
-      :dismissible="!creating"
-      :close="!creating"
-    >
-      <template #body>
-        <UForm
-          id="new-download-task"
-          :schema="taskSchema"
-          :state="newTask"
-          class="space-y-2"
-          @submit="createTask"
-        >
-          <UFormField :label="t('downloads.source')" name="kind" required>
-            <USelect
-              v-model="newTask.kind"
-              :items="[{ label: t('downloads.github'), value: 'github' }]"
-              :disabled="creating"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField :label="t('downloads.repository')" name="repository" required>
-            <UInput
-              v-model="newTask.repository"
-              placeholder="https://github.com/owner/repository"
-              :disabled="creating"
-              class="w-full"
-            />
-          </UFormField>
-          <UFormField :label="t('downloads.branch')" name="revision" required>
-            <UInput v-model="newTask.revision" :disabled="creating" class="w-full" />
-          </UFormField>
-        </UForm>
-      </template>
-      <template #footer>
-        <div class="flex w-full justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="outline"
-            :disabled="creating"
-            @click="newTaskOpen = false"
-            >{{ t('campaign.cancel') }}</UButton
-          >
-          <UButton type="submit" form="new-download-task" :loading="creating">{{
-            t(creating ? 'downloads.checking' : 'downloads.start')
-          }}</UButton>
-        </div>
-      </template>
-    </UModal>
     <UAlert
       v-if="store.error"
       color="neutral"
       variant="subtle"
       :title="t('workshop.transferError')"
     />
-    <UAlert
-      v-if="!store.downloads.length && !store.loading"
-      color="neutral"
-      variant="subtle"
-      :title="t('workshop.noDownloads')"
-    />
+    <div class="flex gap-2" role="tablist" :aria-label="t('workshop.downloads')">
+      <UButton
+        role="tab"
+        :aria-selected="!history"
+        :variant="!history ? 'solid' : 'outline'"
+        @click="history = false"
+        >{{ t('downloads.active') }}</UButton
+      >
+      <UButton
+        role="tab"
+        :aria-selected="history"
+        :variant="history ? 'solid' : 'outline'"
+        @click="history = true"
+        >{{ t('downloads.history') }}</UButton
+      >
+    </div>
+    <p v-if="!visibleTasks.length" class="text-sm text-muted">{{ t('workshop.noDownloads') }}</p>
+    <UModal
+      :open="Boolean(removalTask)"
+      :title="t('downloads.remove')"
+      :description="removalTask?.name"
+      :dismissible="!deleting"
+      :close="!deleting"
+      @update:open="
+        (open: boolean) => {
+          if (!open) removalTask = null
+        }
+      "
+    >
+      <template #body
+        ><p>
+          {{
+            t(removalTask?.fileExists ? 'downloads.removeFileHint' : 'downloads.removeRecordHint')
+          }}
+        </p></template
+      >
+      <template #footer>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :disabled="deleting"
+          @click="removalTask = null"
+          >{{ t('campaign.cancel') }}</UButton
+        >
+        <UButton :loading="deleting" @click="removeTask(false)">{{
+          t('downloads.recordOnly')
+        }}</UButton>
+        <UButton
+          v-if="removalTask?.fileExists"
+          color="error"
+          :loading="deleting"
+          @click="removeTask(true)"
+          >{{ t('downloads.recordAndFile') }}</UButton
+        >
+      </template>
+    </UModal>
     <article
-      v-for="task in store.downloads"
+      v-for="task in visibleTasks"
       :key="task.taskId"
       class="space-y-2 rounded border border-default p-3"
     >
@@ -270,12 +301,36 @@ async function confirm() {
         ><UBadge variant="subtle">{{ t(`workshop.task.${task.status}`) }}</UBadge>
       </div>
       <UProgress :model-value="task.size ? Math.round((task.transferred / task.size) * 100) : 0" />
-      <p v-if="task.source?.kind === 'github'" class="break-all text-xs text-muted">
+      <p v-if="task.source?.kind === 'workshop'" class="text-xs text-muted">
+        {{ t('downloads.workshop') }} · SCNID {{ task.source.projectScnid }}
+      </p>
+      <p
+        v-if="task.source?.kind === 'github' || task.source?.kind === 'git'"
+        class="break-all text-xs text-muted"
+      >
         {{ t('downloads.github') }} · {{ task.source.repository }} · {{ task.source.revision }}
       </p>
-      <p class="text-xs text-muted">{{ task.transferred }} / {{ task.size }} bytes</p>
+      <p class="text-xs text-muted">
+        {{ formatBytes(task.transferred) }} / {{ formatBytes(task.size) }} ·
+        {{ formatBytes(task.bytesPerSecond ?? 0) }}/s
+      </p>
+      <p class="text-xs text-muted">
+        {{ t('downloads.createdAt') }}: {{ formatTime(task.createdAt) }} ·
+        {{ t('downloads.completedAt') }}: {{ formatTime(task.completedAt) }}
+      </p>
+      <p v-if="task.status === 'running'" class="text-xs text-muted">
+        {{ t('downloads.stopBeforeRemove') }}
+      </p>
       <p v-if="task.error" class="break-all text-xs text-error">{{ task.error }}</p>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
+        <UButton
+          size="sm"
+          color="error"
+          variant="outline"
+          :disabled="task.status === 'running' || deleting"
+          @click="inspectRemoval(task.taskId, task.name)"
+          >{{ t('downloads.remove') }}</UButton
+        >
         <UButton
           v-if="task.status === 'running'"
           size="sm"

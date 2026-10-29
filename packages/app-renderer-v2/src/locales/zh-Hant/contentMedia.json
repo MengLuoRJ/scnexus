@@ -1,0 +1,14 @@
+{
+  "contentMedia.relatedDocuments": "相關文檔",
+  "contentMedia.payloadDirectory": "內容目錄",
+  "contentMedia.documents": "包內文檔",
+  "contentMedia.readme": "說明文檔",
+  "contentMedia.changelog": "更新日誌",
+  "contentMedia.noImage": "暫無封面",
+  "contentMedia.loading": "正在讀取包內文檔…",
+  "contentMedia.error": "無法讀取此包內文檔，文件可能已丟失或不可用。",
+  "contentMedia.empty": "此內容包未附帶文檔。",
+  "contentMedia.retry": "重試",
+  "contentMedia.imageError": "部分包內圖片已丟失或格式不受支持。",
+  "contentMedia.localOnly": "僅支持此內容包內的文檔和圖片，外部鏈接已禁用。"
+}

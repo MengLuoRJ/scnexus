@@ -80,18 +80,5 @@
   "workshop.uploadDone": "Upload complete. Check the version status.",
   "workshop.installedDependencies": "Installed dependency packages",
   "workshop.dependencyRemoved": "Dependency removed",
-  "workshop.dependencyRemovalHint": "Shared or modified resources need an explicit keep/delete decision. Other projects’ files are not silently deleted.",
-  "downloads.newTask": "New task",
-  "downloads.source": "Source",
-  "downloads.github": "GitHub repository",
-  "downloads.repository": "Repository URL",
-  "downloads.branch": "Branch",
-  "downloads.githubHint": "Public GitHub repositories only. The root package.json is checked before downloading that revision as a ZIP. Install manually once the download completes.",
-  "downloads.invalidRepository": "Enter a URL in the form https://github.com/owner/repository",
-  "downloads.invalidBranch": "Enter a branch name",
-  "downloads.start": "Check and download",
-  "downloads.checking": "Checking manifest",
-  "downloads.created": "Download task created",
-  "downloads.createError": "Unable to create download task",
-  "downloads.checkRepository": "Check that the repository is public, the branch exists, and its root package.json meets the SCNexus standard."
+  "workshop.dependencyRemovalHint": "Shared or modified resources need an explicit keep/delete decision. Other projects’ files are not silently deleted."
 }

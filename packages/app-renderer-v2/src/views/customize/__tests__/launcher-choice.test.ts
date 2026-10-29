@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import type { InstallPreview } from '@scnexus/app-shared/types/content.type'
 import LauncherChoice from '../../../components/content/LauncherChoice.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 const select = defineComponent({
   props: ['items', 'modelValue'],
   emits: ['update:modelValue'],

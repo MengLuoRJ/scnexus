@@ -8,7 +8,7 @@ import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.err
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 import CampaignView from '../views/campaign/CampaignView.vue'
 import CustomizeView from '../views/customize/CustomizeView.vue'
-import zh from '../locales/zh.json'
+import zh from '../locales/zh'
 const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
   campaign: vi.fn<() => unknown>(),

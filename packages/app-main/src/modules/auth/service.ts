@@ -30,9 +30,21 @@ const empty = (): AuthSnapshot => ({
   accessExpiresAt: null,
   sessionId: null,
   clientId: null,
+  userId: null,
   sessionExpiresAt: null,
   mfaExpiresAt: null,
 })
+
+// Identity is read only from the access token returned by the trusted auth transport.
+// It is a local history partition, not a substitute for server authorization.
+function accessUserId(token: string, sessionId: string): string | null {
+  try {
+    const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+    return uuid(claims.sub) && claims.sid === sessionId ? claims.sub : null
+  } catch {
+    return null
+  }
+}
 
 export function createAuthService(deps: AuthDependencies) {
   const now = deps.now ?? Date.now
@@ -147,6 +159,7 @@ export function createAuthService(deps: AuthDependencies) {
       accessExpiresAt: expiresAt,
       sessionId: pair.sessionId,
       clientId: pair.clientId ?? null,
+      userId: accessUserId(pair.accessToken, pair.sessionId),
       sessionExpiresAt: pair.sessionExpiresAt,
       mfaExpiresAt: null,
     })

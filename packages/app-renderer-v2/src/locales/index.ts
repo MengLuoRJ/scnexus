@@ -1,18 +1,19 @@
 import { createI18n } from 'vue-i18n'
-import zhCN from './zh.json'
-import enUS from './en.json'
-import zhTW from './zh-Hant.json'
-import workshopZh from './workshop.zh.json'
-import workshopEn from './workshop.en.json'
-import workshopTw from './workshop.zh-Hant.json'
+import zh from './zh'
+import en from './en'
+import zhHant from './zh-Hant'
+
+export const messages = { zh, en, 'zh-Hant': zhHant }
+
 export const i18n = createI18n({
   legacy: false,
   locale: 'zh',
   fallbackLocale: 'zh',
   flatJson: true,
+  // Vue I18n expands flat keys in place; keep the exported resources unchanged.
   messages: {
-    zh: { ...zhCN, ...workshopZh },
-    en: { ...enUS, ...workshopEn },
-    'zh-Hant': { ...zhTW, ...workshopTw },
+    zh: { ...messages.zh },
+    en: { ...messages.en },
+    'zh-Hant': { ...messages['zh-Hant'] },
   },
 })

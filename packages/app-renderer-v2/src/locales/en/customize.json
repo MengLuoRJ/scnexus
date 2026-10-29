@@ -1,0 +1,21 @@
+{
+  "customize.title": "Custom content",
+  "customize.installedHint": "The content is installed directly into the game directory. No activation is needed.",
+  "customize.directInstall": "Installs directly into game Maps / Mods. The management directory stores only metadata and a manifest, not another full resource copy.",
+  "customize.autoDetectedHint": "Available only when no package.json is found. Generates a plan from standard Maps / Mods under one package root. metadata.txt is not custom-content metadata; unknown author and version are not guessed.",
+  "customize.empty": "No custom content installed. Select an archive or folder to install, or scan the game directory.",
+  "customize.uninstallConfirm": "Uninstall this content? Game files written by it and its management manifest will be removed. Local files you chose to keep are not deleted; shared files require an explicit choice.",
+  "customize.uninstallComplete": "Custom content uninstalled",
+  "customize.refreshComplete": "Custom content list refreshed",
+  "customize.scanComplete": "Custom content scan completed",
+  "customize.descriptorPresent": "A package.json is present; automatic recognition is unavailable",
+  "customize.launcher": "Launcher map",
+  "customize.launcherManifest": "Specified by package.json.",
+  "customize.launcherDetected": "Detected by filename. You can choose another launcher map.",
+  "customize.launcherMissing": "No launcher detected. Select a map or leave it unset.",
+  "customize.launcherNone": "No launcher",
+  "customize.launch": "Launch",
+  "customize.launchStarted": "Launch requested",
+  "customize.saveLauncher": "Save launcher",
+  "customize.launcherSaved": "Launcher saved"
+}

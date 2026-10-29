@@ -5,7 +5,7 @@ import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import CampaignView from '../views/campaign/CampaignView.vue'
-import zh from '../locales/zh.json'
+import zh from '../locales/zh'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 const mocks = vi.hoisted(() => ({
   launch: vi.fn<() => Promise<unknown>>(),

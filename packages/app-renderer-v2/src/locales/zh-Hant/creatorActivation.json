@@ -1,0 +1,13 @@
+{
+  "creatorActivation.title": "創作者資格",
+  "creatorActivation.activate": "使用邀請碼激活",
+  "creatorActivation.code": "創作邀請碼",
+  "creatorActivation.invalid": "請輸入有效的創作邀請碼",
+  "creatorActivation.success": "創作者資格已更新",
+  "creatorActivation.retry": "重试",
+  "creatorActivation.state.NONE": "未激活",
+  "creatorActivation.state.ACTIVE": "已激活",
+  "creatorActivation.state.REVOKED": "已撤銷",
+  "creatorActivation.state.BLOCKED": "已封禁",
+  "creatorActivation.state.UNKNOWN": "尚未獲取"
+}

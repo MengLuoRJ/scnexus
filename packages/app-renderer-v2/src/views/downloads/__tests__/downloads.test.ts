@@ -2,19 +2,34 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { reactive, defineComponent } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
+import { createPinia } from 'pinia'
 import type { Plugin } from 'vue'
 import View from '../DownloadsView.vue'
-import zh from '../../../locales/zh.json'
-import workshopZh from '../../../locales/workshop.zh.json'
+import zh from '../../../locales/zh'
 const mocks = vi.hoisted(() => ({
   source: vi.fn<() => Promise<unknown>>(),
   analyze: vi.fn<() => Promise<unknown>>(),
   install: vi.fn<() => Promise<unknown>>(),
   download: vi.fn<() => Promise<unknown>>(),
+  openDownload: vi.fn<() => void>(),
+  openLocation: vi.fn<() => Promise<unknown>>(),
+  inspect: vi.fn<() => Promise<unknown>>(),
+  remove: vi.fn<() => Promise<unknown>>(),
+  workshopDownload: vi.fn<(scnid: number) => Promise<unknown>>(),
+  push: vi.fn<(value: unknown) => Promise<void>>(),
   accept: vi.fn<(value: unknown) => void>(),
   toast: vi.fn<(value: unknown) => void>(),
 }))
+const access = reactive({ signedIn: true, enabled: true })
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ push: mocks.push }),
+}))
+vi.mock('../../../stores/auth', () => ({ useAuthStore: () => access }))
+vi.mock('../../../stores/content-center', () => ({ useContentCenterStore: () => access }))
 const state = reactive({
+  openDownload: mocks.openDownload,
+  removeDownload: mocks.remove,
   downloads: [
     {
       taskId: 'test-task',
@@ -35,7 +50,9 @@ vi.mock('../../../stores/workshop', () => ({
   unwrapWorkshop: (value: { data: unknown }) => value.data,
 }))
 vi.mock('../../../ipcs/workshop', () => ({
+  ipcWorkshopOpenDownloadLocation: mocks.openLocation,
   ipcWorkshopDownload: mocks.download,
+  ipcWorkshopInspectDownload: mocks.inspect,
   ipcWorkshopInstallSource: mocks.source,
   ipcWorkshopPause: async () => {},
   ipcWorkshopResume: async () => {},
@@ -67,16 +84,20 @@ const wrappers: { unmount(): void }[] = []
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
   vi.clearAllMocks()
+  vi.unstubAllGlobals()
+  access.signedIn = true
+  access.enabled = true
 })
 function render() {
   const wrapper = mount(View, {
     global: {
       plugins: [
+        createPinia(),
         createI18n({
           legacy: false,
           locale: 'zh',
           flatJson: true,
-          messages: { zh: { ...zh, ...workshopZh } },
+          messages: { zh },
         }) as unknown as Plugin,
       ],
       stubs: {
@@ -85,7 +106,11 @@ function render() {
         Alert: true,
         Progress: true,
         Badge: true,
-        Select: true,
+        Select: defineComponent({
+          props: ['modelValue', 'items'],
+          emits: ['update:modelValue'],
+          template: `<select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.label }}</option></select>`,
+        }),
         Form: defineComponent({
           emits: ['submit'],
           template: '<form @submit.prevent="$emit(\'submit\')"><slot /></form>',
@@ -115,6 +140,10 @@ test('completed downloads never install automatically; explicit install verifies
   mocks.install.mockResolvedValue({ data: { package: { name: 'Dependency' } } })
   const wrapper = render()
   await flushPromises()
+  await wrapper
+    .findAll('button')
+    .find((button) => button.text() === '历史记录')!
+    .trigger('click')
   expect(mocks.source).not.toHaveBeenCalled()
   expect(mocks.install).not.toHaveBeenCalled()
   await wrapper
@@ -137,66 +166,77 @@ test('completed downloads never install automatically; explicit install verifies
   })
 })
 
-test('new public GitHub task defaults to main and never starts installation', async () => {
-  const task = { taskId: 'github-task', kind: 'download', name: 'Example', status: 'running' }
-  mocks.download.mockResolvedValue({ ok: true, data: task })
+test('manual entry opens the shared wizard without creating a task', async () => {
   const wrapper = render()
   await wrapper
     .findAll('button')
     .find((button) => button.text() === '新建任务')!
     .trigger('click')
-  const inputs = wrapper.findAll('input')
-  expect((inputs[1]!.element as HTMLInputElement).value).toBe('main')
-  await inputs[0]!.setValue('https://github.com/MengLuoRJ/scnexus-package-test')
-  await wrapper.get('form').trigger('submit')
+  expect(mocks.openDownload).toHaveBeenCalledOnce()
+  expect(mocks.download).not.toHaveBeenCalled()
+})
+test.each([true, false])(
+  'deletion inspects cache and offers file deletion only when present (%s)',
+  async (fileExists) => {
+    mocks.inspect.mockResolvedValue({ data: { fileExists } })
+    mocks.remove.mockResolvedValue(undefined)
+    const wrapper = render()
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '历史记录')!
+      .trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '删除任务')!
+      .trigger('click')
+    await flushPromises()
+    expect(mocks.inspect).toHaveBeenCalledWith('test-task')
+    expect(wrapper.findAll('button').some((button) => button.text() === '记录和文件')).toBe(
+      fileExists,
+    )
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '仅删除记录')!
+      .trigger('click')
+    await flushPromises()
+    expect(mocks.remove).toHaveBeenCalledWith('test-task', false)
+  },
+)
+
+test('open download location invokes the dedicated bridge without starting a download or installation', async () => {
+  vi.stubGlobal('scnexus', {})
+  mocks.openLocation.mockResolvedValue({ ok: true, data: undefined })
+  const wrapper = render()
+  await wrapper
+    .findAll('button')
+    .find((button) => button.text() === '打开下载位置')!
+    .trigger('click')
   await flushPromises()
-  expect(mocks.download).toHaveBeenCalledWith({
-    kind: 'github',
-    repository: 'https://github.com/MengLuoRJ/scnexus-package-test',
-    revision: 'main',
-  })
-  expect(mocks.accept).toHaveBeenCalledWith(task)
-  expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'success' }))
-  expect(mocks.source).not.toHaveBeenCalled()
+  expect(mocks.openLocation).toHaveBeenCalledOnce()
+  expect(mocks.download).not.toHaveBeenCalled()
   expect(mocks.install).not.toHaveBeenCalled()
 })
 
-test('custom branch is sent unchanged and invalid repository URLs are rejected locally', async () => {
-  mocks.download.mockResolvedValue({ ok: true, data: { taskId: 'task', name: 'Example' } })
+test('open download location is disabled without desktop bridge', () => {
   const wrapper = render()
-  await wrapper
-    .findAll('button')
-    .find((button) => button.text() === '新建任务')!
-    .trigger('click')
-  const inputs = wrapper.findAll('input')
-  await inputs[0]!.setValue('https://github.com.evil.test/owner/repo')
-  await wrapper.get('form').trigger('submit')
-  expect(mocks.download).not.toHaveBeenCalled()
-  await inputs[0]!.setValue('https://github.com/owner/repo.git')
-  await inputs[1]!.setValue('feature/new-package')
-  await wrapper.get('form').trigger('submit')
-  await flushPromises()
-  expect(mocks.download).toHaveBeenCalledWith({
-    kind: 'github',
-    repository: 'https://github.com/owner/repo.git',
-    revision: 'feature/new-package',
-  })
+  expect(
+    wrapper
+      .findAll('button')
+      .find((button) => button.text() === '打开下载位置')!
+      .attributes('disabled'),
+  ).toBeDefined()
 })
 
-test('manifest check failure keeps form values for correction and shows a failure toast', async () => {
-  mocks.download.mockResolvedValue({ ok: false, error: { message: 'GITHUB_MANIFEST_INVALID' } })
+test('open download location reports system failures with a toast', async () => {
+  vi.stubGlobal('scnexus', {})
+  mocks.openLocation.mockRejectedValue(new Error('DOWNLOAD_LOCATION_OPEN_FAILED'))
   const wrapper = render()
   await wrapper
     .findAll('button')
-    .find((button) => button.text() === '新建任务')!
+    .find((button) => button.text() === '打开下载位置')!
     .trigger('click')
-  await wrapper.findAll('input')[0]!.setValue('https://github.com/owner/repo')
-  await wrapper.get('form').trigger('submit')
   await flushPromises()
-  expect(wrapper.find('form').exists()).toBe(true)
-  expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe(
-    'https://github.com/owner/repo',
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ color: 'error', title: '无法打开下载位置，请检查目录权限后重试' }),
   )
-  expect(mocks.accept).not.toHaveBeenCalled()
-  expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
 })

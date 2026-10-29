@@ -4,10 +4,11 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import type { WorkshopTask } from '@scnexus/app-shared/types/workshop.type'
+import type { DeepLinkWorkshop } from '@scnexus/app-shared/types/desktop.type'
 import AppLayout from '../AppLayout.vue'
-import zh from '../../locales/zh.json'
-import workshopZh from '../../locales/workshop.zh.json'
+import zh from '../../locales/zh'
 const mocks = vi.hoisted(() => ({
+  deepLink: vi.fn<(listener: (intent: DeepLinkWorkshop) => void) => () => void>(() => () => {}),
   toast: vi.fn<(value: unknown) => void>(),
   connect: vi.fn<() => () => void>(),
   stop: vi.fn<() => void>(),
@@ -17,12 +18,14 @@ vi.mock('../../stores/workshop', () => ({ useWorkshopStore: () => transfers }))
 vi.mock('../../stores/auth', () => ({
   useAuthStore: () => ({ signedIn: false, initialize: async () => {}, dispose: () => {} }),
 }))
+const center = reactive({ enabled: false, initialize: async () => {}, accept: () => {} })
 vi.mock('../../stores/content-center', () => ({
-  useContentCenterStore: () => ({ enabled: false, initialize: async () => {}, accept: () => {} }),
+  useContentCenterStore: () => center,
 }))
 vi.mock('../../stores/creator', () => ({
   useCreatorStore: () => ({ active: false, loading: false }),
 }))
+vi.mock('../../ipcs/deep-link', () => ({ ipcDeepLinkOnWorkshop: mocks.deepLink }))
 vi.mock('../../ipcs', () => ({
   ipcSettingOnChanged: () => () => {},
   ipcSettingGetSnapshot: async () => ({ ok: false }),
@@ -50,10 +53,10 @@ test('anonymous GitHub transfers stay subscribed with workshop disabled and comp
           legacy: false,
           flatJson: true,
           locale: 'zh',
-          messages: { zh: { ...zh, ...workshopZh } },
+          messages: { zh },
         }),
       ],
-      stubs: { AppSidebar: true },
+      stubs: { AppSidebar: true, DownloadWizard: true },
     },
   })
   try {
@@ -67,6 +70,9 @@ test('anonymous GitHub transfers stay subscribed with workshop disabled and comp
       transferred: 0,
       size: 5,
     }
+    transfers.tasks = [{ ...task, taskId: 'old', status: 'completed' }]
+    await nextTick()
+    expect(mocks.toast).not.toHaveBeenCalled()
     transfers.tasks = [task]
     await nextTick()
     expect(mocks.toast).not.toHaveBeenCalled()
@@ -82,4 +88,49 @@ test('anonymous GitHub transfers stay subscribed with workshop disabled and comp
     wrapper.unmount()
   }
   expect(mocks.stop).toHaveBeenCalledOnce()
+})
+
+test('layout routes typed workshop links and warns instead of enabling a disabled module', async () => {
+  vi.stubGlobal('scnexus', {})
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', component: { template: '<div />' } },
+      { path: '/workshop/:scnid', component: { template: '<div />' } },
+    ],
+  })
+  await router.push('/')
+  const wrapper = mount(AppLayout, {
+    global: {
+      plugins: [
+        router,
+        createI18n({
+          legacy: false,
+          flatJson: true,
+          locale: 'zh',
+          messages: { zh },
+        }),
+      ],
+      stubs: { AppSidebar: true, DownloadWizard: true },
+    },
+  })
+  try {
+    const handler = mocks.deepLink.mock.calls[0]![0]
+    handler({ scnid: 42, download: false })
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/')
+    expect(mocks.toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'SCNexus Workshop 已禁用' }),
+    )
+    center.enabled = true
+    handler({ scnid: 42, download: true })
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/workshop/42?download=true')
+    handler({ scnid: 43, download: false })
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/workshop/43')
+  } finally {
+    wrapper.unmount()
+    center.enabled = false
+  }
 })

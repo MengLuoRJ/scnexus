@@ -4,7 +4,7 @@ import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import ui from '@nuxt/ui/vue-plugin'
 import WorkshopEditor from '../WorkshopEditor.vue'
-import zh from '../../../locales/workshop.zh.json'
+import zh from '../../../locales/zh'
 test('Nuxt UI editor mounts with restricted JSON extensions and emits canonical content', async () => {
   vi.stubGlobal(
     'ResizeObserver',

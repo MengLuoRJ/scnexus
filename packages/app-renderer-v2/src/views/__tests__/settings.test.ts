@@ -8,7 +8,7 @@ import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
 import type { SettingPreferences, SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import SettingsView from '../SettingsView.vue'
-import zh from '../../locales/zh.json'
+import zh from '../../locales/zh'
 
 vi.mock('../../stores/content-center', () => ({
   useContentCenterStore: () => ({ accept: () => {} }),

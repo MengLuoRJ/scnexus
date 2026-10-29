@@ -1,0 +1,7 @@
+{
+  "content.typeConflict": "Content type conflict",
+  "content.typeConflictHint": "package.json and metadata.txt specify different content types. Choose a descriptor to analyze again. Nothing will be installed automatically or silently ignored.",
+  "content.classifying": "Reading descriptors and directory layout to identify content type…",
+  "content.usePackage": "Use package.json",
+  "content.useMetadata": "Use metadata.txt (campaign)"
+}

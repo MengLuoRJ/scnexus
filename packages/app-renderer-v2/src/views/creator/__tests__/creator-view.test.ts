@@ -4,8 +4,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import View from '../CreatorView.vue'
-import zh from '../../../locales/zh.json'
-import workshop from '../../../locales/workshop.zh.json'
+import zh from '../../../locales/zh'
 const mocks = vi.hoisted(() => ({
   mine: vi.fn<() => Promise<unknown>>(),
   create: vi.fn<(auth: unknown, input: unknown) => Promise<unknown>>(),
@@ -76,7 +75,7 @@ function render() {
           legacy: false,
           locale: 'zh',
           flatJson: true,
-          messages: { zh: { ...zh, ...workshop } },
+          messages: { zh },
         }) as unknown as Plugin,
       ],
       stubs: {

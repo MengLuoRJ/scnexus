@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import View from '../WeeklyMutationsView.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 const mocks = vi.hoisted(() => ({
   weekly: vi.fn<() => Promise<unknown>>(),
   catalog: vi.fn<() => Promise<unknown>>(),

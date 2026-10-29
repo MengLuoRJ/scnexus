@@ -33,6 +33,12 @@ export type SettingSnapshot = SettingData & {
   effectiveLanguage: Exclude<DisplayLanguage, 'system'>
 }
 
+export type DeepLinkWorkshop = {
+  scnid: number
+  /** Requests UI download confirmation only; does not start a download task. */
+  download: boolean
+}
+
 export interface DesktopApi {
   dependency: import('./content-api.type.js').ContentApi
   workshop: import('./workshop.type.js').WorkshopApi
@@ -76,6 +82,6 @@ export interface DesktopApi {
     onAuthentication(
       listener: (data: { access_token: string | null; refresh_token: string | null }) => void,
     ): () => void
-    onWorkshop(listener: (id: string) => void): () => void
+    onWorkshop(listener: (data: DeepLinkWorkshop) => void): () => void
   }
 }

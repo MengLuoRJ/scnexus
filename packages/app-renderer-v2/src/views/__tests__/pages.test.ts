@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest'
 import { i18n } from '../../locales'
-import zhCN from '../../locales/zh.json'
-import enUS from '../../locales/en.json'
-import zhTW from '../../locales/zh-Hant.json'
+import zhCN from '../../locales/zh'
+import enUS from '../../locales/en'
+import zhTW from '../../locales/zh-Hant'
 test('all interface languages provide matching flat translation keys', () => {
   expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort())
   expect(Object.keys(zhTW).sort()).toEqual(Object.keys(zhCN).sort())

@@ -4,9 +4,14 @@ import type { WorkshopService } from './service'
 
 export function initWorkshopIpc(service: WorkshopService) {
   const handlers = {
+    'workshop:open-download-location': service.openDownloadLocation,
     'workshop:list': service.list,
     'workshop:select-package': service.selectPackage,
+    'workshop:preview-github': service.previewGithub,
+    'workshop:confirm-github': service.confirmGithub,
     'workshop:download': service.download,
+    'workshop:inspect-download': service.inspectDownload,
+    'workshop:remove-download': service.removeDownload,
     'workshop:upload': service.upload,
     'workshop:select-image': service.selectImage,
     'workshop:pause': async (taskId: string) => {

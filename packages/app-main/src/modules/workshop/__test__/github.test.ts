@@ -57,6 +57,7 @@ async function setup(transport: typeof fetch) {
     emit,
     enabled: () => enabled,
     getSnapshot: () => snapshot,
+    getDownloadDirectory: () => join(root, 'cache'),
     refresh: vi.fn<WorkshopDependencies['refresh']>(),
     selectFile: async () => null,
   }
@@ -142,6 +143,8 @@ test('anonymous disabled downloads verify wrapped ZIP and cache, survive account
   const archive = join(f.root, 'fixture.zip')
   await sevenZip.add(archive, ['Repo-commit'], { cwd: input, archiveType: 'zip' })
   zip = await readFile(archive)
+  const downloadDirectory = join(f.root, 'configured-downloads')
+  f.deps.getDownloadDirectory = () => downloadDirectory
   const task = await f.service.download(source)
   f.changeAccount()
   await f.service.authenticationChanged()
@@ -152,6 +155,8 @@ test('anonymous disabled downloads verify wrapped ZIP and cache, survive account
   expect((await f.service.list())[0].sha256Source).toBeUndefined()
   expect(f.emit).toHaveBeenCalled()
   const cached = await f.service.installSource(task.taskId)
+  expect(cached.path).toBe(join(downloadDirectory, task.taskId + '.package'))
+  expect(await readdir(join(f.root, 'cache'))).toEqual([])
   const opened = await openSource(cached)
   expect(opened.entries[0].path).toBe('Repo-commit/package.json')
   expect(await classifySource(opened)).toMatchObject({
@@ -284,4 +289,47 @@ test('dependency ZIP downloads, exposes a verified source and enters the existin
   expect(analysis.modes.scnexus?.rootRelativePath).toBe('Repo-commit')
   expect(analysis.modes.ccm).toBeNull()
   expect((await content.analyzeContent(cached)).contentType).toBe('dependency')
+})
+test('preview reads only fixed-commit manifest, creates no tasks and confirmation never follows the branch again', async () => {
+  let currentCommit = commit
+  const transport = vi.fn<typeof fetch>(async (url) =>
+    String(url).includes('api.github.com')
+      ? json({ sha: currentCommit })
+      : String(url).includes('raw.githubusercontent.com')
+        ? json(manifest)
+        : new Response(null, { status: 404 }),
+  )
+  const f = await setup(transport)
+  const preview = await f.service.previewGithub(source)
+  expect(preview.manifest).toEqual(manifest)
+  expect(JSON.stringify(preview)).not.toContain('path')
+  expect(await f.service.list()).toEqual([])
+  expect(transport).toHaveBeenCalledTimes(2)
+  expect(JSON.parse(await readFile(join(f.root, 'tasks.json'), 'utf8')).tasks).toEqual([])
+  currentCommit = 'b'.repeat(40)
+  await f.service.confirmGithub(preview.previewId)
+  await f.service.waitForIdle()
+  expect(
+    transport.mock.calls.filter(([url]) => String(url).includes('api.github.com')),
+  ).toHaveLength(1)
+  expect(
+    transport.mock.calls.some(
+      ([url]) => String(url) === `https://codeload.github.com/Owner/Repo/zip/${commit}`,
+    ),
+  ).toBe(true)
+  expect(JSON.stringify(transport.mock.calls)).not.toContain(currentCommit)
+  await expect(f.service.confirmGithub(preview.previewId)).rejects.toThrow('GITHUB_PREVIEW_EXPIRED')
+})
+test('expired Github preview cannot create a download', async () => {
+  const f = await setup(
+    vi.fn<typeof fetch>(async (url) =>
+      String(url).includes('api.github.com') ? json({ sha: commit }) : json(manifest),
+    ),
+  )
+  const preview = await f.service.previewGithub(source)
+  const now = Date.now()
+  const spy = vi.spyOn(Date, 'now').mockReturnValue(now + 11 * 60 * 1000)
+  await expect(f.service.confirmGithub(preview.previewId)).rejects.toThrow('GITHUB_PREVIEW_EXPIRED')
+  spy.mockRestore()
+  expect(await f.service.list()).toEqual([])
 })

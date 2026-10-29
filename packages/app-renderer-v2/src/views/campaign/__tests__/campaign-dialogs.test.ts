@@ -11,7 +11,7 @@ import type {
 import type { useCampaign } from '../useCampaign'
 import CampaignInstallModal from '../components/CampaignInstallModal.vue'
 import CampaignOperationModal from '../components/CampaignOperationModal.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 
 const tree = {
   kind: 'directory',

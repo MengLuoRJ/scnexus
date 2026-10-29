@@ -9,7 +9,6 @@ import { useCreatorStore } from '../../stores/creator'
 import { useAuthStore } from '../../stores/auth'
 import { useContentCenterStore } from '../../stores/content-center'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
-import { ipcWorkshopDownload } from '../../ipcs/workshop'
 import { ipcShellOpenExternalWebsite } from '../../ipcs/shell'
 import WorkshopRichText from '../../components/workshop/WorkshopRichText.vue'
 defineOptions({ name: 'WorkshopView' })
@@ -32,6 +31,38 @@ const loading = shallowRef(false)
 const error = shallowRef<unknown>(null)
 const downloading = shallowRef(false)
 const id = computed(() => (route.params.scnid ? Number(route.params.scnid) : null))
+let intentGeneration = 0
+watch(
+  () => [route.query.download, route.params.scnid],
+  async () => {
+    const current = ++intentGeneration
+    if (route.query.download !== 'true' || !id.value) return
+    try {
+      await center.initialize()
+      if (current !== intentGeneration) return
+      if (!center.enabled) {
+        toast.add({ color: 'warning', title: t('workshop.disabled') })
+        return
+      }
+      await auth.initialize()
+      if (current !== intentGeneration) return
+      if (!auth.signedIn) {
+        await router.replace({ path: '/account', query: { redirect: route.fullPath } })
+        return
+      }
+      transfers.openDownload(id.value!)
+      const query = { ...route.query }
+      delete query.download
+      await router.replace({ path: route.path, query })
+    } catch {
+      toast.add({ color: 'error', title: t('workshop.operationError') })
+    }
+  },
+  { immediate: true },
+)
+onScopeDispose(() => {
+  intentGeneration++
+})
 let generation = 0
 async function load() {
   const current = ++generation
@@ -63,28 +94,12 @@ function search() {
   else void load()
 }
 async function download() {
+  if (!detail.value || !center.enabled) return
   if (!auth.signedIn) {
-    await router.push({ path: '/account', query: { redirect: route.fullPath } })
+    await router.push({ path: '/account', query: { redirect: `${route.path}?download=true` } })
     return
   }
-  if (!detail.value?.approvedVersionId) return
-  downloading.value = true
-  try {
-    transfers.accept(
-      unwrapWorkshop(
-        await ipcWorkshopDownload({
-          kind: 'workshop',
-          versionId: detail.value.approvedVersionId,
-          projectScnid: detail.value.scnid,
-        }),
-      ),
-    )
-    await router.push('/downloads')
-  } catch {
-    toast.add({ color: 'error', title: t('workshop.transferError') })
-  } finally {
-    downloading.value = false
-  }
+  transfers.openDownload(detail.value.scnid)
 }
 async function openLink(url: string) {
   try {

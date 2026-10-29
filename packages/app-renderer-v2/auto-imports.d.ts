@@ -216,13 +216,18 @@ declare global {
   const ipcWindowSetMaximized: typeof import('./src/ipcs/window').ipcWindowSetMaximized
   const ipcWindowShow: typeof import('./src/ipcs/window').ipcWindowShow
   const ipcWorkshopCancel: typeof import('./src/ipcs/workshop').ipcWorkshopCancel
+  const ipcWorkshopConfirmGithub: typeof import('./src/ipcs/workshop').ipcWorkshopConfirmGithub
   const ipcWorkshopDownload: typeof import('./src/ipcs/workshop').ipcWorkshopDownload
   const ipcWorkshopGetFileMd5: typeof import('./src/ipcs/workshop').ipcWorkshopGetFileMd5
   const ipcWorkshopGetFileMd5Wasm: typeof import('./src/ipcs/workshop').ipcWorkshopGetFileMd5Wasm
+  const ipcWorkshopInspectDownload: typeof import('./src/ipcs/workshop').ipcWorkshopInspectDownload
   const ipcWorkshopInstallSource: typeof import('./src/ipcs/workshop').ipcWorkshopInstallSource
   const ipcWorkshopList: typeof import('./src/ipcs/workshop').ipcWorkshopList
   const ipcWorkshopOnChanged: typeof import('./src/ipcs/workshop').ipcWorkshopOnChanged
+  const ipcWorkshopOpenDownloadLocation: typeof import('./src/ipcs/workshop').ipcWorkshopOpenDownloadLocation
   const ipcWorkshopPause: typeof import('./src/ipcs/workshop').ipcWorkshopPause
+  const ipcWorkshopPreviewGithub: typeof import('./src/ipcs/workshop').ipcWorkshopPreviewGithub
+  const ipcWorkshopRemoveDownload: typeof import('./src/ipcs/workshop').ipcWorkshopRemoveDownload
   const ipcWorkshopResume: typeof import('./src/ipcs/workshop').ipcWorkshopResume
   const ipcWorkshopSelectImage: typeof import('./src/ipcs/workshop').ipcWorkshopSelectImage
   const ipcWorkshopSelectPackage: typeof import('./src/ipcs/workshop').ipcWorkshopSelectPackage
@@ -478,11 +483,16 @@ declare module 'vue' {
     readonly ipcWindowSetMaximized: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowSetMaximized']>
     readonly ipcWindowShow: UnwrapRef<typeof import('./src/ipcs/window')['ipcWindowShow']>
     readonly ipcWorkshopCancel: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopCancel']>
+    readonly ipcWorkshopConfirmGithub: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopConfirmGithub']>
     readonly ipcWorkshopDownload: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopDownload']>
+    readonly ipcWorkshopInspectDownload: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopInspectDownload']>
     readonly ipcWorkshopInstallSource: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopInstallSource']>
     readonly ipcWorkshopList: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopList']>
     readonly ipcWorkshopOnChanged: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopOnChanged']>
+    readonly ipcWorkshopOpenDownloadLocation: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopOpenDownloadLocation']>
     readonly ipcWorkshopPause: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopPause']>
+    readonly ipcWorkshopPreviewGithub: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopPreviewGithub']>
+    readonly ipcWorkshopRemoveDownload: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopRemoveDownload']>
     readonly ipcWorkshopResume: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopResume']>
     readonly ipcWorkshopSelectImage: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopSelectImage']>
     readonly ipcWorkshopSelectPackage: UnwrapRef<typeof import('./src/ipcs/workshop')['ipcWorkshopSelectPackage']>

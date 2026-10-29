@@ -1,0 +1,7 @@
+{
+  "content.typeConflict": "內容類型衝突",
+  "content.typeConflictHint": "package.json 與 metadata.txt 的內容類型不一致。請選擇使用哪個描述文件，然後重新分析；不會自動安裝或忽略衝突。",
+  "content.classifying": "正在讀取描述與目錄結構，識別內容類型…",
+  "content.usePackage": "使用 package.json",
+  "content.useMetadata": "使用 metadata.txt（戰役）"
+}

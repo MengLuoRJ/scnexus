@@ -5,19 +5,29 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import View from '../WorkshopView.vue'
-import zh from '../../../locales/zh.json'
-import workshopZh from '../../../locales/workshop.zh.json'
+import { useWorkshopStore } from '../../../stores/workshop'
+import zh from '../../../locales/zh'
 const state = reactive({ enabled: true, signedIn: false, active: false })
 const mocks = vi.hoisted(() => ({
   list: vi.fn<() => Promise<unknown>>(),
   detail: vi.fn<() => Promise<unknown>>(),
+  replace: vi.fn<(value: unknown) => Promise<void>>(async () => {}),
   push: vi.fn<(value: unknown) => Promise<void>>(async () => {}),
   download: vi.fn<(source: unknown) => Promise<unknown>>(),
 }))
-const route = reactive({ params: {} as { scnid?: string }, fullPath: '/workshop' })
-vi.mock('vue-router', () => ({ useRoute: () => route, useRouter: () => ({ push: mocks.push }) }))
+const route = reactive({
+  params: {} as { scnid?: string },
+  query: {} as Record<string, string>,
+  path: '/workshop',
+  fullPath: '/workshop',
+})
+vi.mock('vue-router', () => ({
+  useRoute: () => route,
+  useRouter: () => ({ push: mocks.push, replace: mocks.replace }),
+}))
 vi.mock('../../../stores/auth', () => ({
   useAuthStore: () => ({
+    initialize: async () => {},
     snapshot: { epoch: 1, sessionId: null },
     get signedIn() {
       return state.signedIn
@@ -33,6 +43,7 @@ vi.mock('../../../stores/creator', () => ({
 }))
 vi.mock('../../../stores/content-center', () => ({
   useContentCenterStore: () => ({
+    initialize: async () => {},
     get enabled() {
       return state.enabled
     },
@@ -61,6 +72,8 @@ afterEach(() => {
   state.signedIn = false
   state.active = false
   route.params = {}
+  route.query = {}
+  route.path = '/workshop'
   route.fullPath = '/workshop'
 })
 function render() {
@@ -72,10 +85,21 @@ function render() {
           legacy: false,
           locale: 'zh',
           flatJson: true,
-          messages: { zh: { ...zh, ...workshopZh } },
+          messages: { zh },
         }) as unknown as Plugin,
       ],
-      stubs: { Button: button, Card: pass, Alert: pass, Progress: true, Input: true },
+      stubs: {
+        Modal: defineComponent({
+          props: ['open'],
+          template:
+            '<div v-if="open" data-confirm><slot name="body" /><slot name="footer" /></div>',
+        }),
+        Button: button,
+        Card: pass,
+        Alert: pass,
+        Progress: true,
+        Input: true,
+      },
     },
   })
   wrappers.push(wrapper)
@@ -101,6 +125,7 @@ test('anonymous users can browse projects but never get a creator entry', async 
 })
 test('anonymous download navigates to login with a safe return path without starting bytes', async () => {
   route.params = { scnid: '2' }
+  route.path = '/workshop/2'
   route.fullPath = '/workshop/2'
   mocks.detail.mockResolvedValue(project)
   const wrapper = render()
@@ -109,7 +134,10 @@ test('anonymous download navigates to login with a safe return path without star
     .findAll('button')
     .find((button) => button.text() === '登录后下载')!
     .trigger('click')
-  expect(mocks.push).toHaveBeenCalledWith({ path: '/account', query: { redirect: '/workshop/2' } })
+  expect(mocks.push).toHaveBeenCalledWith({
+    path: '/account',
+    query: { redirect: '/workshop/2?download=true' },
+  })
   expect(mocks.download).not.toHaveBeenCalled()
 })
 test('disabled module does not fetch projects', async () => {
@@ -117,4 +145,54 @@ test('disabled module does not fetch projects', async () => {
   render()
   await flushPromises()
   expect(mocks.list).not.toHaveBeenCalled()
+})
+
+test('download deep link asks for confirmation before creating a task', async () => {
+  state.signedIn = true
+  route.params = { scnid: '2' }
+  route.path = '/workshop/2'
+  route.fullPath = '/workshop/2?download=true'
+  route.query = { download: 'true' }
+  mocks.detail.mockResolvedValue(project)
+  mocks.download.mockResolvedValue({ ok: true, data: { taskId: 'task' } })
+  const wrapper = render()
+  await flushPromises()
+  expect(wrapper.find('[data-confirm]').exists()).toBe(false)
+  expect(useWorkshopStore().wizardOpen).toBe(true)
+  expect(useWorkshopStore().draft.scnid).toBe('2')
+  expect(useWorkshopStore().preview).toBeNull()
+  expect(mocks.download).not.toHaveBeenCalled()
+  expect(mocks.replace).toHaveBeenCalledWith({ path: '/workshop/2', query: {} })
+})
+
+test('anonymous deep-link intent survives login redirect without creating a task', async () => {
+  route.params = { scnid: '2' }
+  route.path = '/workshop/2'
+  route.fullPath = '/workshop/2?download=true'
+  route.query = { download: 'true' }
+  mocks.detail.mockResolvedValue(project)
+  const wrapper = render()
+  await flushPromises()
+  expect(mocks.replace).toHaveBeenCalledWith({
+    path: '/account',
+    query: { redirect: '/workshop/2?download=true' },
+  })
+  expect(wrapper.find('[data-confirm]').exists()).toBe(false)
+  expect(mocks.download).not.toHaveBeenCalled()
+})
+
+test('cancelling deep-link confirmation clears intent and never downloads', async () => {
+  state.signedIn = true
+  route.params = { scnid: '2' }
+  route.path = '/workshop/2'
+  route.fullPath = '/workshop/2?download=true'
+  route.query = { download: 'true' }
+  mocks.detail.mockResolvedValue(project)
+  const wrapper = render()
+  await flushPromises()
+  expect(wrapper.find('[data-confirm]').exists()).toBe(false)
+  useWorkshopStore().closeDownload()
+  await flushPromises()
+  expect(mocks.download).not.toHaveBeenCalled()
+  expect(mocks.replace).toHaveBeenCalledWith({ path: '/workshop/2', query: {} })
 })

@@ -4,7 +4,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import View from '../EncodingView.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 const mocks = vi.hoisted(() => ({ toast: vi.fn<(value: unknown) => void>() }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 const textarea = defineComponent({

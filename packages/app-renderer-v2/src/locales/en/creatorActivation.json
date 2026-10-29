@@ -1,0 +1,13 @@
+{
+  "creatorActivation.title": "Creator status",
+  "creatorActivation.activate": "Redeem creator invitation",
+  "creatorActivation.code": "Creator invitation code",
+  "creatorActivation.invalid": "Enter a valid creator invitation code",
+  "creatorActivation.success": "Creator status updated",
+  "creatorActivation.retry": "Retry",
+  "creatorActivation.state.NONE": "Not activated",
+  "creatorActivation.state.ACTIVE": "Active",
+  "creatorActivation.state.REVOKED": "Revoked",
+  "creatorActivation.state.BLOCKED": "Blocked",
+  "creatorActivation.state.UNKNOWN": "Not loaded"
+}

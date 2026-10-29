@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import CustomizeUninstallModal from '../components/CustomizeUninstallModal.vue'
 import type { useCustomize } from '../useCustomize'
 import type { ContentRecord, RemovalPreview } from '@scnexus/app-shared/types/content.type'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 const modal = defineComponent({
   props: ['open'],
   template: '<div v-if="open"><slot name="body"/><slot name="footer"/></div>',

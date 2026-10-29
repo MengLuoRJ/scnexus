@@ -1,0 +1,21 @@
+{
+  "customize.title": "自製作品",
+  "customize.installedHint": "作品已直接安裝到遊戲目錄，無需激活。",
+  "customize.directInstall": "直接安裝到遊戲 Maps / Mods，管理目錄僅保存描述和清單，不保留額外完整資源副本。",
+  "customize.autoDetectedHint": "僅在找不到 package.json 時啟用。按同一包根的標準 Maps / Mods 目錄生成清單；metadata.txt 不作為自製作品描述，未知作者和版本不推測。",
+  "customize.empty": "暫無已安裝作品，請選擇壓縮包或文件夾安裝，或掃描遊戲目錄。",
+  "customize.uninstallConfirm": "確認卸載此作品？將移除本作品寫入的遊戲文件和管理清單；選擇保留的本地文件不刪除，共享文件需明確選擇。",
+  "customize.uninstallComplete": "自製作品卸載完成",
+  "customize.refreshComplete": "自製作品列表已刷新",
+  "customize.scanComplete": "自製作品掃描完成",
+  "customize.descriptorPresent": "來源中存在 package.json，不能啟用自動識別",
+  "customize.launcher": "啟動器地圖",
+  "customize.launcherManifest": "由 package.json 明確指定。",
+  "customize.launcherDetected": "已按名稱自動匹配，可更改啟動器地圖。",
+  "customize.launcherMissing": "未識別到啟動器，請選擇地圖；也可暫不設置。",
+  "customize.launcherNone": "不設置啟動器",
+  "customize.launch": "啟動",
+  "customize.launchStarted": "已請求啟動作品",
+  "customize.saveLauncher": "保存啟動器",
+  "customize.launcherSaved": "啟動器已保存"
+}

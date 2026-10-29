@@ -8,7 +8,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import type { AnalysisResult, SourceInput } from '@scnexus/app-shared/types/content.type'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import ContentImportDialog from '../../components/content/ContentImportDialog.vue'
-import zh from '../../locales/zh.json'
+import zh from '../../locales/zh'
 const mocks = vi.hoisted(() => ({
   analyze: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cancel: vi.fn<(id: string) => Promise<unknown>>(),

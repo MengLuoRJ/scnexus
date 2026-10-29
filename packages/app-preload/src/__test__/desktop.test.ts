@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
-import type { DesktopApi } from '@scnexus/app-shared/types/desktop.type'
+import type { DeepLinkWorkshop, DesktopApi } from '@scnexus/app-shared/types/desktop.type'
 
 const mocks = vi.hoisted(() => ({
   expose: vi.fn<(name: string, api: DesktopApi) => void>(),
@@ -19,6 +19,25 @@ vi.mock('electron', () => ({
   },
 }))
 import '../ipc/desktop'
+
+test.each([false, true])(
+  'workshop deep links forward the DTO and unsubscribe (download=%s)',
+  (download) => {
+    mocks.removeListener.mockClear()
+    mocks.invoke.mockClear()
+    const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+    const listener = vi.fn<(data: DeepLinkWorkshop) => void>()
+    const stop = api.deepLink.onWorkshop(listener)
+    const [channel, callback] = mocks.on.mock.calls.at(-1)!
+    expect(channel).toBe('deeplink:workshop')
+    const data: DeepLinkWorkshop = { scnid: 42, download }
+    callback({ sender: 'must not leak' }, data)
+    expect(listener).toHaveBeenCalledExactlyOnceWith(data)
+    expect(mocks.invoke).not.toHaveBeenCalled()
+    stop()
+    expect(mocks.removeListener).toHaveBeenCalledExactlyOnceWith(channel, callback)
+  },
+)
 
 test.each(['campaign', 'customize'] as const)(
   '%s progress subscription strips the Electron event and removes exactly its listener',
@@ -157,4 +176,29 @@ test('content attachments expose only installed ID and package-relative path loo
   mocks.invoke.mockResolvedValueOnce({ ok: true, data: null })
   expect(await api.content.asset('installed', 'missing.md')).toEqual({ ok: true, data: null })
   expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:asset', 'installed', 'missing.md')
+})
+
+test.each([
+  [
+    'previewGithub',
+    'workshop:preview-github',
+    [{ kind: 'github', repository: 'https://github.com/Owner/Repo' }],
+  ],
+  ['confirmGithub', 'workshop:confirm-github', ['preview-id']],
+  ['inspectDownload', 'workshop:inspect-download', ['task-id']],
+  ['removeDownload', 'workshop:remove-download', ['task-id', true]],
+] as const)('%s exposes only its typed workshop channel', async (method, channel, args) => {
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: {} })
+  await (api.workshop[method] as (...values: unknown[]) => Promise<unknown>)(...args)
+  expect(mocks.invoke).toHaveBeenLastCalledWith(channel, ...args)
+})
+
+test('download location uses a dedicated bridge method with an optional task ID, never a path', async () => {
+  mocks.invoke.mockResolvedValue({ ok: true, data: undefined })
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  await api.workshop.openDownloadLocation()
+  expect(mocks.invoke).toHaveBeenLastCalledWith('workshop:open-download-location')
+  await api.workshop.openDownloadLocation('task-id')
+  expect(mocks.invoke).toHaveBeenLastCalledWith('workshop:open-download-location', 'task-id')
 })

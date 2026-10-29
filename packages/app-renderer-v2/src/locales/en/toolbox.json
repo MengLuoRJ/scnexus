@@ -1,0 +1,20 @@
+{
+  "toolbox.title": "Editor Toolbox",
+  "toolbox.intro": "Choose a tool to help create and debug your projects.",
+  "toolbox.encoding": "Encoding converter",
+  "toolbox.encodingHint": "Convert text into UTF-8 hex escapes and Galaxy code.",
+  "toolbox.back": "Back to toolbox",
+  "toolbox.localHint": "Conversion runs locally. Input is never uploaded or saved.",
+  "toolbox.source": "Original text",
+  "toolbox.placeholder": "Enter text to convert, e.g. 测试",
+  "toolbox.format": "Output format",
+  "toolbox.result": "Result",
+  "toolbox.clear": "Clear all",
+  "toolbox.copy": "Copy result",
+  "toolbox.copied": "Result copied",
+  "toolbox.copyFailed": "Copy failed. Select and copy the result manually.",
+  "toolbox.mode.raw": "Raw escapes",
+  "toolbox.mode.string": "String literal",
+  "toolbox.mode.text": "Text expression",
+  "toolbox.mode.debug": "Trigger debug"
+}

@@ -6,7 +6,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import { useAuthStore } from '../../stores/auth'
 import AppSidebar from '../components/AppSidebar.vue'
-import zh from '../../locales/zh.json'
+import zh from '../../locales/zh'
 
 const navigation = defineComponent({ props: ['items'], template: '<nav />' })
 const wrappers: { unmount(): void }[] = []

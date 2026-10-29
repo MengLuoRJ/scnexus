@@ -7,6 +7,16 @@ import type {
 import { ipcDesktop, ipcRequest, ipcSnapshot, ipcSubscription } from './internal/ipc-common'
 
 const workshop = () => (ipcDesktop() as unknown as { workshop: WorkshopApi }).workshop
+export const ipcWorkshopPreviewGithub = (source: Extract<WorkshopSource, { kind: 'github' }>) =>
+  ipcRequest(() => workshop().previewGithub(ipcSnapshot(source)))
+export const ipcWorkshopConfirmGithub = (previewId: string) =>
+  ipcRequest(() => workshop().confirmGithub(previewId))
+export const ipcWorkshopInspectDownload = (taskId: string) =>
+  ipcRequest(() => workshop().inspectDownload(taskId))
+export const ipcWorkshopRemoveDownload = (taskId: string, deleteFile: boolean) =>
+  ipcRequest(() => workshop().removeDownload(taskId, deleteFile))
+export const ipcWorkshopOpenDownloadLocation = (taskId?: string) =>
+  ipcRequest(() => workshop().openDownloadLocation(taskId))
 export const ipcWorkshopList = () => ipcRequest(() => workshop().list())
 export const ipcWorkshopSelectPackage = () => ipcRequest(() => workshop().selectPackage())
 export const ipcWorkshopDownload = (source: WorkshopSource) =>

@@ -6,7 +6,7 @@ import type { ContentRecord } from '@scnexus/app-shared/types/content.type'
 import RecordDetails from '../content/RecordDetails.vue'
 import CampaignDetails from '../../views/campaign/components/CampaignDetails.vue'
 import PackageMarkdown from '../content/PackageMarkdown.vue'
-import zh from '../../locales/zh.json'
+import zh from '../../locales/zh'
 const ipc = vi.hoisted(() => ({ ipcContentAssets: vi.fn<(localId: string) => Promise<unknown>>() }))
 vi.mock('../../ipcs/content', () => ipc)
 const record = {

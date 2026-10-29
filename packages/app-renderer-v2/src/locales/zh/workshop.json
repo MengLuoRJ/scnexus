@@ -80,18 +80,5 @@
   "workshop.uploadDone": "上传完成，请查看版本状态",
   "workshop.installedDependencies": "已安装依赖包",
   "workshop.dependencyRemoved": "依赖包已卸载",
-  "workshop.dependencyRemovalHint": "共享或已修改资源需要明确保留或删除，不会静默删除其他作品的文件。",
-  "downloads.newTask": "新建任务",
-  "downloads.source": "来源",
-  "downloads.github": "GitHub 仓库",
-  "downloads.repository": "仓库地址",
-  "downloads.branch": "分支",
-  "downloads.githubHint": "仅支持公开 GitHub 仓库。先检查根目录 package.json，符合标准后下载该版本的压缩包；下载完成后需手动安装。",
-  "downloads.invalidRepository": "请输入 https://github.com/所有者/仓库 格式的地址",
-  "downloads.invalidBranch": "请输入分支名称",
-  "downloads.start": "检查并下载",
-  "downloads.checking": "正在检查清单",
-  "downloads.created": "下载任务已创建",
-  "downloads.createError": "无法创建下载任务",
-  "downloads.checkRepository": "请检查仓库是否公开、分支是否存在，以及根目录 package.json 是否符合 SCNexus 标准。"
+  "workshop.dependencyRemovalHint": "共享或已修改资源需要明确保留或删除，不会静默删除其他作品的文件。"
 }

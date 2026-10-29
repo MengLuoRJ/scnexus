@@ -4,7 +4,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { Plugin } from 'vue'
 import View from '../CreatorStatus.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 vi.mock('../../../stores/creator', () => ({ useCreatorStore: () => ({ state: null, loading: false, load: async () => {}, redeem: async () => {} }) }))
 vi.mock('../../../stores/content-center', () => ({ useContentCenterStore: () => ({ enabled: true }) }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: () => {} }) }))

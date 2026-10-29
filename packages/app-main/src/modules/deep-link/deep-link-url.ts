@@ -1,9 +1,11 @@
+import type { DeepLinkWorkshop } from '@scnexus/app-shared/types/desktop.type'
+
 export type DeepLinkMessage =
   | {
       channel: 'deeplink:authentication'
       data: { access_token: string | null; refresh_token: string | null }
     }
-  | { channel: 'deeplink:workshop'; data: string | undefined }
+  | { channel: 'deeplink:workshop'; data: DeepLinkWorkshop }
 
 export function parseDeepLink(input: string): DeepLinkMessage | undefined {
   if (typeof input !== 'string') return
@@ -24,9 +26,14 @@ export function parseDeepLink(input: string): DeepLinkMessage | undefined {
     }
   }
   if (url.hostname === 'workshop') {
+    // Match the original URL so URL normalization cannot hide malformed paths.
+    const match = /^scnexus:\/\/workshop\/([1-9]\d*)(?:\?download=(true|false))?$/.exec(input)
+    if (!match || match[0] !== input) return
+    const scnid = Number(match[1])
+    if (!Number.isInteger(scnid) || scnid > 2147483647) return
     return {
       channel: 'deeplink:workshop',
-      data: input.split('scnexus://workshop/')[1],
+      data: { scnid, download: match[2] === 'true' },
     }
   }
 }

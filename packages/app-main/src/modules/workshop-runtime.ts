@@ -1,4 +1,4 @@
-import { dialog, app, BrowserWindow } from 'electron'
+import { dialog, app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { initWorkshopModule } from './workshop'
 import { getAuthSnapshot, refreshAuthSession } from './auth'
@@ -16,7 +16,9 @@ export async function startWorkshop() {
     workshopOrigin: process.env.SCNEXUS_WORKSHOP_ORIGIN ?? '',
     filesOrigin: process.env.SCNEXUS_FILES_ORIGIN ?? '',
     root: join(getApplicationDataDirectory(), 'workshop'),
+    openDirectory: (path) => shell.openPath(path),
     getSnapshot: getAuthSnapshot,
+    getDownloadDirectory: () => settingRepository.getSnapshot().downloadDirectory,
     refresh: refreshAuthSession,
     enabled: () => settingRepository.getSnapshot().workshopEnabled,
     onEnabledChanged(listener) {

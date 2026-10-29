@@ -1,8 +1,8 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { constants } from 'node:fs'
-import { mkdir, readFile, writeFile, rename, lstat, open, rm } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, rename, lstat, open, rm, realpath } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { AuthSnapshot } from '@scnexus/app-shared/types/auth.type'
 import type {
   WorkshopTask,
@@ -19,15 +19,18 @@ export interface WorkshopDependencies {
   workshopOrigin: string
   filesOrigin: string
   getSnapshot(): AuthSnapshot
+  getDownloadDirectory(): string
   refresh(): Promise<AuthSnapshot>
   enabled(): boolean
   onEnabledChanged?(listener: (enabled: boolean) => void): () => void
   emit(task: WorkshopTask): void
   selectFile(kind: 'package' | 'image'): Promise<string | null>
   root?: string
+  openDirectory?(path: string): Promise<string>
   fetch?: typeof fetch
 }
 type StoredTask = WorkshopTask & {
+  downloadDirectory?: string
   commit?: string
   manifest?: Record<string, unknown>
   path?: string
@@ -37,6 +40,7 @@ type StoredTask = WorkshopTask & {
   mime?: string
   idempotencyKey?: string
   ownerSession: string | null
+  ownerUserId?: string
   epoch: number
   chunks?: number[]
   etag?: string
@@ -83,6 +87,9 @@ function publicTask(task: StoredTask): WorkshopTask {
     sha256Source,
     scanStatus,
     error,
+    createdAt,
+    completedAt,
+    bytesPerSecond = 0,
   } = task
   return structuredClone({
     taskId,
@@ -98,6 +105,9 @@ function publicTask(task: StoredTask): WorkshopTask {
     sha256Source,
     scanStatus,
     error,
+    createdAt,
+    completedAt,
+    bytesPerSecond,
   })
 }
 function uuid(value: unknown): asserts value is string {
@@ -139,6 +149,17 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   }
   const tasks = new Map<string, StoredTask>()
   const cancelling = new Set<string>()
+  const removing = new Set<string>()
+  const previews = new Map<
+    string,
+    {
+      source: Extract<WorkshopSource, { kind: 'github' }>
+      commit: string
+      manifest: Record<string, unknown>
+      expiresAt: number
+    }
+  >()
+  const progress = new Map<string, { startedAt: number; bytes: number }>()
   const selections = new Map<string, WorkshopPackageSelection & { path: string; mtimeMs: number }>()
   const running = new Map<string, { controller: AbortController; promise: Promise<void> }>()
   let enabled = deps.enabled()
@@ -155,6 +176,8 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         'INVALID_TASK_STORE',
       )
       if (!['completed', 'cancelled'].includes(task.status)) task.status = 'paused'
+      task.bytesPerSecond = 0
+      if (task.status !== 'completed') delete task.completedAt
       tasks.set(task.taskId, task)
     }
   } catch (error) {
@@ -171,12 +194,29 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       })
     return saving
   }
-  const emit = (task: StoredTask) => {
-    if (
-      task.source?.kind === 'github' ||
-      (enabled && deps.enabled() && deps.getSnapshot().sessionId === task.ownerSession)
+  function visible(task: StoredTask) {
+    if (task.kind === 'download' && task.source?.kind === 'github') return true
+    const snapshot = deps.getSnapshot()
+    return (
+      enabled &&
+      deps.enabled() &&
+      !!snapshot.sessionId &&
+      !!snapshot.accessToken &&
+      (task.kind === 'download'
+        ? !!task.ownerUserId && task.ownerUserId === snapshot.userId
+        : task.ownerSession === snapshot.sessionId)
     )
-      deps.emit(publicTask(task))
+  }
+  const emit = (task: StoredTask) => {
+    if (visible(task)) deps.emit(publicTask(task))
+  }
+  function reportProgress(task: StoredTask, bytes: number) {
+    const sample = progress.get(task.taskId)
+    if (sample) {
+      sample.bytes += bytes
+      task.bytesPerSecond = (sample.bytes * 1000) / Math.max(1, Date.now() - sample.startedAt)
+    }
+    emit(task)
   }
   const save = async (task: StoredTask) => {
     await persist()
@@ -184,14 +224,17 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   }
   function allowed(task?: StoredTask, signal?: AbortSignal) {
     signal?.throwIfAborted()
-    if (task?.source?.kind === 'github') return deps.getSnapshot()
+    if (task?.kind === 'download' && task.source?.kind === 'github') return deps.getSnapshot()
     assert(enabled && deps.enabled(), 'WORKSHOP_DISABLED')
     const snapshot = deps.getSnapshot()
-    if (task)
-      assert(
-        snapshot.sessionId === task.ownerSession && snapshot.epoch === task.epoch,
-        'AUTH_SESSION_CHANGED',
-      )
+    if (task) {
+      assert(visible(task), 'AUTH_SESSION_CHANGED')
+      if (signal || task.kind !== 'download')
+        assert(
+          snapshot.sessionId === task.ownerSession && snapshot.epoch === task.epoch,
+          'AUTH_SESSION_CHANGED',
+        )
+    }
     return snapshot
   }
   async function control<T>(
@@ -252,8 +295,57 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     assert(task, 'TASK_NOT_FOUND')
     return task
   }
+  async function inspectDirectory(directory: string, create = false): Promise<void> {
+    assert(
+      typeof directory === 'string' && isAbsolute(directory) && resolve(directory) === directory,
+      'UNSAFE_CACHE',
+    )
+    let info
+    try {
+      info = await lstat(directory)
+    } catch (error) {
+      if (!create || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      await inspectDirectory(dirname(directory), true)
+      await mkdir(directory, { recursive: true, mode: 0o700 })
+      info = await lstat(directory)
+    }
+    assert(
+      info.isDirectory() &&
+        !info.isSymbolicLink() &&
+        relative(directory, await realpath(directory)) === '',
+      'UNSAFE_CACHE',
+    )
+  }
+  async function currentDownloadDirectory() {
+    const directory = deps.getDownloadDirectory()
+    assert(typeof directory === 'string' && isAbsolute(directory), 'UNSAFE_CACHE')
+    const normalized = resolve(directory)
+    await inspectDirectory(normalized, true)
+    return normalized
+  }
+  function taskDirectory(task: StoredTask) {
+    return task.kind === 'download' ? (task.downloadDirectory ?? cache) : cache
+  }
   function filePath(task: StoredTask, suffix: string) {
-    return join(cache, task.taskId + suffix)
+    return join(taskDirectory(task), task.taskId + suffix)
+  }
+  async function inspectCache(task: StoredTask) {
+    const directory = taskDirectory(task)
+    await inspectDirectory(resolve(root))
+    await inspectDirectory(directory)
+    const files: string[] = []
+    for (const suffix of ['.package', '.partial']) {
+      const path = filePath(task, suffix)
+      assert(relative(directory, path) === task.taskId + suffix, 'UNSAFE_CACHE')
+      try {
+        const info = await lstat(path)
+        assert(info.isFile() && !info.isSymbolicLink(), 'UNSAFE_CACHE')
+        files.push(path)
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      }
+    }
+    return files
   }
   async function downloadAuthorization(task: StoredTask, signal: AbortSignal) {
     assert(task.source?.kind === 'workshop')
@@ -296,6 +388,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     return auth
   }
   async function download(task: StoredTask, signal: AbortSignal) {
+    await inspectCache(task)
     let auth = await downloadAuthorization(task, signal)
     const partial = filePath(task, '.partial')
     let handle
@@ -365,6 +458,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
                   await handle!.write(value, written, value.length - written, position + written)
                 ).bytesWritten
               position += value.length
+              reportProgress(task, value.length)
             }
           } finally {
             await reader.cancel().catch(() => {})
@@ -400,6 +494,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     task.transferred = task.size
   }
   async function downloadGithub(task: StoredTask, signal: AbortSignal) {
+    await inspectCache(task)
     assert(task.source?.kind === 'github' && task.commit && task.manifest, 'INVALID_TASK_STORE')
     const source = githubSource(task.source)
     assert(source.repository === task.source.repository, 'INVALID_TASK_STORE')
@@ -426,7 +521,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
           while (offset < bytes.length)
             offset += (await handle.write(bytes, offset, bytes.length - offset)).bytesWritten
           task.transferred += bytes.length
-          emit(task)
+          reportProgress(task, bytes.length)
         })
         await handle.sync()
       } finally {
@@ -716,11 +811,15 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     assert(
       !running.has(task.taskId) &&
         !cancelling.has(task.taskId) &&
+        !removing.has(task.taskId) &&
         !['completed', 'cancelled'].includes(task.status),
       'TASK_CONFLICT',
     )
     const controller = new AbortController()
     task.status = 'running'
+    task.bytesPerSecond = 0
+    progress.set(task.taskId, { startedAt: Date.now(), bytes: 0 })
+    delete task.completedAt
     delete task.error
     const promise = (async () => {
       try {
@@ -737,8 +836,14 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
           task.status = /UNKNOWN|RECONCIL/.test(task.error) ? 'unknown' : 'failed'
         }
       } finally {
-        running.delete(task.taskId)
-        await save(task)
+        if (task.status === 'completed') task.completedAt = new Date().toISOString()
+        task.bytesPerSecond = 0
+        progress.delete(task.taskId)
+        try {
+          await save(task)
+        } finally {
+          running.delete(task.taskId)
+        }
       }
     })()
     void promise.catch(() => {})
@@ -748,6 +853,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   function make(kind: WorkshopTask['kind'], name: string, size: number): StoredTask {
     const snapshot = allowed()
     assert(snapshot.sessionId && snapshot.accessToken, 'AUTH_REQUIRED')
+    if (kind === 'download') assert(snapshot.userId, 'AUTH_IDENTITY_REQUIRED')
     return {
       taskId: randomUUID(),
       kind,
@@ -756,19 +862,29 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       transferred: 0,
       status: 'paused',
       ownerSession: snapshot.sessionId,
+      ...(kind === 'download' ? { ownerUserId: snapshot.userId! } : {}),
+      createdAt: new Date().toISOString(),
+      bytesPerSecond: 0,
       epoch: snapshot.epoch,
     }
   }
   const service = {
+    async openDownloadLocation(taskId?: string) {
+      let directory: string
+      if (taskId !== undefined) {
+        const task = taskById(taskId)
+        allowed(task)
+        assert(task.kind === 'download', 'DOWNLOAD_TASK_REQUIRED')
+        directory = taskDirectory(task)
+        await inspectDirectory(directory)
+        allowed(task)
+      } else directory = await currentDownloadDirectory()
+      assert(deps.openDirectory, 'DOWNLOAD_LOCATION_UNAVAILABLE')
+      const error = await deps.openDirectory(directory)
+      assert(!error, 'DOWNLOAD_LOCATION_OPEN_FAILED')
+    },
     async list() {
-      const snapshot = deps.getSnapshot()
-      return [...tasks.values()]
-        .filter(
-          (task) =>
-            task.source?.kind === 'github' ||
-            (enabled && deps.enabled() && task.ownerSession === snapshot.sessionId),
-        )
-        .map(publicTask)
+      return [...tasks.values()].filter(visible).map(publicTask)
     },
     async selectPackage() {
       assert(allowed().accessToken, 'AUTH_REQUIRED')
@@ -781,25 +897,49 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       const { path: _path, mtimeMs: _mtime, ...dto } = selection
       return dto
     },
-    async download(source: WorkshopSource) {
+    async previewGithub(source: Extract<WorkshopSource, { kind: 'github' }>) {
+      assert(source?.kind === 'github', 'UNSUPPORTED_SOURCE')
+      const normalized = githubSource(source)
+      const resolved = await resolveGithub(normalized, request, AbortSignal.timeout(120000))
+      for (const [id, preview] of previews) if (preview.expiresAt <= Date.now()) previews.delete(id)
+      assert(previews.size < 100, 'GITHUB_PREVIEW_LIMIT')
+      const previewId = randomUUID()
+      previews.set(previewId, {
+        source: normalized,
+        commit: resolved.commit,
+        manifest: resolved.manifest,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      })
+      return structuredClone({ previewId, source: normalized, manifest: resolved.manifest })
+    },
+    async confirmGithub(previewId: string) {
+      uuid(previewId)
+      const preview = previews.get(previewId)
+      previews.delete(previewId)
+      assert(preview && preview.expiresAt > Date.now(), 'GITHUB_PREVIEW_EXPIRED')
+      const task: StoredTask = {
+        taskId: randomUUID(),
+        kind: 'download',
+        name: preview.source.repository.split('/').at(-1)!,
+        size: 0,
+        transferred: 0,
+        status: 'paused',
+        source: preview.source,
+        commit: preview.commit,
+        manifest: preview.manifest,
+        downloadDirectory: await currentDownloadDirectory(),
+        ownerSession: null,
+        epoch: 0,
+        createdAt: new Date().toISOString(),
+        bytesPerSecond: 0,
+      }
+      tasks.set(task.taskId, task)
+      return launch(task)
+    },
+    async download(source: WorkshopSource): Promise<WorkshopTask> {
       if (source?.kind === 'github') {
-        const normalized = githubSource(source)
-        const resolved = await resolveGithub(normalized, request, AbortSignal.timeout(120000))
-        const task: StoredTask = {
-          taskId: randomUUID(),
-          kind: 'download',
-          name: normalized.repository.split('/').at(-1)!,
-          size: 0,
-          transferred: 0,
-          status: 'paused',
-          source: normalized,
-          commit: resolved.commit,
-          manifest: resolved.manifest,
-          ownerSession: null,
-          epoch: 0,
-        }
-        tasks.set(task.taskId, task)
-        return launch(task)
+        const preview = await service.previewGithub(source)
+        return service.confirmGithub(preview.previewId)
       }
       assert(workshopOrigin, 'WORKSHOP_STORAGE_NOT_CONFIGURED')
       assert(
@@ -813,7 +953,9 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
           source.projectScnid > 0 &&
           source.projectScnid <= 2147483647,
       )
+      const downloadDirectory = await currentDownloadDirectory()
       const task = make('download', `Workshop ${source.projectScnid}`, 0)
+      task.downloadDirectory = downloadDirectory
       task.source = structuredClone(source)
       tasks.set(task.taskId, task)
       return launch(task)
@@ -847,7 +989,10 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     },
     async pause(id: string, internal = false) {
       const task = taskById(id)
-      if (!internal) allowed(task)
+      if (!internal) {
+        allowed(task)
+        assert(!removing.has(id), 'TASK_CONFLICT')
+      }
       const active = running.get(id)
       active?.controller.abort()
       await active?.promise
@@ -859,9 +1004,12 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     async resume(id: string) {
       const task = taskById(id)
       if (task.source?.kind === 'github') return launch(task)
+      assert(visible(task), 'AUTH_SESSION_CHANGED')
       const snapshot = allowed()
-      assert(snapshot.sessionId === task.ownerSession, 'AUTH_SESSION_CHANGED')
+      if (task.kind !== 'download')
+        assert(snapshot.sessionId === task.ownerSession, 'AUTH_SESSION_CHANGED')
       if (task.kind === 'download') assert(workshopOrigin, 'WORKSHOP_STORAGE_NOT_CONFIGURED')
+      task.ownerSession = snapshot.sessionId
       task.epoch = snapshot.epoch
       return launch(task)
     },
@@ -870,7 +1018,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       allowed(task)
       if (task.status === 'cancelled') return
       assert(task.status !== 'completed', 'COMPLETED_TASK_CANNOT_CANCEL')
-      assert(!cancelling.has(id), 'TASK_CONFLICT')
+      assert(!cancelling.has(id) && !removing.has(id), 'TASK_CONFLICT')
       cancelling.add(id)
       try {
         await service.pause(id)
@@ -879,6 +1027,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         if (task.kind === 'image' && task.fileId)
           await control(`/files/${task.fileId}`, 'DELETE', undefined, task)
         if (task.kind === 'download') {
+          await inspectCache(task)
           await rm(filePath(task, '.partial'), { force: true })
           if (task.source?.kind === 'github') await rm(filePath(task, '.package'), { force: true })
         }
@@ -888,6 +1037,40 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         cancelling.delete(id)
       }
     },
+    async inspectDownload(id: string) {
+      const task = taskById(id)
+      allowed(task)
+      assert(task.kind === 'download', 'DOWNLOAD_TASK_REQUIRED')
+      const files = await inspectCache(task)
+      allowed(task)
+      return { fileExists: files.length > 0 }
+    },
+    async removeDownload(id: string, deleteFile: boolean) {
+      assert(typeof deleteFile === 'boolean')
+      const task = taskById(id)
+      allowed(task)
+      assert(task.kind === 'download', 'DOWNLOAD_TASK_REQUIRED')
+      assert(
+        task.status !== 'running' && !running.has(id) && !cancelling.has(id) && !removing.has(id),
+        'TASK_CONFLICT',
+      )
+      removing.add(id)
+      try {
+        const files = await inspectCache(task)
+        allowed(task)
+        if (deleteFile) for (const path of files) await rm(path, { force: true })
+        allowed(task)
+        tasks.delete(id)
+        try {
+          await persist()
+        } catch (error) {
+          tasks.set(id, task)
+          throw error
+        }
+      } finally {
+        removing.delete(id)
+      }
+    },
     async installSource(id: string): Promise<SourceInput> {
       const task = taskById(id)
       allowed(task)
@@ -895,6 +1078,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         task.kind === 'download' && task.status === 'completed' && task.sha256,
         'CACHE_NOT_VERIFIED',
       )
+      await inspectCache(task)
       const path = filePath(task, '.package')
       const digest = await fingerprint(path)
       assert(digest.sha256 === task.sha256 && digest.size === task.size, 'CACHE_NOT_VERIFIED')
@@ -922,6 +1106,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     },
     async dispose() {
       stopEnabled?.()
+      previews.clear()
       await service.pauseAll()
       await saving
     },

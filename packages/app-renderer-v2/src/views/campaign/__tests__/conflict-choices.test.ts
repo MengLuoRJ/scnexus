@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type { Conflict, ConflictDecision } from '@scnexus/app-shared/types/content.type'
 import ConflictChoices from '../components/ConflictChoices.vue'
 import FileTree from '../components/FileTree.vue'
-import zh from '../../../locales/zh.json'
+import zh from '../../../locales/zh'
 
 const files: Conflict[] = ['first', 'second'].map((name, index) => ({
   conflictId: name,

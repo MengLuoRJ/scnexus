@@ -37,6 +37,10 @@ test('settings accept only editable flat fields and valid values', () => {
     { workshopEnabled: 'true' },
     { officialServicesEnabled: 'true' },
     { weeklyMutationCalibrationEnabled: 1 },
+    { aiAssistantEnabled: 'true' },
+    ...[1023, 65536, 1.5, NaN, Infinity, '17861', null].map((aiAssistantPort) => ({
+      aiAssistantPort,
+    })),
     { displayLanguage: 'de' },
     [],
   ]) {
@@ -49,4 +53,13 @@ test('system display language uses supported preference then Chinese fallback', 
   assert.equal(resolveDisplayLanguage('system', ['zh-Hant-HK']), 'zh-Hant')
   assert.equal(resolveDisplayLanguage('system', ['de-DE']), 'zh')
   assert.equal(resolveDisplayLanguage('en', ['zh']), 'en')
+})
+
+test('AI assistant preferences accept booleans and bounded integer ports', () => {
+  for (const aiAssistantPort of [1024, 17861, 65535]) {
+    assert.deepEqual(validatePreferencePatch({ aiAssistantEnabled: false, aiAssistantPort }), {
+      aiAssistantEnabled: false,
+      aiAssistantPort,
+    })
+  }
 })

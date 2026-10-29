@@ -111,3 +111,28 @@ test('downloads navigation stays visible with workshop disabled and no login', a
   expect(center.enabled).toBe(true)
   expect(wrapper.find('a[href="/account"]').exists()).toBe(true)
 })
+
+test('AI navigation is default-off and independent of official services', async () => {
+  const { wrapper } = await render()
+  const { useContentCenterStore } = await import('../../stores/content-center')
+  const center = useContentCenterStore()
+  const paths = () =>
+    (wrapper.findComponent(navigation).props('items') as { to: string }[]).map((item) => item.to)
+  expect(paths()).not.toContain('/ai-assistant')
+  center.officialServicesEnabled = false
+  center.aiAssistantEnabled = true
+  await wrapper.vm.$nextTick()
+  expect(paths()).toContain('/ai-assistant')
+  const agent = (
+    wrapper.findComponent(navigation).props('items') as {
+      to: string
+      image?: string
+      icon?: string
+    }[]
+  ).find((item) => item.to === '/ai-assistant')!
+  expect(agent.image).toContain('Menu_Agent.png')
+  expect(agent.icon).toBeUndefined()
+  center.aiAssistantEnabled = false
+  await wrapper.vm.$nextTick()
+  expect(paths()).not.toContain('/ai-assistant')
+})

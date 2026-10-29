@@ -15,6 +15,8 @@ export type SettingData = {
   officialServicesEnabled: boolean
   weeklyMutationCalibrationEnabled: boolean
   workshopEnabled: boolean
+  aiAssistantEnabled: boolean
+  aiAssistantPort: number
 }
 
 export type LegacySettingStore = {

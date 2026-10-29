@@ -13,6 +13,7 @@ import mutationIcon from '../../assets/menu/Menu_Mutation.png'
 import downloadIcon from '../../assets/menu/Menu_Download.png'
 import toolboxIcon from '../../assets/menu/Menu_Toolbox.png'
 import settingsIcon from '../../assets/menu/Menu_Setting.png'
+import agentIcon from '../../assets/menu/Menu_Agent.png'
 
 defineOptions({ name: 'AppSidebar' })
 const { t } = useI18n()
@@ -40,6 +41,9 @@ const items = computed(() => [
         { label: t('contentCenter.creator'), image: workshopIcon, to: '/creator' },
         { label: t('contentCenter.uploads'), image: campaignIcon, to: '/uploads' },
       ]
+    : []),
+  ...(contentCenter.aiAssistantEnabled
+    ? [{ label: t('aiAssistant.title'), image: agentIcon, to: '/ai-assistant' }]
     : []),
   { label: t('ui.settings'), image: settingsIcon, to: '/settings' },
 ])

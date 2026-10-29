@@ -14,6 +14,8 @@ export type SettingPreferences = Pick<
   | 'officialServicesEnabled'
   | 'weeklyMutationCalibrationEnabled'
   | 'workshopEnabled'
+  | 'aiAssistantEnabled'
+  | 'aiAssistantPort'
 >
 export type SettingPatchKeys = keyof SettingPreferences
 export type WindowStatus = {
@@ -43,6 +45,7 @@ export type DeepLinkWorkshop = {
 }
 
 export interface DesktopApi {
+  aiAssistant: import('./ai-assistant.type.js').AiAssistantApi
   dependency: import('./content-api.type.js').ContentApi
   workshop: import('./workshop.type.js').WorkshopApi
   auth: import('./auth.type.js').AuthApi

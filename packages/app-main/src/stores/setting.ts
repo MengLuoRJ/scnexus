@@ -11,10 +11,17 @@ export function createSettingRepository(downloadDirectory: () => string) {
     directory(data.downloadDirectory)
     bool(data.officialServicesEnabled)
     bool(data.weeklyMutationCalibrationEnabled)
+    bool(data.aiAssistantEnabled)
+    if (
+      !Number.isInteger(data.aiAssistantPort) ||
+      (data.aiAssistantPort as number) < 1024 ||
+      (data.aiAssistantPort as number) > 65535
+    )
+      invalidData('Invalid AI assistant port')
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 5,
+      _schemaVersion: 6,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
@@ -27,10 +34,12 @@ export function createSettingRepository(downloadDirectory: () => string) {
       officialServicesEnabled: true,
       weeklyMutationCalibrationEnabled: true,
       workshopEnabled: true,
+      aiAssistantEnabled: false,
+      aiAssistantPort: 17861,
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 5 },
+      _schemaVersion: { const: 6 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -51,10 +60,18 @@ export function createSettingRepository(downloadDirectory: () => string) {
       officialServicesEnabled: { type: 'boolean' },
       weeklyMutationCalibrationEnabled: { type: 'boolean' },
       workshopEnabled: { type: 'boolean' },
+      aiAssistantEnabled: { type: 'boolean' },
+      aiAssistantPort: { type: 'integer', minimum: 1024, maximum: 65535 },
     },
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if ([1, 2, 3, 4, 5].includes(data._schemaVersion as number)) {
+        data.aiAssistantEnabled = defaults.aiAssistantEnabled
+        data.aiAssistantPort = defaults.aiAssistantPort
+      }
+      if (data._schemaVersion === 5)
+        return { ...data, _schemaVersion: defaults._schemaVersion } as SettingData
       if ([1, 2, 3, 4].includes(data._schemaVersion as number)) {
         data.officialServicesEnabled = defaults.officialServicesEnabled
         data.weeklyMutationCalibrationEnabled = defaults.weeklyMutationCalibrationEnabled

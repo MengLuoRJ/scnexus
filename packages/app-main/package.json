@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "7z-bin": "26.4.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@scnexus/standard": "workspace:*",
     "@sentry/electron": "^8.3.0",
     "ajv": "^8.20.0",
@@ -39,7 +40,8 @@
     "hash-wasm": "^4.12.0",
     "regedit": "^5.1.4",
     "semver": "^7.8.5",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@scnexus/app-shared": "workspace:*",

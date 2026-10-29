@@ -14,6 +14,8 @@ export const PREFERENCE_KEYS = [
   'officialServicesEnabled',
   'weeklyMutationCalibrationEnabled',
   'workshopEnabled',
+  'aiAssistantEnabled',
+  'aiAssistantPort',
 ] as const satisfies readonly SettingPatchKeys[]
 export function validatePreferencePatch(raw: unknown, complete = false): Record<string, unknown> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
@@ -36,8 +38,14 @@ export function validatePreferencePatch(raw: unknown, complete = false): Record<
         key === 'analyticsEnabled' ||
         key === 'officialServicesEnabled' ||
         key === 'weeklyMutationCalibrationEnabled' ||
-        key === 'workshopEnabled') &&
+        key === 'workshopEnabled' ||
+        key === 'aiAssistantEnabled') &&
       typeof value !== 'boolean'
+    )
+      throw new AppError(ERRORS.SETTING_INVALID_VALUE)
+    if (
+      key === 'aiAssistantPort' &&
+      (typeof value !== 'number' || !Number.isInteger(value) || value < 1024 || value > 65535)
     )
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (

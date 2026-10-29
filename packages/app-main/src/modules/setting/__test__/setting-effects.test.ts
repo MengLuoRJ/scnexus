@@ -1,15 +1,24 @@
 import { test, expect, vi } from 'vitest'
+import type { SettingData } from '@scnexus/app-shared/stores/setting.store'
 const mocks = vi.hoisted(() => ({
   data: {
+    _schemaVersion: 6,
+    _revision: 0,
+    lastUpdatedAt: null,
+    _lastConfirmedVersion: null,
+    downloadDirectory: 'D:\\Downloads',
     logLevel: 'error',
     telemetryEnabled: false,
     analyticsEnabled: true,
     officialServicesEnabled: true,
     weeklyMutationCalibrationEnabled: true,
     workshopEnabled: true,
+    aiAssistantEnabled: false,
+    aiAssistantPort: 17861,
     clientId: 'client',
     displayLanguage: 'zh',
-  },
+  } as SettingData,
+  aiAssistant: vi.fn<(enabled: boolean) => Promise<void>>(async () => {}),
   officialServices: vi.fn<(enabled: boolean) => void>(),
   workshop: vi.fn<(enabled: boolean) => void>(),
   analytics: vi.fn<(enabled: boolean) => void>(),
@@ -18,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   disable: vi.fn<typeof import('../../telemetry/telemetry').disableTelemetry>(async () => {}),
   send: vi.fn<typeof import('../../window/window').sendWhenReady>(),
 }))
+vi.mock('../../ai-assistant', () => ({ setAiAssistantEnabled: mocks.aiAssistant }))
 vi.mock('../../auth', () => ({ setOfficialServicesEnabled: mocks.officialServices }))
 vi.mock('../../workshop-lifecycle', () => ({ setWorkshopEnabled: mocks.workshop }))
 vi.mock('../../analytics-lifecycle', () => ({ setAnalyticsEnabled: mocks.analytics }))
@@ -45,7 +55,7 @@ vi.mock('../../window/window', () => ({
   getMainWindow: () => ({ webContents: { send: mocks.send } }),
   onWindowReady: vi.fn<typeof import('../../window/window').onWindowReady>(),
 }))
-import { updateSetting } from '../setting'
+import { initializeSetting, updateSetting } from '../setting'
 test('settings compensate log-level failure, serialize later writes and preserve consent revocation despite SDK failure', async () => {
   mocks.apply.mockImplementationOnce(() => {
     throw new Error('transport')
@@ -116,4 +126,32 @@ test('official service changes apply auth, analytics and effective Workshop cons
   expect(mocks.officialServices).toHaveBeenLastCalledWith(true)
   expect(mocks.workshop).toHaveBeenLastCalledWith(true)
   expect(mocks.data.weeklyMutationCalibrationEnabled).toBe(false)
+})
+
+test('AI assistant consent applies immediately but saving a port never starts the listener', async () => {
+  mocks.aiAssistant.mockClear()
+  await updateSetting({ aiAssistantPort: 18000 })
+  expect(mocks.aiAssistant).not.toHaveBeenCalled()
+  await updateSetting({ aiAssistantEnabled: true })
+  expect(mocks.aiAssistant).toHaveBeenLastCalledWith(true)
+  await updateSetting({ aiAssistantEnabled: false })
+  expect(mocks.data.aiAssistantEnabled).toBe(false)
+  expect(mocks.aiAssistant).toHaveBeenLastCalledWith(false)
+})
+
+test('initializing settings never starts AI assistant even with saved consent', () => {
+  mocks.data.aiAssistantEnabled = true
+  mocks.aiAssistant.mockClear()
+  initializeSetting()
+  expect(mocks.aiAssistant).not.toHaveBeenCalled()
+  mocks.data.aiAssistantEnabled = false
+})
+
+test('AI assistant shutdown failure preserves disabled consent and publishes it', async () => {
+  await updateSetting({ aiAssistantEnabled: true })
+  mocks.aiAssistant.mockRejectedValueOnce(new Error('shutdown'))
+  mocks.send.mockClear()
+  await expect(updateSetting({ aiAssistantEnabled: false })).rejects.toThrow('shutdown')
+  expect(mocks.data.aiAssistantEnabled).toBe(false)
+  expect(mocks.send).toHaveBeenCalled()
 })

@@ -354,6 +354,15 @@ onMounted(async () => {
         </div>
       </template>
       <template #content>
+        <UCard class="mb-3" :ui="{ body: 'p-3 sm:p-3' }">
+          <USwitch
+            :model-value="settings?.aiAssistantEnabled ?? false"
+            :disabled="!available || !settings || busy"
+            :label="t('aiAssistant.title')"
+            :description="t('aiAssistant.enableHelp')"
+            @update:model-value="(value: boolean) => save({ aiAssistantEnabled: value })"
+          />
+        </UCard>
         <UCard :ui="{ header: 'p-3 sm:p-3', body: 'p-3 sm:p-3' }">
           <template #header
             ><h2 class="font-semibold">{{ t('contentCenter.officialServices') }}</h2></template

@@ -8,6 +8,7 @@ import {
   type AppErrorDto,
   type IpcResult,
 } from '@scnexus/app-shared/errors/app.error'
+import type { AiAssistantApi } from '@scnexus/app-shared/types/ai-assistant.type'
 import type { InstallProgress } from '@scnexus/app-shared/types/content.type'
 import { ipcRequest, ipcSubscription, ipcUnwrap } from '../ipc-common'
 import {
@@ -213,4 +214,39 @@ test('success warnings survive renderer adapter validation without turning into 
   expect(
     await ipcRequest(async () => ({ ok: true, data: {}, warnings: [{ code: 'M062' }] }) as never),
   ).toMatchObject({ ok: false, error: { code: 'R001' } })
+})
+
+test('AI assistant IPC wrappers forward only typed operations and scope-dispose events', async () => {
+  const status = { state: 'stopped' as const, port: 17861 }
+  const record = { id: 'operation', toolName: 'list', status: 'running' as const, startedAt: 123 }
+  const getStatus = vi.fn<AiAssistantApi['getStatus']>(async () => ({ ok: true, data: status }))
+  const start = vi.fn<AiAssistantApi['start']>(async () => ({ ok: true, data: status }))
+  const disposeStatus = vi.fn<() => void>()
+  const disposeRecord = vi.fn<() => void>()
+  const onStatusChanged = vi.fn<AiAssistantApi['onStatusChanged']>((listener) => {
+    listener(status)
+    return disposeStatus
+  })
+  const onRecordChanged = vi.fn<AiAssistantApi['onRecordChanged']>((listener) => {
+    listener(record)
+    return disposeRecord
+  })
+  vi.stubGlobal('window', {
+    scnexus: { aiAssistant: { getStatus, start, onStatusChanged, onRecordChanged } },
+  })
+  expect(await ipcExports.ipcAiAssistantGetStatus()).toEqual({ ok: true, data: status })
+  await ipcExports.ipcAiAssistantStart(17861)
+  expect(start).toHaveBeenCalledExactlyOnceWith(17861)
+  const scope = effectScope()
+  const statusListener = vi.fn<Parameters<AiAssistantApi['onStatusChanged']>[0]>()
+  const recordListener = vi.fn<Parameters<AiAssistantApi['onRecordChanged']>[0]>()
+  scope.run(() => {
+    ipcExports.ipcAiAssistantOnStatusChanged(statusListener)
+    ipcExports.ipcAiAssistantOnRecordChanged(recordListener)
+  })
+  expect(statusListener).toHaveBeenCalledExactlyOnceWith(status)
+  expect(recordListener).toHaveBeenCalledExactlyOnceWith(record)
+  scope.stop()
+  expect(disposeStatus).toHaveBeenCalledOnce()
+  expect(disposeRecord).toHaveBeenCalledOnce()
 })

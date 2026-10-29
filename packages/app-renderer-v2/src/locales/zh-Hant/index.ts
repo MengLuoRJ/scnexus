@@ -1,3 +1,4 @@
+import aiAssistant from './aiAssistant.json'
 import account from './account.json'
 import campaign from './campaign.json'
 import content from './content.json'
@@ -12,6 +13,7 @@ import weekly from './weekly.json'
 import workshop from './workshop.json'
 
 export default {
+  ...aiAssistant,
   ...account,
   ...campaign,
   ...content,

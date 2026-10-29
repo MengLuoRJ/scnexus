@@ -13,6 +13,7 @@ import { getMainWindow, onWindowReady } from '../window/window'
 import { setWorkshopEnabled } from '../workshop-lifecycle'
 import { setOfficialServicesEnabled } from '../auth'
 import { setAnalyticsEnabled } from '../analytics-lifecycle'
+import { setAiAssistantEnabled } from '../ai-assistant'
 import { resolveDisplayLanguage, validatePreferencePatch } from './setting-validation'
 
 let pending: Promise<unknown> = Promise.resolve()
@@ -78,6 +79,14 @@ async function applyUpdate(raw: unknown, complete: boolean): Promise<SettingSnap
       throw new AppError(ERRORS.LOGGING_CONFIGURATION_FAILED, {}, { cause })
     }
   }
+  let aiAssistantError: unknown
+  if ('aiAssistantEnabled' in patch) {
+    try {
+      await setAiAssistantEnabled(saved.aiAssistantEnabled)
+    } catch (error) {
+      aiAssistantError = error
+    }
+  }
   let officialServicesError: unknown
   if (saved.officialServicesEnabled !== previous.officialServicesEnabled) {
     try {
@@ -99,6 +108,7 @@ async function applyUpdate(raw: unknown, complete: boolean): Promise<SettingSnap
     }
   }
   publish()
+  if (aiAssistantError) throw aiAssistantError
   if (officialServicesError) throw officialServicesError
   if (disableError) throw disableError
   return getSettingSnapshot()

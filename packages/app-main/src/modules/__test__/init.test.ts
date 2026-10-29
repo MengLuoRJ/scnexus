@@ -34,6 +34,10 @@ vi.mock('../setting', () => ({
   initSettingModule: mock.setting,
   disposeSetting: vi.fn<typeof import('../setting').disposeSetting>(),
 }))
+vi.mock('../ai-assistant', () => ({
+  initAiAssistantModule: vi.fn<() => void>(),
+  disposeAiAssistant: vi.fn<() => Promise<void>>(async () => {}),
+}))
 vi.mock('../auth', () => ({
   initAuthModule: vi.fn<() => void>(),
   disposeAuth: vi.fn<() => void>(),

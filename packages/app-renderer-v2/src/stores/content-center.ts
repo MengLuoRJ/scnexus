@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import type { SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
 import { ipcSettingGetSnapshot } from '../ipcs/setting'
 export const useContentCenterStore = defineStore('content-center', () => {
+  const aiAssistantEnabled = ref(false)
   const officialServicesEnabled = ref(true)
   const weeklyMutationCalibrationEnabled = ref(true)
   const workshopEnabled = ref(true)
@@ -10,6 +11,7 @@ export const useContentCenterStore = defineStore('content-center', () => {
   const initialized = ref(false)
   let flight: Promise<void> | undefined
   function accept(value: SettingSnapshot) {
+    aiAssistantEnabled.value = value.aiAssistantEnabled === true
     officialServicesEnabled.value = value.officialServicesEnabled !== false
     weeklyMutationCalibrationEnabled.value = value.weeklyMutationCalibrationEnabled !== false
     workshopEnabled.value = value.workshopEnabled !== false
@@ -31,6 +33,7 @@ export const useContentCenterStore = defineStore('content-center', () => {
     return flight
   }
   return {
+    aiAssistantEnabled,
     officialServicesEnabled,
     weeklyMutationCalibrationEnabled,
     workshopEnabled,

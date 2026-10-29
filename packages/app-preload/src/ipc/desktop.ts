@@ -17,6 +17,17 @@ function contentApi(
   }
 }
 const api: DesktopApi = {
+  aiAssistant: {
+    getStatus: () => invoke('ai-assistant:getStatus'),
+    start: (port) => invoke('ai-assistant:start', port),
+    stop: () => invoke('ai-assistant:stop'),
+    regenerateToken: () => invoke('ai-assistant:regenerateToken'),
+    getConnectionInfo: () => invoke('ai-assistant:getConnectionInfo'),
+    listRecords: () => invoke('ai-assistant:listRecords'),
+    clearRecords: () => invoke('ai-assistant:clearRecords'),
+    onStatusChanged: (listener) => subscribeTyped('ai-assistant:statusChanged', listener),
+    onRecordChanged: (listener) => subscribeTyped('ai-assistant:recordChanged', listener),
+  },
   workshop: workshopApi,
   dependency: contentApi('dependency'),
   auth: {

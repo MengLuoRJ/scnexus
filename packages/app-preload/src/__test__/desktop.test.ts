@@ -1,5 +1,6 @@
 import { expect, test, vi } from 'vitest'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
+import type { AiAssistantApi } from '@scnexus/app-shared/types/ai-assistant.type'
 import type { DeepLinkWorkshop, DesktopApi } from '@scnexus/app-shared/types/desktop.type'
 
 const mocks = vi.hoisted(() => ({
@@ -202,4 +203,57 @@ test('download location uses a dedicated bridge method with an optional task ID,
   expect(mocks.invoke).toHaveBeenLastCalledWith('workshop:open-download-location')
   await api.workshop.openDownloadLocation('task-id')
   expect(mocks.invoke).toHaveBeenLastCalledWith('workshop:open-download-location', 'task-id')
+})
+
+test('AI assistant bridge exposes only bounded operations and preserves start port', async () => {
+  expect(Object.keys(desktopApi.aiAssistant).sort()).toEqual(
+    [
+      'getStatus',
+      'start',
+      'stop',
+      'regenerateToken',
+      'getConnectionInfo',
+      'listRecords',
+      'clearRecords',
+      'onStatusChanged',
+      'onRecordChanged',
+    ].sort(),
+  )
+  for (const method of [
+    'getStatus',
+    'stop',
+    'regenerateToken',
+    'getConnectionInfo',
+    'listRecords',
+    'clearRecords',
+  ] as const) {
+    mocks.invoke.mockResolvedValueOnce({ ok: true, data: {} })
+    await desktopApi.aiAssistant[method]()
+    expect(mocks.invoke).toHaveBeenLastCalledWith(`ai-assistant:${method}`)
+  }
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: { state: 'running', port: 17861 } })
+  await desktopApi.aiAssistant.start(17861)
+  expect(mocks.invoke).toHaveBeenLastCalledWith('ai-assistant:start', 17861)
+})
+
+test('AI assistant subscriptions strip Electron events and remove exact listeners', () => {
+  mocks.removeListener.mockClear()
+  const status = { state: 'stopped' as const, port: 17861 }
+  const record = { id: 'operation', toolName: 'list', status: 'running' as const, startedAt: 123 }
+  const statusListener = vi.fn<Parameters<AiAssistantApi['onStatusChanged']>[0]>()
+  const stopStatus = desktopApi.aiAssistant.onStatusChanged(statusListener)
+  const [statusChannel, statusCallback] = mocks.on.mock.calls.at(-1)!
+  expect(statusChannel).toBe('ai-assistant:statusChanged')
+  statusCallback({ sender: 'private' }, status)
+  expect(statusListener).toHaveBeenCalledExactlyOnceWith(status)
+  const recordListener = vi.fn<Parameters<AiAssistantApi['onRecordChanged']>[0]>()
+  const stopRecord = desktopApi.aiAssistant.onRecordChanged(recordListener)
+  const [recordChannel, recordCallback] = mocks.on.mock.calls.at(-1)!
+  expect(recordChannel).toBe('ai-assistant:recordChanged')
+  recordCallback({ sender: 'private' }, record)
+  expect(recordListener).toHaveBeenCalledExactlyOnceWith(record)
+  stopStatus()
+  stopRecord()
+  expect(mocks.removeListener).toHaveBeenCalledWith(statusChannel, statusCallback)
+  expect(mocks.removeListener).toHaveBeenCalledWith(recordChannel, recordCallback)
 })

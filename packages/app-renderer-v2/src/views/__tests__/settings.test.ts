@@ -46,6 +46,9 @@ vi.mock('../../ipcs', () => ({
   ipcUpdaterOnError: () => () => {},
 }))
 const snapshot = {
+  aiAssistantEnabled: false,
+  aiAssistantPort: 17861,
+  _schemaVersion: 6,
   downloadDirectory: 'D:\\Downloads',
   displayLanguage: 'zh',
   logLevel: 'info',
@@ -336,4 +339,20 @@ test('official service master disables subcontrols while preserving saved prefer
   weekly.vm.$emit('update:modelValue', false)
   await flushPromises()
   expect(mocks.update).toHaveBeenLastCalledWith({ weeklyMutationCalibrationEnabled: false })
+})
+
+test('local AI switch is default-off and independent of official services', async () => {
+  mocks.settings.mockResolvedValue({
+    ok: true,
+    data: { ...snapshot, officialServicesEnabled: false },
+  })
+  const wrapper = await render()
+  const control = wrapper
+    .findAllComponents({ name: 'Switch' })
+    .find((item) => item.attributes('label') === 'AI 助手')!
+  expect(control.attributes('modelvalue')).toBe('false')
+  expect(control.attributes('disabled')).toBe('false')
+  control.vm.$emit('update:modelValue', true)
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ aiAssistantEnabled: true })
 })

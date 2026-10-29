@@ -4,6 +4,7 @@ import { initAllStores, initContentStores } from '../stores'
 import { settingRepository } from '../stores/setting'
 import { onGameConfigured } from './scii-game-setting'
 import { initAppModule } from './app'
+import { initAiAssistantModule, disposeAiAssistant } from './ai-assistant'
 import { initAuthModule, disposeAuth } from './auth'
 import { initWindowModule, onWindowReady } from './window'
 import { initDialogModule } from './dialog'
@@ -57,6 +58,7 @@ export async function initModules() {
     ['updater', initUpdaterModule],
     ['scii-game-setting', initSciiGameSettingModule],
     ['workshop', startWorkshop],
+    ['ai-assistant', initAiAssistantModule],
   ]
   for (const [scope, initialize] of initializers) {
     try {
@@ -76,6 +78,7 @@ export async function initModules() {
 export async function disposeModules() {
   onGameConfigured(undefined)
   cleanup.splice(0).forEach((dispose) => dispose())
+  await disposeAiAssistant()
   await stopWorkshop()
   disposeAuth()
   disposeSetting()

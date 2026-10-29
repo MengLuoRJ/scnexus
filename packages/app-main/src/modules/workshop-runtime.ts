@@ -58,6 +58,9 @@ export async function startWorkshop() {
     void service?.authenticationChanged().catch(() => {})
   })
 }
+export async function listLocalDownloadTasks() {
+  return service ? service.list() : []
+}
 export async function stopWorkshop() {
   onWorkshopAuthenticationChanged(undefined)
   await service?.dispose()

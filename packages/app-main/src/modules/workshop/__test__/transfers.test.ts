@@ -92,7 +92,7 @@ test('fixed worker origins reject credentials, paths, HTTP and arbitrary URL sou
   const { service } = await setup(fetch)
   await expect(
     service.download({ kind: 'github', repository: 'https://bad', revision: 'main' }),
-  ).rejects.toThrow('UNSUPPORTED_SOURCE')
+  ).rejects.toThrow('GITHUB_REPOSITORY_INVALID')
   await expect(
     service.download({ ...source, url: 'https://bad' } as typeof source),
   ).rejects.toThrow('UNSUPPORTED_SOURCE')

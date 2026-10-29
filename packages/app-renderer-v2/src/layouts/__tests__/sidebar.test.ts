@@ -8,6 +8,7 @@ import { useAuthStore } from '../../stores/auth'
 import AppSidebar from '../components/AppSidebar.vue'
 import zh from '../../locales/zh.json'
 
+const navigation = defineComponent({ props: ['items'], template: '<nav />' })
 const wrappers: { unmount(): void }[] = []
 afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
 async function render() {
@@ -29,7 +30,7 @@ async function render() {
         createI18n({ legacy: false, locale: 'zh', flatJson: true, messages: { zh } }),
       ],
       stubs: {
-        NavigationMenu: true,
+        NavigationMenu: navigation,
         Avatar: defineComponent({ template: '<span data-avatar />' }),
         Button: defineComponent({
           emits: ['click'],
@@ -78,4 +79,17 @@ test.each([
   expect(wrapper.get('a').attributes('aria-label')).toBe(`个人中心 · ${label}`)
   expect(wrapper.get('a').attributes('title')).toBe(`个人中心 · ${label}`)
   expect(wrapper.find('[data-avatar]').exists()).toBe(true)
+})
+
+test('downloads navigation stays visible with workshop disabled and no login', async () => {
+  const { wrapper } = await render()
+  const { useContentCenterStore } = await import('../../stores/content-center')
+  const center = useContentCenterStore()
+  center.enabled = false
+  await wrapper.vm.$nextTick()
+  const items = wrapper.findComponent(navigation).props('items') as {
+    to: string
+  }[]
+  expect(items.some((item) => item.to === '/downloads')).toBe(true)
+  expect(items.some((item) => item.to === '/workshop')).toBe(false)
 })

@@ -30,11 +30,9 @@ const items = computed(() => [
   { label: t('weekly.title'), image: coopIcon, to: '/weekly-mutations' },
   { label: t('toolbox.title'), image: customizeIcon, to: '/editor-toolbox' },
   ...(contentCenter.enabled
-    ? [
-        { label: t('contentCenter.workshop'), image: workshopIcon, to: '/workshop' },
-        { label: t('contentCenter.downloads'), image: campaignIcon, to: '/downloads' },
-      ]
+    ? [{ label: t('contentCenter.workshop'), image: workshopIcon, to: '/workshop' }]
     : []),
+  { label: t('contentCenter.downloads'), image: campaignIcon, to: '/downloads' },
   ...(creator.active
     ? [
         { label: t('contentCenter.creator'), image: workshopIcon, to: '/creator' },

@@ -126,10 +126,14 @@ export function parseManifest(text: string): Record<string, unknown> {
   )
   return manifest
 }
-export async function precheckPackage(path: string) {
+export async function precheckPackage(path: string, githubManifest?: Record<string, unknown>) {
   const info = await lstat(path)
   assert(info.isFile() && !info.isSymbolicLink() && info.size <= MAX_PACKAGE_SIZE && info.size > 0)
   const listing = await sevenZip.list(path)
+  listing.entries = listing.entries.map((entry) => ({
+    ...entry,
+    path: entry.path.replaceAll('\\', '/'),
+  }))
   assert(listing.entries.length <= 50000, 'ARCHIVE_LIMIT')
   let expanded = 0
   const names = new Set<string>()
@@ -155,24 +159,45 @@ export async function precheckPackage(path: string) {
     expanded += entry.size ?? 0
     assert(Number.isSafeInteger(expanded) && expanded <= 4 * 1024 ** 3, 'ARCHIVE_LIMIT')
   }
-  const roots = listing.entries.filter((entry) => entry.path.toLowerCase() === 'package.json')
+  const wrapper = githubManifest
+    ? listing.entries
+        .find((entry) => /^[^/\\]+\/package\.json$/.test(entry.path))
+        ?.path.split('/')[0]
+    : ''
   assert(
-    roots.length === 1 &&
-      roots[0].path === 'package.json' &&
-      (roots[0].size ?? Infinity) <= 128 * 1024,
+    !githubManifest ||
+      (wrapper &&
+        listing.entries.every(
+          (entry) =>
+            entry.path === wrapper ||
+            entry.path === wrapper + '/' ||
+            entry.path.startsWith(wrapper + '/'),
+        )),
+    'ROOT_MANIFEST_REQUIRED',
+  )
+  const descriptor = wrapper ? wrapper + '/package.json' : 'package.json'
+  const roots = listing.entries.filter(
+    (entry) => entry.path.toLowerCase() === descriptor.toLowerCase(),
+  )
+  assert(
+    roots.length === 1 && roots[0].path === descriptor && (roots[0].size ?? Infinity) <= 128 * 1024,
     'ROOT_MANIFEST_REQUIRED',
   )
   const source = await openSource({ kind: 'archive', path })
-  const bytes = await source.read('package.json')
+  const bytes = await source.read(descriptor)
   assert(bytes.length <= 128 * 1024, 'ROOT_MANIFEST_REQUIRED')
   const manifest = parseManifest(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+  assert(
+    !githubManifest || JSON.stringify(manifest) === JSON.stringify(githubManifest),
+    'GITHUB_MANIFEST_CHANGED',
+  )
   for (const category of ['maps', 'mods']) {
     for (const item of (manifest[category] ?? []) as { source_path: string }[]) {
       assert(
         typeof item.source_path === 'string' && /^\/(Maps|Mods)\//.test(item.source_path),
         'INVALID_RESOURCE_PATH',
       )
-      const resource = item.source_path.slice(1)
+      const resource = (wrapper ? wrapper + '/' : '') + item.source_path.slice(1)
       assert(
         source.entries.some(
           (entry) => entry.path === resource || entry.path.startsWith(resource + '/'),

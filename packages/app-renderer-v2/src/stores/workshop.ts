@@ -42,7 +42,7 @@ export const useWorkshopStore = defineStore('workshop', () => {
       generation++
       tasks.value = []
       error.value = null
-      if (auth.signedIn && center.enabled && users > 0) void load()
+      if (users > 0) void load()
     },
   )
   function connect() {

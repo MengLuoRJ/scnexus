@@ -80,5 +80,18 @@
   "workshop.uploadDone": "上傳完成，請查看版本状態",
   "workshop.installedDependencies": "已安裝依賴包",
   "workshop.dependencyRemoved": "依賴包已卸載",
-  "workshop.dependencyRemovalHint": "共享或已修改資源需要明確保留或刪除，不會靜默刪除其他作品的文件。"
+  "workshop.dependencyRemovalHint": "共享或已修改資源需要明確保留或刪除，不會靜默刪除其他作品的文件。",
+  "downloads.newTask": "新建任務",
+  "downloads.source": "來源",
+  "downloads.github": "GitHub 倉庫",
+  "downloads.repository": "倉庫地址",
+  "downloads.branch": "分支",
+  "downloads.githubHint": "僅支持公開 GitHub 倉庫。先檢查根目錄 package.json，符合標準後下載該版本的壓縮包；下載完成後需手動安裝。",
+  "downloads.invalidRepository": "請輸入 https://github.com/所有者/倉庫 格式的地址",
+  "downloads.invalidBranch": "請輸入分支名稱",
+  "downloads.start": "檢查並下載",
+  "downloads.checking": "正在檢查清單",
+  "downloads.created": "下載任務已創建",
+  "downloads.createError": "無法創建下載任務",
+  "downloads.checkRepository": "請檢查倉庫是否公開、分支是否存在，以及根目錄 package.json 是否符合 SCNexus 標準。"
 }

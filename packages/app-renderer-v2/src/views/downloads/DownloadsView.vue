@@ -1,9 +1,11 @@
 <script lang="ts" setup>
-import { onScopeDispose, onMounted, ref, watch } from 'vue'
+import { computed, onScopeDispose, onMounted, reactive, ref, watch } from 'vue'
+import { z } from 'zod'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
 import {
+  ipcWorkshopDownload,
   ipcWorkshopPause,
   ipcWorkshopResume,
   ipcWorkshopCancel,
@@ -34,6 +36,48 @@ defineOptions({ name: 'DownloadsView' })
 const store = useWorkshopStore()
 const { t } = useI18n()
 const toast = useToast()
+const newTaskOpen = ref(false)
+const creating = ref(false)
+const newTask = reactive({ kind: 'github' as const, repository: '', revision: 'main' })
+const taskSchema = computed(() =>
+  z.object({
+    kind: z.literal('github'),
+    repository: z
+      .string()
+      .trim()
+      .regex(
+        /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/i,
+        t('downloads.invalidRepository'),
+      ),
+    revision: z.string().trim().min(1, t('downloads.invalidBranch')).max(255),
+  }),
+)
+async function createTask() {
+  if (creating.value) return
+  const parsed = taskSchema.value.safeParse(newTask)
+  if (!parsed.success) return
+  creating.value = true
+  try {
+    const result = await ipcWorkshopDownload(parsed.data)
+    if (!result.ok) {
+      toast.add({
+        color: 'error',
+        title: t('downloads.createError'),
+        description: t('downloads.checkRepository'),
+      })
+      return
+    }
+    store.accept(result.data)
+    newTaskOpen.value = false
+    newTask.repository = ''
+    newTask.revision = 'main'
+    toast.add({ color: 'success', title: t('downloads.created'), description: result.data.name })
+  } catch {
+    toast.add({ color: 'error', title: t('downloads.createError') })
+  } finally {
+    creating.value = false
+  }
+}
 if (window.scnexus) onScopeDispose(store.connect())
 const analysis = ref<AnalysisResult | null>(null)
 const mode = ref<InstallMode>('scnexus')
@@ -140,14 +184,70 @@ async function confirm() {
 <template>
   <section class="space-y-3">
     <p class="text-sm text-muted">{{ t('workshop.downloadManagerHint') }}</p>
-    <UButton
-      size="sm"
-      color="neutral"
-      variant="outline"
-      :loading="store.loading"
-      @click="store.load()"
-      >{{ t('workshop.reload') }}</UButton
+    <div class="flex items-center gap-2">
+      <UButton size="sm" icon="i-tabler-plus" @click="newTaskOpen = true">{{
+        t('downloads.newTask')
+      }}</UButton>
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="outline"
+        :loading="store.loading"
+        @click="store.load()"
+        >{{ t('workshop.reload') }}</UButton
+      >
+    </div>
+    <UModal
+      v-model:open="newTaskOpen"
+      :title="t('downloads.newTask')"
+      :description="t('downloads.githubHint')"
+      :dismissible="!creating"
+      :close="!creating"
     >
+      <template #body>
+        <UForm
+          id="new-download-task"
+          :schema="taskSchema"
+          :state="newTask"
+          class="space-y-2"
+          @submit="createTask"
+        >
+          <UFormField :label="t('downloads.source')" name="kind" required>
+            <USelect
+              v-model="newTask.kind"
+              :items="[{ label: t('downloads.github'), value: 'github' }]"
+              :disabled="creating"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField :label="t('downloads.repository')" name="repository" required>
+            <UInput
+              v-model="newTask.repository"
+              placeholder="https://github.com/owner/repository"
+              :disabled="creating"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField :label="t('downloads.branch')" name="revision" required>
+            <UInput v-model="newTask.revision" :disabled="creating" class="w-full" />
+          </UFormField>
+        </UForm>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton
+            color="neutral"
+            variant="outline"
+            :disabled="creating"
+            @click="newTaskOpen = false"
+            >{{ t('campaign.cancel') }}</UButton
+          >
+          <UButton type="submit" form="new-download-task" :loading="creating">{{
+            t(creating ? 'downloads.checking' : 'downloads.start')
+          }}</UButton>
+        </div>
+      </template>
+    </UModal>
     <UAlert
       v-if="store.error"
       color="neutral"
@@ -170,6 +270,9 @@ async function confirm() {
         ><UBadge variant="subtle">{{ t(`workshop.task.${task.status}`) }}</UBadge>
       </div>
       <UProgress :model-value="task.size ? Math.round((task.transferred / task.size) * 100) : 0" />
+      <p v-if="task.source?.kind === 'github'" class="break-all text-xs text-muted">
+        {{ t('downloads.github') }} · {{ task.source.repository }} · {{ task.source.revision }}
+      </p>
       <p class="text-xs text-muted">{{ task.transferred }} / {{ task.size }} bytes</p>
       <p v-if="task.error" class="break-all text-xs text-error">{{ task.error }}</p>
       <div class="flex gap-2">

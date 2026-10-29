@@ -21,15 +21,7 @@ const router = useRouter()
 const transfers = useWorkshopStore()
 const toast = useToast()
 let stopTransfers: (() => void) | undefined
-watch(
-  () => contentCenter.enabled && auth.signedIn,
-  (enabled) => {
-    stopTransfers?.()
-    stopTransfers = undefined
-    if (enabled && window.scnexus) stopTransfers = transfers.connect()
-  },
-  { immediate: true },
-)
+if (window.scnexus) stopTransfers = transfers.connect()
 const completed = new Set<string>()
 watch(
   () => transfers.tasks,

@@ -33,7 +33,7 @@ const router = createRouter({
       path: '/downloads',
       name: 'downloads',
       component: () => import('../views/downloads/DownloadsView.vue'),
-      meta: { workshop: true, titleKey: 'contentCenter.downloads' },
+      meta: { titleKey: 'contentCenter.downloads' },
     },
     {
       path: '/uploads',

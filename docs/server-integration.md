@@ -214,3 +214,15 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 已执行模拟传输的Range校验、摘要失败、token续签、禁用暂停、Complete丢响应恢复、UNKNOWN拒写、旧会话隔离，及dependency冲突/回滚/共享文件保护。当前本地后端未运行，浏览器公开列表/详情与匿名下载登录跳转用合成响应验证，未进行真实作者写请求、邀请码消费、Worker/R2上传/下载。浏览器后续连接中断，完整创作者1000×700/真实图片续签和下载页真机验收仍需后续完成；实际Nuxt Editor在组件测试中已挂载为contenteditable，而非用替身冒充编辑器。
 
 本轮最终本地验证：`pnpm run test:main` 46文件426项通过，`pnpm run test:preload` 10项通过，`pnpm run test:renderer` 38文件329项通过；`pnpm run typecheck`、main/preload/renderer构建及仓库Oxlint通过，新增业务与接线文件ESLint通过。最后修复CreatorStatus取消按钮多语句模板被格式化后生产解析失败，renderer已重新构建成功。未打包/发布应用，不宣称真实R2、工坊文件域名或macOS安装器验收。
+
+## GitHub 仓库下载（2026-10-29）
+
+下载管理新增“新建任务”，来源首期仅提供 GitHub 仓库。输入公开仓库 HTTPS 地址及分支（默认 `main`），主进程先读取、校验根目录 `package.json`；接受 `campaign`、`customize`、`dependency` 三种标准包，不兼容作者清单中的 `offcial` 等旧拼写。不要求工坊的 SemVer 发布规则。
+
+该入口无需登录，不受 SCNexus Workshop 开关影响；下载导航始终可见。工坊来源的任务仍保留原有开关与账号隔离，不因此开放匿名工坊下载。GitHub 网络访问由 main 执行，renderer 不直接请求仓库、不接触缓存路径。
+
+清单通过后才创建仓库 ZIP 下载任务。下载完成使用 toast 提示；不自动安装或激活。用户在下载管理点击“安装”后，复用统一内容分析、安装模式与冲突确认，并由内容系统执行安装。来源地址、分支显示在任务中。GitHub ZIP 的完整性记录仅用于本地缓存复验，不代表作者签名、病毒扫描或可信发布认证。
+
+本轮验证：`pnpm run typecheck`、`pnpm run lint`、`pnpm run build:main`、`pnpm run build:preload`、`pnpm run build:renderer` 通过；主进程全量 51 文件 515 项、preload 12 项、renderer 49 文件 398 项通过（含 dependency ZIP 下载后进入安装分析的回归）。1000×700 浏览器检查新建任务对话框（512×398）无横向溢出，默认 `main` 与非法来源校验正常。
+
+使用公开测试仓库 `MengLuoRJ/scnexus-package-test`（commit `f4470b3e8aa233ec56b92dbf979ad611201bff53`）完成真实隔离下载：ZIP 51,657,587 字节，未登录且工坊关闭时完成；缓存复验及现有内容分析识别为战役、35 个文件。未执行游戏安装，临时测试与缓存已清理。GitHub 暂停后恢复从头下载，不承诺 Range 断点续传；任务重启后暂停，用户手动恢复。

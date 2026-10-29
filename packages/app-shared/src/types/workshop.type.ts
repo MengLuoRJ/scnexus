@@ -4,7 +4,7 @@ import type { SourceInput } from './content.type.js'
 export type WorkshopSource =
   | { kind: 'workshop'; versionId: string; projectScnid: number }
   | { kind: 'git'; repository: string; revision: string }
-  | { kind: 'github'; repository: string; revision: string }
+  | { kind: 'github'; repository: string; revision?: string }
 export type WorkshopTaskStatus =
   | 'paused'
   | 'running'

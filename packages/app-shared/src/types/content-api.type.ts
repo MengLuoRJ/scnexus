@@ -17,6 +17,11 @@ import type {
   GamePaths,
 } from './content.type.js'
 export interface ContentAnalysisApi {
+  assets(localId: string): Promise<IpcResult<import('./content.type.js').ContentAssets>>
+  asset(
+    localId: string,
+    path: string,
+  ): Promise<IpcResult<import('./content.type.js').ContentAsset | null>>
   analyze(
     input: SourceInput,
     descriptorChoice?: SourceAnalysisChoice,

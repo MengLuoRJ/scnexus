@@ -1,3 +1,4 @@
+import { normalizeInstalledPackage } from '../utils/installed-package'
 import type { ContentStore, DependencyContentRecord } from '@scnexus/app-shared/types/content.type'
 import { isPackage } from '@scnexus/standard/package'
 import { validateCustomizeRecord } from './customize'
@@ -22,20 +23,31 @@ export function validateDependencyRecord(value: unknown): asserts value is Depen
 export function createDependencyRepository() {
   return createRepository<ContentStore>({
     defaults: () => ({
-      _schemaVersion: 2,
+      _schemaVersion: 3,
       _revision: 0,
       records: [],
       legacyRecords: [],
       scannedAt: null,
     }),
     schema: {
-      _schemaVersion: { const: 2 },
+      _schemaVersion: { const: 3 },
       _revision: { type: 'integer', minimum: 0 },
       records: { type: 'array', items: { type: 'object' } },
       legacyRecords: { type: 'array', items: { type: 'object' } },
       scannedAt: { type: ['number', 'null'] },
     },
-    migrate() {
+    migrate(data, defaults) {
+      if (isRecord(data) && data._schemaVersion === 2) {
+        if (!Array.isArray(data.records)) invalidData('Invalid content records')
+        return {
+          ...data,
+          _schemaVersion: defaults._schemaVersion,
+          records: data.records.map((record) => {
+            if (!isRecord(record)) invalidData('Invalid content record')
+            return { ...record, package: normalizeInstalledPackage(record.package) }
+          }),
+        } as ContentStore
+      }
       return invalidData('Unsupported legacy dependency store')
     },
     validate(data) {

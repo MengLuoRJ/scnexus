@@ -8,7 +8,7 @@ import type {
   PackageCampaignType,
 } from '@scnexus/app-shared/types/content.type'
 import { formatFileSize } from '../formatFileSize'
-import FileTree from './FileTree.vue'
+import RecordDetails from '../../../components/content/RecordDetails.vue'
 
 defineOptions({ name: 'CampaignManagement' })
 const props = defineProps<{
@@ -211,7 +211,11 @@ function isActive(record: ContentRecord) {
   <UModal
     :open="Boolean(selected)"
     :title="selected?.package.name"
-    :ui="{ title: 'min-w-0 break-words', body: 'space-y-2 break-words p-4 sm:p-4' }"
+    :ui="{
+      content: 'sm:max-w-3xl',
+      title: 'min-w-0 break-words',
+      body: 'space-y-2 break-words p-4 sm:p-4',
+    }"
     @update:open="
       (value: boolean) => {
         if (!value) selectedId = null
@@ -219,52 +223,7 @@ function isActive(record: ContentRecord) {
     "
   >
     <template #body>
-      <template v-if="selected">
-        <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-          <div>
-            <dt class="text-muted">{{ t('campaign.version') }}</dt>
-            <dd>{{ selected.package.version || '—' }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ t('campaign.installMode') }}</dt>
-            <dd>{{ selected.mode === 'scnexus' ? 'SCNexus' : 'CCM' }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ t('campaign.type') }}</dt>
-            <dd>{{ t(`campaign.${selected.package.campaign}`) }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ t('campaign.author') }}</dt>
-            <dd>{{ selected.package.author || '—' }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ t('campaign.standardFiles') }}</dt>
-            <dd>{{ selected.fileCount.toLocaleString() }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ t('campaign.recognizedFiles') }}</dt>
-            <dd>{{ countRecognizedFiles(selected.files).toLocaleString() }}</dd>
-          </div>
-          <div>
-            <dt class="text-muted">{{ t('campaign.contentSize') }}</dt>
-            <dd>{{ formatFileSize(selected.bytes) }}</dd>
-          </div>
-        </dl>
-        <div class="text-sm">
-          <p class="text-muted">{{ t('campaign.description') }}</p>
-          <p class="whitespace-pre-wrap">{{ selected.package.description || '—' }}</p>
-        </div>
-        <div class="text-sm">
-          <p class="text-muted">{{ t('campaign.installDirectory') }}</p>
-          <p class="break-all">{{ selected.managementDirectory }}</p>
-        </div>
-        <div class="space-y-2">
-          <p class="text-sm text-muted">{{ t('campaign.targetTree') }}</p>
-          <div class="max-h-72 overflow-auto rounded border border-default p-2">
-            <FileTree :tree="selected.targetTree" />
-          </div>
-        </div>
-      </template>
+      <RecordDetails v-if="selected" :record="selected" />
     </template>
   </UModal>
 </template>

@@ -1,3 +1,6 @@
+import { createCampaignRepository } from '../campaign'
+import { createCustomizeRepository } from '../customize'
+import { createDependencyRepository } from '../dependency'
 import assert from 'node:assert/strict'
 import { test, afterAll, vi } from 'vitest'
 import fs from 'node:fs'
@@ -421,4 +424,110 @@ test('v3 settings enable Workshop by default and preserve the disabled preferenc
   assert.equal(migrated._schemaVersion, 4)
   repository.update({ ...migrated, workshopEnabled: false })
   assert.equal(setting().init(backend).workshopEnabled, false)
+})
+
+function installedRecord(type: 'campaign' | 'customize' | 'dependency', localId: string) {
+  return {
+    localId,
+    package: {
+      type,
+      name: 'Installed',
+      description: '',
+      author: 'Author',
+      version: '1',
+      ...(type === 'campaign' ? { campaign: 'WOL' } : {}),
+      ...(type !== 'dependency'
+        ? {
+            bank_enable: 'offcial',
+            luancher: { name: 'Entry.SC2Map' },
+            maps: [{ name: 'Entry.SC2Map', source_path: '/Maps/Entry.SC2Map' }],
+          }
+        : { mods: [] }),
+    },
+    mode: 'scnexus',
+    origin: 'package-json',
+    managementDirectory: 'D:\\Game\\Data',
+    descriptorPath: 'package.json',
+    gameRoot: 'D:\\Game',
+    rootRelativePath: '',
+    payloadDirectory: null,
+    files: [],
+    installedFiles: [],
+    targetTree: {},
+    sourceTree: {},
+    ccmOriginal: null,
+    fileCount: 0,
+    bytes: 0,
+    importedAt: 123,
+  }
+}
+for (const [type, create] of [
+  ['campaign', createCampaignRepository],
+  ['customize', createCustomizeRepository],
+  ['dependency', createDependencyRepository],
+] as const) {
+  test(`${type} v2 migrates all installed records to v3 with exact backup and no quarantine`, async () => {
+    const original = {
+      _schemaVersion: 2,
+      _revision: 17,
+      scannedAt: 456,
+      legacyRecords: [{ retained: true }],
+      records: [
+        installedRecord(type, 'one'),
+        installedRecord(type, 'two'),
+        installedRecord(type, 'three'),
+      ],
+    }
+    const backend = await fileBackend(original)
+    const raw = backend.raw
+    const snapshot = create().init(backend)
+    const expected = structuredClone(original)
+    expected._schemaVersion = 3
+    if (type !== 'dependency')
+      for (const record of expected.records) {
+        const pkg = record.package as Record<string, unknown>
+        pkg.bank_enable = 'official'
+        pkg.launcher = pkg.luancher
+        delete pkg.luancher
+      }
+    assert.deepEqual(snapshot, expected)
+    assert.deepEqual(JSON.parse(backend.raw!), expected)
+    assert.deepEqual(backend.backups, [{ raw, reason: 'migration' }])
+    assert.deepEqual(create().init(backend), snapshot)
+    assert.equal(backend.writes, 1)
+    assert.equal(backend.backups.length, 1)
+  })
+}
+for (const create of [createCampaignRepository, createCustomizeRepository]) {
+  test(`${create.name} conflicting v2 launcher values cannot overwrite the original`, async () => {
+    const type = create === createCampaignRepository ? 'campaign' : 'customize'
+    const record = installedRecord(type, 'conflict')
+    Object.assign(record.package, { launcher: { name: 'Other.SC2Map' } })
+    const backend = await fileBackend({
+      _schemaVersion: 2,
+      _revision: 7,
+      records: [record],
+      legacyRecords: [],
+      scannedAt: null,
+    })
+    const raw = backend.raw
+    assert.throws(() => create().init(backend), code(ERRORS.STORE_DATA_INVALID.code))
+    assert.equal(backend.raw, raw)
+    assert.equal(backend.writes, 0)
+    assert.deepEqual(backend.backups, [{ raw, reason: 'corrupt' }])
+  })
+}
+test('older campaign/customize legacy imports remain backed up and retained', async () => {
+  for (const [create, key] of [
+    [createCampaignRepository, 'CAMPAIGN_LIST_SET'],
+    [createCustomizeRepository, 'CUSTOMIZE_LIST'],
+  ] as const) {
+    const legacy = { name: 'Original legacy record' }
+    const backend = await fileBackend({ [key]: [legacy] })
+    const raw = backend.raw
+    const snapshot = create().init(backend)
+    assert.equal(snapshot._schemaVersion, 3)
+    assert.deepEqual(snapshot.legacyRecords, [legacy])
+    assert.deepEqual(backend.backups, [{ raw, reason: 'migration' }])
+  }
 })

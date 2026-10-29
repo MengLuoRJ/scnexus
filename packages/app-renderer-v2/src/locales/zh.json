@@ -363,5 +363,17 @@
   "campaign.installDirectory": "安装目录",
   "customize.saveLauncher": "保存启动器",
   "customize.launcherSaved": "启动器已保存",
-  "campaign.battleNetStarted": "已为你启动战网，请在战网再次点击“开始游戏”。"
+  "campaign.battleNetStarted": "已为你启动战网，请在战网再次点击“开始游戏”。",
+  "contentMedia.relatedDocuments": "相关文档",
+  "contentMedia.payloadDirectory": "内容目录",
+  "contentMedia.documents": "包内文档",
+  "contentMedia.readme": "说明文档",
+  "contentMedia.changelog": "更新日志",
+  "contentMedia.noImage": "暂无封面",
+  "contentMedia.loading": "正在读取包内文档…",
+  "contentMedia.error": "无法读取此包内文档，文件可能已丢失或不可用。",
+  "contentMedia.empty": "此内容包未附带文档。",
+  "contentMedia.retry": "重试",
+  "contentMedia.imageError": "部分包内图片已丢失或格式不受支持。",
+  "contentMedia.localOnly": "仅支持此内容包内的文档和图片，外部链接已禁用。"
 }

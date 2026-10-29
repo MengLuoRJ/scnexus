@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
+import PackageImage from '../../../components/content/PackageImage.vue'
 import type {
   ActiveCampaign,
   ContentRecord,
@@ -36,9 +37,9 @@ function current(category: PackageCampaignType) {
       :ui="{ body: 'p-0 sm:p-0' }"
     >
       <div class="relative h-24 overflow-hidden">
-        <img
-          draggable="false"
-          :src="banners[category]"
+        <PackageImage
+          :local-id="current(category)?.localId"
+          :fallback="banners[category]"
           :alt="t(`campaign.${category}`)"
           class="h-full w-full object-cover object-top"
         />

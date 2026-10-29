@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import RecordDetails from '../../../components/content/RecordDetails.vue'
 import { useI18n } from 'vue-i18n'
 import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import { formatFileSize } from '../formatFileSize'
@@ -19,6 +20,7 @@ const emit = defineEmits<{
   website: [url: string]
 }>()
 const { t } = useI18n()
+const detailsOpen = ref(false)
 const logos = { WOL: wolLogo, HOTS: hotsLogo, LOTV: lotvLogo, NCO: ncoLogo }
 const categories = computed(() =>
   ['WOL', 'HOTS', 'LOTV', 'NCO'].map((value) => ({ label: t(`campaign.${value}`), value })),
@@ -40,7 +42,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
       />
     </template>
   </UTabs>
-  <div class="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+  <div class="grid grid-cols-[200px_minmax(0,1fr)] gap-3">
     <UCard class="min-w-0" :ui="{ body: 'p-2 sm:p-2' }">
       <div class="flex h-full flex-col items-center gap-2 text-center">
         <img draggable="false" :src="logos[category]" alt="" class="h-32 w-full object-contain" />
@@ -109,6 +111,14 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
           {{ props.current?.package.description || t('campaign.overviewHint') }}
         </p>
         <template v-if="props.current">
+          <UButton
+            icon="i-tabler-info-circle"
+            color="neutral"
+            variant="outline"
+            @click="detailsOpen = true"
+          >
+            {{ t('campaign.details') }}
+          </UButton>
           <p>SCNID: {{ props.current.package.scnid ?? '—' }}</p>
           <p>
             {{ t('campaign.standardFiles') }}: {{ props.current.fileCount }} ·
@@ -149,4 +159,13 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
       </div>
     </UCard>
   </div>
+  <UModal
+    v-model:open="detailsOpen"
+    :title="props.current?.package.name"
+    :ui="{ content: 'sm:max-w-3xl', title: 'min-w-0 break-words', body: 'min-h-0 p-4 sm:p-4' }"
+  >
+    <template #body>
+      <RecordDetails v-if="props.current" :record="props.current" />
+    </template>
+  </UModal>
 </template>

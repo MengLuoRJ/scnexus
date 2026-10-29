@@ -211,7 +211,7 @@ test('legacy content index versions preserve records as untrusted migration hist
   )
   const repository = createCampaignRepository()
   repository.init(await createElectronBackend('legacy', storage))
-  expect(repository.getSnapshot()._schemaVersion).toBe(2)
+  expect(repository.getSnapshot()._schemaVersion).toBe(3)
   expect(repository.getSnapshot().legacyRecords).toEqual([{ name: 'Legacy', snid: 3 }])
   expect((await readdir(storage)).some((name) => name.endsWith('.bak'))).toBe(true)
 })

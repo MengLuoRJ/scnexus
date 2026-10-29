@@ -68,13 +68,13 @@ SCNexus 隐式覆盖地图的源布局与上述目录一一对应：/Maps/Campai
 
 ### 类型边界
 
-新 Package 包含 scnid、name、description、tags、version、author、localization、网站/社交/赞助信息，type/campaign、maps/mods、dependencies、luancher、bank_enable/banks、manager 等字段；不再包含 manager_mode。
+新 Package 包含 scnid、name、description、tags、version、author、localization、网站/社交/赞助信息，type/campaign、maps/mods、dependencies、launcher、bank_enable/banks、manager 等字段；不再包含 manager_mode。
 
 - type 使用小写 campaign/customize/dependency。dependency 为独立管理的 mods-only 包：仅接受显式 package.json、使用 SCNexus 模式，不支持 CCM、自动探测、战役激活或地图安装。显式下载的缓存归档可作为 SourceInput 进入同一分析/安装流程，不自动解析依赖引用。
 - dependency 安装记录单独持久化于 store-dependency；管理清单沿用 SCNexusCustomizeData/<localId>，扫描可重建记录。安装使用完整资源组冲突确认、事务备份和失败回滚；卸载与 customize/活动战役共享所有权检查，keep 不获得删除权限，也不自动恢复安装前文件。逻辑 Mods 路径仍映射平台实际目录，并保留目录边界和符号链接校验。
 - campaign 必须为 WOL/HOTS/LOTV/NCO，customize 不按战役根映射。
 - scnid 是可选远程标识，不是本地唯一安装 ID；新记录不使用旧 snid 字段。
-- 保留目前类型实际拼写 luancher、offcial。纠正拼写属于后续标准契约变更，本次文档不擅自改名。
+- 启动器字段统一使用 launcher，官方存档模式使用 official。
 - dependencies 是声明，不代表已经实现下载或依赖解析；预览须报告未满足依赖，不悄悄联网或安装。
 - manager 只表示作者推荐：SCNexus 映射 scnexus，CCM 映射 ccm。推荐不替代用户选择，不决定持久化格式，也不阻止读取另一描述文件。推荐对应模式不可用或 manager 未提供时 recommendedMode=null，并可报告不可用原因；不自动改荐另一模式。
 - 新类型已删除 manager_mode，不保留 default/strict 安装分支。manager 类型注释已同步为作者推荐语义。
@@ -114,7 +114,7 @@ SCNexus customize 示例：
       "target_path": "/Mods/Demo/Core.SC2Mod"
     }
   ],
-  "luancher": { "name": "Entry.SC2Map" }
+  "launcher": { "name": "Entry.SC2Map" }
 }
 ```
 
@@ -134,7 +134,7 @@ SCNexus customize 示例：
 | campaign     | campaign，转大写并验证四类 |
 | version      | version                    |
 
-内部固定 type=campaign、manager=CCM，bank_enable 暂沿用 offcial。不能凭空补造 scnid、依赖、入口地图和丰富信息。读取保留原始字节、编码和文件位置，转换后的 Package 与原文分开。
+内部固定 type=campaign、manager=CCM，bank_enable 使用 official。不能凭空补造 scnid、依赖、入口地图和丰富信息。读取保留原始字节、编码和文件位置，转换后的 Package 与原文分开。
 
 解析每行以第一个 = 分隔，支持 CRLF/LF，不截断值中的 =。缺失信息、编码失败和无效 campaign 给出诊断；哪些描述字段允许为空在标准校验中统一确定，不用不可靠的强制转换绕过检查。
 
@@ -388,6 +388,10 @@ payload 仅用于需要留存内容以供激活/重装的场景，不要求 cust
 | campaign          | 按四类组织的导入包记录，格式为 SCNexus/CCM，不能代表已激活  |
 | campaign-active   | 四类活动槽位，关联本地包或扫描发现的外部记录及当前文件/标记 |
 | scii-game-setting | 游戏根、实际检测/派生目录能力及配置修订，替代旧 profile     |
+
+campaign、customize、dependency 内容索引版本为 3。启动时通过现有 electron-store 迁移管线将 v2 的全部 records 原位保留，仅规范化其中 package 的历史拼写（`bank_enable: offcial` → `official`、`luancher` → `launcher`）；保留修订号、扫描时间、legacyRecords 及其他安装字段，不将已安装记录移入旧数据隔离区。候选数据通过校验后，先保存原文件的 `.migration-*.bak`，再原子替换；失败不会覆盖原文件。两个 launcher 字段不一致时拒绝迁移，不静默选择。更早的旧索引导入规则仍保留。
+
+扫描游戏内已有管理清单及 package.json 时仅在内存中作相同规范化，保留启动图与存档设置，不改写管理文件或作者源文件。该兼容不扩展标准公开契约或新包解析器，不接受新包字段别名。
 
 每个内容记录分离：
 
@@ -774,7 +778,7 @@ customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`
 
 ## 自制作品启动器（2026-10-28）
 
-自制作品安装分析新增启动器来源、选定逻辑目标与地图候选。根package.json明确指定现有标准字段`luancher.name`时优先使用声明地图，不允许玩家在本次确认中覆盖声明；字段名暂沿用standard的历史拼写。未声明或无package.json时按常见启动器名称自动匹配，不能唯一识别时不擅自选取。候选按整个SC2Map资源去重，组文件夹地图也作为一个启动入口。
+自制作品安装分析新增启动器来源、选定逻辑目标与地图候选。根package.json明确指定现有标准字段`launcher.name`时优先使用声明地图，不允许玩家在本次确认中覆盖声明。未声明或无package.json时按常见启动器名称自动匹配，不能唯一识别时不擅自选取。候选按整个SC2Map资源去重，组文件夹地图也作为一个启动入口。
 
 安装确认界面（本地导入及下载管理安装）显示启动器：清单来源只读，自动/未识别来源可从候选地图选择，也可明确不设置。玩家选择写入本地安装记录，不修改源归档package.json；重新扫描须保留有效玩家选择，包括明确不设置。自制作品卡片显示选定地图，未设置时启动按钮禁用。
 

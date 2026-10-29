@@ -91,6 +91,7 @@ export default defineConfig({
     vueDevTools(),
     ui({
       root: PACKAGE_ROOT,
+      prose: true,
       ui: { icons: uiIcons },
       icon: {
         clientBundle: {

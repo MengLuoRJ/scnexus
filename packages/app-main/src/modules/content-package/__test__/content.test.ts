@@ -1810,7 +1810,7 @@ test('customize launcher selection is validated, persisted and retained by scan 
 test('manifest launcher overrides detected names, rejects duplicate declarations and cannot be replaced', async () => {
   const f = await fixture()
   const data = pkg('customize', {
-    luancher: { name: 'entry.SC2Map' },
+    launcher: { name: 'entry.SC2Map' },
     maps: [
       {
         name: 'entry.SC2Map',
@@ -1860,4 +1860,55 @@ test('ambiguous detected launchers require selection and any logical map root ca
   })
   expect(installed.launcherTarget).toBe('Maps/Mission.SC2Map')
   expect((await f.service.scan()).records[0]!.launcherTarget).toBe('Maps/Mission.SC2Map')
+})
+
+test('scan normalizes only installed legacy package spellings without rewriting author or management files', async () => {
+  const f = await fixture()
+  const data = pkg('customize', {
+    bank_enable: 'official',
+    launcher: { name: 'Entry.SC2Map' },
+    maps: [{ name: 'Entry.SC2Map', source_path: '/Maps/Entry.SC2Map' }],
+  })
+  const input = await source(f.root, {
+    'package.json': JSON.stringify(data),
+    'Maps/Entry.SC2Map': 'entry',
+  })
+  const analysis = await f.service.analyze('customize', input)
+  const record = await f.service.install({
+    analysisId: analysis.analysisId,
+    mode: 'scnexus',
+    decisions: [],
+  })
+  const legacyPackage = { ...data, bank_enable: 'offcial', luancher: data.launcher } as Record<
+    string,
+    unknown
+  >
+  delete legacyPackage.launcher
+  const packageRaw = JSON.stringify(legacyPackage)
+  const manifest = { ...record, package: legacyPackage }
+  delete manifest.launcherTarget
+  delete manifest.launcherCustomized
+  const manifestRaw = JSON.stringify(manifest)
+  const packagePath = join(record.managementDirectory, 'package.json')
+  const manifestPath = join(record.managementDirectory, 'install-manifest.json')
+  await writeFile(packagePath, packageRaw)
+  await writeFile(manifestPath, manifestRaw)
+  const scanned = await scanContent(f.paths)
+  expect(scanned.diagnostics).toEqual([])
+  expect(scanned.records).toHaveLength(1)
+  expect(scanned.records[0]!.package).toEqual(data)
+  expect(scanned.records[0]!.launcherTarget).toBe('Maps/Entry.SC2Map')
+  expect(await readFile(packagePath, 'utf8')).toBe(packageRaw)
+  expect(await readFile(manifestPath, 'utf8')).toBe(manifestRaw)
+  expect(await readFile(join(input.path, 'package.json'), 'utf8')).toBe(JSON.stringify(data))
+  expect(() => parsePackage(packageRaw)).toThrow()
+  const launcherOnly = { ...legacyPackage, bank_enable: 'official' }
+  expect(parsePackage(JSON.stringify(launcherOnly)).launcher).toBeUndefined()
+  await writeFile(
+    packagePath,
+    JSON.stringify({ ...legacyPackage, launcher: { name: 'Other.SC2Map' } }),
+  )
+  const conflicted = await scanContent(f.paths)
+  expect(conflicted.records).toHaveLength(0)
+  expect(conflicted.diagnostics.length).toBeGreaterThan(0)
 })

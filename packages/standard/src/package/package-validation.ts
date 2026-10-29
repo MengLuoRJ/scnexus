@@ -20,6 +20,9 @@ export function isPackage(value: unknown): value is Package {
       'type',
       'mods',
       'website',
+      'readme',
+      'changelog',
+      'docs',
       'social',
       'sponsor',
     ])
@@ -41,7 +44,7 @@ export function isPackage(value: unknown): value is Package {
     return false
   if (
     value.bank_enable !== undefined &&
-    !['offcial', 'custom'].includes(value.bank_enable as string)
+    !['official', 'custom'].includes(value.bank_enable as string)
   )
     return false
   if (value.tags !== undefined && (!Array.isArray(value.tags) || !value.tags.every(text)))
@@ -84,10 +87,10 @@ export function isPackage(value: unknown): value is Package {
   )
     return false
   if (
-    value.luancher !== undefined &&
-    (!object(value.luancher) ||
-      !text(value.luancher.name) ||
-      (value.luancher.description !== undefined && !text(value.luancher.description)))
+    value.launcher !== undefined &&
+    (!object(value.launcher) ||
+      !text(value.launcher.name) ||
+      (value.launcher.description !== undefined && !text(value.launcher.description)))
   )
     return false
   if (
@@ -115,6 +118,20 @@ export function isPackage(value: unknown): value is Package {
           (item.description === undefined || text(item.description)),
       ))
   )
+    return false
+  if (
+    'banner' in value &&
+    (value.type !== 'campaign' || (value.banner !== undefined && !text(value.banner)))
+  )
+    return false
+  if (
+    'cover' in value &&
+    (value.type !== 'customize' || (value.cover !== undefined && !text(value.cover)))
+  )
+    return false
+  for (const key of ['readme', 'changelog'])
+    if (value[key] !== undefined && !text(value[key])) return false
+  if (value.docs !== undefined && (!Array.isArray(value.docs) || !value.docs.every(text)))
     return false
   if (value.$schema !== undefined && !text(value.$schema)) return false
   if (value.website !== undefined && !text(value.website)) return false

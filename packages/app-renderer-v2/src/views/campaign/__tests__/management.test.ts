@@ -171,13 +171,14 @@ test('details show the selected package and close when its record disappears', a
   expect(wrapper.find('h2').exists()).toBe(true)
   expect(wrapper.findAll('h2').some((node) => node.text() === 'First')).toBe(true)
   expect(wrapper.findAll('dl > div').map((node) => node.text())).toEqual([
+    '名称First',
+    '作者Author',
     '版本1',
     '安装模式SCNexus',
     '类型自由之翼',
-    '作者Author',
+    '内容大小1.02 kB',
     '标准文件数量3',
     '识别文件数量2',
-    '内容大小1.02 kB',
   ])
   expect(wrapper.text()).toContain('描述介绍Description')
   await wrapper.setProps({ records: [] })

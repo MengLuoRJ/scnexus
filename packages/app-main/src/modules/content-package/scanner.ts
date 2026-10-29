@@ -1,3 +1,4 @@
+import { normalizeInstalledPackage } from '../../utils/installed-package'
 import { validateCampaignRecord } from '../../stores/campaign'
 import { validateDependencyRecord } from '../../stores/dependency'
 import { validateCustomizeRecord } from '../../stores/customize'
@@ -111,6 +112,7 @@ export async function scanContent(
     if (!raw) continue
     try {
       const record = parseManifest(raw) as ContentRecord
+      record.package = normalizeInstalledPackage(record.package) as ContentRecord['package']
       if (record.package?.type === 'campaign') validateCampaignRecord(record)
       else if (record.package?.type === 'dependency') validateDependencyRecord(record)
       else validateCustomizeRecord(record)
@@ -125,7 +127,10 @@ export async function scanContent(
       )
         throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Invalid manifest' })
       const packageRaw = await readFile(join(directory, 'package.json'))
-      record.package = parsePackage(packageRaw.toString(), record.package.type)
+      record.package = parsePackage(
+        JSON.stringify(normalizeInstalledPackage(parseManifest(packageRaw))),
+        record.package.type,
+      )
       for (const file of record.installedFiles) {
         let target: string
         try {
@@ -269,7 +274,14 @@ export async function scanContent(
         read: async (path: string) => readFile(await scanPath(directory, path)),
       }
       const preview = buildPreview(source, 'metadata.txt', pkg, true)
+      const previous = previousRecords.find(
+        (record) =>
+          record.mode === 'ccm' &&
+          record.gameRoot === paths.gameRoot &&
+          record.managementDirectory === directory,
+      )
       records.push({
+        ...(previous?.attachments ? { attachments: previous.attachments } : {}),
         localId:
           previousRecords.find(
             (record) =>
@@ -313,7 +325,9 @@ export async function scanContent(
       continue
     }
     try {
-      const pkg = json ? parsePackage(json.toString(), 'campaign') : parseCcm(decodeCcm(txt!).text)
+      const pkg = json
+        ? parsePackage(JSON.stringify(normalizeInstalledPackage(parseManifest(json))), 'campaign')
+        : parseCcm(decodeCcm(txt!).text)
       if (pkg.campaign !== campaign)
         throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, { message: 'Campaign mismatch' })
       const matches = records.filter(
@@ -473,7 +487,10 @@ export async function scanContent(
   )) {
     if (CAMPAIGNS.some((c) => entry.path === campaignRoots[c][0] + '/package.json')) continue
     try {
-      const pkg = parsePackage((await gameSource.read(entry.path)).toString(), 'customize')
+      const pkg = parsePackage(
+        JSON.stringify(normalizeInstalledPackage(parseManifest(await gameSource.read(entry.path)))),
+        'customize',
+      )
       const normalized = structuredClone(pkg)
       for (const category of ['maps', 'mods'] as const)
         for (const item of normalized[category] ?? [])

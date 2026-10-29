@@ -14,6 +14,7 @@ import { formatFileSize } from '../campaign/formatFileSize'
 import CampaignSourcePicker from '../campaign/components/CampaignSourcePicker.vue'
 import CampaignInstallModal from '../campaign/components/CampaignInstallModal.vue'
 import RecordDetails from '../../components/content/RecordDetails.vue'
+import PackageImage from '../../components/content/PackageImage.vue'
 import { resourcePath } from '@scnexus/app-shared/utils/content-files'
 import CustomizeUninstallModal from './components/CustomizeUninstallModal.vue'
 defineOptions({ name: 'CustomizeView' })
@@ -155,13 +156,16 @@ onMounted(() => {
       @error="notifyError"
     />
     <UAlert v-if="!records.length" color="neutral" variant="subtle" :title="t('customize.empty')" />
-    <div class="grid gap-3 sm:grid-cols-2">
+    <div class="grid grid-cols-2 gap-3">
       <UCard
         v-for="record in records"
         :key="record.localId"
         class="min-w-0"
         :ui="{ body: 'space-y-2 p-3 sm:p-3' }"
       >
+        <div class="h-28 overflow-hidden rounded">
+          <PackageImage :local-id="record.localId" :alt="record.package.name" />
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <h2 class="min-w-0 flex-1 break-words font-semibold">{{ record.package.name }}</h2>
           <UBadge variant="subtle" color="neutral">{{

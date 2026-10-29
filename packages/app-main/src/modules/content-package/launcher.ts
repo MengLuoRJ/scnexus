@@ -24,8 +24,8 @@ export function resolveLauncher(pkg: Package, files: PlannedFile[]): InstallPrev
     seen.add(key)
     candidates.push({ name: basename(target), target })
   }
-  if (pkg.luancher !== undefined) {
-    const maps = (pkg.maps ?? []).filter((map) => map.name === pkg.luancher!.name)
+  if (pkg.launcher !== undefined) {
+    const maps = (pkg.maps ?? []).filter((map) => map.name === pkg.launcher!.name)
     if (maps.length !== 1)
       throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
         message: 'Ambiguous launcher declaration',

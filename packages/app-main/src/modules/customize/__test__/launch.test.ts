@@ -97,7 +97,7 @@ test('rejects renderer paths, unknown records, mods, missing resources and expli
 })
 test('manifest launcher wins over a stored user override and needs installed map ownership', async () => {
   const f = await fixture()
-  f.record.package.luancher = { name: 'entry.SC2Map' }
+  f.record.package.launcher = { name: 'entry.SC2Map' }
   f.record.launcherTarget = null
   await launch('local')
   expect(mocks.run).toHaveBeenCalledWith({ run: f.absolute })
@@ -110,7 +110,7 @@ test('manifest launcher wins over a stored user override and needs installed map
 test('post-install launcher selection overrides manifest locally and persists without editing package.json', async () => {
   const f = await fixture()
   await mkdir(f.record.managementDirectory, { recursive: true })
-  f.record.package.luancher = { name: 'entry.SC2Map' }
+  f.record.package.launcher = { name: 'entry.SC2Map' }
   await writeFile(f.record.descriptorPath, 'original-package')
   const updated = await setLauncher('local', null)
   expect(updated.launcherCustomized).toBe(true)

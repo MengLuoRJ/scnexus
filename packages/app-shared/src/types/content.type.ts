@@ -11,7 +11,7 @@ export type Package =
       maps?: never
       manager?: never
       dependencies?: never
-      luancher?: never
+      launcher?: never
       bank_enable?: never
       banks?: never
     })
@@ -103,7 +103,15 @@ export type InstalledFile = PlannedFile & {
   result: 'copied' | 'replaced' | 'kept'
   hash: string
 }
+export type ContentAssets = {
+  image: string | null
+  readme: string | null
+  changelog: string | null
+  docs: string[]
+}
+export type ContentAsset = { path: string; mime: string; data: string }
 export type ContentRecord = {
+  attachments?: { index: ContentAssets; files: string[] }
   launcherCustomized?: boolean
   launcherTarget?: string | null
   external?: boolean

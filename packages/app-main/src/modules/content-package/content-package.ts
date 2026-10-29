@@ -1,3 +1,9 @@
+import {
+  attachmentCandidates,
+  persistAttachments,
+  readAttachment,
+  readAttachmentIndex,
+} from './attachments'
 import { resourcePath } from '@scnexus/app-shared/utils/content-files'
 import { resourceGroups, resourceState } from './resources'
 import { fileTransaction, type WriteData } from './transaction'
@@ -826,6 +832,7 @@ export class ContentService {
                       'metadata.txt',
                 )?.path
         const selected = [
+          ...attachmentCandidates(source, preview),
           ...(payload
             ? preview.files
             : actualFiles.filter(
@@ -942,6 +949,7 @@ export class ContentService {
           (mode === 'scnexus' ? 1 + (ccm ? 1 : 0) : 0)
         const stagedManagement = join(staging, 'management')
         await mkdir(stagedManagement)
+        record.attachments = await persistAttachments(source, preview, stagedFiles, stagedManagement)
         const payloadPaths: string[] = []
         if (payload) {
           const stagedPayload =
@@ -1571,6 +1579,26 @@ export class ContentService {
       }
       return { ...result, scannedAt: stamp }
     })
+  }
+  private async attachmentRecord(localId: string) {
+    if (typeof localId !== 'string' || !localId || localId.length > 128)
+      throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    const paths = await this.paths()
+    const record = [this.campaign, this.customize, this.dependency]
+      .flatMap((index) => index.getSnapshot().records)
+      .find((record) => record.localId === localId && record.gameRoot === paths.gameRoot)
+    if (!record) throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    validateRecordPaths(record, paths)
+    await safeGamePath(paths, relative(paths.gameRoot, record.managementDirectory))
+    return record
+  }
+  async assets(localId: string) {
+    return this.lock(async () => readAttachmentIndex(await this.attachmentRecord(localId)))
+  }
+  async asset(localId: string, path: string) {
+    if (typeof path !== 'string' || path.length > 1024)
+      throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    return this.lock(async () => readAttachment(await this.attachmentRecord(localId), path))
   }
   list(type: ContentType) {
     return this.index(type).getSnapshot()

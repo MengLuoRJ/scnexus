@@ -42,8 +42,8 @@ export function parsePackage(text: string, type?: ContentType): Package {
   if (value.scnid !== undefined && (!Number.isSafeInteger(value.scnid) || value.scnid < 0))
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
   if (
-    value.luancher !== undefined &&
-    (value.maps ?? []).filter((map) => map.name === value.luancher!.name).length !== 1
+    value.launcher !== undefined &&
+    (value.maps ?? []).filter((map) => map.name === value.launcher!.name).length !== 1
   )
     throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
       message: 'Launcher is not a declared map',
@@ -63,7 +63,7 @@ export function parseCcm(text: string): Package {
     version: fields.version ?? '',
     type: 'campaign',
     campaign: fields.campaign?.toUpperCase() as Package['campaign'],
-    bank_enable: 'offcial',
+    bank_enable: 'official',
   }
   return parsePackage(JSON.stringify(value), 'campaign')
 }

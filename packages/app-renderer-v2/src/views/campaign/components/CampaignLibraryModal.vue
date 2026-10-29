@@ -119,7 +119,11 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
   <UModal
     :open="Boolean(selected)"
     :title="selected?.package.name"
-    :ui="{ title: 'min-w-0 break-words', body: 'min-h-0 break-words p-4 sm:p-4' }"
+    :ui="{
+      content: 'sm:max-w-3xl',
+      title: 'min-w-0 break-words',
+      body: 'min-h-0 break-words p-4 sm:p-4',
+    }"
     @update:open="
       (value: boolean) => {
         if (!value) selectedId = null

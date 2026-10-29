@@ -86,24 +86,44 @@ export type PackageBase = {
   version: string
   author: string
   website?: string
+  /** Archive-root-relative documentation path; resolved by the client, not validation. */
+  readme?: string
+  /** Archive-root-relative changelog path; resolved by the client, not validation. */
+  changelog?: string
+  /** Archive-root-relative additional documentation paths. */
+  docs?: string[]
   social?: PackageSocial
   sponsor?: PackageSponsor
 }
-export type PackageContent = PackageBase & {
-  type: 'campaign' | 'customize'
+type PackageContentBase = PackageBase & {
   campaign?: PackageCampaignType
   localization?: PackageLocalization[]
   maps?: PackageMap[]
   mods?: PackageMod[]
   /** Descriptive/experimental; the client does not resolve or install these automatically. */
   dependencies?: PackageDependencyReference[]
-  /** Legacy spelling retained for existing packages. */
-  luancher?: PackageLauncher
-  /** Legacy spelling retained; bank migration is not implemented by this declaration. */
-  bank_enable?: 'offcial' | 'custom'
+  /** Optional launcher referencing a declared map. */
+  launcher?: PackageLauncher
+  /** Bank migration is not implemented by this declaration. */
+  bank_enable?: 'official' | 'custom'
   banks?: PackageBank[]
   manager?: 'SCNexus' | 'CCM'
 }
+export type PackageContent = PackageContentBase &
+  (
+    | {
+        type: 'campaign'
+        /** Archive-root-relative banner path; resolved by the client, not validation. */
+        banner?: string
+        cover?: never
+      }
+    | {
+        type: 'customize'
+        /** Archive-root-relative cover path; resolved by the client, not validation. */
+        cover?: string
+        banner?: never
+      }
+  )
 /** Mod-only package for SCNexus management; CCM and client installation are not supported. */
 export type PackageDependency = PackageBase & {
   type: 'dependency'

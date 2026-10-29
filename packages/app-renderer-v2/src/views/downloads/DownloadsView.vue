@@ -27,6 +27,8 @@ import type {
 } from '@scnexus/app-shared/types/content.type'
 import type { RemovalPreview, RemovalDecision } from '@scnexus/app-shared/types/content.type'
 import LauncherChoice from '../../components/content/LauncherChoice.vue'
+import RecordDetails from '../../components/content/RecordDetails.vue'
+const detail = ref<ContentRecord | null>(null)
 import ConflictChoices from '../campaign/components/ConflictChoices.vue'
 defineOptions({ name: 'DownloadsView' })
 const store = useWorkshopStore()
@@ -211,6 +213,9 @@ async function confirm() {
         <span class="min-w-0 break-words text-sm"
           >{{ record.package.name }} · {{ record.package.version }}</span
         >
+        <UButton color="neutral" variant="outline" size="sm" @click="detail = record">{{
+          t('campaign.details')
+        }}</UButton>
         <UButton
           color="neutral"
           variant="outline"
@@ -220,6 +225,18 @@ async function confirm() {
         >
       </div>
     </div>
+    <UModal
+      :open="Boolean(detail)"
+      :title="detail?.package.name"
+      :ui="{ content: 'sm:max-w-3xl', body: 'max-h-[70vh] overflow-auto' }"
+      @update:open="
+        (value: boolean) => {
+          if (!value) detail = null
+        }
+      "
+    >
+      <template #body><RecordDetails v-if="detail" :record="detail" /></template>
+    </UModal>
     <UModal
       :open="Boolean(removal)"
       :title="t('campaign.uninstall')"

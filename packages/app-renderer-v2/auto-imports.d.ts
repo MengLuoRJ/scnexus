@@ -157,6 +157,8 @@ declare global {
   const ipcCampaignScan: typeof import('./src/ipcs/campaign').ipcCampaignScan
   const ipcCampaignUninstall: typeof import('./src/ipcs/campaign').ipcCampaignUninstall
   const ipcContentAnalyze: typeof import('./src/ipcs/content').ipcContentAnalyze
+  const ipcContentAsset: typeof import('./src/ipcs/content').ipcContentAsset
+  const ipcContentAssets: typeof import('./src/ipcs/content').ipcContentAssets
   const ipcCustomizeAnalyze: typeof import('./src/ipcs/customize').ipcCustomizeAnalyze
   const ipcCustomizeCancel: typeof import('./src/ipcs/customize').ipcCustomizeCancel
   const ipcCustomizeInstall: typeof import('./src/ipcs/customize').ipcCustomizeInstall
@@ -417,6 +419,8 @@ declare module 'vue' {
     readonly ipcCampaignScan: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignScan']>
     readonly ipcCampaignUninstall: UnwrapRef<typeof import('./src/ipcs/campaign')['ipcCampaignUninstall']>
     readonly ipcContentAnalyze: UnwrapRef<typeof import('./src/ipcs/content')['ipcContentAnalyze']>
+    readonly ipcContentAsset: UnwrapRef<typeof import('./src/ipcs/content')['ipcContentAsset']>
+    readonly ipcContentAssets: UnwrapRef<typeof import('./src/ipcs/content')['ipcContentAssets']>
     readonly ipcCustomizeAnalyze: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeAnalyze']>
     readonly ipcCustomizeCancel: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeCancel']>
     readonly ipcCustomizeInstall: UnwrapRef<typeof import('./src/ipcs/customize')['ipcCustomizeInstall']>

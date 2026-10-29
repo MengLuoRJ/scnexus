@@ -105,6 +105,24 @@ test('standard declarations resolve for NodeNext, Bundler and legacy TypeScript 
   }
 })
 
+test('correct launcher and official bank fields are validated', async () => {
+  const { isPackage } = await import(new URL('dist/package/index.js', standard))
+  const manifest = {
+    type: 'customize',
+    name: 'Example',
+    description: '',
+    version: '1.0.0',
+    author: 'Author',
+    maps: [{ name: 'Entry.SC2Map', source_path: '/Maps/Entry.SC2Map' }],
+    launcher: { name: 'Entry.SC2Map' },
+    bank_enable: 'official',
+  }
+  assert.equal(isPackage(manifest), true)
+  assert.equal(isPackage({ ...manifest, launcher: { name: 123 } }), false)
+  assert.equal(isPackage({ ...manifest, bank_enable: 'custom' }), true)
+  assert.equal(isPackage({ ...manifest, bank_enable: 'offcial' }), false)
+})
+
 test('dependency packages accept only the SCNexus mod-only contract', async () => {
   const { isPackage } = await import(new URL('dist/package/index.js', standard))
   const dependency = {
@@ -139,7 +157,7 @@ test('dependency packages accept only the SCNexus mod-only contract', async () =
     'campaign',
     'localization',
     'dependencies',
-    'luancher',
+    'launcher',
     'bank_enable',
     'banks',
     'descriotion',
@@ -185,6 +203,21 @@ const reference: PackageDependencyReference = { scnid: 1 }
 const dependency: PackageDependency = { name: 'dep', description: '', author: 'a', version: '1', type: 'dependency', mods: [mod], website: 'https://example.com', social, sponsor }
 const content: PackageContent = { ...dependency, type: 'customize', maps: [map], social, sponsor, dependencies: [reference] }
 const pkg: Package = dependency
+const documentation = { readme: 'docs/intro.md', changelog: 'docs/changes.txt', docs: ['docs/guide.md'] }
+const documentedDependency: PackageDependency = { ...dependency, ...documentation }
+const legacyCampaign: PackageContent = { name: 'campaign', description: '', version: '1', author: 'a', type: 'campaign' }
+const campaignBanner: PackageCampaign = { ...legacyCampaign, type: 'campaign', campaign: 'WOL', banner: 'images/banner.png', ...documentation }
+const customizeCover: PackageCustomize = { ...content, type: 'customize', cover: 'images/cover.webp', ...documentation }
+// @ts-expect-error campaigns cannot declare covers, including through spread
+const invalidCampaignImage: PackageContent = { ...campaignBanner, ...{ cover: 'cover.png' } }
+// @ts-expect-error customize packages cannot declare banners, including through spread
+const invalidCustomizeImage: Package = { ...customizeCover, ...{ banner: 'banner.png' } }
+// @ts-expect-error dependencies cannot declare banners
+const invalidDependencyBanner: PackageDependency = { ...dependency, banner: 'banner.png' }
+// @ts-expect-error dependencies cannot declare covers
+const invalidDependencyCover: PackageDependency = { ...dependency, cover: 'cover.png' }
+// @ts-expect-error docs must be a string array
+const invalidDocs: PackageContent = { ...content, docs: 'docs/guide.md' }
 function narrow(value: unknown) {
   if (isPackageCampaign(value)) { const campaign: PackageCampaignType = value.campaign; const pkg: PackageCampaign = value }
   if (isPackageCustomize(value)) { const pkg: PackageCustomize = value; const type: 'customize' = value.type }
@@ -290,6 +323,60 @@ test('generated JSON Schema is deterministic, importable and enforces package fi
     ],
     { cwd: fileURLToPath(standard), stdio: 'pipe' },
   )
+})
+
+test('presentation paths are declarations only with type-specific images and common documentation', async () => {
+  const api = await import(new URL('dist/package/index.js', standard))
+  const require = createRequire(new URL('package.json', standard))
+  const Ajv = require('ajv')
+  const validate = new Ajv({ strict: true }).compile(
+    require('@scnexus/standard/package.schema.json'),
+  )
+  const base = { name: 'Example', description: '', version: '1', author: 'A' }
+  const invalidText = [null, 42, false, [], {}]
+  for (const type of ['campaign', 'customize', 'dependency']) {
+    const value = { ...base, type, ...(type === 'campaign' ? { campaign: 'WOL' } : {}) }
+    const guard = api[`isPackage${type[0].toUpperCase()}${type.slice(1)}`]
+    function check(change, expected) {
+      const input = { ...value, ...change }
+      assert.equal(validate(input), expected, JSON.stringify(input))
+      assert.equal(api.isPackage(input), expected, JSON.stringify(input))
+      assert.equal(guard(input), expected, JSON.stringify(input))
+    }
+    check({}, true)
+    check({ readme: undefined, changelog: undefined, docs: undefined }, true)
+    if (type !== 'dependency')
+      check({ [type === 'campaign' ? 'banner' : 'cover']: undefined }, true)
+    check({ readme: 'missing/README.md', changelog: 'missing/CHANGELOG.txt', docs: [] }, true)
+    check({ readme: '', changelog: '', docs: ['missing/guide.md', 'missing/other.txt'] }, true)
+    // Path safety, file existence and image decoding belong to the client, not this validator.
+    for (const path of [
+      'missing/image.png',
+      '../outside',
+      'C:\\outside.txt',
+      'https://example.com/a',
+      '',
+    ]) {
+      check({ readme: path, changelog: path, docs: [path] }, true)
+      if (type !== 'dependency') check({ [type === 'campaign' ? 'banner' : 'cover']: path }, true)
+    }
+    for (const field of ['readme', 'changelog', 'banner', 'cover']) {
+      for (const invalid of invalidText) check({ [field]: invalid }, false)
+      assert.equal(api.isPackage({ ...value, [field]: 'invalid\0path' }), false)
+    }
+    for (const invalid of [
+      ...invalidText.filter((item) => !Array.isArray(item)),
+      'guide.md',
+      [null],
+      [1],
+      ['ok', false],
+    ])
+      check({ docs: invalid }, false)
+    assert.equal(api.isPackage({ ...value, docs: ['invalid\0path'] }), false)
+    if (type !== 'campaign') check({ banner: 'banner.jpg' }, false)
+    if (type !== 'customize') check({ cover: 'cover.jpg' }, false)
+    check({ banner: 'banner.jpg', cover: 'cover.jpg' }, false)
+  }
 })
 
 test('specialized guards validate the entire package and only match their own kind', async () => {

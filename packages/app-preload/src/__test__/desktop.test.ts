@@ -147,3 +147,14 @@ test('customize launch forwards only a local record ID through its dedicated cha
   await api.customize.launch('local-record')
   expect(mocks.invoke).toHaveBeenLastCalledWith('customize:launch', 'local-record')
 })
+
+test('content attachments expose only installed ID and package-relative path lookups', async () => {
+  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+  const assets = { image: null, readme: 'README.md', changelog: null, docs: [] }
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: assets })
+  expect(await api.content.assets('installed')).toEqual({ ok: true, data: assets })
+  expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:assets', 'installed')
+  mocks.invoke.mockResolvedValueOnce({ ok: true, data: null })
+  expect(await api.content.asset('installed', 'missing.md')).toEqual({ ok: true, data: null })
+  expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:asset', 'installed', 'missing.md')
+})

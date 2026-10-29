@@ -1,3 +1,4 @@
+import { normalizeInstalledPackage } from '../utils/installed-package'
 import type { Schema } from 'electron-store'
 import type { ContentStore, ContentRecord } from '@scnexus/app-shared/types/content.type'
 import { isPackage } from '@scnexus/standard/package'
@@ -123,14 +124,14 @@ const recordSchema = {
 export function createCustomizeRepository() {
   return createRepository<ContentStore>({
     defaults: () => ({
-      _schemaVersion: 2,
+      _schemaVersion: 3,
       _revision: 0,
       records: [],
       legacyRecords: [],
       scannedAt: null,
     }),
     schema: {
-      _schemaVersion: { const: 2 },
+      _schemaVersion: { const: 3 },
       _revision: { type: 'integer', minimum: 0 },
       records: { type: 'array', items: recordSchema },
       legacyRecords: { type: 'array', items: { type: 'object' } },
@@ -146,6 +147,17 @@ export function createCustomizeRepository() {
       }
     },
     migrate(data, defaults) {
+      if (isRecord(data) && data._schemaVersion === 2) {
+        if (!Array.isArray(data.records)) invalidData('Invalid content records')
+        return {
+          ...data,
+          _schemaVersion: defaults._schemaVersion,
+          records: data.records.map((record) => {
+            if (!isRecord(record)) invalidData('Invalid content record')
+            return { ...record, package: normalizeInstalledPackage(record.package) }
+          }),
+        } as ContentStore
+      }
       if (!isRecord(data)) invalidData('Invalid old content index')
       const old = data.CUSTOMIZE_LIST
       const values = Array.isArray(old)

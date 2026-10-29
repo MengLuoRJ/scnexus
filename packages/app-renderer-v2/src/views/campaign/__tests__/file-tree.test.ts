@@ -60,3 +60,23 @@ test.each([
 ])('file %s has a recognizable icon', (name, icon) => {
   expect(fileTreeIcon(node(name), false).icon).toBe(icon)
 })
+
+test.each([
+  ['Map.SC2Map', 'file', 'icon_ext_SC2Map_128.png'],
+  ['Mod.sc2mod', 'file', 'icon_ext_SC2Mod_128.png'],
+  ['Map.sc2map', 'directory', 'icon_ext_SC2Map_128.png'],
+  ['Mod.SC2Mod', 'directory', 'icon_ext_SC2Mod_128.png'],
+] as const)('%s (%s) renders its bundled resource image', (name, kind, image) => {
+  const wrapper = mount(FileTree, {
+    props: { tree: node(name, kind) },
+    global: { stubs: { UIcon: true } },
+  })
+  try {
+    const icon = wrapper.get('img')
+    expect(icon.attributes('src')).toContain(image)
+    expect(icon.attributes('alt')).toBe('')
+    expect(icon.attributes('draggable')).toBe('false')
+  } finally {
+    wrapper.unmount()
+  }
+})

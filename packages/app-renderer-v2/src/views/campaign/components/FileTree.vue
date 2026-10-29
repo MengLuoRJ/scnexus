@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { formatFileSize } from '../formatFileSize'
 import { fileTreeIcon } from './fileTreeIcon'
+import mapIcon from '../../../assets/icons/icon_ext_SC2Map_128.png'
+import modIcon from '../../../assets/icons/icon_ext_SC2Mod_128.png'
 import type { FileTree } from '@scnexus/app-shared/types/content.type'
 defineOptions({ name: 'CampaignFileTree' })
 const props = defineProps<{ tree: FileTree }>()
@@ -14,12 +16,17 @@ watch(
   { immediate: true },
 )
 const appearance = computed(() => fileTreeIcon(props.tree, expanded.value))
+const resourceIcon = computed(() => {
+  if (/\.sc2map$/i.test(props.tree.name)) return mapIcon
+  if (/\.sc2mod$/i.test(props.tree.name)) return modIcon
+  return undefined
+})
 function toggle(event: Event) {
   expanded.value = (event.currentTarget as HTMLDetailsElement).open
 }
 </script>
 <template>
-  <ul class="file-tree min-w-0 text-xs">
+  <ul class="file-tree min-w-0 select-text text-xs">
     <li class="min-w-0">
       <details v-if="props.tree.kind === 'directory'" :open="expanded" @toggle="toggle">
         <summary
@@ -30,7 +37,15 @@ function toggle(event: Event) {
             class="size-3 shrink-0 text-muted"
             aria-hidden="true"
           />
+          <img
+            v-if="resourceIcon"
+            :src="resourceIcon"
+            alt=""
+            draggable="false"
+            class="size-4 shrink-0 object-contain"
+          />
           <UIcon
+            v-else
             :name="appearance.icon"
             class="size-4 shrink-0"
             :class="appearance.color"
@@ -43,7 +58,15 @@ function toggle(event: Event) {
         </div>
       </details>
       <div v-else class="flex items-center gap-1 rounded py-0.5 pl-5 pr-1 hover:bg-elevated">
+        <img
+          v-if="resourceIcon"
+          :src="resourceIcon"
+          alt=""
+          draggable="false"
+          class="size-4 shrink-0 object-contain"
+        />
         <UIcon
+          v-else
           :name="appearance.icon"
           class="size-4 shrink-0"
           :class="appearance.color"
@@ -58,6 +81,12 @@ function toggle(event: Event) {
   </ul>
 </template>
 <style scoped>
+.file-tree :deep(img),
+.file-tree :deep([aria-hidden='true']) {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
 summary {
   list-style: none;
 }

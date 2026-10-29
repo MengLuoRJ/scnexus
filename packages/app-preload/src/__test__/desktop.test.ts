@@ -19,13 +19,14 @@ vi.mock('electron', () => ({
   },
 }))
 import '../ipc/desktop'
+const desktopApi = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
 
 test.each([false, true])(
   'workshop deep links forward the DTO and unsubscribe (download=%s)',
   (download) => {
     mocks.removeListener.mockClear()
     mocks.invoke.mockClear()
-    const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+    const api = desktopApi
     const listener = vi.fn<(data: DeepLinkWorkshop) => void>()
     const stop = api.deepLink.onWorkshop(listener)
     const [channel, callback] = mocks.on.mock.calls.at(-1)!
@@ -43,7 +44,7 @@ test.each(['campaign', 'customize'] as const)(
   '%s progress subscription strips the Electron event and removes exactly its listener',
   (domain) => {
     mocks.removeListener.mockClear()
-    const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+    const api = desktopApi as DesktopApi
     const listener =
       vi.fn<(progress: import('@scnexus/app-shared/types/content.type').InstallProgress) => void>()
     const stop = api[domain].onInstallProgress(listener)
@@ -67,7 +68,7 @@ test.each(['campaign', 'customize'] as const)(
 test.each(['campaign', 'customize'] as const)(
   '%s install forwards the optional client task ID unchanged',
   async (domain) => {
-    const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+    const api = desktopApi as DesktopApi
     const selection = {
       analysisId: 'analysis',
       taskId: 'task',
@@ -83,7 +84,7 @@ test.each(['campaign', 'customize'] as const)(
 test.each(['campaign', 'customize'] as const)(
   '%s preserves committed success with warnings and rejects malformed warning data',
   async (domain) => {
-    const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+    const api = desktopApi as DesktopApi
     const warning = toErrorDto(
       new AppError(ERRORS.CONTENT_CLEANUP_WARNING, { message: 'Temporary file occupied' }),
     )
@@ -96,7 +97,7 @@ test.each(['campaign', 'customize'] as const)(
 )
 
 test('unified analysis forwards descriptor choice and preserves conflict failure DTO', async () => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+  const api = desktopApi as DesktopApi
   const input = { kind: 'directory' as const, path: 'D:\\Source' }
   const conflict = { ok: false, error: toErrorDto(new AppError(ERRORS.CONTENT_TYPE_CONFLICT)) }
   mocks.invoke.mockResolvedValueOnce(conflict)
@@ -111,7 +112,7 @@ test('unified analysis forwards descriptor choice and preserves conflict failure
 })
 
 test('auth bridge only exposes bounded operations and strips event metadata', async () => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  const api = desktopApi
   expect(Object.keys(api.auth).sort()).toEqual(
     [
       'getSnapshot',
@@ -145,14 +146,14 @@ test('auth bridge only exposes bounded operations and strips event metadata', as
 })
 
 test('device name lookup is a bounded app bridge without renderer-supplied identity', async () => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  const api = desktopApi
   mocks.invoke.mockResolvedValueOnce({ ok: true, data: 'Player PC' })
   expect(await api.app.getDeviceName()).toEqual({ ok: true, data: 'Player PC' })
   expect(mocks.invoke).toHaveBeenLastCalledWith('app:get-device-name')
 })
 
 test('transport rejection still produces P001 when forwarding a log also fails', async () => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+  const api = desktopApi as DesktopApi
   mocks.invoke.mockRejectedValueOnce(new Error('IPC disconnected'))
   mocks.send.mockImplementationOnce(() => {
     throw new Error('Destroyed webContents')
@@ -161,14 +162,14 @@ test('transport rejection still produces P001 when forwarding a log also fails',
 })
 
 test('customize launch forwards only a local record ID through its dedicated channel', async () => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  const api = desktopApi
   mocks.invoke.mockResolvedValueOnce({ ok: true, data: undefined })
   await api.customize.launch('local-record')
   expect(mocks.invoke).toHaveBeenLastCalledWith('customize:launch', 'local-record')
 })
 
 test('content attachments expose only installed ID and package-relative path lookups', async () => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1] as DesktopApi
+  const api = desktopApi as DesktopApi
   const assets = { image: null, readme: 'README.md', changelog: null, docs: [] }
   mocks.invoke.mockResolvedValueOnce({ ok: true, data: assets })
   expect(await api.content.assets('installed')).toEqual({ ok: true, data: assets })
@@ -188,7 +189,7 @@ test.each([
   ['inspectDownload', 'workshop:inspect-download', ['task-id']],
   ['removeDownload', 'workshop:remove-download', ['task-id', true]],
 ] as const)('%s exposes only its typed workshop channel', async (method, channel, args) => {
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  const api = desktopApi
   mocks.invoke.mockResolvedValueOnce({ ok: true, data: {} })
   await (api.workshop[method] as (...values: unknown[]) => Promise<unknown>)(...args)
   expect(mocks.invoke).toHaveBeenLastCalledWith(channel, ...args)
@@ -196,7 +197,7 @@ test.each([
 
 test('download location uses a dedicated bridge method with an optional task ID, never a path', async () => {
   mocks.invoke.mockResolvedValue({ ok: true, data: undefined })
-  const api = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
+  const api = desktopApi
   await api.workshop.openDownloadLocation()
   expect(mocks.invoke).toHaveBeenLastCalledWith('workshop:open-download-location')
   await api.workshop.openDownloadLocation('task-id')

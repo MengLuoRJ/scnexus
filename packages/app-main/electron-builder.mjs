@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url)
 const config = require('./electron-builder.json')
 const builderRequire = createRequire(require.resolve('electron-builder'))
 const { Arch } = builderRequire('builder-util')
-const sevenZipRoot = dirname(require.resolve('7z-bin/package.json'))
+const sevenZipRoot = dirname(dirname(require.resolve('7z-bin')))
 
 export default {
   ...config,

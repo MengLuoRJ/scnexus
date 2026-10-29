@@ -15,7 +15,7 @@ const builderRequire = createRequire(require.resolve('electron-builder'))
 const libRequire = createRequire(builderRequire.resolve('app-builder-lib'))
 const { FileMatcher } = libRequire('./fileMatcher')
 const { Arch } = builderRequire('builder-util')
-const root = dirname(require.resolve('7z-bin/package.json'))
+const root = dirname(dirname(require.resolve('7z-bin')))
 async function list(directory, prefix = '') {
   const files = []
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -51,10 +51,10 @@ for (const [platform, folder, arches] of [
       const expected = (
         await list(join(root, 'bin', folder, ...(platform === 'darwin' ? [] : [arch])))
       ).map((file) => `bin/${folder}/${platform === 'darwin' ? '' : arch + '/'}${file}`)
-      if (platform !== 'darwin') expected.push(`bin/${folder}/License.txt`)
       assert.deepEqual(actual.filter((file) => file.startsWith('bin/')).sort(), expected.sort())
       assert.ok(actual.includes('package.json'))
-      assert.ok(actual.includes('dist/index.js'))
+      assert.ok(actual.includes('dist/index.mjs'))
+      assert.ok(actual.includes('dist/index.cjs'))
       await config.beforePack({ electronPlatformName: platform, arch: Arch[arch] })
     })
   }

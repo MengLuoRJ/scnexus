@@ -36,21 +36,25 @@
     }
   },
   "scripts": {
-    "build": "tsup && pnpm run build:schema",
+    "build": "tsdown",
     "build:schema": "node scripts/generate-schema.mjs",
-    "watch": "tsup --watch src --onSuccess \"pnpm run build:schema\"",
+    "watch": "tsdown --watch src",
     "prepublish": "npm run build",
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard && pnpm -w exec eslint packages/standard",
     "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard",
     "lint:eslint": "pnpm -w exec eslint packages/standard",
     "lint:fix": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard --fix && pnpm -w exec eslint packages/standard --fix",
     "format": "pnpm -w exec oxfmt --write --disable-nested-config packages/standard",
-    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/standard"
+    "format:check": "pnpm -w exec oxfmt --check --disable-nested-config packages/standard",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "ajv": "^8.20.0",
     "ts-json-schema-generator": "^2.9.0",
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.5"
+    "tsdown": "0.23.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
   }
 }

@@ -1,6 +1,9 @@
 import { createCampaignRepository } from '../campaign'
 import { createCustomizeRepository } from '../customize'
 import { createDependencyRepository } from '../dependency'
+import { createActiveRepository } from '../campaign-active'
+import { isPackage } from '@scnexus/standard/package'
+import type { Package } from '@scnexus/standard/package'
 import assert from 'node:assert/strict'
 import { test, afterAll, vi } from 'vitest'
 import fs from 'node:fs'
@@ -517,17 +520,61 @@ for (const create of [createCampaignRepository, createCustomizeRepository]) {
     assert.deepEqual(backend.backups, [{ raw, reason: 'corrupt' }])
   })
 }
-test('older campaign/customize legacy imports remain backed up and retained', async () => {
-  for (const [create, key] of [
-    [createCampaignRepository, 'CAMPAIGN_LIST_SET'],
-    [createCustomizeRepository, 'CUSTOMIZE_LIST'],
+test('historical metadata is retained opaquely, never treated as a modern package', async () => {
+  const legacy = {
+    name: 'Original legacy record',
+    metadata: { title: 'Legacy title', luancher: { name: 'Entry.SC2Map' } },
+    local_path: 'D:\\Game\\Legacy',
+    unknown_extension: { retained: true },
+  }
+  assert.equal(isPackage(legacy), false)
+  for (const [create, key, version, containers] of [
+    [createCampaignRepository, 'CAMPAIGN_LIST_SET', 3, [[legacy], { WOL: [legacy], HOTS: [] }]],
+    [createCustomizeRepository, 'CUSTOMIZE_LIST', 3, [[legacy], { customize: [legacy] }]],
+    [createActiveRepository, 'CAMPAIGN_SET', 2, [{ WOL: legacy, HOTS: null }]],
   ] as const) {
-    const legacy = { name: 'Original legacy record' }
-    const backend = await fileBackend({ [key]: [legacy] })
-    const raw = backend.raw
-    const snapshot = create().init(backend)
-    assert.equal(snapshot._schemaVersion, 3)
-    assert.deepEqual(snapshot.legacyRecords, [legacy])
-    assert.deepEqual(backend.backups, [{ raw, reason: 'migration' }])
+    for (const container of containers) {
+      const backend = await fileBackend({ [key]: container })
+      const raw = backend.raw
+      const snapshot = create().init(backend)
+      assert.equal(snapshot._schemaVersion, version)
+      assert.deepEqual(snapshot.legacyRecords, [legacy])
+      if ('records' in snapshot) assert.deepEqual(snapshot.records, [])
+      if ('active' in snapshot) assert.deepEqual(snapshot.active, {})
+      assert.deepEqual(backend.backups, [{ raw, reason: 'migration' }])
+      assert.deepEqual(create().init(backend), snapshot)
+      assert.equal(backend.writes, 1)
+      assert.equal(backend.backups.length, 1)
+    }
   }
 })
+for (const [type, create] of [
+  ['campaign', createCampaignRepository],
+  ['customize', createCustomizeRepository],
+] as const) {
+  test(`${type} accepts modern package fields without historical metadata contracts`, async () => {
+    const pkg = {
+      type,
+      name: 'Modern package',
+      description: '',
+      version: '1',
+      author: 'Author',
+      campaign: 'WOL',
+      bank_enable: 'official',
+      launcher: { name: 'Entry.SC2Map' },
+      maps: [{ name: 'Entry.SC2Map', source_path: '/Maps/Entry.SC2Map' }],
+    } satisfies Package
+    assert.equal(isPackage(pkg), true)
+    const original = {
+      _schemaVersion: 3,
+      _revision: 1,
+      records: [{ ...installedRecord(type, 'modern'), package: pkg }],
+      legacyRecords: [],
+      scannedAt: null,
+    }
+    const backend = await fileBackend(original)
+    assert.deepEqual(create().init(backend), original)
+    assert.deepEqual(backend.backups, [])
+    assert.equal(backend.writes, 0)
+  })
+}

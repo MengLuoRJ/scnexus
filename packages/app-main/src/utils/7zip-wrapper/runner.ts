@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import sevenZipBin from '7z-bin'
+import { path7z } from '7z-bin'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { StringDecoder } from 'node:string_decoder'
 import { access } from 'node:fs/promises'
@@ -104,7 +104,7 @@ export class SevenZipRunner {
 }
 
 export function resolveBundledBinaryPath(): string {
-  const binaryPath = sevenZipBin.path7z
+  const binaryPath = path7z
   return app.isPackaged || process.env.NODE_ENV === 'production'
     ? binaryPath.replace('app.asar', 'app.asar.unpacked')
     : binaryPath

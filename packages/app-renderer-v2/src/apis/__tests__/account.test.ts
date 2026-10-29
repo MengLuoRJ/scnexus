@@ -2,11 +2,13 @@ import type { AxiosRequestConfig } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   request: vi.fn<(config: AxiosRequestConfig) => Promise<{ data: unknown }>>(),
+  createConfig: undefined as unknown,
   create: vi.fn<(config: unknown) => void>(),
 }))
 vi.mock('axios', () => ({
   default: {
     create: (config: unknown) => {
+      mocks.createConfig = config
       mocks.create(config)
       return { request: mocks.request }
     },
@@ -37,7 +39,7 @@ beforeEach(() => {
 })
 describe('account HTTP boundary', () => {
   it('uses the fixed base and never cookies', () => {
-    expect(mocks.create).toHaveBeenCalledWith(
+    expect(mocks.createConfig).toEqual(
       expect.objectContaining({
         baseURL: 'http://127.0.0.1:3000',
         withCredentials: false,

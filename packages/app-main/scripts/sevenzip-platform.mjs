@@ -7,9 +7,7 @@ export function sevenZipFileFilters(platform) {
   if (!folder) throw new Error(`7z-bin does not support packaging platform ${platform}`)
   return [
     `!node_modules/7z-bin/bin/!(${folder}){,/**/*}`,
-    ...(platform === 'darwin'
-      ? []
-      : [`!node_modules/7z-bin/bin/${folder}/!(\${arch}|License.txt){,/**/*}`]),
+    `!node_modules/7z-bin/bin/${folder}/!(${platform === 'darwin' ? '${arch}|x64|arm64' : '${arch}'}){,/**/*}`,
   ]
 }
 
@@ -19,27 +17,30 @@ export async function verifySevenZipTarget(root, platform, arch) {
   if (!folder || !supported.includes(arch)) {
     throw new Error(`Unsupported 7z-bin packaging target: ${platform}-${arch}`)
   }
-  const binary =
-    platform === 'darwin'
-      ? join(root, 'bin', folder, '7zz')
-      : join(root, 'bin', folder, arch, platform === 'win32' ? '7z.exe' : '7zzs')
-  await access(binary)
-  // Windows cannot validate POSIX execute bits; check again on the macOS packaging host.
-  if (platform === 'darwin' && process.platform !== 'win32') {
-    await access(binary, constants.X_OK)
-  }
-  await access(join(root, 'bin', folder, 'License.txt'))
-  if (platform === 'win32') await access(join(root, 'bin', folder, arch, '7z.dll'))
-  if (platform === 'darwin') {
-    const data = await readFile(binary)
-    if (data.readUInt32BE(0) !== 0xcafebabe || data.readUInt32BE(4) < 2) {
-      throw new Error('The bundled macOS 7zz must support both x64 and arm64')
-    }
-    const cpus = Array.from({ length: data.readUInt32BE(4) }, (_, index) =>
-      data.readUInt32BE(8 + index * 20),
+  const arches = arch === 'universal' ? ['x64', 'arm64'] : [arch]
+  let binary
+  for (const targetArch of arches) {
+    const directory = join(root, 'bin', folder, targetArch)
+    binary = join(
+      directory,
+      platform === 'win32' ? '7z.exe' : platform === 'darwin' ? '7zz' : '7zzs',
     )
-    if (!cpus.includes(0x01000007) || !cpus.includes(0x0100000c)) {
-      throw new Error('The bundled macOS 7zz lacks x64 or arm64 support')
+    await access(binary)
+    if (platform !== 'win32' && process.platform !== 'win32') await access(binary, constants.X_OK)
+    await access(join(directory, 'License.txt'))
+    if (platform === 'win32') await access(join(directory, '7z.dll'))
+    if (platform === 'darwin') {
+      const data = await readFile(binary)
+      const expectedCpu = targetArch === 'x64' ? 0x01000007 : 0x0100000c
+      const supportedCpu =
+        data.readUInt32BE(0) === 0xcafebabe
+          ? Array.from({ length: data.readUInt32BE(4) }, (_, index) =>
+              data.readUInt32BE(8 + index * 20),
+            ).includes(expectedCpu)
+          : data.readUInt32LE(0) === 0xfeedfacf && data.readUInt32LE(4) === expectedCpu
+      if (!supportedCpu) {
+        throw new Error(`The bundled macOS 7zz does not match ${targetArch}`)
+      }
     }
   }
   return binary

@@ -36,6 +36,7 @@ test('customize registers install/uninstall and launch, never activation', () =>
 })
 
 test('customize progress is delivered only to the invoking live sender', async () => {
+  initCustomizeIpc()
   const { contentService } = await import('../../content-package')
   const progress = {
     taskId: 'task',

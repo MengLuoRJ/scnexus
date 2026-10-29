@@ -27,28 +27,27 @@
     "build": "vite build"
   },
   "dependencies": {
-    "7z-bin": "0.0.3",
+    "7z-bin": "26.4.0",
     "@scnexus/standard": "workspace:*",
-    "@sentry/electron": "^8.1.0",
+    "@sentry/electron": "^8.3.0",
     "ajv": "^8.20.0",
-    "axios": "^1.20.0",
+    "axios": "^1.21.0",
     "electron-log": "^5.4.4",
-    "electron-store": "^11.0.2",
-    "electron-updater": "^6.3.9",
-    "filesize": "^10.1.6",
+    "electron-store": "^12.0.0",
+    "electron-updater": "^6.8.11",
+    "filesize": "^11.0.29",
     "hash-wasm": "^4.12.0",
-    "regedit": "^5.1.3",
-    "semver": "^7.6.3",
-    "uuid": "^14.0.2"
+    "regedit": "^5.1.4",
+    "semver": "^7.8.5",
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@scnexus/app-shared": "workspace:*",
-    "@types/semver": "^7.5.8",
-    "electron": "^45.0.0",
-    "electron-builder": "^26.15.3",
-    "scnexus-standard": "^0.0.13",
-    "typescript": "^5.7.2",
-    "vite": "^8.3.2",
-    "vitest": "^4.1.11"
+    "@types/semver": "^7.8.0",
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   }
 }

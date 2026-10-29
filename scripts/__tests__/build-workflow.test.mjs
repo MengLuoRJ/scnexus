@@ -20,9 +20,22 @@ test('root builds current runtime packages after standard and verifies their typ
   assert.match(pkg.scripts['build:renderer'], /app-renderer-v2/)
   assert.match(pkg.scripts['typecheck:renderer'], /app-renderer-v2/)
   assert.match(pkg.scripts['test:renderer'], /app-renderer-v2.*--run/)
+  assert.match(pkg.scripts['test:standard'], /@scnexus\/standard.*test/)
+  assert.match(pkg.scripts.test, /test:standard/)
+  assert.match(
+    pkg.scripts['publish:standard'],
+    /build:standard.*test:standard.*standard-distribution\.test\.mjs/,
+  )
+  const standard = await json('packages/standard/package.json')
+  assert.equal(standard.scripts.build, 'tsdown')
+  assert.equal(standard.scripts.test, 'vitest run')
+  assert.ok(!standard.devDependencies.tsup)
+  assert.match(standard.devDependencies.tsdown, /^\^?0\.23\./)
+  assert.match(standard.devDependencies.typescript, /^~6\.0\./)
+  assert.match(standard.devDependencies.vitest, /^\^5\./)
   const preload = await json('packages/app-preload/package.json')
   const main = await json('packages/app-main/package.json')
-  assert.equal(pkg.devDependencies.electron, '^45.0.0')
+  assert.equal(pkg.devDependencies.electron, '^45.1.0')
   assert.equal(main.devDependencies.electron, pkg.devDependencies.electron)
   assert.equal(preload.devDependencies.electron, pkg.devDependencies.electron)
   assert.equal(preload.main, 'dist/index.cjs')

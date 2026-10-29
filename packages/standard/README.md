@@ -35,7 +35,7 @@ npm login --registry=https://registry.npmjs.org
 pnpm run publish:standard
 ```
 
-该命令先构建并运行 standard 分发测试，成功后仅发布 `@scnexus/standard` 到 npm 的
+该命令先构建并运行 standard 包内 Vitest 测试及分发测试，成功后仅发布 `@scnexus/standard` 到 npm 的
 `latest` 标签，版本取本包 package.json；不会发布整个工作区。发布会跳过 Git 干净状态检查，
 因此使用当前工作区内容，不自动提交或打标签。按 npm 提示完成额外认证，不在脚本中保存验证码或令牌。
 
@@ -45,13 +45,15 @@ pnpm run publish:standard
 
 ```sh
 pnpm run build:standard
+pnpm --filter @scnexus/standard test
 node --test scripts/__tests__/standard-distribution.test.mjs
-pnpm --filter @scnexus/standard exec tsc --noEmit -p tsconfig.json
+pnpm --filter @scnexus/standard typecheck
 ```
 
 构建会先清理 `dist`，移除历史双格式产物；分发测试检查产物清单、声明解析、
 package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata 入口被移除。
-此独立测试需在构建后运行。
+分发测试需在构建后运行；包内 Vitest 直接测试源码中的业务校验，无需预先构建。
+`pnpm --filter @scnexus/standard test:watch` 可交互监听业务测试。
 
 
 ## 包类型
@@ -127,11 +129,13 @@ renderer 使用 [Comark 的 Vue 渲染器](https://comark.dev/rendering/vue) 配
 
 ## 自动生成的声明与 JSON Schema
 
-`src/package/package.type.ts` 是类型和结构 Schema 的唯一来源。完整构建会先用 tsup
+`src/package/package.type.ts` 是类型和结构 Schema 的唯一来源。完整构建会先用 tsdown
 生成单文件 `dist/package/index.d.ts`，再用 ts-json-schema-generator 生成
 `dist/package.schema.json`（JSON Schema Draft-07，内部 definitions 引用自包含）。
 不要手改 dist；`pnpm run build:schema` 可单独重新生成 Schema，watch 成功构建后也会生成。
 两种生成工具及测试用 Ajv 都仅为开发依赖，消费者不需要它们。
+包级类型检查与声明构建使用 TypeScript 6.0.x；ts-json-schema-generator 2.9.0
+按上游依赖使用其内部 TypeScript 5.9.x 生成 Schema，不强制覆盖第三方依赖。
 
 Schema 随 npm 包发布，公开入口为 `@scnexus/standard/package.schema.json`：
 

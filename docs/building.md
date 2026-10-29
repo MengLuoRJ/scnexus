@@ -65,3 +65,32 @@ pnpm --filter @scnexus/app-main exec electron-builder build --config electron-bu
 Windows regedit VBS仅由win.extraResources附带；mac排除该资源。7z保持双架构Mach-O及许可检查，并在非Windows打包机检查执行权限，afterPack再次检查.app内app.asar.unpacked中的真实helper，避免只验证开发依赖却漏包。Windows WER命名钩子仍执行，但在mac自然不处理。
 
 自动化：`pnpm run test:build` 24项通过，覆盖双架构文件名、平台资源隔离、mac打包后helper缺失拒绝和两种架构检查。真实Mac需独立验收DMG挂载/拖入Applications/首次启动、7z解压、Keychain、SC2识别和安装激活恢复卸载；未执行代码签名、公证或Mac自动更新。业务平台边界见[app-main-design.md](./app-main-design.md)。
+
+## 2026-10-29 依赖升级验收
+
+本节为当前升级结果，前文带日期的 Electron 45.0.0 / builder 26.15.3 记录保留为历史，不代表最新安装版本。
+
+- 所有工作区直接声明的 TypeScript 统一为 `~6.0.3`，不升级 TypeScript 7。第三方工具内部的 TypeScript 依赖仍遵守上游要求，例如 Schema 生成器内部的 5.9，不用 override 强行替换。
+- Electron 三处统一 `^45.1.0`，electron-builder `^26.18.0`、electron-updater `^6.8.11`、electron-store `^12.0.0`；Vite `^8.3.5`、Vitest `^5.0.5`、Vue I18n `^11.4.16`。同步升级常规工具与自动导入插件，保留既有 API 和持久化契约。
+- standard 删除 tsup，使用固定 `tsdown@0.23.2` 和 Vitest 5。0.23.4 处于发布时间保护窗口，按用户确认不用例外放行。保留 `dist/package/index.js`、`index.d.ts`、`index.js.map` 及 JSON Schema，仍为 ESM-only；包级业务测试与根分发测试分别执行。根 `test` 和 `publish:standard` 均加入 `test:standard`，本轮未发布。
+- Nuxt UI 编辑器的 Tiptap 族统一到保护窗口外的 3.32.0，通过 workspace overrides 保证扩展和 core/pm 类型与运行时一致；不升级独立版本体系的 `@tiptap/y-tiptap`。升级依赖后先构建 renderer 刷新生成声明，避免旧声明指向过期 pnpm 实体目录。
+- 保留 `7z-bin@0.0.3`、已弃用但仍有类型引用的 `scnexus-standard@0.0.13` 和既有 Node 类型版本策略；这些不在此次自动迁移范围。没有放宽发布时间保护，没有新增 npm/yarn 锁文件。
+
+验证命令及结果：
+
+- `pnpm install --frozen-lockfile`、`pnpm peers check`：通过，无 peer 问题。
+- `pnpm run typecheck`、`pnpm run lint`：通过；两个原生包的包级 `typecheck`、standard 包级 `typecheck` 也通过。
+- `pnpm run test`：通过；standard 4 项、分发 26 项、main 575 项、preload 19 项、renderer 427 项。standard 的 4 组业务测试由原根分发文件迁入包内 Vitest，计数变化不表示删除覆盖。
+- `pnpm run build`：通过，包括 Schema 生成及三个运行包生产构建；仍有 renderer 大 chunk 提示，未进行无关拆包。
+- `pnpm run test:electron`：通过，真实 Electron 45.1.0 / Node 24.22.1 / Chromium 156.0.8078.49，sandbox preload、受控桥接、异步 safeStorage 及旧密文解密兼容通过。旧同步加密仅测试 fixture 用于兼容验证。
+- `pnpm run test:native:electron`：10 项通过、1 项真实 CASC 测试跳过（未指定安装数据），没有重编译原生模块。
+
+Electron 安装器初次下载网络失败，随后仅从官方 Release 下载 ZIP，按 electron npm 包附带的 SHA256 校验后安装，刷新 targets 并完成真实冒烟；未更换镜像或关闭 TLS/校验。尚未执行新版 builder 的完整安装器打包、签名、真实自动更新、macOS 或真实游戏数据验收。Crashpad 注册的既有 CreateFile 噪声仍可出现，冒烟退出成功，不宣称已修复该独立问题。
+
+## 旧标准依赖移除与 7-Zip 26.04（2026-10-29）
+
+本节覆盖此前“保留旧标准包与 7z-bin”的暂缓决定。main/shared 已移除 `scnexus-standard`，工作区源码、manifest 和锁文件不再依赖旧 npm 包；新作品格式统一由 `@scnexus/standard` 定义与校验。删除无调用方的旧 shared types/stores 契约，不增加伪装新 Package 的类型别名；旧持久化数据仍以 `legacyRecords` 原样保留并备份，迁移测试覆盖列表、分组、激活及重启，未强行把未知旧数据转换为新清单。
+
+`7z-bin` 升为固定 26.4.0，实际为 7-Zip 26.04。运行代码改用 `path7z` 命名导出；打包通过公开入口定位包目录，不再访问受 exports 限制的 package.json 子路径。许可证位于各架构目录，macOS 二进制位于 `bin/mac/{x64,arm64}/7zz`（当前各自文件均含双架构）；macOS 保留两份架构目录，校验目标 CPU 和执行权限，Windows/Linux 只保留目标架构。新版产物包含 ESM/CJS 入口，不再假定旧 `dist/index.js`。
+
+验证：`test:build` 26 项、main 577 项、preload 19 项、renderer 427 项通过；`pnpm run lint`、`pnpm run build`（含全运行包 typecheck）、冻结锁安装、peer 检查通过。Windows 实际启动新版 7-Zip、归档/内容测试已执行；跨平台资源布局和 macOS Mach-O 校验在 Windows 上检查，不等于真实 macOS/Linux 执行或安装包发布验收。本轮不发布包、不提交代码。

@@ -59,7 +59,7 @@
   "account.invitationCode": "邀請碼",
   "account.invitationRequired": "當前註冊需要邀請碼，提交時服務端會重新驗證策略。",
   "account.invitationOptional": "邀請碼可選；填寫後必須有效。",
-  "account.reloadPolicy": "重新加載註冊策略",
+  "account.policyUnavailable": "暫時無法註冊，請稍後重新打開賬號頁面重試。",
   "account.reload": "重新加載賬號信息",
   "account.loginPasswordHint": "密碼為 1–128 個字符。",
   "account.newPasswordHint": "新密碼為 8–128 個字符，須包含大寫字母、小寫字母、數字和 ASCII 特殊符號。",

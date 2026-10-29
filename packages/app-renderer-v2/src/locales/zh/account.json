@@ -59,7 +59,7 @@
   "account.invitationCode": "邀请码",
   "account.invitationRequired": "当前注册需要邀请码，提交时服务端会重新验证策略。",
   "account.invitationOptional": "邀请码可选；填写后必须有效。",
-  "account.reloadPolicy": "重新加载注册策略",
+  "account.policyUnavailable": "暂时无法注册，请稍后重新打开账号页面重试。",
   "account.reload": "重新加载账号信息",
   "account.loginPasswordHint": "密码为 1–128 个字符。",
   "account.newPasswordHint": "新密码为 8–128 个字符，须包含大写字母、小写字母、数字和 ASCII 特殊符号。",

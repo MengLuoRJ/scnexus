@@ -165,7 +165,11 @@ async function loadPolicy() {
     invitationRequired.value = (await apiRegistrationPolicy()).invitationRequired
     policyReady.value = true
   } catch (error) {
-    notify(error)
+    toast.add({
+      color: 'error',
+      title: t('account.policyUnavailable'),
+      description: t(accountErrorKey(error)),
+    })
   }
 }
 onMounted(loadPolicy)
@@ -611,9 +615,6 @@ async function logout() {
               </p>
             </template>
             <template v-if="mode === 'register'">
-              <UButton v-if="!policyReady" variant="outline" @click="loadPolicy">{{
-                t('account.reloadPolicy')
-              }}</UButton>
               <UFormField
                 :label="t('account.invitationCode')"
                 name="invitationCode"

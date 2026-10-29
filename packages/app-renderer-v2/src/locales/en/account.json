@@ -59,7 +59,7 @@
   "account.invitationCode": "Invitation code",
   "account.invitationRequired": "An invitation is currently required. The server rechecks the policy on submission.",
   "account.invitationOptional": "Invitation optional; any supplied code must be valid.",
-  "account.reloadPolicy": "Reload registration policy",
+  "account.policyUnavailable": "Registration is temporarily unavailable. Reopen the account page later to try again.",
   "account.reload": "Reload account details",
   "account.loginPasswordHint": "Password: 1–128 characters.",
   "account.newPasswordHint": "New password: 8–128 characters, including uppercase, lowercase, a digit and an ASCII symbol.",

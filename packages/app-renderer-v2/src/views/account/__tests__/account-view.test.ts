@@ -6,6 +6,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import AccountView from '../AccountView.vue'
 import { useAuthStore } from '../../../stores/auth'
+import { AccountError } from '../../../apis/internal/client'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
@@ -139,6 +140,43 @@ function mfa(store: ReturnType<typeof useAuthStore>) {
     mfaExpiresAt: Date.now() + 60000,
   }
 }
+test.each(['network', 'forbidden', 'invalidResponse'] as const)(
+  'policy failure %s reports unavailable registration without an internal reload button',
+  async (kind) => {
+    mocks.policy.mockRejectedValue(new AccountError(kind))
+    const register = vi.spyOn(useAuthStore(), 'register')
+    const wrapper = await render()
+    expect(mocks.toast).toHaveBeenCalledExactlyOnceWith({
+      color: 'error',
+      title: 'account.policyUnavailable',
+      description: `account.error.${kind}`,
+    })
+    await wrapper.get('select').setValue('register')
+    expect(wrapper.text()).not.toContain('account.reloadPolicy')
+    expect(namedButton(wrapper, 'register').attributes('disabled')).toBeDefined()
+    await wrapper.get('form').trigger('submit')
+    expect(register).not.toHaveBeenCalled()
+    expect(mocks.policy).toHaveBeenCalledOnce()
+    await wrapper.get('select').setValue('login')
+    expect(namedButton(wrapper, 'login').attributes('disabled')).toBeUndefined()
+  },
+)
+test('pending policy does not expose a reload button and enables registration once loaded', async () => {
+  let resolve!: (value: unknown) => void
+  mocks.policy.mockReturnValue(
+    new Promise((done) => {
+      resolve = done
+    }),
+  )
+  const wrapper = await render()
+  await wrapper.get('select').setValue('register')
+  expect(wrapper.text()).not.toContain('account.reloadPolicy')
+  expect(namedButton(wrapper, 'register').attributes('disabled')).toBeDefined()
+  resolve({ invitationRequired: true })
+  await flushPromises()
+  expect(namedButton(wrapper, 'register').attributes('disabled')).toBeUndefined()
+  expect(mocks.toast).not.toHaveBeenCalled()
+})
 test('same-tick subject and password input survives, login MFA clears secrets without success', async () => {
   const store = useAuthStore()
   const login = vi.spyOn(store, 'login').mockImplementation(async () => {

@@ -11,7 +11,7 @@ import { AccountError } from '../../../apis/internal/client'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
-  useRouter: () => ({ replace: async () => {} }),
+  useRouter: () => ({ replace: async () => { } }),
 }))
 vi.mock('../CreatorStatus.vue', () => ({ default: { template: '<div />' } }))
 const mocks = vi.hoisted(() => ({
@@ -46,7 +46,15 @@ vi.mock('../usePersonalCenter', async () => {
 })
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('../../../ipcs/app', () => ({ ipcAppGetDeviceName: mocks.deviceName }))
-vi.mock('../../../apis/account', () => ({ apiRegistrationPolicy: mocks.policy }))
+vi.mock('../../../apis/account', () => ({
+  apiRegistrationPolicy: mocks.policy,
+  apiTwoFactorStatus: async () => ({
+    twoFactorEnabled: useAuthStore().user?.twoFactorEnabled ?? false,
+    twoFactorVerified: false,
+    twoFactorVerifiedAt: null,
+    recoveryCodesRemaining: 5,
+  }),
+}))
 const card = defineComponent({
   template: '<div><slot name="header"/><slot/><slot name="footer"/></div>',
 })
@@ -128,6 +136,7 @@ async function render() {
         Alert: true,
         Progress: true,
         Badge: true,
+        Tooltip: field,
       },
     },
   })

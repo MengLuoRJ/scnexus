@@ -17,7 +17,18 @@ vi.mock('axios', () => ({
   },
 }))
 import { apiRequest, AccountError } from '../internal/client'
-import { apiRegistrationPolicy, apiUserMe, apiUserAuthorization } from '../account'
+import {
+  apiRegistrationPolicy,
+  apiUserMe,
+  apiUserAuthorization,
+  apiTwoFactorEnroll,
+  apiTwoFactorConfirm,
+  apiTwoFactorStatus,
+  apiTwoFactorRegenerate,
+  apiTwoFactorVerify,
+  apiTwoFactorDisable,
+  apiTwoFactorRotate,
+} from '../account'
 import type { AuthSnapshot } from '@scnexus/app-shared/types/auth.type'
 const snapshot = (): AuthSnapshot => ({
   status: 'signed-in',
@@ -38,6 +49,162 @@ beforeEach(() => {
   mocks.request.mockReset()
 })
 describe('account HTTP boundary', () => {
+  it('verifies a session without replaying rejected factors and validates the lifetime', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+    mocks.request.mockResolvedValueOnce({ data: { verified: true, expiresIn: 300 } })
+    await expect(apiTwoFactorVerify(auth, { code: '012345' })).resolves.toBe(300)
+    mocks.request.mockResolvedValueOnce({ data: { verified: true, expiresIn: 999999 } })
+    await expect(apiTwoFactorVerify(auth, { code: '012345' })).rejects.toMatchObject({
+      kind: 'invalidResponse',
+    })
+    mocks.request.mockRejectedValueOnce(responseError(401))
+    await expect(apiTwoFactorVerify(auth, { recoveryCode: 'a'.repeat(32) })).rejects.toMatchObject({
+      kind: 'unauthorized',
+    })
+    expect(auth.invalidate).not.toHaveBeenCalled()
+    expect(auth.refresh).not.toHaveBeenCalled()
+  })
+  it('reads authoritative MFA status and remaining recovery codes', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    mocks.request.mockResolvedValueOnce({
+      data: {
+        twoFactorEnabled: true,
+        twoFactorVerified: false,
+        twoFactorVerifiedAt: null,
+        recoveryCodesRemaining: 4,
+      },
+    })
+    await expect(apiTwoFactorStatus(auth)).resolves.toMatchObject({ recoveryCodesRemaining: 4 })
+    expect(mocks.request.mock.calls[0]?.[0]).toMatchObject({
+      method: 'GET',
+      url: '/auth/two-factor',
+    })
+    mocks.request.mockResolvedValueOnce({
+      data: {
+        twoFactorEnabled: true,
+        twoFactorVerified: true,
+        twoFactorVerifiedAt: 'invalid',
+        recoveryCodesRemaining: -1,
+      },
+    })
+    await expect(apiTwoFactorStatus(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
+  })
+  it('regenerates recovery codes and rejects duplicate codes', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+    mocks.request.mockResolvedValueOnce({
+      data: { recoveryCodes: ['a'.repeat(32), 'b'.repeat(32)] },
+    })
+    await expect(apiTwoFactorRegenerate(auth, { code: '012345' })).resolves.toHaveLength(2)
+    expect(mocks.request.mock.calls[0]?.[0]).toMatchObject({
+      method: 'POST',
+      url: '/auth/two-factor/recovery-codes',
+      data: { code: '012345' },
+    })
+    mocks.request.mockResolvedValueOnce({
+      data: { recoveryCodes: ['a'.repeat(32), 'A'.repeat(32)] },
+    })
+    await expect(
+      apiTwoFactorRegenerate(auth, { recoveryCode: 'a'.repeat(32) }),
+    ).rejects.toMatchObject({ kind: 'invalidResponse' })
+    mocks.request.mockRejectedValueOnce(responseError(401))
+    await expect(apiTwoFactorRegenerate(auth, { code: '012345' })).rejects.toMatchObject({
+      kind: 'unauthorized',
+    })
+    expect(auth.invalidate).not.toHaveBeenCalled()
+    expect(auth.refresh).not.toHaveBeenCalled()
+  })
+  it('rotates with a recovery code and validates the replacement enrollment', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    mocks.request.mockResolvedValueOnce({
+      data: {
+        secret: 'ABCDEFG2',
+        otpauthUri: 'otpauth://totp/SCNexus?secret=ABCDEFG2',
+        expiresIn: 600,
+      },
+    })
+    await expect(apiTwoFactorRotate(auth, { recoveryCode: 'a'.repeat(32) })).resolves.toMatchObject(
+      { secret: 'ABCDEFG2' },
+    )
+    expect(mocks.request.mock.calls[0]?.[0]).toMatchObject({
+      url: '/auth/two-factor/rotate',
+      method: 'POST',
+      data: { recoveryCode: 'a'.repeat(32) },
+    })
+  })
+  it('validates disable requires reauthentication', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    mocks.request.mockResolvedValueOnce({
+      data: { twoFactorEnabled: false, reauthenticationRequired: true },
+    })
+    await expect(apiTwoFactorDisable(auth, { code: '012345' })).resolves.toBeUndefined()
+    expect(mocks.request.mock.calls[0]?.[0].data).toEqual({ code: '012345' })
+    mocks.request.mockResolvedValueOnce({ data: { twoFactorEnabled: false } })
+    await expect(apiTwoFactorDisable(auth, { code: '012345' })).rejects.toMatchObject({
+      kind: 'invalidResponse',
+    })
+  })
+  it.each([apiTwoFactorRotate, apiTwoFactorDisable])(
+    'rejects ambiguous factors and preserves sessions on rejected proofs',
+    async (operation) => {
+      const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+      await expect(
+        operation(auth, { code: '012345', recoveryCode: 'a'.repeat(32) } as never),
+      ).rejects.toMatchObject({ kind: 'badRequest' })
+      expect(mocks.request).not.toHaveBeenCalled()
+      mocks.request.mockRejectedValueOnce(responseError(401))
+      await expect(operation(auth, { code: '012345' })).rejects.toMatchObject({
+        kind: 'unauthorized',
+      })
+      expect(auth.refresh).not.toHaveBeenCalled()
+      expect(auth.invalidate).not.toHaveBeenCalled()
+      expect(mocks.request).toHaveBeenCalledOnce()
+    },
+  )
+  it('validates enrollment and submits the exact six-digit code', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    mocks.request.mockResolvedValueOnce({
+      data: {
+        secret: 'ABCDEFG2',
+        otpauthUri: 'otpauth://totp/SCNexus?secret=ABCDEFG2',
+        expiresIn: 600,
+      },
+    })
+    await expect(apiTwoFactorEnroll(auth)).resolves.toMatchObject({ secret: 'ABCDEFG2' })
+    mocks.request.mockResolvedValueOnce({
+      data: { twoFactorEnabled: true, recoveryCodes: ['a'.repeat(32)] },
+    })
+    await expect(apiTwoFactorConfirm(auth, '012345')).resolves.toEqual(['a'.repeat(32)])
+    expect(mocks.request.mock.calls[1]?.[0]).toMatchObject({
+      method: 'POST',
+      data: { code: '012345' },
+    })
+  })
+  it('does not sign out or replay when enrollment confirmation rejects a code', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+    mocks.request.mockRejectedValueOnce(responseError(401))
+    await expect(apiTwoFactorConfirm(auth, '012345')).rejects.toMatchObject({
+      kind: 'unauthorized',
+    })
+    expect(auth.invalidate).not.toHaveBeenCalled()
+    expect(auth.refresh).not.toHaveBeenCalled()
+    expect(mocks.request).toHaveBeenCalledOnce()
+  })
+  it('rejects malformed enrollment and invalid input without sending a code', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    await expect(apiTwoFactorConfirm(auth, '123')).rejects.toMatchObject({ kind: 'badRequest' })
+    expect(mocks.request).not.toHaveBeenCalled()
+    mocks.request.mockResolvedValueOnce({
+      data: { secret: 'ABCDEFG2', otpauthUri: 'https://example.com', expiresIn: 600 },
+    })
+    await expect(apiTwoFactorEnroll(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
+  })
+  it('rejects a successful confirmation without valid one-time recovery codes', async () => {
+    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    mocks.request.mockResolvedValueOnce({ data: { twoFactorEnabled: true, recoveryCodes: [] } })
+    await expect(apiTwoFactorConfirm(auth, '012345')).rejects.toMatchObject({
+      kind: 'invalidResponse',
+    })
+  })
   it('uses the fixed base and never cookies', () => {
     expect(mocks.createConfig).toEqual(
       expect.objectContaining({
@@ -62,8 +229,8 @@ describe('account HTTP boundary', () => {
     expect(mocks.request.mock.calls[0]?.[0].withCredentials).toBe(false)
   })
   it('invalidates a rejected session after one GET recovery without another replay', async () => {
-    const refresh = vi.fn<() => Promise<void>>(async () => {})
-    const invalidate = vi.fn<() => Promise<void>>(async () => {})
+    const refresh = vi.fn<() => Promise<void>>(async () => { })
+    const invalidate = vi.fn<() => Promise<void>>(async () => { })
     mocks.request.mockRejectedValue(responseError(401))
     await expect(
       apiRequest('/users/me', Boolean, { getSnapshot: snapshot, refresh, invalidate }),
@@ -93,7 +260,7 @@ describe('account HTTP boundary', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
   it('does not refresh twice on repeated 401', async () => {
-    const refresh = vi.fn<() => Promise<void>>(async () => {})
+    const refresh = vi.fn<() => Promise<void>>(async () => { })
     mocks.request.mockRejectedValue(responseError(401))
     await expect(
       apiRequest('/users/me', Boolean, { getSnapshot: snapshot, refresh }),

@@ -57,6 +57,7 @@ export async function apiRequest<T>(
   method: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET',
   body?: unknown,
   params?: Record<string, string>,
+  options?: { preserveSessionOnUnauthorized?: boolean },
 ): Promise<T> {
   // Only application-relative paths may receive a Bearer token; reject URL parser normalization tricks.
   if (!/^\/[A-Za-z0-9_/-]+$/.test(path) || path.includes('//') || path.includes('..'))
@@ -98,7 +99,8 @@ export async function apiRequest<T>(
         current()
         continue
       }
-      if (clean.kind === 'unauthorized' && auth) await auth.invalidate?.()
+      if (clean.kind === 'unauthorized' && auth && !options?.preserveSessionOnUnauthorized)
+        await auth.invalidate?.()
       throw clean
     }
     current()

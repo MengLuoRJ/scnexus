@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useContentCenterStore } from '../../stores/content-center'
 import { ipcAppGetDeviceName } from '../../ipcs/app'
 import CreatorStatus from './CreatorStatus.vue'
+import TwoFactorSettings from './TwoFactorSettings.vue'
 import logo from '../../assets/logo.png'
 import { apiRegistrationPolicy, accountErrorKey } from '../../apis'
 import { usePersonalCenter } from './usePersonalCenter'
@@ -441,6 +442,7 @@ async function logout() {
               }}
             </p>
           </div>
+          <TwoFactorSettings />
         </div>
         <template #footer>
           <div class="flex flex-wrap justify-between gap-2">

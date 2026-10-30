@@ -30,8 +30,7 @@ watch(
       draggable="false"
       class="mutator-icon-image"
       loading="lazy"
-      @error="failed = true"
-    />
+      @error="failed = true" />
     <span v-else class="mutator-icon-fallback">?</span>
     <img :src="frame" alt="" draggable="false" class="mutator-icon-frame" />
   </span>

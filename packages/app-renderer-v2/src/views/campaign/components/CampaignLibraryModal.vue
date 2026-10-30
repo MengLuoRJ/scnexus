@@ -37,8 +37,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
   <UModal
     v-model:open="open"
     :title="t('campaign.switch')"
-    :ui="{ content: 'sm:max-w-3xl', body: 'min-h-0 break-words p-4 sm:p-4' }"
-  >
+    :ui="{ content: 'sm:max-w-3xl', body: 'min-h-0 break-words p-4 sm:p-4' }">
     <template #body>
       <div class="space-y-2">
         <UAlert v-if="!list.length" :title="t('campaign.empty')" color="neutral" variant="subtle" />
@@ -48,8 +47,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
               draggable="false"
               :src="image[props.category]"
               class="size-10 rounded object-cover"
-              alt=""
-            />
+              alt="" />
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-1">
                 <span class="font-semibold">{{ record.package.name }}</span>
@@ -59,8 +57,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
                 <UBadge variant="subtle">{{ record.mode }}</UBadge>
                 <UBadge
                   v-if="props.active[props.category]?.localId === record.localId"
-                  color="success"
-                >
+                  color="success">
                   {{ t('campaign.active') }}
                 </UBadge>
               </div>
@@ -76,8 +73,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
                 icon="i-tabler-info-circle"
                 color="neutral"
                 variant="ghost"
-                @click="selectedId = record.localId"
-              >
+                @click="selectedId = record.localId">
                 {{ t('campaign.details') }}
               </UButton>
               <UButton
@@ -86,16 +82,14 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
                 :disabled="props.busy"
                 color="warning"
                 variant="soft"
-                @click="emit('operate', record, 'deactivate')"
-              >
+                @click="emit('operate', record, 'deactivate')">
                 {{ t('campaign.deactivate') }}
               </UButton>
               <UButton
                 icon="i-tabler-check"
                 v-else
                 :disabled="props.busy || !record.payloadDirectory"
-                @click="emit('operate', record, 'activate')"
-              >
+                @click="emit('operate', record, 'activate')">
                 {{ t(props.active[props.category] ? 'campaign.switch' : 'campaign.activate') }}
               </UButton>
               <UButton
@@ -103,8 +97,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
                 color="error"
                 variant="soft"
                 :disabled="props.busy"
-                @click="emit('operate', record, 'uninstall')"
-              >
+                @click="emit('operate', record, 'uninstall')">
                 {{ t('campaign.uninstall') }}
               </UButton>
             </div>
@@ -128,17 +121,16 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
       (value: boolean) => {
         if (!value) selectedId = null
       }
-    "
-  >
+    ">
     <template #body>
       <RecordDetails v-if="selected" :record="selected">
         <UButton
           icon="i-tabler-folder"
           color="neutral"
           variant="outline"
-          @click="emit('folder', selected)"
-          >{{ t('campaign.openFolder') }}</UButton
-        >
+          @click="emit('folder', selected)">
+          {{ t('campaign.openFolder') }}
+        </UButton>
       </RecordDetails>
     </template>
   </UModal>

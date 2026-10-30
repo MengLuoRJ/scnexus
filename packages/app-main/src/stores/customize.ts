@@ -50,7 +50,8 @@ export function validateCustomizeRecord(value: unknown): asserts value is Conten
     !value.installedFiles.every(installed)
   )
     invalidData('Invalid installed resources')
-  if (value.launcherCustomized !== undefined && typeof value.launcherCustomized !== 'boolean') invalidData('Invalid launcher preference')
+  if (value.launcherCustomized !== undefined && typeof value.launcherCustomized !== 'boolean')
+    invalidData('Invalid launcher preference')
   if (
     value.launcherTarget !== undefined &&
     value.launcherTarget !== null &&

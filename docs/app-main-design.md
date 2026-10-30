@@ -359,7 +359,6 @@ M017 携带目标地址和 Electron 原始加载失败原因，保留 cause；�
 
 本轮 Windows 验证：主进程43文件390项通过、main类型检查及构建通过；改动文件ESLint与main Oxlint通过。测试使用真实临时文件夹验证最高build/入口选择、ExecuteInfo和配置读取，LaunchServices只验证命令构造，没有在Windows执行mac程序。尚未验收真实Mac窗口、Keychain、SC2/编辑器参数、战役安装激活恢复卸载闭环、用户账户Banks、TCC权限和DMG首次运行；这些是正式宣布支持前的真机验收项。
 
-
 ### macOS 资源根大小写兼容补充
 
 新增回归涵盖 maps/mods 和混合 Maps/mods 布局下的组目录冲突、SCNexus激活后扫描/备份恢复/卸载、嵌套CCM扫描激活/卸载，以及自制作品安装扫描卸载；额外验证映射后路径不能越界或通过符号链接。Windows上的真实临时文件回归可验证选择路径与存储路径一致，但不能代替大小写敏感APFS真机验收。本轮不操作玩家目录。

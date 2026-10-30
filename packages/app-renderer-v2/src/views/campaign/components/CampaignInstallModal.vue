@@ -144,8 +144,7 @@ function activate() {
       (value: boolean) => {
         if (!value) close()
       }
-    "
-  >
+    ">
     <template #body>
       <div v-if="installed" class="space-y-4">
         <UAlert
@@ -158,8 +157,7 @@ function activate() {
                 ? 'campaign.activatePrompt'
                 : 'customize.installedHint',
             )
-          "
-        />
+          " />
         <p class="font-semibold">
           {{ installed.package.name }} · {{ installed.package.version || '—' }}
         </p>
@@ -191,8 +189,7 @@ function activate() {
         <UAlert
           v-if="props.contentType === 'campaign' && !installed.payloadDirectory"
           color="warning"
-          :title="t('campaign.activationUnavailable')"
-        />
+          :title="t('campaign.activationUnavailable')" />
       </div>
       <div v-else-if="busy" class="space-y-3" role="status" aria-live="polite">
         <p>{{ t(installing ? 'campaign.installingHint' : 'campaign.reading') }}</p>
@@ -201,8 +198,7 @@ function activate() {
           <UProgress :model-value="percentage" :max="100" />
           <p
             v-if="installProgress.stage === 'extracting' && percentage !== undefined"
-            class="text-sm"
-          >
+            class="text-sm">
             {{ percentage }}%
           </p>
           <p
@@ -211,8 +207,7 @@ function activate() {
               installProgress.stage !== 'extracting' &&
               installProgress.totalFiles
             "
-            class="text-sm"
-          >
+            class="text-sm">
             {{ installProgress.completedFiles }} / {{ installProgress.totalFiles }}
             {{ t('campaign.files') }} · {{ percentage ?? 0 }}%
           </p>
@@ -244,16 +239,14 @@ function activate() {
                 ? 'campaign.autoDetectedHint'
                 : 'customize.autoDetectedHint',
             )
-          "
-        />
+          " />
         <UAlert v-if="mode === 'ccm'" color="warning" :title="t('campaign.ccmWarning')" />
         <UAlert
           v-for="item in existing"
           :key="item.directory"
           color="warning"
           :title="t('campaign.exists')"
-          :description="`${item.package?.name || item.diagnostic?.message || ''} · ${item.directory}`"
-        />
+          :description="`${item.package?.name || item.diagnostic?.message || ''} · ${item.directory}`" />
         <template v-if="preview">
           <section class="space-y-2">
             <h3 class="font-semibold">{{ t('campaign.basicInfo') }}</h3>
@@ -265,10 +258,10 @@ function activate() {
               <div>
                 <dt class="text-muted">{{ t('campaign.type') }}</dt>
                 <dd>
-                  {{ preview.package.type
-                  }}<template v-if="preview.package.campaign">
-                    · {{ t(`campaign.${preview.package.campaign}`) }}</template
-                  >
+                  {{ preview.package.type }}
+                  <template v-if="preview.package.campaign">
+                    · {{ t(`campaign.${preview.package.campaign}`) }}
+                  </template>
                 </dd>
               </div>
               <div>
@@ -332,8 +325,7 @@ function activate() {
             v-if="props.contentType === 'customize'"
             v-model="launcherTarget"
             :preview="preview"
-            :disabled="busy || installing"
-          />
+            :disabled="busy || installing" />
           <section class="space-y-2">
             <h3 class="font-semibold">{{ t('campaign.conflicts') }} ({{ conflicts.length }})</h3>
             <p v-if="conflicts.length" class="text-sm text-muted">
@@ -363,34 +355,32 @@ function activate() {
                 ? t(`campaign.diagnostic.${diagnostic.code}`)
                 : diagnostic.code
           "
-          :description="diagnostic.message"
-        />
+          :description="diagnostic.message" />
       </div>
       <UAlert
         v-else-if="error"
         color="error"
         :title="t('ui.error')"
-        :description="error.message || error.description"
-      />
+        :description="error.message || error.description" />
     </template>
     <template #footer>
       <div class="flex w-full justify-end gap-2">
-        <UButton color="neutral" variant="outline" :disabled="busy" @click="close">{{
-          t(installed ? 'campaign.finish' : 'campaign.cancel')
-        }}</UButton>
+        <UButton color="neutral" variant="outline" :disabled="busy" @click="close">
+          {{ t(installed ? 'campaign.finish' : 'campaign.cancel') }}
+        </UButton>
         <UButton
           v-if="installed && props.contentType === 'campaign'"
           :disabled="!installed.payloadDirectory"
-          @click="activate"
-          >{{ t('campaign.activateNow') }}</UButton
-        >
+          @click="activate">
+          {{ t('campaign.activateNow') }}
+        </UButton>
         <UButton
           v-else-if="!installed && (analysis || installing)"
           :disabled="!canInstall || busy"
           :loading="installing"
-          @click="install"
-          >{{ t('campaign.confirmInstall') }}</UButton
-        >
+          @click="install">
+          {{ t('campaign.confirmInstall') }}
+        </UButton>
       </div>
     </template>
   </UModal>

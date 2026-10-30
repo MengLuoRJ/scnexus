@@ -30,27 +30,23 @@ function toggle(event: Event) {
     <li class="min-w-0">
       <details v-if="props.tree.kind === 'directory'" :open="expanded" @toggle="toggle">
         <summary
-          class="flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 hover:bg-elevated focus-visible:outline-2 focus-visible:outline-primary"
-        >
+          class="flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 hover:bg-elevated focus-visible:outline-2 focus-visible:outline-primary">
           <UIcon
             :name="expanded ? 'i-tabler-chevron-down' : 'i-tabler-chevron-right'"
             class="size-3 shrink-0 text-muted"
-            aria-hidden="true"
-          />
+            aria-hidden="true" />
           <img
             v-if="resourceIcon"
             :src="resourceIcon"
             alt=""
             draggable="false"
-            class="size-4 shrink-0 object-contain"
-          />
+            class="size-4 shrink-0 object-contain" />
           <UIcon
             v-else
             :name="appearance.icon"
             class="size-4 shrink-0"
             :class="appearance.color"
-            aria-hidden="true"
-          />
+            aria-hidden="true" />
           <span class="min-w-0 break-all">{{ props.tree.name || '/' }}</span>
         </summary>
         <div v-if="expanded" class="ml-2.5 border-l border-default pl-2">
@@ -63,19 +59,17 @@ function toggle(event: Event) {
           :src="resourceIcon"
           alt=""
           draggable="false"
-          class="size-4 shrink-0 object-contain"
-        />
+          class="size-4 shrink-0 object-contain" />
         <UIcon
           v-else
           :name="appearance.icon"
           class="size-4 shrink-0"
           :class="appearance.color"
-          aria-hidden="true"
-        />
-        <span class="min-w-0 break-all"
-          >{{ props.tree.name }}
-          <span class="text-muted">({{ formatFileSize(props.tree.bytes) }})</span></span
-        >
+          aria-hidden="true" />
+        <span class="min-w-0 break-all">
+          {{ props.tree.name }}
+          <span class="text-muted">({{ formatFileSize(props.tree.bytes) }})</span>
+        </span>
       </div>
     </li>
   </ul>

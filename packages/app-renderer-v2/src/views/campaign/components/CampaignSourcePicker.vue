@@ -52,28 +52,24 @@ function drop(event: DragEvent) {
   <div
     class="rounded border border-default bg-elevated/50 transition hover:border-primary hover:shadow-md"
     @dragover.prevent
-    @drop.stop.prevent="drop"
-  >
+    @drop.stop.prevent="drop">
     <div class="flex min-h-20 items-center justify-center gap-2 p-2">
       <UIcon
         name="i-tabler-file-zip"
         class="size-9 shrink-0"
-        :class="{ 'opacity-50': props.disabled || picking }"
-      />
+        :class="{ 'opacity-50': props.disabled || picking }" />
       <div class="text-left" :class="{ 'opacity-50': props.disabled || picking }">
         <I18nT
           keypath="campaign.dropClick"
           tag="span"
           scope="global"
-          class="block text-sm text-default"
-        >
+          class="block text-sm text-default">
           <template #archive>
             <button
               type="button"
               :disabled="props.disabled || picking"
               class="cursor-pointer text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed"
-              @click.stop="select('archive')"
-            >
+              @click.stop="select('archive')">
               {{ t('campaign.archive') }}
             </button>
           </template>
@@ -82,8 +78,7 @@ function drop(event: DragEvent) {
               type="button"
               :disabled="props.disabled || picking"
               class="cursor-pointer text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed"
-              @click.stop="select('directory')"
-            >
+              @click.stop="select('directory')">
               {{ t('campaign.folder') }}
             </button>
           </template>

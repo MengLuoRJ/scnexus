@@ -603,7 +603,8 @@ export async function scanContent(
     )
     if (previous && Object.hasOwn(previous, 'launcherTarget')) {
       record.launcherTarget = previous.launcherTarget
-      if (previous.launcherCustomized !== undefined) record.launcherCustomized = previous.launcherCustomized
+      if (previous.launcherCustomized !== undefined)
+        record.launcherCustomized = previous.launcherCustomized
     }
     try {
       restoreLauncher(record)

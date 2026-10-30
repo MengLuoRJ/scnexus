@@ -35,8 +35,7 @@ function date(value: number | null) {
       v-if="props.files.length > 1"
       class="flex flex-wrap items-center gap-2 rounded border border-default bg-elevated/50 p-2"
       role="group"
-      :aria-label="t('campaign.applyAll')"
-    >
+      :aria-label="t('campaign.applyAll')">
       <span class="text-sm font-medium">{{ t('campaign.applyAll') }}</span>
       <UButton
         v-for="action in actions"
@@ -45,17 +44,14 @@ function date(value: number | null) {
         :color="allSelected(action.value) ? 'primary' : 'neutral'"
         :variant="allSelected(action.value) ? 'solid' : 'outline'"
         :aria-pressed="allSelected(action.value)"
-        @click="chooseAll(action.value)"
-        >{{
-          t(action.value === 'overwrite' ? 'campaign.overwriteAll' : 'campaign.keepAll')
-        }}</UButton
-      >
+        @click="chooseAll(action.value)">
+        {{ t(action.value === 'overwrite' ? 'campaign.overwriteAll' : 'campaign.keepAll') }}
+      </UButton>
     </div>
     <div
       v-for="file in props.files"
       :key="file.conflictId"
-      class="rounded border border-warning p-2 text-sm"
-    >
+      class="rounded border border-warning p-2 text-sm">
       <p class="font-medium">{{ file.type }} · {{ file.incoming.name }}</p>
       <p class="break-all">
         {{ t('campaign.incoming') }}: {{ file.incoming.path }} ·
@@ -69,8 +65,7 @@ function date(value: number | null) {
       <div
         class="mt-2 flex flex-wrap gap-1"
         role="group"
-        :aria-label="`${t('campaign.conflicts')} · ${file.incoming.name}`"
-      >
+        :aria-label="`${t('campaign.conflicts')} · ${file.incoming.name}`">
         <UButton
           v-for="action in actions"
           :key="action.value"
@@ -94,9 +89,9 @@ function date(value: number | null) {
               (item) => item.conflictId === file.conflictId && item.action === action.value,
             )
           "
-          @click="choose(file.conflictId, action.value)"
-          >{{ action.label }}</UButton
-        >
+          @click="choose(file.conflictId, action.value)">
+          {{ action.label }}
+        </UButton>
       </div>
     </div>
   </div>

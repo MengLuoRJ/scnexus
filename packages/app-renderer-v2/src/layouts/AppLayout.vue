@@ -108,8 +108,7 @@ onMounted(async () => {
     <DownloadWizard />
     <div class="flex min-w-0 flex-1 flex-col">
       <header
-        class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-default px-3 py-2"
-      >
+        class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-default px-3 py-2">
         <h1 class="shrink-0 font-semibold">
           {{
             t(
@@ -131,24 +130,22 @@ onMounted(async () => {
         </h1>
         <div
           id="page-actions"
-          class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1"
-        >
+          class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">
           <UButton
             v-if="route.path.startsWith('/editor-toolbox/')"
             to="/editor-toolbox"
             size="sm"
             color="neutral"
             variant="outline"
-            icon="i-tabler-arrow-left"
-            >{{ t('toolbox.back') }}</UButton
-          >
+            icon="i-tabler-arrow-left">
+            {{ t('toolbox.back') }}
+          </UButton>
         </div>
       </header>
       <main class="min-h-0 flex-1 overflow-y-auto" :class="route.name === 'account' ? '' : 'p-3'">
         <div
           class="flex min-h-full min-w-0 flex-col"
-          :class="route.name === 'account' ? 'w-full' : 'mx-auto max-w-5xl'"
-        >
+          :class="route.name === 'account' ? 'w-full' : 'mx-auto max-w-5xl'">
           <RouterView />
         </div>
       </main>

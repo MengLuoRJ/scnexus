@@ -132,16 +132,15 @@ onMounted(() => {
       v-if="error?.code === 'M011' || error?.code === 'M013'"
       to="/settings"
       color="neutral"
-      variant="outline"
-      >{{ t('ui.start') }}</UButton
-    >
+      variant="outline">
+      {{ t('ui.start') }}
+    </UButton>
     <UAlert
       v-for="item in diagnostics"
       :key="item.path"
       color="warning"
       :title="item.message"
-      :description="item.path"
-    />
+      :description="item.path" />
     <Teleport v-if="headerReady" to="#page-actions">
       <UTabs
         size="xs"
@@ -151,26 +150,25 @@ onMounted(() => {
           { label: t('campaign.detailMode'), value: 'detail' },
           { label: t('campaign.libraryManagement'), value: 'management' },
         ]"
-        :content="false"
-      />
+        :content="false" />
       <UButton
         icon="i-tabler-refresh"
         size="sm"
         color="neutral"
         variant="ghost"
         :disabled="locked || !available"
-        @click="refresh()"
-        >{{ t('campaign.refresh') }}</UButton
-      >
+        @click="refresh()">
+        {{ t('campaign.refresh') }}
+      </UButton>
       <UButton
         icon="i-tabler-database-search"
         size="sm"
         color="neutral"
         variant="ghost"
         :disabled="locked || !available"
-        @click="refresh(true)"
-        >{{ t('campaign.scan') }}</UButton
-      >
+        @click="refresh(true)">
+        {{ t('campaign.scan') }}
+      </UButton>
     </Teleport>
     <CampaignOverview
       v-if="viewMode === 'overview'"
@@ -179,8 +177,7 @@ onMounted(() => {
       :busy="locked || !available"
       @manage="manageCategory"
       @deactivate="(record) => operate(record, 'deactivate')"
-      @uninstall="(record) => operate(record, 'uninstall')"
-    />
+      @uninstall="(record) => operate(record, 'uninstall')" />
     <CampaignDetails
       v-else-if="viewMode === 'detail'"
       v-model="category"
@@ -191,32 +188,29 @@ onMounted(() => {
       @operate="operate"
       @launch="launch"
       @folder="showFolder"
-      @website="openWebsite"
-    />
+      @website="openWebsite" />
     <CampaignManagement
       v-else
       :records="records"
       :active="active"
       :busy="locked || !available"
       @operate="operate"
-      @folder="showFolder"
-    />
+      @folder="showFolder" />
     <div v-if="viewMode === 'overview'" class="flex justify-center">
       <UButton
         icon="i-tabler-player-play"
         size="lg"
         class="h-10 px-6"
         :disabled="locked || !available"
-        @click="launch"
-        >{{ t('campaign.start') }}</UButton
-      >
+        @click="launch">
+        {{ t('campaign.start') }}
+      </UButton>
     </div>
     <CampaignSourcePicker
       v-if="viewMode !== 'management'"
       :disabled="locked || !available"
       @select="(source) => refContentImport?.analyze(source)"
-      @error="notifyError"
-    />
+      @error="notifyError" />
     <CampaignLibraryModal
       v-model:open="chooserOpen"
       :records="records"
@@ -224,19 +218,16 @@ onMounted(() => {
       :category="category"
       :busy="locked"
       @operate="operate"
-      @folder="showFolder"
-    />
+      @folder="showFolder" />
     <ContentImportDialog ref="refContentImport" content-type="campaign" @analyzed="analyzed" />
     <CampaignInstallModal
       v-model:open="installOpen"
       :service="service"
-      @activate="(record) => operate(record, 'activate')"
-    />
+      @activate="(record) => operate(record, 'activate')" />
     <CampaignOperationModal
       :request="operation"
       :service="service"
       @close="operation = null"
-      @completed="completed"
-    />
+      @completed="completed" />
   </div>
 </template>

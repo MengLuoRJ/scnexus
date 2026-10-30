@@ -209,8 +209,7 @@ onMounted(async () => {
       v-if="!available"
       color="warning"
       icon="i-tabler-device-desktop"
-      :title="t('ui.desktopOnly')"
-    />
+      :title="t('ui.desktopOnly')" />
     <UTabs default-value="basic" :items="tabs" size="sm" class="w-full">
       <template #basic>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -230,23 +229,21 @@ onMounted(async () => {
                       save({
                         displayLanguage: value as SettingPreferences['displayLanguage'],
                       })
-                  "
-                />
+                  " />
               </UFormField>
               <SettingsDirectoryField
                 :label="t('ui.downloadDir')"
                 :path="settings?.downloadDirectory ?? ''"
                 :disabled="!available || busy"
-                @open="openDirectory"
-              >
+                @open="openDirectory">
                 <UButton
                   icon="i-tabler-edit"
                   color="neutral"
                   variant="outline"
                   :disabled="!available || busy"
-                  @click="choose('download')"
-                  >{{ t('ui.modifyDirectory') }}</UButton
-                >
+                  @click="choose('download')">
+                  {{ t('ui.modifyDirectory') }}
+                </UButton>
               </SettingsDirectoryField>
             </div>
           </UCard>
@@ -265,22 +262,19 @@ onMounted(async () => {
                   :disabled="
                     !available || busy || !['idle', 'available', 'failed'].includes(updater)
                   "
-                  @click="update('check')"
-                >
+                  @click="update('check')">
                   {{ t('ui.check') }}
                 </UButton>
                 <UButton
                   v-if="updater === 'available'"
                   :disabled="busy"
-                  @click="update('download')"
-                >
+                  @click="update('download')">
                   {{ t('ui.download') }}
                 </UButton>
                 <UButton
                   v-if="updater === 'downloaded'"
                   :disabled="busy"
-                  @click="update('install')"
-                >
+                  @click="update('install')">
                   {{ t('ui.install') }}
                 </UButton>
               </div>
@@ -298,8 +292,7 @@ onMounted(async () => {
                 variant="ghost"
                 trailing-icon="i-tabler-external-link"
                 :disabled="!available || busy"
-                @click="openLink(link.url)"
-              >
+                @click="openLink(link.url)">
                 {{ t(`ui.${link.key}`) }}
               </UButton>
             </div>
@@ -322,8 +315,7 @@ onMounted(async () => {
                 :label="t('ui.gameDir')"
                 :path="game?.gameRoot ?? ''"
                 :disabled="!available || busy"
-                @open="openDirectory"
-              />
+                @open="openDirectory" />
               <div class="flex gap-2">
                 <UButton :disabled="!available || busy" @click="choose('game')">
                   {{ t('ui.choose') }}
@@ -332,8 +324,7 @@ onMounted(async () => {
                   color="neutral"
                   variant="outline"
                   :disabled="!available || busy"
-                  @click="detect"
-                >
+                  @click="detect">
                   {{ t('ui.detect') }}
                 </UButton>
               </div>
@@ -341,14 +332,12 @@ onMounted(async () => {
                 :label="t('ui.management')"
                 :path="game?.paths?.customizeDataRoot ?? ''"
                 :disabled="!available || busy"
-                @open="openDirectory"
-              />
+                @open="openDirectory" />
               <SettingsDirectoryField
                 :label="t('ui.ccm')"
                 :path="game?.paths?.ccmRoot ?? ''"
                 :disabled="!available || busy"
-                @open="openDirectory"
-              />
+                @open="openDirectory" />
             </div>
           </UCard>
         </div>
@@ -360,29 +349,26 @@ onMounted(async () => {
             :disabled="!available || !settings || busy"
             :label="t('aiAssistant.title')"
             :description="t('aiAssistant.enableHelp')"
-            @update:model-value="(value: boolean) => save({ aiAssistantEnabled: value })"
-          />
+            @update:model-value="(value: boolean) => save({ aiAssistantEnabled: value })" />
         </UCard>
         <UCard :ui="{ header: 'p-3 sm:p-3', body: 'p-3 sm:p-3' }">
-          <template #header
-            ><h2 class="font-semibold">{{ t('contentCenter.officialServices') }}</h2></template
-          >
+          <template #header>
+            <h2 class="font-semibold">{{ t('contentCenter.officialServices') }}</h2>
+          </template>
           <div class="space-y-4">
             <USwitch
               :model-value="settings?.officialServicesEnabled ?? true"
               :disabled="!available || !settings || busy"
               :label="t('contentCenter.officialServices')"
               :description="t('contentCenter.officialServicesHelp')"
-              @update:model-value="(value: boolean) => save({ officialServicesEnabled: value })"
-            />
+              @update:model-value="(value: boolean) => save({ officialServicesEnabled: value })" />
             <div class="space-y-4 border-l border-default pl-4">
               <USwitch
                 :model-value="settings?.workshopEnabled ?? true"
                 :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
                 :label="t('contentCenter.workshop')"
                 :description="t('contentCenter.description')"
-                @update:model-value="(value: boolean) => save({ workshopEnabled: value })"
-              />
+                @update:model-value="(value: boolean) => save({ workshopEnabled: value })" />
               <USwitch
                 :model-value="settings?.weeklyMutationCalibrationEnabled ?? true"
                 :disabled="!available || !settings || busy || !settings.officialServicesEnabled"
@@ -390,8 +376,7 @@ onMounted(async () => {
                 :description="t('contentCenter.weeklyCalibrationHelp')"
                 @update:model-value="
                   (value: boolean) => save({ weeklyMutationCalibrationEnabled: value })
-                "
-              />
+                " />
             </div>
           </div>
         </UCard>
@@ -407,38 +392,32 @@ onMounted(async () => {
                 :label="t('ui.logDirectory')"
                 :path="logDirectory"
                 :disabled="!available || busy"
-                @open="openDirectory"
-              />
+                @open="openDirectory" />
               <UFormField :ui="{ container: 'mt-1' }" :label="t('ui.logLevel')">
                 <USelect
                   :items="levels"
                   :model-value="settings?.logLevel ?? 'error'"
                   :disabled="!settings || busy"
                   class="w-64"
-                  @update:model-value="(value: string) => save({ logLevel: value as LogLevel })"
-                />
+                  @update:model-value="(value: string) => save({ logLevel: value as LogLevel })" />
               </UFormField>
               <UFormField
                 :ui="{ container: 'mt-1' }"
                 :label="t('ui.analytics')"
-                :description="t('ui.analyticsHelp')"
-              >
+                :description="t('ui.analyticsHelp')">
                 <USwitch
                   :model-value="settings?.analyticsEnabled ?? true"
                   :disabled="!settings || busy"
-                  @update:model-value="(value: boolean) => save({ analyticsEnabled: value })"
-                />
+                  @update:model-value="(value: boolean) => save({ analyticsEnabled: value })" />
               </UFormField>
               <UFormField
                 :ui="{ container: 'mt-1' }"
                 :label="t('ui.telemetry')"
-                :description="t('ui.telemetryHelp')"
-              >
+                :description="t('ui.telemetryHelp')">
                 <USwitch
                   :model-value="settings?.telemetryEnabled ?? false"
                   :disabled="!settings || busy"
-                  @update:model-value="(value: boolean) => save({ telemetryEnabled: value })"
-                />
+                  @update:model-value="(value: boolean) => save({ telemetryEnabled: value })" />
               </UFormField>
             </div>
           </UCard>

@@ -76,7 +76,11 @@ export async function createElectronBackend(
           const stagedName = `${name}.migration-${randomUUID()}`
           stagedPath = join(directory, `${stagedName}.json`)
           // Validate and atomically serialize the target using the same real schema.
-          new Store<T>({ ...config, name: stagedName, defaults: candidate as Options<T>['defaults'] })
+          new Store<T>({
+            ...config,
+            name: stagedName,
+            defaults: candidate as Options<T>['defaults'],
+          })
           try {
             backup('migration')
           } catch (cause) {

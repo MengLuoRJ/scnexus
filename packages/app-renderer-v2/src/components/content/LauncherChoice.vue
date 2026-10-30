@@ -9,8 +9,7 @@ const { t } = useI18n()
 <template>
   <div
     v-if="props.preview.package.type === 'customize' && props.preview.launcher"
-    class="space-y-2 rounded border border-default p-3 text-sm"
-  >
+    class="space-y-2 rounded border border-default p-3 text-sm">
     <p class="font-medium">{{ t('customize.launcher') }}</p>
     <template v-if="props.preview.launcher.source === 'manifest'">
       <p class="text-xs text-muted">{{ t('customize.launcherManifest') }}</p>
@@ -38,8 +37,7 @@ const { t } = useI18n()
             value: item.target,
           })),
         ]"
-        @update:model-value="(value: string) => (target = value === '__none__' ? null : value)"
-      />
+        @update:model-value="(value: string) => (target = value === '__none__' ? null : value)" />
     </template>
   </div>
 </template>

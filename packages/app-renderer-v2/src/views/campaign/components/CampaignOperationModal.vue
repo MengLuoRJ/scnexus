@@ -124,8 +124,7 @@ async function confirm() {
       (value: boolean) => {
         if (!value) close()
       }
-    "
-  >
+    ">
     <template #body>
       <div class="space-y-3">
         <p class="font-semibold">{{ subject?.package.name }}</p>
@@ -151,8 +150,7 @@ async function confirm() {
           v-if="busy || preparing || executing"
           role="status"
           aria-live="polite"
-          class="space-y-2"
-        >
+          class="space-y-2">
           <p>{{ t(executing ? 'campaign.executing' : 'campaign.preparing') }}</p>
           <UProgress />
         </div>
@@ -164,8 +162,7 @@ async function confirm() {
               v-if="removal.files.length > 1"
               class="flex items-center gap-2 rounded border border-default bg-elevated/50 p-2"
               role="group"
-              :aria-label="t('campaign.applyAll')"
-            >
+              :aria-label="t('campaign.applyAll')">
               <span class="text-sm font-medium">{{ t('campaign.applyAll') }}</span>
               <UButton
                 v-for="action in removalActions"
@@ -174,17 +171,14 @@ async function confirm() {
                 :color="allRemovalsSelected(action.value) ? 'primary' : 'neutral'"
                 :variant="allRemovalsSelected(action.value) ? 'solid' : 'outline'"
                 :aria-pressed="allRemovalsSelected(action.value)"
-                @click="chooseAllRemovals(action.value)"
-                >{{
-                  t(action.value === 'keep' ? 'campaign.keepAll' : 'campaign.deleteAll')
-                }}</UButton
-              >
+                @click="chooseAllRemovals(action.value)">
+                {{ t(action.value === 'keep' ? 'campaign.keepAll' : 'campaign.deleteAll') }}
+              </UButton>
             </div>
             <div
               v-for="file in removal.files"
               :key="file.conflictId"
-              class="space-y-1 rounded border border-warning p-2 text-sm"
-            >
+              class="space-y-1 rounded border border-warning p-2 text-sm">
               <p class="break-all">{{ file.file.target }}</p>
               <p v-if="file.usedBy.length">
                 {{ t('campaign.usedBy') }}: {{ file.usedBy.map((item) => item.name).join(', ') }}
@@ -193,8 +187,7 @@ async function confirm() {
               <div
                 class="flex gap-2"
                 role="group"
-                :aria-label="`${t('campaign.removeConfirm')} · ${file.file.target}`"
-              >
+                :aria-label="`${t('campaign.removeConfirm')} · ${file.file.target}`">
                 <UButton
                   v-for="action in removalActions"
                   :key="action.value"
@@ -215,9 +208,9 @@ async function confirm() {
                     removals.find((item) => item.conflictId === file.conflictId)?.action ===
                     action.value
                   "
-                  @click="choose(file.conflictId, action.value)"
-                  >{{ action.label }}</UButton
-                >
+                  @click="choose(file.conflictId, action.value)">
+                  {{ action.label }}
+                </UButton>
               </div>
             </div>
           </template>
@@ -230,16 +223,16 @@ async function confirm() {
           color="neutral"
           variant="outline"
           :disabled="busy || executing || preparing"
-          @click="close"
-          >{{ t('campaign.cancel') }}</UButton
-        >
+          @click="close">
+          {{ t('campaign.cancel') }}
+        </UButton>
         <UButton
           :color="props.request?.action === 'uninstall' && !restoringFirst ? 'error' : 'primary'"
           :disabled="!canConfirm || executing"
           :loading="executing"
-          @click="confirm"
-          >{{ t('campaign.confirm') }}</UButton
-        >
+          @click="confirm">
+          {{ t('campaign.confirm') }}
+        </UButton>
       </div>
     </template>
   </UModal>

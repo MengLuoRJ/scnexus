@@ -24,4 +24,5 @@ export const ipcCustomizePrepareUninstall = (id: string) =>
 export const ipcCustomizeUninstall = (id: string, decisions: RemovalDecision[]) =>
   ipcRequest(() => ipcDesktop().customize.uninstall(id, ipcSnapshot(decisions)))
 
-export const ipcCustomizeSetLauncher = (id: string, target: string | null) => ipcRequest(() => ipcDesktop().customize.setLauncher(id, target))
+export const ipcCustomizeSetLauncher = (id: string, target: string | null) =>
+  ipcRequest(() => ipcDesktop().customize.setLauncher(id, target))

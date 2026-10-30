@@ -34,15 +34,13 @@ function current(category: PackageCampaignType) {
       v-for="category in campaigns"
       :key="category"
       class="min-w-0"
-      :ui="{ body: 'p-0 sm:p-0' }"
-    >
+      :ui="{ body: 'p-0 sm:p-0' }">
       <div class="relative h-24 overflow-hidden">
         <PackageImage
           :local-id="current(category)?.localId"
           :fallback="banners[category]"
           :alt="t(`campaign.${category}`)"
-          class="h-full w-full object-cover object-top"
-        />
+          class="h-full w-full object-cover object-top" />
       </div>
       <div class="space-y-2 p-2">
         <div class="flex items-center justify-between gap-1">
@@ -63,8 +61,7 @@ function current(category: PackageCampaignType) {
             icon="i-tabler-arrows-exchange"
             size="sm"
             :disabled="props.busy"
-            @click="emit('manage', category)"
-          >
+            @click="emit('manage', category)">
             {{ t(props.active[category] ? 'campaign.switch' : 'campaign.activate') }}
           </UButton>
           <UButton
@@ -74,8 +71,7 @@ function current(category: PackageCampaignType) {
             color="neutral"
             variant="outline"
             :disabled="props.busy"
-            @click="emit('deactivate', current(category)!)"
-          >
+            @click="emit('deactivate', current(category)!)">
             {{ t('campaign.restore') }}
           </UButton>
           <UButton
@@ -85,8 +81,7 @@ function current(category: PackageCampaignType) {
             color="error"
             variant="soft"
             :disabled="props.busy"
-            @click="emit('uninstall', current(category)!)"
-          >
+            @click="emit('uninstall', current(category)!)">
             {{ t('campaign.uninstall') }}
           </UButton>
           <span class="ml-auto text-xs text-muted">

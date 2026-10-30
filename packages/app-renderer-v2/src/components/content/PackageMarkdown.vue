@@ -152,16 +152,15 @@ watch(() => props.fragment, scrollToFragment)
   <div class="min-w-0">
     <p v-if="loading" class="text-sm text-muted" role="status">{{ t('contentMedia.loading') }}</p>
     <UAlert v-else-if="error" color="warning" :title="t('contentMedia.error')" />
-    <UButton v-if="error" size="xs" variant="outline" color="neutral" @click="load">{{
-      t('contentMedia.retry')
-    }}</UButton>
+    <UButton v-if="error" size="xs" variant="outline" color="neutral" @click="load">
+      {{ t('contentMedia.retry') }}
+    </UButton>
     <p v-if="missingImages" class="text-xs text-muted">{{ t('contentMedia.imageError') }}</p>
     <div
       v-if="document && !loading && !error"
       ref="refReader"
       class="package-markdown min-w-0 text-sm"
-      @click="navigate"
-    >
+      @click="navigate">
       <Suspense @resolve="scrollToFragment">
         <MarkdownDocument :value="document" :components="components" />
       </Suspense>

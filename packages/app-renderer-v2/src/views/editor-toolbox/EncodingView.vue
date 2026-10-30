@@ -36,8 +36,7 @@ async function copy() {
         :placeholder="t('toolbox.placeholder')"
         :rows="5"
         class="w-full"
-        :ui="{ base: 'resize-y font-mono' }"
-      />
+        :ui="{ base: 'resize-y font-mono' }" />
     </UFormField>
     <UTabs
       v-model="mode"
@@ -45,8 +44,7 @@ async function copy() {
       :content="false"
       size="sm"
       class="w-full"
-      :aria-label="t('toolbox.format')"
-    />
+      :aria-label="t('toolbox.format')" />
     <UFormField :label="t('toolbox.result')">
       <UTextarea
         :model-value="result"
@@ -55,21 +53,15 @@ async function copy() {
         :rows="6"
         class="w-full"
         :ui="{ base: 'resize-y font-mono break-all' }"
-        spellcheck="false"
-      />
+        spellcheck="false" />
     </UFormField>
     <div class="flex justify-end gap-2">
-      <UButton
-        size="sm"
-        color="neutral"
-        variant="outline"
-        :disabled="!source"
-        @click="source = ''"
-        >{{ t('toolbox.clear') }}</UButton
-      >
-      <UButton size="sm" :disabled="!result" :loading="copying" @click="copy">{{
-        t('toolbox.copy')
-      }}</UButton>
+      <UButton size="sm" color="neutral" variant="outline" :disabled="!source" @click="source = ''">
+        {{ t('toolbox.clear') }}
+      </UButton>
+      <UButton size="sm" :disabled="!result" :loading="copying" @click="copy">
+        {{ t('toolbox.copy') }}
+      </UButton>
     </div>
   </section>
 </template>

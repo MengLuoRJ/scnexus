@@ -315,18 +315,18 @@ async function cancelCandidate() {
       <UButton to="/uploads" variant="outline" color="neutral">{{ t('workshop.uploads') }}</UButton>
     </header>
     <UAlert v-if="!center.enabled" :title="t('workshop.disabled')" color="warning" />
-    <UAlert v-else-if="!allowed" :title="t('workshop.creatorRequired')" color="warning"
-      ><template #actions
-        ><UButton to="/account?redirect=/creator">{{ t('workshop.account') }}</UButton></template
-      ></UAlert
-    >
+    <UAlert v-else-if="!allowed" :title="t('workshop.creatorRequired')" color="warning">
+      <template #actions>
+        <UButton to="/account?redirect=/creator">{{ t('workshop.account') }}</UButton>
+      </template>
+    </UAlert>
     <template v-else>
       <UProgress v-if="loading" />
-      <UAlert v-if="error" :title="t(accountErrorKey(error))" color="error"
-        ><template #actions
-          ><UButton @click="load">{{ t('workshop.reload') }}</UButton></template
-        ></UAlert
-      >
+      <UAlert v-if="error" :title="t(accountErrorKey(error))" color="error">
+        <template #actions>
+          <UButton @click="load">{{ t('workshop.reload') }}</UButton>
+        </template>
+      </UAlert>
       <div class="flex gap-2 items-center">
         <UButton
           v-for="project in projects"
@@ -334,11 +334,12 @@ async function cancelCandidate() {
           :disabled="saving"
           :variant="selected?.scnid === project.scnid ? 'solid' : 'outline'"
           class="max-w-36"
-          @click="edit(project)"
-          ><span class="truncate">{{ project.title }}</span></UButton
-        ><UButton :disabled="saving || projects.length >= 5" variant="soft" @click="edit(null)">{{
-          t('workshop.create')
-        }}</UButton>
+          @click="edit(project)">
+          <span class="truncate">{{ project.title }}</span>
+        </UButton>
+        <UButton :disabled="saving || projects.length >= 5" variant="soft" @click="edit(null)">
+          {{ t('workshop.create') }}
+        </UButton>
       </div>
       <p v-if="!editing" class="text-sm text-muted">{{ t('workshop.creatorHint') }}</p>
       <template v-else>
@@ -346,75 +347,77 @@ async function cancelCandidate() {
           v-if="conflict"
           :title="t('workshop.conflict')"
           :description="t('workshop.conflictHint')"
-          color="warning"
-          ><template #actions
-            ><UButton :loading="saving" @click="refreshSelected">{{
-              t('workshop.discardReload')
-            }}</UButton></template
-          ></UAlert
-        >
+          color="warning">
+          <template #actions>
+            <UButton :loading="saving" @click="refreshSelected">
+              {{ t('workshop.discardReload') }}
+            </UButton>
+          </template>
+        </UAlert>
         <div v-if="selected" class="text-xs text-muted">
           SCNID {{ selected.scnid }} · {{ t('workshop.revision') }} {{ selected.contentRevision }} ·
           {{ selected.status }}
         </div>
         <UAlert :title="t('workshop.draftHint')" color="neutral" />
         <div v-if="!selected" class="flex gap-2">
-          <UButton :disabled="saving || conflict" @click="choosePackage">{{
-            t('workshop.choosePackage')
-          }}</UButton>
-          <UButton v-if="selection" variant="outline" @click="prefill">{{
-            t('workshop.prefill')
-          }}</UButton>
+          <UButton :disabled="saving || conflict" @click="choosePackage">
+            {{ t('workshop.choosePackage') }}
+          </UButton>
+          <UButton v-if="selection" variant="outline" @click="prefill">
+            {{ t('workshop.prefill') }}
+          </UButton>
         </div>
         <UForm :schema="schema" :state="state" class="space-y-3" @submit="save">
           <div class="grid grid-cols-2 gap-3">
-            <UFormField name="title" :label="t('workshop.projectTitle')" required
-              ><UInput v-model="state.title" class="w-full" :maxlength="120" /></UFormField
-            ><UFormField name="website" :label="t('workshop.website')"
-              ><UInput v-model="state.website" class="w-full" :maxlength="2048"
-            /></UFormField>
+            <UFormField name="title" :label="t('workshop.projectTitle')" required>
+              <UInput v-model="state.title" class="w-full" :maxlength="120" />
+            </UFormField>
+            <UFormField name="website" :label="t('workshop.website')">
+              <UInput v-model="state.website" class="w-full" :maxlength="2048" />
+            </UFormField>
           </div>
-          <UFormField name="description" :label="t('workshop.description')"
-            ><UTextarea v-model="state.description" class="w-full" :rows="2" :maxlength="1000"
-          /></UFormField>
+          <UFormField name="description" :label="t('workshop.description')">
+            <UTextarea v-model="state.description" class="w-full" :rows="2" :maxlength="1000" />
+          </UFormField>
           <details class="text-sm">
             <summary class="cursor-pointer">{{ t('workshop.socialSponsor') }}</summary>
             <div class="grid grid-cols-2 gap-2 mt-2">
-              <UFormField v-for="key in socialKeys" :key="key" :name="`social.${key}`" :label="key"
-                ><UInput v-model="state.social[key]" class="w-full" :maxlength="2048" /></UFormField
-              ><UFormField
+              <UFormField v-for="key in socialKeys" :key="key" :name="`social.${key}`" :label="key">
+                <UInput v-model="state.social[key]" class="w-full" :maxlength="2048" />
+              </UFormField>
+              <UFormField
                 v-for="key in sponsorKeys"
                 :key="key"
                 :name="`sponsor.${key}`"
-                :label="key"
-                ><UInput v-model="state.sponsor[key]" class="w-full" :maxlength="2048"
-              /></UFormField>
+                :label="key">
+                <UInput v-model="state.sponsor[key]" class="w-full" :maxlength="2048" />
+              </UFormField>
             </div>
           </details>
           <div class="flex justify-between items-center">
-            <span class="text-sm">{{ t('workshop.detail') }}</span
-            ><UButton size="xs" variant="soft" :disabled="fileIds.length >= 50" @click="image">{{
-              t('workshop.uploadImage')
-            }}</UButton>
+            <span class="text-sm">{{ t('workshop.detail') }}</span>
+            <UButton size="xs" variant="soft" :disabled="fileIds.length >= 50" @click="image">
+              {{ t('workshop.uploadImage') }}
+            </UButton>
           </div>
           <WorkshopEditor v-model="detail" :file-ids="fileIds" :disabled="saving || conflict" />
           <details v-if="fileIds.length" class="text-sm">
             <summary>{{ t('workshop.files') }} ({{ fileIds.length }}/50)</summary>
             <div v-for="id in fileIds" :key="id" class="flex items-center gap-2">
-              <span class="font-mono text-xs truncate">{{ id }}</span
-              ><UButton
+              <span class="font-mono text-xs truncate">{{ id }}</span>
+              <UButton
                 size="xs"
                 color="neutral"
                 variant="link"
                 :disabled="documentFileIds(detail).includes(id)"
-                @click="fileIds = fileIds.filter((item) => item !== id)"
-                >{{ t('workshop.removeReference') }}</UButton
-              >
+                @click="fileIds = fileIds.filter((item) => item !== id)">
+                {{ t('workshop.removeReference') }}
+              </UButton>
             </div>
           </details>
-          <UButton type="submit" :loading="saving" :disabled="conflict">{{
-            t('workshop.saveDraft')
-          }}</UButton>
+          <UButton type="submit" :loading="saving" :disabled="conflict">
+            {{ t('workshop.saveDraft') }}
+          </UButton>
         </UForm>
         <UCard v-if="selected" :ui="{ body: 'space-y-3 p-3' }">
           <h2 class="font-semibold">{{ t('workshop.versions') }}</h2>
@@ -422,12 +425,12 @@ async function cancelCandidate() {
           <div
             v-for="version in versions"
             :key="version.id"
-            class="border-b border-default pb-2 space-y-1"
-          >
+            class="border-b border-default pb-2 space-y-1">
             <div class="flex justify-between items-center gap-2">
-              <span class="text-sm break-all"
-                >{{ version.version }} · {{ version.status }} · {{ version.scanStatus }}</span
-              ><UButton
+              <span class="text-sm break-all">
+                {{ version.version }} · {{ version.status }} · {{ version.scanStatus }}
+              </span>
+              <UButton
                 v-if="
                   selected.candidateVersionId === version.id &&
                   ['DRAFT', 'PENDING_REVIEW'].includes(version.status)
@@ -435,28 +438,28 @@ async function cancelCandidate() {
                 size="xs"
                 color="warning"
                 variant="outline"
-                @click="cancelId = version.id"
-                >{{ t('workshop.cancelCandidate') }}</UButton
-              >
+                @click="cancelId = version.id">
+                {{ t('workshop.cancelCandidate') }}
+              </UButton>
             </div>
             <WorkshopRichText :document="version.changelog" />
           </div>
           <UAlert
             v-if="selected.candidateVersionId"
             :title="t('workshop.candidateOccupied')"
-            color="warning"
-          />
+            color="warning" />
           <div class="flex gap-2">
             <UButton
               :disabled="saving || conflict || !!selected.candidateVersionId"
-              @click="choosePackage"
-              >{{ t('workshop.choosePackage') }}</UButton
-            ><UButton v-if="selection" variant="outline" @click="prefill">{{
-              t('workshop.prefill')
-            }}</UButton>
+              @click="choosePackage">
+              {{ t('workshop.choosePackage') }}
+            </UButton>
+            <UButton v-if="selection" variant="outline" @click="prefill">
+              {{ t('workshop.prefill') }}
+            </UButton>
           </div>
-          <template v-if="selection"
-            ><p class="text-sm break-all">
+          <template v-if="selection">
+            <p class="text-sm break-all">
               {{ selection.name }} · {{ selection.size }} bytes · {{ selection.manifest.version }}
             </p>
             <UAlert v-if="!packageValid" :title="t('workshop.invalidVersion')" color="error" />
@@ -468,17 +471,14 @@ async function cancelCandidate() {
               }}</pre>
             </details>
             <p class="text-sm">{{ t('workshop.changelog') }}</p>
-            <WorkshopEditor
-              v-model="changelog"
-              :file-ids="selected.fileIds"
-              :disabled="saving"
-            /><UButton
+            <WorkshopEditor v-model="changelog" :file-ids="selected.fileIds" :disabled="saving" />
+            <UButton
               :loading="saving"
               :disabled="!packageValid || conflict || !!selected.candidateVersionId"
-              @click="upload"
-              >{{ t('workshop.createUpload') }}</UButton
-            ></template
-          >
+              @click="upload">
+              {{ t('workshop.createUpload') }}
+            </UButton>
+          </template>
         </UCard>
       </template>
     </template>
@@ -490,15 +490,15 @@ async function cancelCandidate() {
         (value: boolean) => {
           if (!value) cancelId = null
         }
-      "
-      ><template #footer
-        ><UButton color="neutral" variant="outline" @click="cancelId = null">{{
-          t('workshop.back')
-        }}</UButton
-        ><UButton color="warning" :loading="saving" @click="cancelCandidate">{{
-          t('workshop.confirm')
-        }}</UButton></template
-      ></UModal
-    >
+      ">
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="cancelId = null">
+          {{ t('workshop.back') }}
+        </UButton>
+        <UButton color="warning" :loading="saving" @click="cancelCandidate">
+          {{ t('workshop.confirm') }}
+        </UButton>
+      </template>
+    </UModal>
   </section>
 </template>

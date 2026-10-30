@@ -22,15 +22,14 @@ const emit = defineEmits<{ navigate: [path: string, fragment?: string] }>()
         color="neutral"
         :variant="props.path === path ? 'soft' : 'ghost'"
         class="max-w-full text-left break-all"
-        @click="emit('navigate', path)"
-        >{{ path }}</UButton
-      >
+        @click="emit('navigate', path)">
+        {{ path }}
+      </UButton>
     </div>
     <PackageMarkdown
       :local-id="props.localId"
       :path="props.path"
       :fragment="props.fragment"
-      @navigate="(path, fragment) => emit('navigate', path, fragment)"
-    />
+      @navigate="(path, fragment) => emit('navigate', path, fragment)" />
   </div>
 </template>

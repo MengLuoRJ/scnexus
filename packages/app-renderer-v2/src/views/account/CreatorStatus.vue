@@ -44,22 +44,20 @@ async function redeem() {
 <template>
   <div
     v-if="content.enabled"
-    class="flex items-center justify-between gap-2 rounded-md border border-default p-2 text-sm"
-  >
+    class="flex items-center justify-between gap-2 rounded-md border border-default p-2 text-sm">
     <span>{{ t('creatorActivation.title') }}：{{ t(`creatorActivation.state.${status}`) }}</span>
     <UButton
       v-if="status !== 'ACTIVE' && status !== 'BLOCKED'"
       size="sm"
       color="neutral"
       variant="outline"
-      @click="open = true"
-      >{{ t('creatorActivation.activate') }}</UButton
-    >
+      @click="open = true">
+      {{ t('creatorActivation.activate') }}
+    </UButton>
     <UModal
       v-model:open="open"
       :title="t('creatorActivation.activate')"
-      :dismissible="!creator.loading"
-    >
+      :dismissible="!creator.loading">
       <template #body>
         <UFormField :label="t('creatorActivation.code')" :error="codeError || undefined">
           <UInput
@@ -67,22 +65,17 @@ async function redeem() {
             class="w-full"
             autocomplete="off"
             :disabled="creator.loading"
-            @keydown.enter.prevent="redeem"
-          />
+            @keydown.enter.prevent="redeem" />
         </UFormField>
       </template>
       <template #footer>
         <div class="flex w-full justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="outline"
-            :disabled="creator.loading"
-            @click="close"
-            >{{ t('campaign.cancel') }}</UButton
-          >
-          <UButton :loading="creator.loading" @click="redeem">{{
-            t('creatorActivation.activate')
-          }}</UButton>
+          <UButton color="neutral" variant="outline" :disabled="creator.loading" @click="close">
+            {{ t('campaign.cancel') }}
+          </UButton>
+          <UButton :loading="creator.loading" @click="redeem">
+            {{ t('creatorActivation.activate') }}
+          </UButton>
         </div>
       </template>
     </UModal>

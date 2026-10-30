@@ -12,8 +12,8 @@ const { t } = useI18n()
     <UBadge label="SCNexus · 星际枢纽" variant="subtle" class="mb-4" />
     <h2 class="text-3xl font-bold tracking-tight">{{ t('ui.welcome') }}</h2>
     <p class="mt-4 max-w-lg text-base leading-7 text-muted">{{ t('ui.intro') }}</p>
-    <UButton to="/settings" icon="i-tabler-settings" size="lg" class="mt-8">{{
-      t('ui.start')
-    }}</UButton>
+    <UButton to="/settings" icon="i-tabler-settings" size="lg" class="mt-8">
+      {{ t('ui.start') }}
+    </UButton>
   </section>
 </template>

@@ -81,17 +81,16 @@ function date(value: string) {
           :content="false"
           size="sm"
           class="w-fit"
-          :aria-label="t('weekly.serverLabel')"
-        />
+          :aria-label="t('weekly.serverLabel')" />
       </div>
       <UButton
         size="sm"
         color="neutral"
         variant="outline"
         :loading="tab === 'weekly' ? weeklyLoading : catalogLoading"
-        @click="tab === 'weekly' ? loadWeekly() : loadCatalog()"
-        >{{ t('weekly.refresh') }}</UButton
-      >
+        @click="tab === 'weekly' ? loadWeekly() : loadCatalog()">
+        {{ t('weekly.refresh') }}
+      </UButton>
     </div>
     <template v-if="tab === 'weekly'">
       <div v-if="weeklyLoading && !weekly" role="status" class="space-y-2">
@@ -103,8 +102,7 @@ function date(value: string) {
         color="neutral"
         variant="subtle"
         :title="t('weekly.loadFailed')"
-        :description="t('weekly.retryHint')"
-      />
+        :description="t('weekly.retryHint')" />
       <template v-else-if="current">
         <div class="mutation-brief space-y-2 rounded-lg border p-4">
           <div class="flex items-center gap-2">
@@ -114,9 +112,9 @@ function date(value: string) {
             <UBadge
               class="shrink-0"
               :color="current.dataStatus === 'verified' ? 'success' : 'neutral'"
-              variant="subtle"
-              >{{ t(`weekly.${current.dataStatus}`) }}</UBadge
-            >
+              variant="subtle">
+              {{ t(`weekly.${current.dataStatus}`) }}
+            </UBadge>
           </div>
           <p class="text-sm">{{ t('weekly.map') }}：{{ name(current.mutation.map) }}</p>
           <p class="text-xs text-muted">
@@ -137,8 +135,7 @@ function date(value: string) {
           <article
             v-for="factor in current.mutation.mutators"
             :key="factor.id"
-            class="mutation-factor flex min-w-0 items-start gap-3 rounded-lg border p-3"
-          >
+            class="mutation-factor flex min-w-0 items-start gap-3 rounded-lg border p-3">
             <MutatorIcon :id="factor.id" />
             <div class="min-w-0 space-y-1">
               <h4 class="break-words font-medium text-primary">{{ name(factor) }}</h4>
@@ -162,8 +159,7 @@ function date(value: string) {
                 ? 'weekly.outsideValidity'
                 : 'weekly.noScheduleHint',
           )
-        "
-      />
+        " />
     </template>
     <template v-else>
       <div class="flex items-center justify-between gap-3">
@@ -171,11 +167,10 @@ function date(value: string) {
           v-model="search"
           class="w-72"
           :placeholder="t('weekly.search')"
-          :aria-label="t('weekly.search')"
-        />
-        <span class="shrink-0 text-xs text-muted">{{
-          t('weekly.count', { count: factors.length })
-        }}</span>
+          :aria-label="t('weekly.search')" />
+        <span class="shrink-0 text-xs text-muted">
+          {{ t('weekly.count', { count: factors.length }) }}
+        </span>
       </div>
       <div v-if="catalogLoading && !catalog" role="status" class="space-y-2">
         <p class="text-sm text-muted">{{ t('weekly.loading') }}</p>
@@ -186,20 +181,17 @@ function date(value: string) {
         color="neutral"
         variant="subtle"
         :title="t('weekly.loadFailed')"
-        :description="t('weekly.retryHint')"
-      />
+        :description="t('weekly.retryHint')" />
       <UAlert
         v-else-if="!factors.length"
         color="neutral"
         variant="subtle"
-        :title="t(search.trim() ? 'weekly.noMatches' : 'weekly.emptyCatalog')"
-      />
+        :title="t(search.trim() ? 'weekly.noMatches' : 'weekly.emptyCatalog')" />
       <div v-else class="grid grid-cols-2 items-stretch gap-3">
         <article
           v-for="factor in factors"
           :key="factor.id"
-          class="mutation-factor flex min-w-0 items-start gap-3 rounded-lg border p-3"
-        >
+          class="mutation-factor flex min-w-0 items-start gap-3 rounded-lg border p-3">
           <MutatorIcon :id="factor.id" />
           <div class="min-w-0 space-y-1">
             <h3 class="break-words font-medium text-primary">{{ name(factor) }}</h3>
@@ -211,8 +203,7 @@ function date(value: string) {
             </p>
             <p
               v-if="factor.communityScore !== undefined && factor.communityScore >= 0"
-              class="text-xs text-muted"
-            >
+              class="text-xs text-muted">
               {{ t('weekly.score') }}：{{ factor.communityScore }}
             </p>
           </div>

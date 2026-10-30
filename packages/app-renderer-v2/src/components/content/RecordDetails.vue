@@ -69,8 +69,7 @@ function navigate(path: string, anchor = '') {
       :content="false"
       size="sm"
       class="min-w-0"
-      :ui="{ list: 'overflow-x-auto', trigger: 'shrink-0' }"
-    />
+      :ui="{ list: 'overflow-x-auto', trigger: 'shrink-0' }" />
     <div class="max-h-[min(60vh,28rem)] min-h-0 overflow-auto">
       <div v-if="tab === 'details'" class="space-y-3">
         <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -136,8 +135,7 @@ function navigate(path: string, anchor = '') {
         :path="documentPath"
         :fragment="fragment"
         :documents="tab === 'documents' ? assets?.docs : undefined"
-        @navigate="navigate"
-      />
+        @navigate="navigate" />
     </div>
   </div>
 </template>

@@ -329,7 +329,6 @@ renderer-v2 图标统一使用 Tabler。Vite 配置中的 ui.icons 覆盖 Nuxt U
 
 本轮验证：根配置与根 manifest 的 Oxfmt 检查通过；根 ESLint/Oxlint 配置可加载，包级 preload lint 委托生效；main/preload/v2 类型检查通过，git diff --check 通过。全仓库只读检查发现存量：Oxlint 137 项错误，ESLint 106 项错误，格式 320 个文件不符合规范，均退出 1；这是尚待第二阶段处理的真实问题，不声明全仓库 lint 通过。典型问题包括未使用导入、any 类型、重复键、测试 mock 类型、历史 Vue 代码规范。没有通过放宽所有规则使检查假通过。
 
-
 ### 构建与打包入口对齐（2026-10-12）
 
 app-main 的 package.json 是唯一应用清单，main 字段仍为打包后的 packages/app-main/dist/index.js。electron-builder.mjs 基于包内 JSON 配置，并从实际安装的 Electron 包读取精确版本、通过 require.resolve 定位 regedit/vbs，兼容 hoisted 安装；生产 regedit 路径使用 process.resourcesPath。7z-bin 显式解包至 app.asar.unpacked。打包只包含 main/preload/v2 的 dist，旧 renderer 不进入产物。版本同步包含 v2，不再修改旧 renderer。Node/Chromium targets 直接读取 Electron process.versions.node/chrome，不再由 V8 推算。
@@ -338,9 +337,7 @@ app-main 的 package.json 是唯一应用清单，main 字段仍为打包后的 
 
 未封装验收命令：`pnpm --filter @scnexus/app-main build:app --config.directories.output=../../release/build-flow-validation --config.win.signAndEditExecutable=false` 通过，使用 ASAR、未发布。真实 Electron 从该 ASAR 加载 v2 与 preload，window.scnexus 存在、欢迎页加载、打包的 7z.exe 执行成功；隔离 userData，不操作用户现有配置。此验收不包含 NSIS 安装器/图标签名、自动更新、macOS 或 Linux 打包。electron-builder 对其他平台 optional binding 给出提示，不影响本次 Windows x64 产物；跨平台需分别构建验证。
 
-
 最终 root 编排验收：`pnpm run build:app --config.directories.output=../../release/build-flow-final --config.win.signAndEditExecutable=false` 通过。完整 ASAR main 入口的隔离启动额外验证了模块初始化；发现 hoisted 布局下 electron-builder 错误收集旧 renderer 的 @sentry/browser 版本，当时包配置显式保留 @sentry/electron 实际解析到的嵌套 browser SDK（不升级版本；该临时补丁在后续切回 isolated 布局后已移除，见下文）。修正后以真实 Electron 加载 ASAR main、模拟打包标志/资源根并使用临时 userData，初始化无错误、页面与桥接成功，退出码 0。该冒烟不是安装器安装验收；签名、图标写入及真实自动更新仍未执行。构建产生的 standard 已跟踪产物仅有格式/source-map 差异，本轮不保留无关生成物改动。
-
 
 ### 7z 目标平台过滤（2026-10-12）
 

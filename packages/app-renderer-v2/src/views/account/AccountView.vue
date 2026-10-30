@@ -342,13 +342,11 @@ async function logout() {
   <section
     v-else-if="auth.signedIn"
     class="w-full space-y-3 p-3"
-    :aria-label="t('account.dashboard')"
-  >
+    :aria-label="t('account.dashboard')">
     <div class="relative overflow-hidden rounded-xl border border-default bg-elevated/50 p-4">
       <div
         aria-hidden="true"
-        class="pointer-events-none absolute -right-12 -top-20 size-72 rounded-full bg-primary/10 blur-3xl"
-      />
+        class="pointer-events-none absolute -right-12 -top-20 size-72 rounded-full bg-primary/10 blur-3xl" />
       <div class="relative flex items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-3">
           <UAvatar icon="i-tabler-user" size="xl" class="shrink-0 ring-4 ring-default" />
@@ -372,8 +370,7 @@ async function logout() {
           header: 'px-4 py-3 sm:px-4 sm:py-3',
           body: 'p-4 sm:p-4',
           footer: 'px-4 py-3 sm:px-4 sm:py-3',
-        }"
-      >
+        }">
         <template #header>
           <div class="flex items-center justify-between gap-2">
             <h3 class="font-semibold">{{ t('account.profile') }}</h3>
@@ -383,9 +380,9 @@ async function logout() {
               variant="ghost"
               size="sm"
               :disabled="!auth.user?.id"
-              @click="openUserId"
-              >{{ t('account.viewId') }}</UButton
-            >
+              @click="openUserId">
+              {{ t('account.viewId') }}
+            </UButton>
           </div>
         </template>
         <div class="space-y-4">
@@ -399,40 +396,37 @@ async function logout() {
                 variant="ghost"
                 size="sm"
                 :disabled="locked || !auth.user"
-                @click="editNickname"
-                >{{ t('account.editNickname') }}</UButton
-              >
+                @click="editNickname">
+                {{ t('account.editNickname') }}
+              </UButton>
             </div>
             <UForm
               v-if="editingNickname"
               :state="nicknameForm"
               class="space-y-2"
-              @submit="saveNickname"
-            >
+              @submit="saveNickname">
               <UFormField
                 name="nickname"
                 :error="nicknameError || undefined"
-                :description="t('account.nicknameHint')"
-              >
+                :description="t('account.nicknameHint')">
                 <UInput
                   v-model="nicknameForm.nickname"
                   class="w-full"
                   :disabled="saving"
                   :aria-label="t('account.nickname')"
-                  autocomplete="off"
-                />
+                  autocomplete="off" />
               </UFormField>
               <div class="flex gap-2">
-                <UButton type="submit" :loading="saving" :disabled="locked">{{
-                  t('ui.save')
-                }}</UButton
-                ><UButton
+                <UButton type="submit" :loading="saving" :disabled="locked">
+                  {{ t('ui.save') }}
+                </UButton>
+                <UButton
                   color="neutral"
                   variant="ghost"
                   :disabled="saving"
-                  @click="editingNickname = false"
-                  >{{ t('campaign.cancel') }}</UButton
-                >
+                  @click="editingNickname = false">
+                  {{ t('campaign.cancel') }}
+                </UButton>
               </div>
             </UForm>
             <p v-else class="break-words font-medium">
@@ -455,9 +449,9 @@ async function logout() {
               :disabled="locked || saving || checking"
               color="error"
               variant="soft"
-              @click="logout"
-              >{{ t('account.logout') }}</UButton
-            >
+              @click="logout">
+              {{ t('account.logout') }}
+            </UButton>
           </div>
         </template>
       </UCard>
@@ -467,24 +461,22 @@ async function logout() {
           header: 'px-4 py-3 sm:px-4 sm:py-3',
           body: 'p-4 sm:p-4',
           footer: 'px-4 py-3 sm:px-4 sm:py-3',
-        }"
-      >
-        <template #header
-          ><h3 class="font-semibold">{{ t('account.growth') }}</h3></template
-        >
+        }">
+        <template #header>
+          <h3 class="font-semibold">{{ t('account.growth') }}</h3>
+        </template>
         <div v-if="experience" class="space-y-3">
           <div class="flex items-end justify-between gap-3">
-            <span class="text-3xl font-semibold text-primary">LV{{ experience.level }}</span
-            ><span class="text-sm text-muted">{{
-              t('account.experienceTotal', { amount: experience.experience })
-            }}</span>
+            <span class="text-3xl font-semibold text-primary">LV{{ experience.level }}</span>
+            <span class="text-sm text-muted">
+              {{ t('account.experienceTotal', { amount: experience.experience }) }}
+            </span>
           </div>
           <div class="space-y-2">
             <UProgress
               :model-value="experience.nextLevelExperience === null ? 100 : experience.experience"
               :max="experience.nextLevelExperience ?? 100"
-              :aria-label="t('account.growth')"
-            />
+              :aria-label="t('account.growth')" />
             <p class="text-xs text-muted">
               {{
                 experience.nextLevelExperience === null
@@ -496,9 +488,9 @@ async function logout() {
           <div class="space-y-2 border-t border-default pt-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h4 class="text-sm font-medium">{{ t('account.dailyCheckIn') }}</h4>
-              <UBadge v-if="experience.checkedIn" color="success" variant="subtle">{{
-                t('account.alreadyCheckedIn')
-              }}</UBadge>
+              <UBadge v-if="experience.checkedIn" color="success" variant="subtle">
+                {{ t('account.alreadyCheckedIn') }}
+              </UBadge>
             </div>
             <p class="text-xs text-muted">{{ t('account.checkInHint') }}</p>
             <UButton
@@ -506,11 +498,9 @@ async function logout() {
               icon="i-tabler-calendar-check"
               :loading="checking"
               :disabled="locked || checking || experienceLoading || experience.checkedIn"
-              @click="checkIn"
-              >{{
-                t(experience.checkedIn ? 'account.alreadyCheckedIn' : 'account.checkIn')
-              }}</UButton
-            >
+              @click="checkIn">
+              {{ t(experience.checkedIn ? 'account.alreadyCheckedIn' : 'account.checkIn') }}
+            </UButton>
           </div>
         </div>
         <div v-else class="space-y-3">
@@ -532,26 +522,22 @@ async function logout() {
           color="neutral"
           variant="outline"
           :disabled="!auth.user?.id"
-          @click="copyUserId"
-          >{{ t('account.copy') }}</UButton
-        >
+          @click="copyUserId">
+          {{ t('account.copy') }}
+        </UButton>
       </template>
     </UModal>
   </section>
   <section v-else class="flex flex-1">
     <div class="grid min-h-full w-full bg-default grid-cols-[0.85fr_1.15fr]">
       <aside
-        class="relative flex flex-col justify-between overflow-hidden border-r border-default bg-elevated/50 p-8"
-      >
+        class="relative flex flex-col justify-between overflow-hidden border-r border-default bg-elevated/50 p-8">
         <div
           aria-hidden="true"
-          class="absolute -left-16 top-20 size-72 rounded-full bg-primary/10 blur-3xl"
-        />
+          class="absolute -left-16 top-20 size-72 rounded-full bg-primary/10 blur-3xl" />
         <div class="relative flex items-center gap-3">
-          <img :src="logo" alt="" class="size-10 object-contain" /><span
-            class="font-semibold tracking-wide"
-            >SCNEXUS</span
-          >
+          <img :src="logo" alt="" class="size-10 object-contain" />
+          <span class="font-semibold tracking-wide">SCNEXUS</span>
         </div>
         <div class="relative space-y-4 py-6">
           <h2 class="text-3xl font-semibold leading-tight tracking-tight">
@@ -560,9 +546,8 @@ async function logout() {
           <p class="text-sm leading-relaxed text-muted">{{ t('account.welcomeHint') }}</p>
         </div>
         <div class="relative flex items-start gap-2 text-xs leading-relaxed text-muted">
-          <UIcon name="i-tabler-shield-lock" class="mt-0.5 size-4 shrink-0" />{{
-            t('account.localFirst')
-          }}
+          <UIcon name="i-tabler-shield-lock" class="mt-0.5 size-4 shrink-0" />
+          {{ t('account.localFirst') }}
         </div>
       </aside>
       <div class="min-w-0 space-y-4 p-5 sm:p-6">
@@ -587,21 +572,18 @@ async function logout() {
           v-if="!available"
           color="neutral"
           variant="subtle"
-          :title="t('account.desktopRequired')"
-        />
+          :title="t('account.desktopRequired')" />
         <template v-if="auth.snapshot.status === 'mfa-pending'">
           <UAlert
             :title="t('account.mfaRequired')"
-            :description="t('account.expires', { seconds: mfaSeconds })"
-          />
-          <UFormField :label="t('account.factor')"
-            ><USelect v-model="factorType" :items="factors" :disabled="locked"
-          /></UFormField>
+            :description="t('account.expires', { seconds: mfaSeconds })" />
+          <UFormField :label="t('account.factor')">
+            <USelect v-model="factorType" :items="factors" :disabled="locked" />
+          </UFormField>
           <UForm :state="{ factor }" class="space-y-4" @submit="submitFactor">
             <UFormField
               :label="t(factorType === 'otp' ? 'account.otp' : 'account.recovery')"
-              name="factor"
-            >
+              name="factor">
               <UInput
                 class="w-full"
                 size="lg"
@@ -609,58 +591,57 @@ async function logout() {
                 :maxlength="factorType === 'otp' ? 6 : 128"
                 :type="factorType === 'otp' ? 'text' : 'password'"
                 autocomplete="one-time-code"
-                :disabled="locked"
-              />
+                :disabled="locked" />
             </UFormField>
-            <UButton type="submit" :disabled="locked || !mfaSeconds" :loading="submitting">{{
-              t('account.verify')
-            }}</UButton>
-            <UButton class="ml-2" variant="outline" :disabled="locked" @click="logout">{{
-              t('account.cancel')
-            }}</UButton>
+            <UButton type="submit" :disabled="locked || !mfaSeconds" :loading="submitting">
+              {{ t('account.verify') }}
+            </UButton>
+            <UButton class="ml-2" variant="outline" :disabled="locked" @click="logout">
+              {{ t('account.cancel') }}
+            </UButton>
           </UForm>
         </template>
         <template v-else>
           <UTabs v-model="mode" :items="modes" :content="false" :disabled="locked" class="w-full" />
           <UForm :state="fields" :validate="validate" class="space-y-4" @submit="submit">
-            <UFormField :label="t('account.subject')" name="subject" required
-              ><UInput
+            <UFormField :label="t('account.subject')" name="subject" required>
+              <UInput
                 class="w-full"
                 size="lg"
                 v-model="fields.subject"
                 type="email"
                 :maxlength="254"
                 autocomplete="username"
-                :disabled="locked"
-            /></UFormField>
+                :disabled="locked" />
+            </UFormField>
             <UFormField
               :label="t('account.password')"
               :description="
                 t(mode === 'login' ? 'account.loginPasswordHint' : 'account.newPasswordHint')
               "
               name="password"
-              required
-              ><UInput
+              required>
+              <UInput
                 class="w-full"
                 size="lg"
                 v-model="fields.password"
                 type="password"
                 :maxlength="128"
                 :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
-                :disabled="locked"
-            /></UFormField>
+                :disabled="locked" />
+            </UFormField>
             <UFormField
               v-if="mode !== 'reset'"
               :label="t('account.deviceName')"
               name="deviceName"
-              required
-              ><UInput
+              required>
+              <UInput
                 class="w-full"
                 size="lg"
                 v-model="fields.deviceName"
                 :maxlength="80"
-                :disabled="locked"
-            /></UFormField>
+                :disabled="locked" />
+            </UFormField>
             <template v-if="mode !== 'login'">
               <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                 <UFormField :label="t('account.proof')" name="proof" required>
@@ -672,8 +653,7 @@ async function logout() {
                     inputmode="numeric"
                     :maxlength="6"
                     autocomplete="one-time-code"
-                    :disabled="locked"
-                  />
+                    :disabled="locked" />
                 </UFormField>
                 <UFormField name="challenge" :label="t('account.challenge')">
                   <UButton
@@ -682,13 +662,13 @@ async function logout() {
                     :disabled="locked || retrySeconds > 0 || !validSubject(fields.subject)"
                     :loading="challengeBusy"
                     variant="outline"
-                    @click="requestChallenge"
-                    >{{
+                    @click="requestChallenge">
+                    {{
                       retrySeconds
                         ? t('account.retry', { seconds: retrySeconds })
                         : t('account.sendCode')
-                    }}</UButton
-                  >
+                    }}
+                  </UButton>
                 </UFormField>
               </div>
               <p v-if="challenge" class="text-xs text-muted">
@@ -699,15 +679,15 @@ async function logout() {
               <UFormField
                 :label="t('account.invitationCode')"
                 name="invitationCode"
-                :required="invitationRequired"
-                ><UInput
+                :required="invitationRequired">
+                <UInput
                   class="w-full"
                   size="lg"
                   v-model="fields.invitationCode"
                   :maxlength="64"
                   :disabled="locked"
-                  autocomplete="off"
-              /></UFormField>
+                  autocomplete="off" />
+              </UFormField>
             </template>
             <UButton
               block
@@ -715,9 +695,9 @@ async function logout() {
               class="mt-4"
               type="submit"
               :disabled="locked || (mode === 'register' && !policyReady)"
-              :loading="submitting"
-              >{{ t(`account.${mode}`) }}</UButton
-            >
+              :loading="submitting">
+              {{ t(`account.${mode}`) }}
+            </UButton>
           </UForm>
         </template>
       </div>

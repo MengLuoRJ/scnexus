@@ -16,9 +16,9 @@ const { t } = useI18n()
         variant="outline"
         :disabled="props.disabled || !props.path"
         :aria-label="`${t('ui.openDirectory')} · ${props.label}`"
-        @click="emit('open', props.path)"
-        >{{ t('ui.openDirectory') }}</UButton
-      >
+        @click="emit('open', props.path)">
+        {{ t('ui.openDirectory') }}
+      </UButton>
     </div>
   </UFormField>
 </template>

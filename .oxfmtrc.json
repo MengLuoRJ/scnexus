@@ -3,6 +3,15 @@
   "semi": false,
   "singleQuote": true,
   "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ["*.vue"],
+      "options": {
+        "htmlWhitespaceSensitivity": "ignore",
+        "bracketSameLine": true
+      }
+    }
+  ],
   "ignorePatterns": [
     "**/node_modules/**",
     "**/dist/**",

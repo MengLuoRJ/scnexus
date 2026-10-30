@@ -120,57 +120,55 @@ onMounted(() => {
       v-if="error?.code === 'M011' || error?.code === 'M013'"
       to="/settings"
       color="neutral"
-      variant="outline"
-      >{{ t('ui.start') }}</UButton
-    >
+      variant="outline">
+      {{ t('ui.start') }}
+    </UButton>
     <UAlert
       v-for="item in diagnostics"
       :key="item.path"
       color="warning"
       :title="item.message"
-      :description="item.path"
-    />
-    <Teleport v-if="headerReady" to="#page-actions"
-      ><UButton
+      :description="item.path" />
+    <Teleport v-if="headerReady" to="#page-actions">
+      <UButton
         icon="i-tabler-refresh"
         size="sm"
         color="neutral"
         variant="ghost"
         :disabled="locked || !available"
-        @click="refresh()"
-        >{{ t('campaign.refresh') }}</UButton
-      ><UButton
+        @click="refresh()">
+        {{ t('campaign.refresh') }}
+      </UButton>
+      <UButton
         icon="i-tabler-database-search"
         size="sm"
         color="neutral"
         variant="ghost"
         :disabled="locked || !available"
-        @click="refresh(true)"
-        >{{ t('campaign.scan') }}</UButton
-      ></Teleport
-    >
+        @click="refresh(true)">
+        {{ t('campaign.scan') }}
+      </UButton>
+    </Teleport>
     <p class="text-sm text-muted">{{ t('customize.directInstall') }}</p>
     <CampaignSourcePicker
       :disabled="locked || !available"
       @select="(source) => refContentImport?.analyze(source)"
-      @error="notifyError"
-    />
+      @error="notifyError" />
     <UAlert v-if="!records.length" color="neutral" variant="subtle" :title="t('customize.empty')" />
     <div class="grid grid-cols-2 gap-3">
       <UCard
         v-for="record in records"
         :key="record.localId"
         class="min-w-0"
-        :ui="{ body: 'space-y-2 p-3 sm:p-3' }"
-      >
+        :ui="{ body: 'space-y-2 p-3 sm:p-3' }">
         <div class="h-28 overflow-hidden rounded">
           <PackageImage :local-id="record.localId" :alt="record.package.name" />
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <h2 class="min-w-0 flex-1 break-words font-semibold">{{ record.package.name }}</h2>
-          <UBadge variant="subtle" color="neutral">{{
-            record.origin === 'auto-detected' ? t('campaign.auto') : 'SCNexus'
-          }}</UBadge>
+          <UBadge variant="subtle" color="neutral">
+            {{ record.origin === 'auto-detected' ? t('campaign.auto') : 'SCNexus' }}
+          </UBadge>
         </div>
         <p class="break-words text-sm text-muted">
           {{ t('campaign.author') }}: {{ record.package.author || '—' }} ·
@@ -183,8 +181,7 @@ onMounted(() => {
         </p>
         <p
           v-if="record.package.description"
-          class="line-clamp-3 break-words whitespace-pre-wrap text-sm text-muted"
-        >
+          class="line-clamp-3 break-words whitespace-pre-wrap text-sm text-muted">
           {{ record.package.description }}
         </p>
         <p v-if="record.launcherTarget" class="break-all text-xs text-muted">
@@ -193,24 +190,25 @@ onMounted(() => {
         <div class="flex flex-wrap gap-2">
           <UButton
             :disabled="locked || !available || !record.launcherTarget"
-            @click="launch(record)"
-            >{{ t('customize.launch') }}</UButton
-          >
+            @click="launch(record)">
+            {{ t('customize.launch') }}
+          </UButton>
           <UButton
             icon="i-tabler-info-circle"
             color="neutral"
             variant="outline"
             :disabled="locked"
-            @click="selectedId = record.localId"
-            >{{ t('campaign.details') }}</UButton
-          ><UButton
+            @click="selectedId = record.localId">
+            {{ t('campaign.details') }}
+          </UButton>
+          <UButton
             icon="i-tabler-trash"
             color="error"
             variant="soft"
             :disabled="locked || !available"
-            @click="uninstall = record"
-            >{{ t('campaign.uninstall') }}</UButton
-          >
+            @click="uninstall = record">
+            {{ t('campaign.uninstall') }}
+          </UButton>
         </div>
       </UCard>
     </div>
@@ -220,8 +218,7 @@ onMounted(() => {
       :service="service"
       :record="uninstall"
       @close="uninstall = null"
-      @completed="toast.add({ color: 'success', title: t('customize.uninstallComplete') })"
-    />
+      @completed="toast.add({ color: 'success', title: t('customize.uninstallComplete') })" />
     <UModal
       :open="Boolean(selected)"
       :title="selected?.package.name"
@@ -234,9 +231,9 @@ onMounted(() => {
         (value: boolean) => {
           if (!value) selectedId = null
         }
-      "
-      ><template #body
-        ><RecordDetails v-if="selected" :record="selected">
+      ">
+      <template #body>
+        <RecordDetails v-if="selected" :record="selected">
           <div class="space-y-2">
             <p class="text-muted">{{ t('customize.launcher') }}</p>
             <div class="flex gap-2">
@@ -245,24 +242,24 @@ onMounted(() => {
                 :items="launcherItems"
                 :disabled="busy"
                 class="min-w-0 flex-1"
-                :aria-label="t('customize.launcher')"
-              /><UButton
+                :aria-label="t('customize.launcher')" />
+              <UButton
                 :loading="busy"
                 :disabled="launcherChoice === (selected.launcherTarget ?? '__none__')"
-                @click="saveLauncher"
-                >{{ t('customize.saveLauncher') }}</UButton
-              >
+                @click="saveLauncher">
+                {{ t('customize.saveLauncher') }}
+              </UButton>
             </div>
           </div>
           <UButton
             icon="i-tabler-folder"
             color="neutral"
             variant="outline"
-            @click="folder(selected)"
-            >{{ t('campaign.openFolder') }}</UButton
-          >
-        </RecordDetails></template
-      ></UModal
-    >
+            @click="folder(selected)">
+            {{ t('campaign.openFolder') }}
+          </UButton>
+        </RecordDetails>
+      </template>
+    </UModal>
   </div>
 </template>

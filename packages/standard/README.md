@@ -55,7 +55,6 @@ package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata �
 分发测试需在构建后运行；包内 Vitest 直接测试源码中的业务校验，无需预先构建。
 `pnpm --filter @scnexus/standard test:watch` 可交互监听业务测试。
 
-
 ## 包类型
 
 `Package` 为 `PackageContent | PackageDependency`，`PackageType` 仅接受
@@ -174,7 +173,11 @@ scnid 非负安全整数、地图/模组扩展名和路径前缀。所有对象�
 ## 分类型校验函数
 
 ```ts
-import { isPackageCampaign, isPackageCustomize, isPackageDependency } from '@scnexus/standard/package'
+import {
+  isPackageCampaign,
+  isPackageCustomize,
+  isPackageDependency,
+} from '@scnexus/standard/package'
 
 if (isPackageCampaign(input)) {
   // input: PackageCampaign，campaign 字段必填

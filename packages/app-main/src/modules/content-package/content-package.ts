@@ -949,7 +949,12 @@ export class ContentService {
           (mode === 'scnexus' ? 1 + (ccm ? 1 : 0) : 0)
         const stagedManagement = join(staging, 'management')
         await mkdir(stagedManagement)
-        record.attachments = await persistAttachments(source, preview, stagedFiles, stagedManagement)
+        record.attachments = await persistAttachments(
+          source,
+          preview,
+          stagedFiles,
+          stagedManagement,
+        )
         const payloadPaths: string[] = []
         if (payload) {
           const stagedPayload =

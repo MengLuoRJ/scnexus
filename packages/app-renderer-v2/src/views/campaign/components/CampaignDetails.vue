@@ -38,8 +38,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
         draggable="false"
         :src="image[item.value as PackageCampaignType]"
         alt=""
-        class="size-6 object-contain"
-      />
+        class="size-6 object-contain" />
     </template>
   </UTabs>
   <div class="grid grid-cols-[200px_minmax(0,1fr)] gap-3">
@@ -65,8 +64,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
             size="sm"
             block
             :disabled="props.busy || !props.available"
-            @click="emit('manage', category)"
-          >
+            @click="emit('manage', category)">
             {{ t(props.current ? 'campaign.switch' : 'campaign.activate') }}
           </UButton>
           <UButton
@@ -77,8 +75,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
             color="neutral"
             variant="outline"
             :disabled="props.busy"
-            @click="emit('operate', props.current, 'deactivate')"
-          >
+            @click="emit('operate', props.current, 'deactivate')">
             {{ t('campaign.restore') }}
           </UButton>
           <UButton
@@ -89,16 +86,14 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
             color="error"
             variant="soft"
             :disabled="props.busy"
-            @click="emit('operate', props.current, 'uninstall')"
-          >
+            @click="emit('operate', props.current, 'uninstall')">
             {{ t('campaign.uninstall') }}
           </UButton>
           <UButton
             block
             icon="i-tabler-player-play"
             :disabled="props.busy || !props.available"
-            @click="emit('launch')"
-          >
+            @click="emit('launch')">
             {{ t('campaign.start') }}
           </UButton>
         </div>
@@ -115,8 +110,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
             icon="i-tabler-info-circle"
             color="neutral"
             variant="outline"
-            @click="detailsOpen = true"
-          >
+            @click="detailsOpen = true">
             {{ t('campaign.details') }}
           </UButton>
           <p>SCNID: {{ props.current.package.scnid ?? '—' }}</p>
@@ -130,8 +124,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
             icon="i-tabler-folder"
             color="neutral"
             variant="outline"
-            @click="emit('folder', props.current)"
-          >
+            @click="emit('folder', props.current)">
             {{ t('campaign.openFolder') }}
           </UButton>
           <UButton
@@ -139,8 +132,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
             v-if="props.current.package.website"
             color="neutral"
             variant="ghost"
-            @click="emit('website', props.current.package.website)"
-          >
+            @click="emit('website', props.current.package.website)">
             {{ t('ui.website') }}
           </UButton>
           <div
@@ -149,8 +141,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
               sponsor: props.current.package.sponsor,
             }"
             :key="key"
-            class="space-y-1"
-          >
+            class="space-y-1">
             <p v-for="(value, name) in group" :key="name" class="break-all">
               {{ name }}: {{ value }}
             </p>
@@ -162,8 +153,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
   <UModal
     v-model:open="detailsOpen"
     :title="props.current?.package.name"
-    :ui="{ content: 'sm:max-w-3xl', title: 'min-w-0 break-words', body: 'min-h-0 p-4 sm:p-4' }"
-  >
+    :ui="{ content: 'sm:max-w-3xl', title: 'min-w-0 break-words', body: 'min-h-0 p-4 sm:p-4' }">
     <template #body>
       <RecordDetails v-if="props.current" :record="props.current" />
     </template>

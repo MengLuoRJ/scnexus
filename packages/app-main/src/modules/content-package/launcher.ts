@@ -51,7 +51,10 @@ export function restoreLauncher(
 ) {
   if (record.package.type !== 'customize') return
   const launcher = resolveLauncher(record.package, record.installedFiles)
-  if ((!record.launcherCustomized && launcher.source === 'manifest') || !Object.hasOwn(record, 'launcherTarget'))
+  if (
+    (!record.launcherCustomized && launcher.source === 'manifest') ||
+    !Object.hasOwn(record, 'launcherTarget')
+  )
     record.launcherTarget = launcher.target
   else if (
     record.launcherTarget !== null &&

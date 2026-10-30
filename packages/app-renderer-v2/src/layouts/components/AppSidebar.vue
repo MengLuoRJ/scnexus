@@ -52,8 +52,7 @@ const items = computed(() => [
 <template>
   <aside
     :class="collapsed ? 'w-16' : 'w-40'"
-    class="flex shrink-0 flex-col border-r border-default bg-elevated/50 transition-[width]"
-  >
+    class="flex shrink-0 flex-col border-r border-default bg-elevated/50 transition-[width]">
     <div class="flex h-14 shrink-0 items-center justify-center gap-2 border-b border-default px-2">
       <img draggable="false" :src="logo" alt="SCNexus" class="size-8 shrink-0 object-contain" />
       <span v-if="!collapsed" class="truncate font-semibold">星际枢纽</span>
@@ -63,8 +62,7 @@ const items = computed(() => [
       :collapsed="collapsed"
       orientation="vertical"
       class="flex-1 p-2"
-      :ui="{ link: collapsed ? 'justify-center' : '' }"
-    >
+      :ui="{ link: collapsed ? 'justify-center' : '' }">
       <template #item-leading="{ item }">
         <img draggable="false" :src="item.image" alt="" class="size-8 shrink-0 object-contain" />
       </template>
@@ -77,12 +75,11 @@ const items = computed(() => [
         :title="accountLabel"
         :aria-current="route.name === 'account' ? 'page' : undefined"
         class="flex min-w-0 items-center gap-2 rounded-md p-1.5 transition-colors hover:bg-accented focus-visible:outline-2 focus-visible:outline-primary"
-        :class="[collapsed ? 'justify-center' : '', route.name === 'account' ? 'bg-accented' : '']"
-      >
+        :class="[collapsed ? 'justify-center' : '', route.name === 'account' ? 'bg-accented' : '']">
         <UAvatar icon="i-tabler-user" size="sm" aria-hidden="true" class="shrink-0" />
-        <span v-if="!collapsed" class="min-w-0 truncate text-sm font-medium" aria-live="polite">{{
-          accountName
-        }}</span>
+        <span v-if="!collapsed" class="min-w-0 truncate text-sm font-medium" aria-live="polite">
+          {{ accountName }}
+        </span>
       </RouterLink>
     </div>
     <div class="flex justify-center border-t border-default p-2">
@@ -96,8 +93,7 @@ const items = computed(() => [
         :title="t(collapsed ? 'ui.expand' : 'ui.collapse')"
         color="neutral"
         variant="ghost"
-        @click="collapsed = !collapsed"
-      />
+        @click="collapsed = !collapsed" />
     </div>
   </aside>
 </template>

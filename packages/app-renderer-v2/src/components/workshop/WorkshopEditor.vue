@@ -62,19 +62,16 @@ const toolbar = [
       :mention="false"
       :extensions="[image]"
       :starter-kit="{ link: { openOnClick: false }, codeBlock: { enableTabIndentation: false } }"
-      :ui="{ base: 'min-h-28 max-h-64 overflow-y-auto p-3 text-sm' }"
-    >
+      :ui="{ base: 'min-h-28 max-h-64 overflow-y-auto p-3 text-sm' }">
       <UEditorToolbar :editor="editor" :items="toolbar" class="border-b border-default" />
       <div
         v-if="props.fileIds.length && !props.disabled"
-        class="flex gap-2 p-2 border-b border-default"
-      >
+        class="flex gap-2 p-2 border-b border-default">
         <USelect
           v-model="selectedFile"
           :items="props.fileIds"
           :placeholder="t('workshop.image')"
-          class="min-w-0 flex-1"
-        />
+          class="min-w-0 flex-1" />
         <UButton
           size="xs"
           :disabled="!selectedFile"
@@ -84,9 +81,9 @@ const toolbar = [
               .focus()
               .insertContent({ type: 'image', attrs: { fileId: selectedFile, alt: '' } })
               .run()
-          "
-          >{{ t('workshop.insertImage') }}</UButton
-        >
+          ">
+          {{ t('workshop.insertImage') }}
+        </UButton>
       </div>
     </UEditor>
     <p v-if="invalid" role="alert" class="p-2 text-error text-sm">

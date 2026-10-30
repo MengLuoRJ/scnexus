@@ -4,5 +4,5 @@ allowBuilds:
   esbuild: true
   vue-demi: true
 packages:
-  - "packages/*"
-  - "!**/test/**"
+  - 'packages/*'
+  - '!**/test/**'

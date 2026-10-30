@@ -81,8 +81,7 @@ function isActive(record: ContentRecord) {
           { label: t('campaign.totalBytes'), value: formatFileSize(totals.bytes) },
         ]"
         :key="item.label"
-        :ui="{ body: 'p-3 sm:p-3' }"
-      >
+        :ui="{ body: 'p-3 sm:p-3' }">
         <p class="text-xs text-muted">{{ item.label }}</p>
         <p class="mt-1 text-2xl font-semibold tabular-nums">{{ item.value }}</p>
       </UCard>
@@ -93,22 +92,21 @@ function isActive(record: ContentRecord) {
         <div v-for="item in statistics" :key="item.campaign" class="min-w-0 space-y-1.5">
           <div class="flex flex-wrap items-baseline justify-between gap-1 text-sm">
             <span class="font-medium">{{ t(`campaign.${item.campaign}`) }}</span>
-            <span class="text-muted"
-              >{{ item.count }} {{ t('campaign.packages') }} · {{ t('campaign.standardFiles') }}:
+            <span class="text-muted">
+              {{ item.count }} {{ t('campaign.packages') }} · {{ t('campaign.standardFiles') }}:
               {{ item.files }} · {{ t('campaign.recognizedFiles') }}: {{ item.recognizedFiles }} ·
-              {{ formatFileSize(item.bytes) }}</span
-            >
+              {{ formatFileSize(item.bytes) }}
+            </span>
           </div>
           <UProgress
             :model-value="item.bytes"
             :max="totals.bytes || 1"
-            :aria-label="t(`campaign.${item.campaign}`)"
-          />
+            :aria-label="t(`campaign.${item.campaign}`)" />
           <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
-            <span v-for="mode in item.modes" :key="mode.mode"
-              >{{ mode.mode === 'scnexus' ? 'SCNexus' : 'CCM' }}: {{ mode.count }} ·
-              {{ formatFileSize(mode.bytes) }}</span
-            >
+            <span v-for="mode in item.modes" :key="mode.mode">
+              {{ mode.mode === 'scnexus' ? 'SCNexus' : 'CCM' }}: {{ mode.count }} ·
+              {{ formatFileSize(mode.bytes) }}
+            </span>
           </div>
         </div>
       </div>
@@ -123,8 +121,7 @@ function isActive(record: ContentRecord) {
         :items="[
           { label: t('campaign.allCategories'), value: 'all' },
           ...categories.map((value) => ({ label: t(`campaign.${value}`), value })),
-        ]"
-      />
+        ]" />
     </div>
     <UAlert v-if="!list.length" color="neutral" variant="subtle" :title="t('campaign.empty')" />
     <UCard v-for="record in list" :key="record.localId" :ui="{ body: 'space-y-2 p-3 sm:p-3' }">
@@ -135,9 +132,9 @@ function isActive(record: ContentRecord) {
             <UBadge color="neutral" variant="subtle">{{ record.package.version || '—' }}</UBadge>
             <UBadge variant="subtle">{{ record.mode === 'scnexus' ? 'SCNexus' : 'CCM' }}</UBadge>
             <UBadge v-if="isActive(record)" color="success">{{ t('campaign.active') }}</UBadge>
-            <UBadge v-if="record.external" color="warning" variant="subtle">{{
-              t('campaign.externalRecord')
-            }}</UBadge>
+            <UBadge v-if="record.external" color="warning" variant="subtle">
+              {{ t('campaign.externalRecord') }}
+            </UBadge>
           </div>
           <p class="text-xs text-muted">
             {{ t(`campaign.${record.package.campaign}`) }} · {{ t('campaign.author') }}:
@@ -155,18 +152,18 @@ function isActive(record: ContentRecord) {
             variant="ghost"
             size="sm"
             icon="i-tabler-info-circle"
-            @click="selectedId = record.localId"
-            >{{ t('campaign.details') }}</UButton
-          >
+            @click="selectedId = record.localId">
+            {{ t('campaign.details') }}
+          </UButton>
           <UButton
             color="neutral"
             variant="ghost"
             size="sm"
             icon="i-tabler-folder"
             :disabled="props.busy"
-            @click="emit('folder', record)"
-            >{{ t('campaign.openFolder') }}</UButton
-          >
+            @click="emit('folder', record)">
+            {{ t('campaign.openFolder') }}
+          </UButton>
           <UButton
             v-if="isActive(record)"
             color="warning"
@@ -174,32 +171,32 @@ function isActive(record: ContentRecord) {
             size="sm"
             icon="i-tabler-restore"
             :disabled="props.busy"
-            @click="emit('operate', record, 'deactivate')"
-            >{{ t('campaign.deactivate') }}</UButton
-          >
+            @click="emit('operate', record, 'deactivate')">
+            {{ t('campaign.deactivate') }}
+          </UButton>
           <UButton
             v-else
             size="sm"
             icon="i-tabler-check"
             :disabled="props.busy || !record.payloadDirectory"
-            @click="emit('operate', record, 'activate')"
-            >{{
+            @click="emit('operate', record, 'activate')">
+            {{
               t(
                 record.package.campaign && props.active[record.package.campaign]
                   ? 'campaign.switch'
                   : 'campaign.activate',
               )
-            }}</UButton
-          >
+            }}
+          </UButton>
           <UButton
             color="error"
             variant="soft"
             size="sm"
             icon="i-tabler-trash"
             :disabled="props.busy"
-            @click="emit('operate', record, 'uninstall')"
-            >{{ t('campaign.uninstall') }}</UButton
-          >
+            @click="emit('operate', record, 'uninstall')">
+            {{ t('campaign.uninstall') }}
+          </UButton>
         </div>
       </div>
       <p v-if="!record.payloadDirectory" class="text-xs text-muted">
@@ -220,8 +217,7 @@ function isActive(record: ContentRecord) {
       (value: boolean) => {
         if (!value) selectedId = null
       }
-    "
-  >
+    ">
     <template #body>
       <RecordDetails v-if="selected" :record="selected" />
     </template>

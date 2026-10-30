@@ -67,8 +67,7 @@ async function confirm() {
       (value: boolean) => {
         if (!value) close()
       }
-    "
-  >
+    ">
     <template #body>
       <div class="space-y-3">
         <p class="font-semibold">{{ props.record?.package.name }}</p>
@@ -81,8 +80,7 @@ async function confirm() {
           <div
             v-for="file in removal?.files ?? []"
             :key="file.conflictId"
-            class="space-y-2 rounded border border-warning p-2 text-sm"
-          >
+            class="space-y-2 rounded border border-warning p-2 text-sm">
             <p class="break-all">{{ file.file.target }}</p>
             <p>{{ t('campaign.usedBy') }}: {{ file.usedBy.map((item) => item.name).join(', ') }}</p>
             <div class="flex flex-wrap gap-1" role="group" :aria-label="file.file.target">
@@ -109,9 +107,9 @@ async function confirm() {
                     (item) => item.conflictId === file.conflictId && item.action === action,
                   )
                 "
-                @click="choose(file.conflictId, action)"
-                >{{ t(`campaign.${action}`) }}</UButton
-              >
+                @click="choose(file.conflictId, action)">
+                {{ t(`campaign.${action}`) }}
+              </UButton>
             </div>
           </div>
         </template>
@@ -123,15 +121,16 @@ async function confirm() {
           color="neutral"
           variant="outline"
           :disabled="busy || executing || preparing"
-          @click="close"
-          >{{ t('campaign.cancel') }}</UButton
-        ><UButton
+          @click="close">
+          {{ t('campaign.cancel') }}
+        </UButton>
+        <UButton
           color="error"
           :disabled="!canConfirm || executing"
           :loading="executing"
-          @click="confirm"
-          >{{ t('campaign.confirm') }}</UButton
-        >
+          @click="confirm">
+          {{ t('campaign.confirm') }}
+        </UButton>
       </div>
     </template>
   </UModal>

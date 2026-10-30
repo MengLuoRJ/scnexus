@@ -114,12 +114,12 @@ async function openLink(url: string) {
     <header class="flex items-center justify-between gap-3">
       <h1 class="text-xl font-semibold">{{ t('workshop.title') }}</h1>
       <div class="flex gap-2">
-        <UButton to="/downloads" variant="outline" color="neutral">{{
-          t('workshop.downloads')
-        }}</UButton
-        ><UButton v-if="creator.active" to="/creator" variant="soft">{{
-          t('workshop.creator')
-        }}</UButton>
+        <UButton to="/downloads" variant="outline" color="neutral">
+          {{ t('workshop.downloads') }}
+        </UButton>
+        <UButton v-if="creator.active" to="/creator" variant="soft">
+          {{ t('workshop.creator') }}
+        </UButton>
       </div>
     </header>
     <UAlert v-if="!center.enabled" :title="t('workshop.disabled')" color="warning" />
@@ -130,15 +130,15 @@ async function openLink(url: string) {
           :maxlength="120"
           :placeholder="t('workshop.search')"
           class="flex-1"
-          :aria-label="t('workshop.search')"
-        /><UButton type="submit" :loading="loading">{{ t('workshop.search') }}</UButton>
+          :aria-label="t('workshop.search')" />
+        <UButton type="submit" :loading="loading">{{ t('workshop.search') }}</UButton>
       </form>
       <div v-if="loading" role="status"><UProgress :aria-label="t('workshop.loading')" /></div>
-      <UAlert v-else-if="error" :title="t(accountErrorKey(error))" color="error"
-        ><template #actions
-          ><UButton @click="load">{{ t('workshop.reload') }}</UButton></template
-        ></UAlert
-      >
+      <UAlert v-else-if="error" :title="t(accountErrorKey(error))" color="error">
+        <template #actions>
+          <UButton @click="load">{{ t('workshop.reload') }}</UButton>
+        </template>
+      </UAlert>
       <article v-else-if="detail" class="space-y-4">
         <UButton to="/workshop" variant="link">{{ t('workshop.back') }}</UButton>
         <div class="flex gap-4 items-start justify-between">
@@ -151,55 +151,50 @@ async function openLink(url: string) {
             class="shrink-0"
             :loading="downloading"
             :disabled="!detail.approvedVersionId"
-            @click="download"
-            >{{ t(auth.signedIn ? 'workshop.download' : 'workshop.loginDownload') }}</UButton
-          >
+            @click="download">
+            {{ t(auth.signedIn ? 'workshop.download' : 'workshop.loginDownload') }}
+          </UButton>
         </div>
         <UAlert :title="t('workshop.downloadSafety')" color="neutral" />
         <WorkshopRichText :document="detail.detail" :project-scnid="detail.scnid" />
         <div v-if="detail.website" class="text-sm break-all">
-          <span>{{ t('workshop.website') }}: </span
-          ><UButton variant="link" @click="openLink(detail.website)">{{ detail.website }}</UButton>
+          <span>{{ t('workshop.website') }}:</span>
+          <UButton variant="link" @click="openLink(detail.website)">{{ detail.website }}</UButton>
         </div>
         <div
           v-for="(value, key) in { ...detail.social, ...detail.sponsor }"
           :key="key"
-          class="text-sm break-all"
-        >
-          <span>{{ key }}: {{ value }}</span
-          ><UButton
+          class="text-sm break-all">
+          <span>{{ key }}: {{ value }}</span>
+          <UButton
             v-if="/^https:\/\//i.test(value)"
             size="xs"
             variant="link"
-            @click="openLink(value)"
-            >{{ t('workshop.openLink') }}</UButton
-          >
+            @click="openLink(value)">
+            {{ t('workshop.openLink') }}
+          </UButton>
         </div>
       </article>
       <template v-else-if="id === null">
         <p v-if="!items.length" class="text-muted py-6 text-center">{{ t('workshop.empty') }}</p>
         <div class="grid grid-cols-2 gap-3">
-          <UCard v-for="item in items" :key="item.scnid" :ui="{ body: 'p-3' }"
-            ><h2 class="font-medium truncate">{{ item.title }}</h2>
+          <UCard v-for="item in items" :key="item.scnid" :ui="{ body: 'p-3' }">
+            <h2 class="font-medium truncate">{{ item.title }}</h2>
             <p class="text-xs text-muted">SCNID {{ item.scnid }}</p>
             <p class="line-clamp-3 text-sm text-muted my-2 break-words">{{ item.description }}</p>
-            <UButton :to="`/workshop/${item.scnid}`" variant="soft" size="sm">{{
-              t('workshop.details')
-            }}</UButton></UCard
-          >
+            <UButton :to="`/workshop/${item.scnid}`" variant="soft" size="sm">
+              {{ t('workshop.details') }}
+            </UButton>
+          </UCard>
         </div>
         <nav class="flex justify-center items-center gap-3" :aria-label="t('workshop.pagination')">
-          <UButton :disabled="page === 1" color="neutral" variant="outline" @click="page--">{{
-            t('workshop.previous')
-          }}</UButton
-          ><span class="text-sm">{{ page }}</span
-          ><UButton
-            :disabled="items.length < 12"
-            color="neutral"
-            variant="outline"
-            @click="page++"
-            >{{ t('workshop.next') }}</UButton
-          >
+          <UButton :disabled="page === 1" color="neutral" variant="outline" @click="page--">
+            {{ t('workshop.previous') }}
+          </UButton>
+          <span class="text-sm">{{ page }}</span>
+          <UButton :disabled="items.length < 12" color="neutral" variant="outline" @click="page++">
+            {{ t('workshop.next') }}
+          </UButton>
         </nav>
       </template>
     </template>

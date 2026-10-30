@@ -133,8 +133,7 @@ async function confirm() {
     :title="t('downloads.newTask')"
     :description="t(newTask.kind === 'github' ? 'downloads.githubHint' : 'downloads.workshopHint')"
     :dismissible="!creating"
-    :close="!creating"
-  >
+    :close="!creating">
     <template #body>
       <UForm
         v-if="!store.preview"
@@ -142,8 +141,7 @@ async function confirm() {
         :schema="taskSchema"
         :state="newTask"
         class="space-y-2"
-        @submit="createTask"
-      >
+        @submit="createTask">
         <UFormField :label="t('downloads.source')" name="kind" required>
           <USelect
             v-model="newTask.kind"
@@ -152,41 +150,35 @@ async function confirm() {
               { label: t('downloads.workshop'), value: 'workshop' },
             ]"
             :disabled="creating"
-            class="w-full"
-          />
+            class="w-full" />
         </UFormField>
         <UFormField
           v-if="newTask.kind === 'workshop'"
           :label="t('downloads.scnid')"
           name="scnid"
-          required
-        >
+          required>
           <UInput v-model="newTask.scnid" inputmode="numeric" :disabled="creating" class="w-full" />
         </UFormField>
         <UAlert
           v-if="newTask.kind === 'workshop' && !center.enabled"
           color="warning"
-          :title="t('workshop.disabled')"
-        />
+          :title="t('workshop.disabled')" />
         <UFormField
           v-if="newTask.kind === 'github'"
           :label="t('downloads.repository')"
           name="repository"
-          required
-        >
+          required>
           <UInput
             v-model="newTask.repository"
             placeholder="https://github.com/owner/repository"
             :disabled="creating"
-            class="w-full"
-          />
+            class="w-full" />
         </UFormField>
         <UFormField
           v-if="newTask.kind === 'github'"
           :label="t('downloads.branch')"
           name="revision"
-          required
-        >
+          required>
           <UInput v-model="newTask.revision" :disabled="creating" class="w-full" />
         </UFormField>
       </UForm>
@@ -214,28 +206,28 @@ async function confirm() {
           color="neutral"
           variant="outline"
           :disabled="creating"
-          @click="store.closeDownload()"
-          >{{ t('campaign.cancel') }}</UButton
-        >
+          @click="store.closeDownload()">
+          {{ t('campaign.cancel') }}
+        </UButton>
         <UButton
           v-if="store.preview"
           color="neutral"
           variant="outline"
           :disabled="creating"
-          @click="store.preview = null"
-          >{{ t('downloads.editSource') }}</UButton
-        >
-        <UButton v-if="store.preview" :loading="creating" @click="confirm">{{
-          t('downloads.confirmDownload')
-        }}</UButton>
+          @click="store.preview = null">
+          {{ t('downloads.editSource') }}
+        </UButton>
+        <UButton v-if="store.preview" :loading="creating" @click="confirm">
+          {{ t('downloads.confirmDownload') }}
+        </UButton>
         <UButton
           v-else
           type="submit"
           form="new-download-task"
           :loading="creating"
-          :disabled="newTask.kind === 'workshop' && !center.enabled"
-          >{{ t('downloads.fetchPreview') }}</UButton
-        >
+          :disabled="newTask.kind === 'workshop' && !center.enabled">
+          {{ t('downloads.fetchPreview') }}
+        </UButton>
       </div>
     </template>
   </UModal>

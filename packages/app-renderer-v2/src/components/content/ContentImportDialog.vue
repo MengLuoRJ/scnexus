@@ -77,8 +77,7 @@ defineExpose({ analyze })
       (value: boolean) => {
         if (!value) store.cancel()
       }
-    "
-  >
+    ">
     <template #body>
       <div v-if="busy" role="status" aria-live="polite" class="space-y-3">
         <p>{{ t('content.classifying') }}</p>
@@ -90,16 +89,16 @@ defineExpose({ analyze })
         <p class="text-xs text-muted">{{ conflict.code }} · {{ conflict.errorId }}</p>
       </div>
     </template>
-    <template v-if="conflict && !busy" #footer
-      ><div class="flex w-full flex-wrap justify-end gap-2">
-        <UButton color="neutral" variant="outline" @click="store.cancel()">{{
-          t('campaign.cancel')
-        }}</UButton
-        ><UButton @click="choose('package-json')">{{ t('content.usePackage') }}</UButton
-        ><UButton color="neutral" variant="outline" @click="choose('metadata-txt')">{{
-          t('content.useMetadata')
-        }}</UButton>
-      </div></template
-    >
+    <template v-if="conflict && !busy" #footer>
+      <div class="flex w-full flex-wrap justify-end gap-2">
+        <UButton color="neutral" variant="outline" @click="store.cancel()">
+          {{ t('campaign.cancel') }}
+        </UButton>
+        <UButton @click="choose('package-json')">{{ t('content.usePackage') }}</UButton>
+        <UButton color="neutral" variant="outline" @click="choose('metadata-txt')">
+          {{ t('content.useMetadata') }}
+        </UButton>
+      </div>
+    </template>
   </UModal>
 </template>

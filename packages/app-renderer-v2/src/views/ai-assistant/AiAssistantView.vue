@@ -304,41 +304,38 @@ onUnmounted(() => {
           <UAlert
             color="info"
             :title="t('aiAssistant.readOnly')"
-            :description="t('aiAssistant.security')"
-          />
+            :description="t('aiAssistant.security')" />
           <UCard :ui="{ body: 'space-y-3 p-3 sm:p-3' }">
             <div class="flex items-center justify-between gap-3">
               <h2 class="text-sm font-semibold">{{ t('aiAssistant.service') }}</h2>
-              <UBadge :color="running ? 'success' : 'neutral'" variant="subtle">{{
-                t(`aiAssistant.state.${assistant.status.state}`)
-              }}</UBadge>
+              <UBadge :color="running ? 'success' : 'neutral'" variant="subtle">
+                {{ t(`aiAssistant.state.${assistant.status.state}`) }}
+              </UBadge>
             </div>
             <div class="flex items-end gap-3">
               <UFormField
                 :label="t('aiAssistant.port')"
-                :error="!validPort ? t('aiAssistant.invalidPort') : undefined"
-              >
+                :error="!validPort ? t('aiAssistant.invalidPort') : undefined">
                 <UInput
                   v-model="port"
                   type="number"
                   :min="1024"
                   :max="65535"
                   :disabled="!stopped || busy"
-                  class="w-28"
-                />
+                  class="w-28" />
               </UFormField>
-              <UButton v-if="stopped" :disabled="busy || !validPort" @click="start">{{
-                t('aiAssistant.start')
-              }}</UButton>
-              <UButton v-else :disabled="busy || !running" color="neutral" @click="stop">{{
-                t('aiAssistant.stop')
-              }}</UButton>
+              <UButton v-if="stopped" :disabled="busy || !validPort" @click="start">
+                {{ t('aiAssistant.start') }}
+              </UButton>
+              <UButton v-else :disabled="busy || !running" color="neutral" @click="stop">
+                {{ t('aiAssistant.stop') }}
+              </UButton>
             </div>
             <div class="min-w-0 space-y-1 text-xs">
               <p class="text-muted">{{ t('aiAssistant.endpoint') }}</p>
-              <code class="block break-all"
-                >http://127.0.0.1:{{ running ? assistant.status.port : port }}/mcp</code
-              >
+              <code class="block break-all">
+                http://127.0.0.1:{{ running ? assistant.status.port : port }}/mcp
+              </code>
             </div>
             <UAlert
               v-if="assistant.status.errorCode"
@@ -349,8 +346,7 @@ onUnmounted(() => {
                     ? `aiAssistant.error.${assistant.status.errorCode}`
                     : 'aiAssistant.error.generic',
                 )
-              "
-            />
+              " />
           </UCard>
           <UCard :ui="{ body: 'space-y-3 p-3 sm:p-3' }">
             <div class="space-y-1">
@@ -362,38 +358,37 @@ onUnmounted(() => {
                 :model-value="token || '••••••••••••••••'"
                 readonly
                 :aria-label="t('aiAssistant.token')"
-                class="min-w-0 flex-1"
-              />
+                class="min-w-0 flex-1" />
               <UButton
                 :disabled="!running || busy"
                 color="neutral"
                 variant="outline"
-                @click="token ? forgetCredentials() : connection('show')"
-                >{{ t(token ? 'aiAssistant.hide' : 'aiAssistant.show') }}</UButton
-              >
+                @click="token ? forgetCredentials() : connection('show')">
+                {{ t(token ? 'aiAssistant.hide' : 'aiAssistant.show') }}
+              </UButton>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <UButton
                 :disabled="!running || busy"
                 color="neutral"
                 variant="outline"
-                @click="connection('copy')"
-                >{{ t('aiAssistant.copy') }}</UButton
-              >
+                @click="connection('copy')">
+                {{ t('aiAssistant.copy') }}
+              </UButton>
               <UButton
                 :disabled="!running || busy"
                 color="neutral"
                 variant="outline"
-                @click="connection('config')"
-                >{{ t('aiAssistant.config') }}</UButton
-              >
+                @click="connection('config')">
+                {{ t('aiAssistant.config') }}
+              </UButton>
               <UButton
                 :disabled="!running || busy"
                 color="warning"
                 variant="outline"
-                @click="rotateOpen = true"
-                >{{ t('aiAssistant.rotate') }}</UButton
-              >
+                @click="rotateOpen = true">
+                {{ t('aiAssistant.rotate') }}
+              </UButton>
             </div>
           </UCard>
         </div>
@@ -411,9 +406,9 @@ onUnmounted(() => {
                 run(async () => {
                   accept(await assistant.clearRecords())
                 })
-              "
-              >{{ t('aiAssistant.clear') }}</UButton
-            >
+              ">
+              {{ t('aiAssistant.clear') }}
+            </UButton>
           </div>
           <p class="text-xs text-muted">{{ t('aiAssistant.historyHelp') }}</p>
           <p v-if="!history.length" class="py-4 text-sm text-muted">{{ t('aiAssistant.empty') }}</p>
@@ -421,14 +416,13 @@ onUnmounted(() => {
             <div
               v-for="record in history"
               :key="record.id"
-              class="flex items-center gap-3 border-b border-default p-2 text-xs last:border-0"
-            >
+              class="flex items-center gap-3 border-b border-default p-2 text-xs last:border-0">
               <span class="min-w-0 flex-1 truncate">{{ toolLabel(record.toolName) }}</span>
               <span>{{ t(`aiAssistant.record.${record.status}`) }}</span>
               <time>{{ new Date(record.startedAt).toLocaleTimeString() }}</time>
-              <span v-if="record.finishedAt"
-                >{{ Math.max(0, record.finishedAt - record.startedAt) }} ms</span
-              >
+              <span v-if="record.finishedAt">
+                {{ Math.max(0, record.finishedAt - record.startedAt) }} ms
+              </span>
             </div>
           </div>
         </section>
@@ -438,29 +432,27 @@ onUnmounted(() => {
           <UAlert
             color="info"
             :title="t('aiAssistant.readOnly')"
-            :description="t('aiAssistant.capabilitiesSafety')"
-          />
+            :description="t('aiAssistant.capabilitiesSafety')" />
           <p class="text-xs text-muted">{{ t('aiAssistant.mutationData') }}</p>
           <div class="grid max-h-[calc(100vh-19rem)] grid-cols-2 gap-2 overflow-y-auto">
             <UCard
               v-for="tool in tools"
               :key="tool.name"
               class="min-w-0"
-              :ui="{ body: 'space-y-1.5 p-3 sm:p-3' }"
-            >
+              :ui="{ body: 'space-y-1.5 p-3 sm:p-3' }">
               <div class="flex flex-wrap items-center justify-between gap-1">
                 <h2 class="text-sm font-semibold">{{ toolLabel(tool.name) }}</h2>
                 <UBadge
                   :color="tool.access === 'read' ? 'neutral' : 'warning'"
                   size="sm"
                   variant="subtle"
-                  :data-access="tool.access"
-                  >{{
+                  :data-access="tool.access">
+                  {{
                     t(
                       `aiAssistant.access.${tool.approval && approvals[tool.approval] ? 'automatic' : tool.access}`,
                     )
-                  }}</UBadge
-                >
+                  }}
+                </UBadge>
               </div>
               <code class="block break-all text-xs text-muted">{{ tool.name }}</code>
               <p class="text-xs">{{ t(`aiAssistant.description.${tool.name}`) }}</p>
@@ -475,8 +467,7 @@ onUnmounted(() => {
                   :aria-label="`${toolLabel(tool.name)}: ${t('aiAssistant.autoApprove.label')}`"
                   :data-approval="tool.approval"
                   size="sm"
-                  @update:model-value="updateApproval(tool.approval, $event)"
-                />
+                  @update:model-value="updateApproval(tool.approval, $event)" />
                 <p class="text-xs text-muted">{{ t(`aiAssistant.autoApprove.${tool.name}`) }}</p>
               </div>
             </UCard>
@@ -488,16 +479,15 @@ onUnmounted(() => {
       v-if="center.aiAssistantEnabled"
       v-model:open="rotateOpen"
       :title="t('aiAssistant.rotate')"
-      :description="t('aiAssistant.rotateWarning')"
-    >
-      <template #body
-        ><p>{{ t('aiAssistant.rotateWarning') }}</p></template
-      >
+      :description="t('aiAssistant.rotateWarning')">
+      <template #body>
+        <p>{{ t('aiAssistant.rotateWarning') }}</p>
+      </template>
       <template #footer>
         <UButton color="neutral" @click="rotateOpen = false">{{ t('ui.cancel') }}</UButton>
-        <UButton color="warning" :disabled="busy" @click="rotate">{{
-          t('aiAssistant.rotate')
-        }}</UButton>
+        <UButton color="warning" :disabled="busy" @click="rotate">
+          {{ t('aiAssistant.rotate') }}
+        </UButton>
       </template>
     </UModal>
   </div>

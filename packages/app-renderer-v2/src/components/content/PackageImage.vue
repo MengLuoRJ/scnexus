@@ -37,14 +37,12 @@ watch(
     :alt="props.alt || ''"
     draggable="false"
     class="h-full w-full object-cover object-top"
-    @error="image = null"
-  />
+    @error="image = null" />
   <div
     v-else
     class="flex h-full w-full items-center justify-center bg-elevated text-sm text-muted"
     role="img"
-    :aria-label="props.alt || t('contentMedia.noImage')"
-  >
+    :aria-label="props.alt || t('contentMedia.noImage')">
     {{ t('contentMedia.noImage') }}
   </div>
 </template>

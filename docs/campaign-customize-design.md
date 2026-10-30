@@ -568,14 +568,14 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 
 本轮验证：
 
-| 检查 | 命令与结果 |
-| --- | --- |
+| 检查                          | 命令与结果                                                                                                                                                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | main 战役、安装进度与内容回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__\content.test.ts src\modules\content-package\__test__\install-progress.test.ts src\modules\campaign\__test__\campaign.test.ts`：3 文件、23 项通过 |
-| renderer 流程、IPC 与语言回归 | `pnpm -w exec vitest run --config packages\app-renderer-v2\vitest.config.ts campaign.test campaign-dialogs pages.test ipcs.test`：4 文件、23 项通过 |
-| preload 订阅 | `pnpm --filter @scnexus/app-main exec vitest run -r ..\app-preload src\__test__\desktop.test.ts`：2 项通过 |
-| 类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：均通过 |
-| renderer 构建 | 包级 `pnpm --filter @scnexus/app-renderer-v2 build-only` 因本地失效 Vite shim 失败；使用已有根目录工具 `pnpm -w exec vite build --config packages\app-renderer-v2\vite.config.ts` 通过，未安装依赖或修改工具链 |
-| 静态检查 | 变更文件定向 ESLint、renderer campaign 定向 oxlint 和 `git diff --check` 通过 |
+| renderer 流程、IPC 与语言回归 | `pnpm -w exec vitest run --config packages\app-renderer-v2\vitest.config.ts campaign.test campaign-dialogs pages.test ipcs.test`：4 文件、23 项通过                                                                         |
+| preload 订阅                  | `pnpm --filter @scnexus/app-main exec vitest run -r ..\app-preload src\__test__\desktop.test.ts`：2 项通过                                                                                                                  |
+| 类型检查                      | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：均通过                                                                                                        |
+| renderer 构建                 | 包级 `pnpm --filter @scnexus/app-renderer-v2 build-only` 因本地失效 Vite shim 失败；使用已有根目录工具 `pnpm -w exec vite build --config packages\app-renderer-v2\vite.config.ts` 通过，未安装依赖或修改工具链              |
+| 静态检查                      | 变更文件定向 ESLint、renderer campaign 定向 oxlint 和 `git diff --check` 通过                                                                                                                                               |
 
 ### 安装入口与本地工具修正（2026-10-11）
 
@@ -591,18 +591,17 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 
 约束：描述正文限制 1 MiB；预览单个描述读取超时 120 秒；确认后的批量解压超时 1200 秒。没有实测用户大型战役的耗时/峰值内存，不声称已测得加速比例；仍需真实游戏及大包验收。
 
-| 范围 | 命令与结果 |
-| --- | --- |
+| 范围                              | 命令与结果                                                                                                                                                                                                                                                                                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | main 内容、战役、共享 7z/工坊回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__\campaign.test.ts src\modules\workshop\__test__\workshop-archive.test.ts`：8 文件、60 项通过。现有工坊测试验证 ZIP 元数据替换保留资源，未修改该测试。运行时 TEMP/TMP 指向工作区，避免测试写系统临时目录。 |
-| main/shared 类型 | `pnpm exec tsc --noEmit -p packages\app-main\tsconfig.json`、`pnpm exec tsc --noEmit -p packages\app-shared\tsconfig.json`：通过。 |
-| 后端定向 lint | `pnpm exec oxlint -c .oxlintrc.json` / `pnpm exec eslint`，范围为 content-package 的 content-package.ts/source.ts/transaction.ts/paths.ts、新 archive-performance.test.ts、utils/7zip-wrapper 及共享 content.type.ts：通过；不将已有 legacy tests/scanner 的全目录 lint 问题归为本轮已修复。 |
-| renderer-v2 类型 | `pnpm --filter @scnexus/app-renderer-v2 type-check`：通过（集成协调方验证）。 |
-| IPC/main 编排类型 | `pnpm run typecheck:preload`、`pnpm run typecheck:main`：通过（集成协调方验证）。 |
-| renderer 交互回归 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run campaign.test campaign-dialogs source-picker pages.test ipcs.test`：5 文件、30 项通过（集成协调方验证）。 |
-| renderer 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过（集成协调方验证）。 |
-| main/preload 构建 | `pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过（集成协调方验证）。 |
-| renderer 定向 lint | 定向 ESLint / Oxlint：通过（集成协调方验证；未提供完整路径参数，不虚构完整命令）。 |
-
+| main/shared 类型                  | `pnpm exec tsc --noEmit -p packages\app-main\tsconfig.json`、`pnpm exec tsc --noEmit -p packages\app-shared\tsconfig.json`：通过。                                                                                                                                                                                |
+| 后端定向 lint                     | `pnpm exec oxlint -c .oxlintrc.json` / `pnpm exec eslint`，范围为 content-package 的 content-package.ts/source.ts/transaction.ts/paths.ts、新 archive-performance.test.ts、utils/7zip-wrapper 及共享 content.type.ts：通过；不将已有 legacy tests/scanner 的全目录 lint 问题归为本轮已修复。                      |
+| renderer-v2 类型                  | `pnpm --filter @scnexus/app-renderer-v2 type-check`：通过（集成协调方验证）。                                                                                                                                                                                                                                     |
+| IPC/main 编排类型                 | `pnpm run typecheck:preload`、`pnpm run typecheck:main`：通过（集成协调方验证）。                                                                                                                                                                                                                                 |
+| renderer 交互回归                 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run campaign.test campaign-dialogs source-picker pages.test ipcs.test`：5 文件、30 项通过（集成协调方验证）。                                                                                                                                                 |
+| renderer 构建                     | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过（集成协调方验证）。                                                                                                                                                                                                                                     |
+| main/preload 构建                 | `pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过（集成协调方验证）。                                                                                                                                                                                                                     |
+| renderer 定向 lint                | 定向 ESLint / Oxlint：通过（集成协调方验证；未提供完整路径参数，不虚构完整命令）。                                                                                                                                                                                                                                |
 
 ### 冲突快捷设置与文件大小显示（2026-10-11）
 
@@ -611,7 +610,6 @@ CampaignView 只编排页面状态和通知，安装来源、详细管理、战�
 renderer-v2 的文件树、冲突对比、战役库/详情、来源与安装统计及安装结果统一通过 formatFileSize 显示大小。采用 1000 进制：小于 1000 为 B，达到 1000 切换为 kB，依次为 MB/GB/TB/PB/EB；B 保留整数，其他单位最多两位小数并去掉无意义的尾零。仅影响界面格式，不改变字节数据、安装清单或 IPC。
 
 验证包含单位边界、逐文件切换、批量设置/混合状态、模式与对话框重置、激活显式决策和文件树格式。1000×660 浏览器模拟确认默认全部覆盖、统一保留后逐文件调整、无下拉框以及 B/kB/MB/GB 显示正确。
-
 
 ### campaign 保守自动识别（2026-10-11）
 
@@ -627,16 +625,15 @@ InstallPreview.origin 增加 auto-detected，预览 descriptorPath 为空（不�
 
 验证包含四种战役及 HOTS evolution/LOTV voidprologue、包装根与大小写规范化、components、损坏/内部/大小写描述门槛、目录与真实 ZIP/solid 7z 完整安装→激活→扫描→恢复→卸载、重复安装、来源变化和 Store 失败回滚。真实归档断言 analyze 不调用 readFile/extractExact，确认安装仅调用一次提取子进程。真实 SC2 地图运行与用户大型归档仍需实际环境验收。
 
-
 自动识别验证结果：
 
-| 范围 | 命令与结果 |
-| --- | --- |
+| 范围                                           | 命令与结果                                                                                                                                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | main 自动识别、内容生命周期、战役与 Store 回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__\campaign.test.ts src\stores\__test__`：9 文件、102 项通过，其中自动识别 28 项。 |
-| renderer 自动模式、确认流程与语言 | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run campaign.test campaign-dialogs pages.test`：3 文件、23 项通过。 |
-| 类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。 |
-| 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`、`pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过。 |
-| 静态检查 | detector、content service/source、campaign store、自动识别测试、renderer 安装预览与流程测试定向 ESLint/oxlint，以及 `git diff --check`：通过。 |
+| renderer 自动模式、确认流程与语言              | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run campaign.test campaign-dialogs pages.test`：3 文件、23 项通过。                                                                  |
+| 类型检查                                       | `pnpm run typecheck:main`、`pnpm run typecheck:preload`、`pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。                                                                     |
+| 构建                                           | `pnpm --filter @scnexus/app-renderer-v2 build-only`、`pnpm -w exec vite build --config packages\app-main\vite.config.ts`：通过。                                                         |
+| 静态检查                                       | detector、content service/source、campaign store、自动识别测试、renderer 安装预览与流程测试定向 ESLint/oxlint，以及 `git diff --check`：通过。                                           |
 
 ### customize 自动识别、直接安装与卸载所有权（2026-10-12）
 
@@ -652,12 +649,12 @@ InstalledFile.result=kept 表示没有取得文件删除所有权。卸载跳过
 
 后端验证：
 
-| 范围 | 精确命令与结果 |
-| --- | --- |
-| 内容、真实 ZIP/solid 7z、customize/campaign IPC 与 Store 回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\customize\__test__\customize.test.ts src\modules\campaign\__test__\campaign.test.ts src\stores\__test__`：10 文件、128 项通过。 |
-| preload 两域进度订阅、任务 ID 转发 | `pnpm run test:preload`：1 文件、4 项通过。 |
-| 独立类型检查 | `pnpm run typecheck:main`、`pnpm run typecheck:preload`：通过。 |
-| 定向静态检查 | `pnpm exec eslint` 指定 content-package detector/service/source、auto-detection/recovery 测试、customize service/IPC/测试、customize Store、共享 content-api/desktop 类型、preload desktop/测试及 v2 customize IPC：通过。`pnpm exec oxlint -c .oxlintrc.json` 同范围（不含既有 recovery.test.ts）：通过。recovery.test.ts 的旧 unused imports/toThrow-message oxlint 问题不在本次修改范围。 |
+| 范围                                                          | 精确命令与结果                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 内容、真实 ZIP/solid 7z、customize/campaign IPC 与 Store 回归 | `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\customize\__test__\customize.test.ts src\modules\campaign\__test__\campaign.test.ts src\stores\__test__`：10 文件、128 项通过。                                                                                                                                                                       |
+| preload 两域进度订阅、任务 ID 转发                            | `pnpm run test:preload`：1 文件、4 项通过。                                                                                                                                                                                                                                                                                                                                                  |
+| 独立类型检查                                                  | `pnpm run typecheck:main`、`pnpm run typecheck:preload`：通过。                                                                                                                                                                                                                                                                                                                              |
+| 定向静态检查                                                  | `pnpm exec eslint` 指定 content-package detector/service/source、auto-detection/recovery 测试、customize service/IPC/测试、customize Store、共享 content-api/desktop 类型、preload desktop/测试及 v2 customize IPC：通过。`pnpm exec oxlint -c .oxlintrc.json` 同范围（不含既有 recovery.test.ts）：通过。recovery.test.ts 的旧 unused imports/toThrow-message oxlint 问题不在本次修改范围。 |
 
 回归覆盖目录/真实 ZIP/solid 7z 的分析→直接安装→扫描→卸载、内部及损坏描述门槛、同名空目录、metadata.txt 非描述、components 与任意 Maps 子路径、keep/overwrite 所有权、共享 keep/delete、全部保留无资源提取、来源/归档变更、提取期间目标变化、Store 失败回滚，以及 sender-only 进度订阅与取消。用户真实游戏启动和大型归档仍需实际环境验收。
 
@@ -669,12 +666,12 @@ InstalledFile.result=kept 表示没有取得文件删除所有权。卸载跳过
 
 父级最终集成验证（2026-10-12）：
 
-| 范围 | 精确命令与结果 |
-| --- | --- |
-| renderer-v2 类型检查 | `pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。 |
+| 范围                                                  | 精确命令与结果                                                                                                                                                                                                                                              |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| renderer-v2 类型检查                                  | `pnpm --filter @scnexus/app-renderer-v2 type-check`：通过。                                                                                                                                                                                                 |
 | customize、卸载确认、campaign 回归及共用来源/冲突/IPC | `pnpm --filter @scnexus/app-renderer-v2 test:unit --run customize.test uninstall-dialog campaign.test campaign-dialogs source-picker conflict-choices file-size pages.test ipcs.test`：9 文件、62 项通过（含刷新失败与 customize 描述门槛本地化消息回归）。 |
-| renderer-v2 构建 | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过。 |
-| 浏览器 mock 联调 | 1000×660 验证 `/customize` 仅两种安装模式、mock 安装完成无激活提示、卸载确认共享选择、loading 与 toast：通过；不是实机游戏验收。 |
+| renderer-v2 构建                                      | `pnpm --filter @scnexus/app-renderer-v2 build-only`：通过。                                                                                                                                                                                                 |
+| 浏览器 mock 联调                                      | 1000×660 验证 `/customize` 仅两种安装模式、mock 安装完成无激活提示、卸载确认共享选择、loading 与 toast：通过；不是实机游戏验收。                                                                                                                            |
 
 customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`、`AUTO_LAYOUT_UNSUPPORTED`；没有新增诊断代码，也不会返回 campaign 专用的 `AUTO_CAMPAIGN_AMBIGUOUS`/`AUTO_CAMPAIGN_NOT_FOUND`。`AUTO_DESCRIPTOR_PRESENT` 在 customize 中仅指 package.json，界面说明不应将 metadata.txt 说成 customize 的阻断描述。
 
@@ -686,42 +683,39 @@ customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`
 - 进度通知是非提交依赖。回调、窗口投递和日志失败不能从 EventEmitter 逃逸、打断事务或把 completed 改报 failed；通知失败使用 M018 警告。7z stdout/stderr/process 错误记录后在 close 统一结算，超时优先保留超时定义。
 - 警告通过 main 每次 IPC 调用的 AsyncLocalStorage 收集，只在成功结果返回一次；并发调用、后续调用及失败结果互不泄漏。renderer 消费可选 warnings，但不得因为警告撤销已提交 data。
 
-
 ### 本次异常审计验证
 
-| 命令 | 结果 |
-| ---- | ---- |
-| `pnpm run typecheck:main` | 通过。 |
+| 命令                                                                                                                                                                         | 结果                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm run typecheck:main`                                                                                                                                                    | 通过。                                                                                                                                                      |
 | `pnpm --filter @scnexus/app-main test src\utils\__test__\ipc-util.test.ts src\modules\content-package\__test__ src\modules\campaign\__test__ src\modules\customize\__test__` | 12 文件、138 项通过；包含请求隔离、迟到警告、日志失败、真实文件读写错误注入、清理 EPERM、回滚 M043、7z exit 1 完整/缺失输出及 stream/process/timeout 回归。 |
-| `pnpm --filter @scnexus/app-main test src\modules\workshop\__test__\workshop-archive.test.ts` | 1 文件、1 项通过，保留 wrapper workshop 兼容行为。 |
-| `pnpm --filter @scnexus/app-main lint` | 未通过；包级存在旧测试 mock 类型/条件断言及旧 IPC explicit-any 等基线，不宣称全包 lint 清洁。 |
-| `git diff --check -- packages\app-main docs\logging-and-errors.md docs\campaign-customize-design.md` | 通过。 |
+| `pnpm --filter @scnexus/app-main test src\modules\workshop\__test__\workshop-archive.test.ts`                                                                                | 1 文件、1 项通过，保留 wrapper workshop 兼容行为。                                                                                                          |
+| `pnpm --filter @scnexus/app-main lint`                                                                                                                                       | 未通过；包级存在旧测试 mock 类型/条件断言及旧 IPC explicit-any 等基线，不宣称全包 lint 清洁。                                                               |
+| `git diff --check -- packages\app-main docs\logging-and-errors.md docs\campaign-customize-design.md`                                                                         | 通过。                                                                                                                                                      |
 
 本次新增文件与修改的实现、测试使用 `pnpm exec oxlint -c .oxlintrc.json` 显式指定路径检查通过；同组 `pnpm exec eslint` 排除已有 `ipc-util.ts` explicit-any 签名后通过。未修改其他旧模块/测试来清除全包 lint 基线。构建验证由父任务统一执行，结果见下表。
-
 
 ### 父任务最终构建复验
 
 以下结果由父任务复验并回传；main 域回归再次通过 138 项，workshop archive 回归再次通过 1 项；main、preload、renderer-v2 三包类型检查均通过。
 
-| 命令 | 结果 |
-| ---- | ---- |
-| `pnpm --filter @scnexus/app-renderer-v2 build-only` | 通过。 |
-| `pnpm exec vite build --config packages\app-main\vite.config.ts` | 从仓库根执行，通过。 |
+| 命令                                                                | 结果                 |
+| ------------------------------------------------------------------- | -------------------- |
+| `pnpm --filter @scnexus/app-renderer-v2 build-only`                 | 通过。               |
+| `pnpm exec vite build --config packages\app-main\vite.config.ts`    | 从仓库根执行，通过。 |
 | `pnpm exec vite build --config packages\app-preload\vite.config.ts` | 从仓库根执行，通过。 |
 
 清理 warning 不代表自动恢复已完成：成功提交后的备份/暂存/选择列表清理失败会保留相应文件，尚无自动重试清理；回滚失败保留事务备份并以 M043 拒绝，绝不因后续清理或通知失败改报成功。失败结果不附加 warnings，次要警告通过 warn 日志安全记录；默认 error 阈值可能不输出 warn，但成功 DTO 的 warnings 不受日志阈值影响。尚无进程骤停后的自动事务恢复保证。
-
 
 ### renderer/preload 回归与既有基线
 
 父任务回传以下验证结果；本次未修改失败用例与相关 Vite 配置，不修复无关基线。
 
-| 命令 | 结果 |
-| ---- | ---- |
-| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run error-normalization content-notifications campaign.test campaign-dialogs customize.test uninstall-dialog ipcs.test pages.test` | 8 文件、58 项通过。 |
-| `pnpm run test:preload` | 7 项通过。 |
-| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run` | 全量 84 项中 83 项通过、1 项失败：既有 `icons.test` 正则仅识别双引号 `i-tabler` 字符串，而 `vite.config.ts` 使用单引号；两文件均无本次 diff。不得将全量 v2 测试描述为全部通过。 |
+| 命令                                                                                                                                                                                   | 结果                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run error-normalization content-notifications campaign.test campaign-dialogs customize.test uninstall-dialog ipcs.test pages.test` | 8 文件、58 项通过。                                                                                                                                                             |
+| `pnpm run test:preload`                                                                                                                                                                | 7 项通过。                                                                                                                                                                      |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run`                                                                                                                               | 全量 84 项中 83 项通过、1 项失败：既有 `icons.test` 正则仅识别双引号 `i-tabler` 字符串，而 `vite.config.ts` 使用单引号；两文件均无本次 diff。不得将全量 v2 测试描述为全部通过。 |
 
 ### 统一来源分类与跨页面导入验证（2026-10-13）
 
@@ -729,40 +723,40 @@ customize 自动诊断复用 `AUTO_DESCRIPTOR_PRESENT`、`AUTO_LAYOUT_AMBIGUOUS`
 
 以下命令均从仓库根执行。renderer 全量、构建及 browser 联调结果由父任务回传；后端、preload 和 renderer IPC 结果由分类实施任务执行。
 
-| 精确命令或验证 | 结果 |
-| --- | --- |
-| `pnpm --filter @scnexus/app-main test src/modules/content-package src/utils/__test__/ipc-util.test.ts --reporter=dot --testTimeout=30000` | 11 文件、164 项通过；其中新分类及分类 IPC 32 项。默认 5 秒下既有 solid 7z 大清单测试曾超时，30 秒复跑全部通过，失败 fixture 已清理。 |
-| `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__ src\modules\customize\__test__ src\utils\__test__\ipc-util.test.ts` | 父任务最终扩大回归：14 文件、170 项通过，包含领域 campaign/customize 与 IPC 工具。 |
-| `pnpm --filter @scnexus/app-main exec vitest run -r ..\app-preload --reporter=dot` | 1 文件、8 项通过。根 `pnpm test:preload --reporter=dot` 因根目录未提供 vitest 可执行文件失败；使用已声明于 app-main 的 Vitest 执行上述 preload 命令通过，未安装新依赖。 |
-| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run src/ipcs/internal/__tests__/ipcs.test.ts --reporter=dot` | 1 文件、9 项通过，含冲突失败 DTO、choice 转发及响应式输入快照。 |
-| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run` | 16 文件、102 项通过（父任务最终全量结果）。 |
-| `pnpm --filter @scnexus/app-renderer-v2 build-only` | 通过（父任务）。不代替类型检查。 |
-| `pnpm --filter @scnexus/app-main build` | 通过（父任务最终包级构建）。 |
-| `pnpm --filter @scnexus/app-preload build` | 通过（父任务最终包级构建）。 |
-| `pnpm run typecheck:shared` | 通过。 |
-| `pnpm run typecheck:main` | 通过。 |
-| `pnpm run typecheck:preload` | 通过。 |
-| `pnpm --filter @scnexus/app-renderer-v2 type-check` | 未通过；仅既有 `src/main.ts(19)` 的 `app.use(ui)` Plugin 类型不匹配（Nuxt UI/Vue 类型版本），未修改无关入口或依赖。新增 IPC 测试的索引类型问题已修复。 |
-| `pnpm exec oxlint -c .oxlintrc.json packages\app-main\src\modules\content-package\classification.ts packages\app-main\src\modules\content-package\__test__\classification.test.ts packages\app-main\src\modules\content-package\__test__\classification-ipc.test.ts` | 通过。其他精确指定的本次实现文件检查同样通过；扩大到既有整个 content-package/renderer IPC 目录会遇到旧 mock 类型等 lint 基线，不宣称全仓 lint 清洁。 |
-| `pnpm exec eslint packages\app-main\src\modules\content-package\classification.ts packages\app-main\src\modules\content-package\__test__\classification.test.ts packages\app-main\src\modules\content-package\__test__\classification-ipc.test.ts` | 通过。 |
-| `git diff --check` | 通过。 |
-| 1000×660 mock browser | 从 campaign 页面选择来源收到 M064，选择 package-json 后带 choice 重新分析、导航 `/customize` 并打开正确且可安装的预览；路由后没有重复分析。通过（父任务），不是真实游戏验收。 |
+| 精确命令或验证                                                                                                                                                                                                                                                       | 结果                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @scnexus/app-main test src/modules/content-package src/utils/__test__/ipc-util.test.ts --reporter=dot --testTimeout=30000`                                                                                                                            | 11 文件、164 项通过；其中新分类及分类 IPC 32 项。默认 5 秒下既有 solid 7z 大清单测试曾超时，30 秒复跑全部通过，失败 fixture 已清理。                                          |
+| `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__ src\modules\campaign\__test__ src\modules\customize\__test__ src\utils\__test__\ipc-util.test.ts`                                                                                         | 父任务最终扩大回归：14 文件、170 项通过，包含领域 campaign/customize 与 IPC 工具。                                                                                            |
+| `pnpm --filter @scnexus/app-main exec vitest run -r ..\app-preload --reporter=dot`                                                                                                                                                                                   | 1 文件、8 项通过。根 `pnpm test:preload --reporter=dot` 因根目录未提供 vitest 可执行文件失败；使用已声明于 app-main 的 Vitest 执行上述 preload 命令通过，未安装新依赖。       |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run src/ipcs/internal/__tests__/ipcs.test.ts --reporter=dot`                                                                                                                                                     | 1 文件、9 项通过，含冲突失败 DTO、choice 转发及响应式输入快照。                                                                                                               |
+| `pnpm --filter @scnexus/app-renderer-v2 test:unit --run`                                                                                                                                                                                                             | 16 文件、102 项通过（父任务最终全量结果）。                                                                                                                                   |
+| `pnpm --filter @scnexus/app-renderer-v2 build-only`                                                                                                                                                                                                                  | 通过（父任务）。不代替类型检查。                                                                                                                                              |
+| `pnpm --filter @scnexus/app-main build`                                                                                                                                                                                                                              | 通过（父任务最终包级构建）。                                                                                                                                                  |
+| `pnpm --filter @scnexus/app-preload build`                                                                                                                                                                                                                           | 通过（父任务最终包级构建）。                                                                                                                                                  |
+| `pnpm run typecheck:shared`                                                                                                                                                                                                                                          | 通过。                                                                                                                                                                        |
+| `pnpm run typecheck:main`                                                                                                                                                                                                                                            | 通过。                                                                                                                                                                        |
+| `pnpm run typecheck:preload`                                                                                                                                                                                                                                         | 通过。                                                                                                                                                                        |
+| `pnpm --filter @scnexus/app-renderer-v2 type-check`                                                                                                                                                                                                                  | 未通过；仅既有 `src/main.ts(19)` 的 `app.use(ui)` Plugin 类型不匹配（Nuxt UI/Vue 类型版本），未修改无关入口或依赖。新增 IPC 测试的索引类型问题已修复。                        |
+| `pnpm exec oxlint -c .oxlintrc.json packages\app-main\src\modules\content-package\classification.ts packages\app-main\src\modules\content-package\__test__\classification.test.ts packages\app-main\src\modules\content-package\__test__\classification-ipc.test.ts` | 通过。其他精确指定的本次实现文件检查同样通过；扩大到既有整个 content-package/renderer IPC 目录会遇到旧 mock 类型等 lint 基线，不宣称全仓 lint 清洁。                          |
+| `pnpm exec eslint packages\app-main\src\modules\content-package\classification.ts packages\app-main\src\modules\content-package\__test__\classification.test.ts packages\app-main\src\modules\content-package\__test__\classification-ipc.test.ts`                   | 通过。                                                                                                                                                                        |
+| `git diff --check`                                                                                                                                                                                                                                                   | 通过。                                                                                                                                                                        |
+| 1000×660 mock browser                                                                                                                                                                                                                                                | 从 campaign 页面选择来源收到 M064，选择 package-json 后带 choice 重新分析、导航 `/customize` 并打开正确且可安装的预览；路由后没有重复分析。通过（父任务），不是真实游戏验收。 |
 
 分类/重新分析矩阵：
 
-| 来源情况 | 期望与已验证结果 |
-| --- | --- |
-| 仅 package.json | 按内部 campaign/customize 分类；即使 customize 声明了官方路径也不改变描述类型。 |
-| 仅 metadata.txt | campaign；正常提供 CCM 与转换后的 SCNexus 计划。 |
-| 双描述、同为 campaign | 正常独立多模式分析，不允许 choice 强行覆盖无冲突结果。 |
-| package customize + metadata campaign | 首次失败 M064；package-json 重分析只提供 customize SCNexus 计划且无 CCM 原文；metadata-txt 重分析只解析 CCM 资源并提供 campaign 计划。目录和 solid 7z 的两种选择及实际安装均通过。 |
-| 坏 JSON、坏 CCM 字段、描述文件同名目录、多个最外层有效包根 | M034 业务失败，不静默忽略或回退 auto。 |
-| 无外部描述、有标准官方地图 | campaign；WOL、HOTS、evolution、LOTV、prologue、NCO、包装根及大小写变体通过。 |
-| 无描述、仅空官方目录 | 目录/归档显式目录条目均分类 campaign；没有唯一可安装战役时 auto 预览为空并返回 `AUTO_CAMPAIGN_NOT_FOUND`，不重分类 customize，不伪造可安装内容。 |
-| 无描述、多战役/歧义布局 | 保持 campaign，返回不可用预览及对应诊断。 |
-| 无描述、无官方目录 | customize；标准普通资源可 auto，完全空来源仅诊断不可安装。 |
-| Campaign 位于资源 components 内或仅为普通目录名 | 不作为官方目录分类证据；components 内描述文件不作外部分类描述，但严格既有 auto 阻断规则仍有效。 |
-| 来源修改与提前提取 | 分析中的归档修改、预览后的描述修改均拒绝；每次 dual 分析仅一次 list、每个描述正文读取一次，确认前没有资源 extractExact。 |
+| 来源情况                                                   | 期望与已验证结果                                                                                                                                                                   |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 仅 package.json                                            | 按内部 campaign/customize 分类；即使 customize 声明了官方路径也不改变描述类型。                                                                                                    |
+| 仅 metadata.txt                                            | campaign；正常提供 CCM 与转换后的 SCNexus 计划。                                                                                                                                   |
+| 双描述、同为 campaign                                      | 正常独立多模式分析，不允许 choice 强行覆盖无冲突结果。                                                                                                                             |
+| package customize + metadata campaign                      | 首次失败 M064；package-json 重分析只提供 customize SCNexus 计划且无 CCM 原文；metadata-txt 重分析只解析 CCM 资源并提供 campaign 计划。目录和 solid 7z 的两种选择及实际安装均通过。 |
+| 坏 JSON、坏 CCM 字段、描述文件同名目录、多个最外层有效包根 | M034 业务失败，不静默忽略或回退 auto。                                                                                                                                             |
+| 无外部描述、有标准官方地图                                 | campaign；WOL、HOTS、evolution、LOTV、prologue、NCO、包装根及大小写变体通过。                                                                                                      |
+| 无描述、仅空官方目录                                       | 目录/归档显式目录条目均分类 campaign；没有唯一可安装战役时 auto 预览为空并返回 `AUTO_CAMPAIGN_NOT_FOUND`，不重分类 customize，不伪造可安装内容。                                   |
+| 无描述、多战役/歧义布局                                    | 保持 campaign，返回不可用预览及对应诊断。                                                                                                                                          |
+| 无描述、无官方目录                                         | customize；标准普通资源可 auto，完全空来源仅诊断不可安装。                                                                                                                         |
+| Campaign 位于资源 components 内或仅为普通目录名            | 不作为官方目录分类证据；components 内描述文件不作外部分类描述，但严格既有 auto 阻断规则仍有效。                                                                                    |
+| 来源修改与提前提取                                         | 分析中的归档修改、预览后的描述修改均拒绝；每次 dual 分析仅一次 list、每个描述正文读取一次，确认前没有资源 extractExact。                                                           |
 
 上述结果不承诺实机 StarCraft II 启动、不同平台文件系统或超大型真实归档已经验收；本次未提交 Git commit。
 

@@ -18,18 +18,18 @@
 
 使用 DESKTOP 显式双 Token 协议，不使用 `/auth/web/*`、Cookie 或 CSRF 流程，无全局 `/api` 前缀。接受完整 2xx 响应，不能只接受 200。
 
-| 能力 | 端点 |
-| --- | --- |
-| 注册策略 | GET `/registration-policy` |
-| 邮箱密码登录 | POST `/auth/login` |
-| MFA 登录 | POST `/auth/two-factor/login` |
-| 验证码申请 | POST `/auth/challenges`，REGISTER/RESET |
-| 注册 | POST `/auth/register` |
-| 忘记密码 | POST `/auth/password/reset` |
-| 刷新 | POST `/auth/refresh` |
-| 当前退出 | DELETE `/sessions/current` |
-| 用户自查 | GET `/users/me` |
-| 权限自查 | GET `/users/me/authorization` |
+| 能力         | 端点                                    |
+| ------------ | --------------------------------------- |
+| 注册策略     | GET `/registration-policy`              |
+| 邮箱密码登录 | POST `/auth/login`                      |
+| MFA 登录     | POST `/auth/two-factor/login`           |
+| 验证码申请   | POST `/auth/challenges`，REGISTER/RESET |
+| 注册         | POST `/auth/register`                   |
+| 忘记密码     | POST `/auth/password/reset`             |
+| 刷新         | POST `/auth/refresh`                    |
+| 当前退出     | DELETE `/sessions/current`              |
+| 用户自查     | GET `/users/me`                         |
+| 权限自查     | GET `/users/me/authorization`           |
 
 `/users/me` 和 `/users/me/authorization` 的成功响应在快照中缺少完整 Schema；本期只按后端 Electron 文档明确的字段建立最小运行时校验，不宣称具备自动生成的完整 SDK。其他缺失响应不推测。文档与接口冲突时记录问题交后端维护者，不自行改后端。
 
@@ -109,20 +109,20 @@ Zod 依赖声明于 renderer-v2，仅用于用户交互输入：登录、注册�
 
 2026-10-21 验证记录：
 
-| 命令/验证 | 结果 |
-| --- | --- |
-| `pnpm run lint:oxlint` | 全仓通过 |
-| `pnpm run typecheck` | shared/main/preload/renderer 全部通过 |
-| `pnpm run build` | 最终 main、sandbox preload、v2 生产构建通过，无重复自动导入告警 |
-| `pnpm run test:build` | 15 项通过 |
-| `pnpm --filter @scnexus/app-main test src\\modules\\auth\\__test__ src\\modules\\window\\__test__ src\\utils\\__test__\\ipc-source.test.ts src\\modules\\__test__\\init.test.ts src\\modules\\logging\\__test__\\logging.test.ts --maxWorkers=1` | 40 项通过 |
-| `pnpm --filter @scnexus/app-renderer-v2 exec vitest run --maxWorkers=1` | 22 文件、156 项通过 |
-| `pnpm exec vitest run -r packages\\app-preload --maxWorkers=1` | 9 项通过 |
-| `pnpm --filter @scnexus/app-main test --maxWorkers=1` | 276 通过、1 项旧归档安装目录 rename EPERM 失败；未改动该无关逻辑，不宣称全量通过 |
-| 真实 Electron 隔离 userData 冒烟 | app://localhost、sandbox renderer 无 require、认证桥接与 getSnapshot 请求成功；未使用真实账号 |
-| 只读 GET `/registration-policy`，Origin=http://localhost:5173 | HTTP200、invitationRequired=false、允许来源精确返回 localhost:5173 |
-| 浏览器无桥接账号页 | 账号表单正确渲染且禁用，显示桌面专用提示，本地导航保留 |
-| 只读安全代码审查 | 未报告可确认漏洞；不等于真实生产安全验收 |
+| 命令/验证                                                                                                                                                                                                                                        | 结果                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `pnpm run lint:oxlint`                                                                                                                                                                                                                           | 全仓通过                                                                                      |
+| `pnpm run typecheck`                                                                                                                                                                                                                             | shared/main/preload/renderer 全部通过                                                         |
+| `pnpm run build`                                                                                                                                                                                                                                 | 最终 main、sandbox preload、v2 生产构建通过，无重复自动导入告警                               |
+| `pnpm run test:build`                                                                                                                                                                                                                            | 15 项通过                                                                                     |
+| `pnpm --filter @scnexus/app-main test src\\modules\\auth\\__test__ src\\modules\\window\\__test__ src\\utils\\__test__\\ipc-source.test.ts src\\modules\\__test__\\init.test.ts src\\modules\\logging\\__test__\\logging.test.ts --maxWorkers=1` | 40 项通过                                                                                     |
+| `pnpm --filter @scnexus/app-renderer-v2 exec vitest run --maxWorkers=1`                                                                                                                                                                          | 22 文件、156 项通过                                                                           |
+| `pnpm exec vitest run -r packages\\app-preload --maxWorkers=1`                                                                                                                                                                                   | 9 项通过                                                                                      |
+| `pnpm --filter @scnexus/app-main test --maxWorkers=1`                                                                                                                                                                                            | 276 通过、1 项旧归档安装目录 rename EPERM 失败；未改动该无关逻辑，不宣称全量通过              |
+| 真实 Electron 隔离 userData 冒烟                                                                                                                                                                                                                 | app://localhost、sandbox renderer 无 require、认证桥接与 getSnapshot 请求成功；未使用真实账号 |
+| 只读 GET `/registration-policy`，Origin=http://localhost:5173                                                                                                                                                                                    | HTTP200、invitationRequired=false、允许来源精确返回 localhost:5173                            |
+| 浏览器无桥接账号页                                                                                                                                                                                                                               | 账号表单正确渲染且禁用，显示桌面专用提示，本地导航保留                                        |
+| 只读安全代码审查                                                                                                                                                                                                                                 | 未报告可确认漏洞；不等于真实生产安全验收                                                      |
 
 尚未完成：真实注册/验证码投递、真实 MFA 登录及恢复码消费、真实双 Token 联调、Windows 凭据损坏/系统策略人工验收、Linux secret-service、生产 HTTPS/CORS/域名部署与正式安装包验收。未自动注册、发码或重置账号；后端文档与源文件均未修改。生产地址已固定但未部署，不声称已通过生产认证。
 

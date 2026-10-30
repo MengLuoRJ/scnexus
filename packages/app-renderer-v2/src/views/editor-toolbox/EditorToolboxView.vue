@@ -12,13 +12,12 @@ const { t } = useI18n()
         to="/editor-toolbox/encoding"
         color="neutral"
         variant="outline"
-        class="flex flex-col items-center gap-3 p-5 text-center"
-      >
+        class="flex flex-col items-center gap-3 p-5 text-center">
         <img :src="toolIcon" alt="" draggable="false" class="size-14 object-contain" />
         <span class="font-semibold">{{ t('toolbox.encoding') }}</span>
-        <span class="whitespace-normal text-xs font-normal text-muted">{{
-          t('toolbox.encodingHint')
-        }}</span>
+        <span class="whitespace-normal text-xs font-normal text-muted">
+          {{ t('toolbox.encodingHint') }}
+        </span>
       </UButton>
     </div>
   </section>

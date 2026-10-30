@@ -13,7 +13,9 @@ test('preserves printable ASCII while escaping quotes, backslashes and control b
 })
 test('keeps ASCII suffixes unchanged in mixed text', () => {
   expect(encodeText('测试ABC123+-', 'raw')).toBe('\\xe6\\xb5\\x8b\\xe8\\xaf\\x95ABC123+-')
-  expect(encodeText('测试ABC123+-', 'text')).toBe('StringToText("\\xe6\\xb5\\x8b\\xe8\\xaf\\x95ABC123+-")')
+  expect(encodeText('测试ABC123+-', 'text')).toBe(
+    'StringToText("\\xe6\\xb5\\x8b\\xe8\\xaf\\x95ABC123+-")',
+  )
 })
 test('empty input has valid wrappers and does not trim whitespace', () => {
   expect(encodeText('', 'raw')).toBe('')

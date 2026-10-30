@@ -71,4 +71,4 @@ console.log(result.summary.mapName)
 
 ## 当前实现状态
 
-当前版本为“可靠的基础识别 + 组件清单 + metadata contract”版，并没有声称完成官方协议的全部解码；它是为后续引入官方 `s2protocol` 或生成式协议表奠定结构。
+当前仅实现扩展名候选识别、静态组件清单与 metadata 类型契约。`inspectReplayFile` 尚未读取文件内容，不验证 MPQ header，不检测实际组件，不解码协议。因此 `.SC2Replay` 路径的 `detected: true` 只表示扩展名匹配，返回 `unsupported`，未知字段为 `null`、玩家为空、所有组件 `found: false`；非录像扩展名同样返回 `unsupported`，但 `detected: false`。不返回虚构地图、版本、时长或玩家。上文模块设计及版本字段是目标设计，并非已经完成的能力。

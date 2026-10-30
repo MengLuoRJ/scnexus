@@ -4,7 +4,9 @@ import { settingRepository } from '../../stores/setting'
 import { ipcHandleRegister, ipcHandleRemove } from '../../utils/ipc-util'
 import { assertIpcSource } from '../../utils/ipc-source'
 import { createAiAssistantService } from './service'
-import { createReadOnlyAiAssistantTools } from './tools'
+import { createAiAssistantTools } from './tools'
+import * as actions from './campaign-actions'
+import * as mutations from './mutations'
 import * as local from './local-data'
 
 let service: ReturnType<typeof createAiAssistantService> | undefined
@@ -35,7 +37,7 @@ export function initAiAssistantModule() {
   if (service) return
   service = createAiAssistantService({
     isEnabled: () => settingRepository.getSnapshot().aiAssistantEnabled,
-    tools: createReadOnlyAiAssistantTools(local),
+    tools: createAiAssistantTools({ ...local, ...actions, ...mutations }),
     onStatusChanged: (value) => publish('ai-assistant:statusChanged', value),
     onRecordChanged: (value) => publish('ai-assistant:recordChanged', value),
   })

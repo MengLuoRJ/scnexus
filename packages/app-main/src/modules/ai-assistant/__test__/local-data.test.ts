@@ -74,7 +74,7 @@ test('unconfigured game does not prevent app status or download queries', async 
     paths: null,
     capabilities: { client: false, switcher: false, editor: false },
   })
-  expect(await readAppStatus()).toMatchObject({ gameConfigured: false, readOnly: true })
+  expect(await readAppStatus()).toMatchObject({ gameConfigured: false, readOnly: false })
   await expect(readCampaigns(0, 10)).rejects.toThrow('GAME_NOT_CONFIGURED')
   expect(await readDownloads(0, 10)).toMatchObject({ total: 1 })
 })

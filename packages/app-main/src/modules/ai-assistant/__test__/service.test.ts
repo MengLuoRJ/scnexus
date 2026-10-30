@@ -82,6 +82,58 @@ function raw(
   })
 }
 describe('local stateless MCP service', () => {
+  it.each(['requires-review', 'partially-completed', 'cancelled'] as const)(
+    'does not report action outcome %s as success',
+    async (status) => {
+      const service = await setup([
+        {
+          name: 'action',
+          description: 'Controlled operation',
+          inputSchema: {},
+          readOnly: false,
+          execute: async () => ({ id: 'local', status }),
+        },
+      ])
+      const client = await clientFor(service)
+      expect((await client.callTool({ name: 'action', arguments: {} })).isError).toBe(true)
+      expect(service.listRecords()[0].status).toBe(status === 'cancelled' ? 'cancelled' : 'failed')
+    },
+  )
+  it('keeps committed mutation outcomes accurate and drains them before stopping', async () => {
+    let finish!: () => void
+    const service = await setup([
+      {
+        name: 'write',
+        description: 'Controlled mutation',
+        inputSchema: {},
+        readOnly: false,
+        execute: async (_args, _signal, beginMutation) => {
+          beginMutation!()
+          await new Promise<void>((resolve) => {
+            finish = resolve
+          })
+          return { changed: true }
+        },
+      },
+    ])
+    const client = await clientFor(service)
+    const tools = await client.listTools()
+    expect(tools.tools[0].annotations).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+    })
+    const call = client.callTool({ name: 'write', arguments: {} }).catch(() => undefined)
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'))
+    const stopped = service.stop()
+    await vi.waitFor(() => expect(service.getStatus().state).toBe('stopping'))
+    expect(service.listRecords()[0].status).toBe('running')
+    finish()
+    await stopped
+    await call
+    expect(service.listRecords()[0].status).toBe('succeeded')
+    expect(service.getStatus().state).toBe('stopped')
+  })
   it('requires manual start and validates enabled and port gates', async () => {
     let enabled = false
     const service = createAiAssistantService({ isEnabled: () => enabled, tools: [] })

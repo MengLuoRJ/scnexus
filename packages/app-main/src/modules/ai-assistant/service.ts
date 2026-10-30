@@ -15,7 +15,18 @@ export interface AiAssistantServiceOptions {
   onStatusChanged?: (status: AiAssistantStatus) => void
   onRecordChanged?: (record: AiOperationRecord) => void
 }
-const safeErrors = new Set(['GAME_NOT_CONFIGURED', 'CONTENT_NOT_FOUND', 'TASK_NOT_FOUND'])
+const safeErrors = new Set([
+  'GAME_NOT_CONFIGURED',
+  'CONTENT_NOT_FOUND',
+  'TASK_NOT_FOUND',
+  'CANCELLED',
+  'ACTION_REQUIRES_REVIEW',
+  'ACTION_CANCELLED',
+  'CONFIRMATION_UNAVAILABLE',
+  'ACTION_BUSY',
+  'CAMPAIGN_NOT_ACTIVE',
+  'CAMPAIGN_STATE_CHANGED',
+])
 export function createAiAssistantService(options: AiAssistantServiceOptions) {
   let status: AiAssistantStatus = { state: 'stopped', port: 17861 }
   let token = randomBytes(32).toString('base64url')
@@ -23,6 +34,7 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
   let disposed = false
   let lifecycle = Promise.resolve()
   const records: AiOperationRecord[] = []
+  const mutations = new Set<Promise<void>>()
   function publishStatus(next: AiAssistantStatus) {
     status = next
     options.onStatusChanged?.({ ...status })
@@ -31,7 +43,7 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
     options.onRecordChanged?.({ ...record })
   }
   function createServer(signal: AbortSignal) {
-    const server = new McpServer({ name: 'scnexus-local-readonly', version: '1.0.0' })
+    const server = new McpServer({ name: 'scnexus-local-assistant', version: '1.0.0' })
     for (const tool of options.tools) {
       server.registerTool(
         tool.name,
@@ -39,9 +51,9 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
           description: tool.description,
           inputSchema: strictObject(tool.inputSchema),
           annotations: {
-            readOnlyHint: true,
-            destructiveHint: false,
-            idempotentHint: true,
+            readOnlyHint: tool.readOnly !== false,
+            destructiveHint: tool.readOnly === false,
+            idempotentHint: tool.readOnly !== false,
             openWorldHint: false,
           },
         },
@@ -68,7 +80,18 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
           const cancelled = new Promise<never>((_resolve, reject) => {
             rejectCancelled = reject
           })
+          let committing = false
+          let completeMutation!: () => void
+          const mutationDone = new Promise<void>((resolve) => {
+            completeMutation = resolve
+          })
+          const beginMutation = () => {
+            signal.throwIfAborted()
+            committing = true
+            mutations.add(mutationDone)
+          }
           const cancel = () => {
+            if (committing) return
             finish('cancelled', 'CANCELLED')
             rejectCancelled(new Error('CANCELLED'))
           }
@@ -76,11 +99,28 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
           try {
             signal.throwIfAborted()
             const result = await Promise.race([
-              tool.execute(args as Record<string, unknown>, signal),
+              tool.execute(args as Record<string, unknown>, signal, beginMutation),
               cancelled,
             ])
-            signal.throwIfAborted()
+            if (!committing) signal.throwIfAborted()
             const text = JSON.stringify(result ?? null)
+            const actionStatus =
+              tool.readOnly === false && result && typeof result === 'object'
+                ? (result as { status?: unknown }).status
+                : undefined
+            if (actionStatus === 'cancelled') {
+              finish('cancelled', 'ACTION_CANCELLED')
+              return { isError: true, content: [{ type: 'text' as const, text }] }
+            }
+            if (actionStatus === 'requires-review' || actionStatus === 'partially-completed') {
+              finish(
+                'failed',
+                actionStatus === 'partially-completed'
+                  ? 'ACTION_PARTIALLY_COMPLETED'
+                  : 'ACTION_REQUIRES_REVIEW',
+              )
+              return { isError: true, content: [{ type: 'text' as const, text }] }
+            }
             finish('succeeded')
             return { content: [{ type: 'text' as const, text }] }
           } catch (error) {
@@ -88,12 +128,20 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
               error instanceof Error && safeErrors.has(error.message)
                 ? error.message
                 : 'TOOL_FAILED'
-            finish(signal.aborted ? 'cancelled' : 'failed', signal.aborted ? 'CANCELLED' : code)
+            const cancelledBeforeCommit = signal.aborted && !committing
+            finish(
+              cancelledBeforeCommit ? 'cancelled' : 'failed',
+              cancelledBeforeCommit ? 'CANCELLED' : code,
+            )
             return {
               isError: true,
-              content: [{ type: 'text' as const, text: signal.aborted ? 'CANCELLED' : code }],
+              content: [
+                { type: 'text' as const, text: cancelledBeforeCommit ? 'CANCELLED' : code },
+              ],
             }
           } finally {
+            completeMutation()
+            mutations.delete(mutationDone)
             signal.removeEventListener('abort', cancel)
           }
         },
@@ -118,6 +166,7 @@ export function createAiAssistantService(options: AiAssistantServiceOptions) {
     const current = http
     http = undefined
     await current.stop()
+    await Promise.all(mutations)
     publishStatus({ state: 'stopped', port: status.port })
     return { ...status }
   }

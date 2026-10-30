@@ -30,12 +30,18 @@ const tabs = computed(() => [
   { label: t('aiAssistant.history'), value: 'history', slot: 'history' as const },
 ])
 const tools = [
-  { name: 'get_app_status', limit: 'noParameters' },
-  { name: 'list_campaigns', limit: 'pagination' },
-  { name: 'get_campaign_details', limit: 'identifier' },
-  { name: 'list_custom_content', limit: 'pagination' },
-  { name: 'list_downloads', limit: 'pagination' },
-  { name: 'get_task_status', limit: 'identifier' },
+  { name: 'get_app_status', limit: 'noParameters', access: 'read' },
+  { name: 'list_campaigns', limit: 'pagination', access: 'read' },
+  { name: 'get_campaign_details', limit: 'identifier', access: 'read' },
+  { name: 'list_custom_content', limit: 'pagination', access: 'read' },
+  { name: 'list_downloads', limit: 'pagination', access: 'read' },
+  { name: 'get_task_status', limit: 'identifier', access: 'read' },
+  { name: 'activate_campaign', limit: 'identifier', access: 'action' },
+  { name: 'switch_campaign', limit: 'identifier', access: 'action' },
+  { name: 'restore_campaign', limit: 'identifier', access: 'confirmation' },
+  { name: 'uninstall_campaign', limit: 'identifier', access: 'confirmation' },
+  { name: 'list_mutators', limit: 'mutators', access: 'read' },
+  { name: 'get_weekly_mutation', limit: 'weeklyMutation', access: 'read' },
 ]
 const stopped = computed(() => ['stopped', 'error'].includes(assistant.status.state))
 const running = computed(() => assistant.status.state === 'running')
@@ -353,12 +359,29 @@ onUnmounted(() => {
             :title="t('aiAssistant.readOnly')"
             :description="t('aiAssistant.capabilitiesSafety')"
           />
-          <div class="grid grid-cols-2 gap-2">
-            <UCard v-for="tool in tools" :key="tool.name" :ui="{ body: 'space-y-1.5 p-3 sm:p-3' }">
-              <h2 class="text-sm font-semibold">{{ toolLabel(tool.name) }}</h2>
+          <p class="text-xs text-muted">{{ t('aiAssistant.mutationData') }}</p>
+          <div class="grid max-h-[calc(100vh-19rem)] grid-cols-2 gap-2 overflow-y-auto">
+            <UCard
+              v-for="tool in tools"
+              :key="tool.name"
+              class="min-w-0"
+              :ui="{ body: 'space-y-1.5 p-3 sm:p-3' }"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-1">
+                <h2 class="text-sm font-semibold">{{ toolLabel(tool.name) }}</h2>
+                <UBadge
+                  :color="tool.access === 'read' ? 'neutral' : 'warning'"
+                  size="sm"
+                  variant="subtle"
+                  :data-access="tool.access"
+                  >{{ t(`aiAssistant.access.${tool.access}`) }}</UBadge
+                >
+              </div>
               <code class="block break-all text-xs text-muted">{{ tool.name }}</code>
-              <p class="text-sm">{{ t(`aiAssistant.description.${tool.name}`) }}</p>
-              <p class="text-xs text-muted">{{ t(`aiAssistant.limit.${tool.limit}`) }}</p>
+              <p class="text-xs">{{ t(`aiAssistant.description.${tool.name}`) }}</p>
+              <p class="text-xs break-words text-muted">
+                {{ t(`aiAssistant.limit.${tool.limit}`) }}
+              </p>
             </UCard>
           </div>
         </section>

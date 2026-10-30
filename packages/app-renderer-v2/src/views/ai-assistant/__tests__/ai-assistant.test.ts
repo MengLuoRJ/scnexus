@@ -14,6 +14,9 @@ import AiAssistantView from '../AiAssistantView.vue'
 import { useAiAssistantStore } from '../../../stores/ai-assistant'
 import { useContentCenterStore } from '../../../stores/content-center'
 import zh from '../../../locales/zh'
+import zhAssistant from '../../../locales/zh/aiAssistant.json'
+import hantAssistant from '../../../locales/zh-Hant/aiAssistant.json'
+import enAssistant from '../../../locales/en/aiAssistant.json'
 
 const mocks = vi.hoisted(() => ({
   getStatus: vi.fn<() => Promise<IpcResult<AiAssistantStatus>>>(),
@@ -298,7 +301,7 @@ test('clearing history invalidates late history snapshots', async () => {
   dispose()
 })
 
-test('tabs separate configuration, history and the six read-only capabilities in order', async () => {
+test('tabs separate configuration, history and the twelve controlled capabilities in order', async () => {
   const wrapper = await render()
   expect(wrapper.findAll('[role="tab"]').map((item) => item.text())).toEqual([
     '服务配置',
@@ -321,11 +324,29 @@ test('tabs separate configuration, history and the six read-only capabilities in
     'list_custom_content',
     'list_downloads',
     'get_task_status',
+    'activate_campaign',
+    'switch_campaign',
+    'restore_campaign',
+    'uninstall_campaign',
+    'list_mutators',
+    'get_weekly_mutation',
   ])
-  expect(wrapper.text()).toContain('limit 默认 20，范围 1–100')
-  expect(wrapper.text()).toContain('offset 默认 0，范围 0–100000')
+  expect(wrapper.findAll('[data-access="read"]')).toHaveLength(8)
+  expect(wrapper.findAll('[data-access="action"]')).toHaveLength(2)
+  expect(wrapper.findAll('[data-access="confirmation"]')).toHaveLength(2)
+  expect(wrapper.get('.grid').classes()).toContain('grid-cols-2')
+  expect(wrapper.get('.grid').classes()).toContain('overflow-y-auto')
+  expect(wrapper.text()).toContain('limit（integer）默认 20，范围 1–100')
+  expect(wrapper.text()).toContain('offset（integer）默认 0，范围 0–100000')
   expect(wrapper.text()).toContain('1–200 个字符')
-  expect(wrapper.text()).toContain('不支持修改内容')
+  expect(wrapper.text()).toContain('激活仅在无冲突时直接修改文件')
+  expect(wrapper.text()).toContain('确认一次当前战役→目标战役')
+  expect(wrapper.text()).toContain('每次均需原生 Electron 确认，无可用窗口时拒绝')
+  expect(wrapper.text()).toContain('文件冲突须在现有界面手动审核')
+  expect(wrapper.text()).toContain('仅同时开启官方服务和每周突变校准')
+  expect(wrapper.text()).toContain('search（string）≤100 字符')
+  expect(wrapper.text()).toContain('zhCN/enUS/ruRU/koKR/frFR/deDE')
+  expect(wrapper.text()).toContain('region（string）：CN/NA/EU/AS，默认 CN')
   expect(wrapper.find('input').exists()).toBe(false)
   expect(mocks.info).not.toHaveBeenCalled()
   expect(mocks.stop).not.toHaveBeenCalled()
@@ -335,6 +356,25 @@ test('tabs separate configuration, history and the six read-only capabilities in
   expect(mocks.getStatus).toHaveBeenCalledTimes(1)
   expect(mocks.info).not.toHaveBeenCalled()
 })
+
+test.each([zhAssistant, hantAssistant, enAssistant])(
+  'assistant locales document controlled actions and all twelve tools',
+  (messages) => {
+    const toolKeys = Object.keys(messages).filter(
+      (key) => key.startsWith('aiAssistant.tool.') && key !== 'aiAssistant.tool.unknown',
+    )
+    expect(toolKeys).toHaveLength(12)
+    expect(Object.keys(messages).sort()).toEqual(Object.keys(zhAssistant).sort())
+    expect(messages['aiAssistant.readOnly']).toContain('MCP')
+    expect(messages['aiAssistant.readOnly']).not.toMatch(/只读|只讀|read.only/i)
+    expect(messages['aiAssistant.tool.unknown']).not.toMatch(/只读|只讀|read.only/i)
+    expect(messages['aiAssistant.security']).toContain('Electron')
+    expect(messages['aiAssistant.capabilitiesSafety']).toContain('12')
+    expect(messages['aiAssistant.capabilitiesSafety']).toMatch(/shell/i)
+    expect(messages['aiAssistant.limit.mutators']).toContain('zhCN/enUS/ruRU/koKR/frFR/deDE')
+    expect(messages['aiAssistant.limit.weeklyMutation']).toContain('CN/NA/EU/AS')
+  },
+)
 
 test('leaving configuration hides credentials and preserves service subscriptions', async () => {
   mocks.getStatus.mockResolvedValue({ ok: true, data: { state: 'running', port: 17861 } })

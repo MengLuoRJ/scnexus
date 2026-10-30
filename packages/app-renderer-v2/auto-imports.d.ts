@@ -250,8 +250,8 @@ declare global {
   const isShallow: typeof import('vue').isShallow
   const isStrictSemver: typeof import('./src/apis/workshop').isStrictSemver
   const markRaw: typeof import('vue').markRaw
-  const mutationLanguages: typeof import('./src/apis/weekly-mutations').mutationLanguages
-  const mutationRegions: typeof import('./src/apis/weekly-mutations').mutationRegions
+  const mutationLanguages: typeof import('../app-shared/src/mutations/contracts').mutationLanguages
+  const mutationRegions: typeof import('../app-shared/src/mutations/contracts').mutationRegions
   const nextTick: typeof import('vue').nextTick
   const onActivated: typeof import('vue').onActivated
   const onBeforeMount: typeof import('vue').onBeforeMount
@@ -322,6 +322,8 @@ declare global {
   const useTour: typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_741101667d5a02ed9ffa3e931d685c2e/node_modules/@nuxt/ui/dist/runtime/composables/useTour').useTour
   const useWorkshopStore: typeof import('./src/stores/workshop').useWorkshopStore
   const uuid: typeof import('./src/apis/workshop').uuid
+  const validateMutatorCatalog: typeof import('../app-shared/src/mutations/contracts').validateMutatorCatalog
+  const validateWeeklyMutation: typeof import('../app-shared/src/mutations/contracts').validateWeeklyMutation
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
@@ -351,8 +353,8 @@ declare global {
   export type { Experience } from './src/apis/personal-center'
   import('./src/apis/personal-center')
   // @ts-ignore
-  export type { MutationRegion, MutationLanguage, MutationName, MutationMap, Mutator, WeeklyMutation, MutatorCatalog } from './src/apis/weekly-mutations'
-  import('./src/apis/weekly-mutations')
+  export type { MutationRegion, MutationLanguage, MutationName, MutationMap, Mutator, WeeklyMutation, MutatorCatalog } from '../app-shared/src/mutations/contracts'
+  import('../app-shared/src/mutations/contracts')
   // @ts-ignore
   export type { ProjectInput, WorkshopProject, OwnerProject, WorkshopVersion } from './src/apis/workshop'
   import('./src/apis/workshop')
@@ -523,8 +525,8 @@ declare module 'vue' {
     readonly isShallow: UnwrapRef<typeof import('vue')['isShallow']>
     readonly isStrictSemver: UnwrapRef<typeof import('./src/apis/workshop')['isStrictSemver']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
-    readonly mutationLanguages: UnwrapRef<typeof import('./src/apis/weekly-mutations')['mutationLanguages']>
-    readonly mutationRegions: UnwrapRef<typeof import('./src/apis/weekly-mutations')['mutationRegions']>
+    readonly mutationLanguages: UnwrapRef<typeof import('../app-shared/src/mutations/contracts')['mutationLanguages']>
+    readonly mutationRegions: UnwrapRef<typeof import('../app-shared/src/mutations/contracts')['mutationRegions']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
@@ -595,6 +597,8 @@ declare module 'vue' {
     readonly useTour: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxt+ui@4.12.0_741101667d5a02ed9ffa3e931d685c2e/node_modules/@nuxt/ui/dist/runtime/composables/useTour')['useTour']>
     readonly useWorkshopStore: UnwrapRef<typeof import('./src/stores/workshop')['useWorkshopStore']>
     readonly uuid: UnwrapRef<typeof import('./src/apis/workshop')['uuid']>
+    readonly validateMutatorCatalog: UnwrapRef<typeof import('../app-shared/src/mutations/contracts')['validateMutatorCatalog']>
+    readonly validateWeeklyMutation: UnwrapRef<typeof import('../app-shared/src/mutations/contracts')['validateWeeklyMutation']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchEffect: UnwrapRef<typeof import('vue')['watchEffect']>
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>

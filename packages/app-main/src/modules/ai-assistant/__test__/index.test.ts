@@ -19,7 +19,9 @@ vi.mock('../../../utils/ipc-util', () => ({
 }))
 vi.mock('../../../utils/ipc-source', () => ({ assertIpcSource: () => {} }))
 vi.mock('../local-data', () => ({}))
-vi.mock('../tools', () => ({ createReadOnlyAiAssistantTools: () => [] }))
+vi.mock('../campaign-actions', () => ({}))
+vi.mock('../mutations', () => ({}))
+vi.mock('../tools', () => ({ createAiAssistantTools: () => [] }))
 vi.mock('../service', () => ({
   createAiAssistantService: () => ({
     start: mocks.start,

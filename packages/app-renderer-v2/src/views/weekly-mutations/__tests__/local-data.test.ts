@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import snapshot from '../../../assets/mutators/weekly-data-default.json'
+import { mutationSnapshot as snapshot } from '@scnexus/app-shared/mutations/local-data'
 import { localWeeklyMutation, localMutatorCatalog } from '../local-data'
 
 test('bundled snapshot resolves every referenced map and factor throughout the rotation', () => {

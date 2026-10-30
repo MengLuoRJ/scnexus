@@ -1220,11 +1220,7 @@
         },
         "sourceId": "TrainOfTheDead",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "walking-infested",
-          "outbreak",
-          "darkness"
-        ]
+        "mutatorIds": ["walking-infested", "outbreak", "darkness"]
       },
       {
         "id": "time-lock",
@@ -1238,11 +1234,7 @@
         },
         "sourceId": "TimeLock",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "mag-nificent",
-          "speed-freaks",
-          "time-warp"
-        ]
+        "mutatorIds": ["mag-nificent", "speed-freaks", "time-warp"]
       },
       {
         "id": "temple-of-pain",
@@ -1256,11 +1248,7 @@
         },
         "sourceId": "TempleOfPain",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "barrier",
-          "avenger",
-          "mineral-shields"
-        ]
+        "mutatorIds": ["barrier", "avenger", "mineral-shields"]
       },
       {
         "id": "war-is-hell",
@@ -1274,11 +1262,7 @@
         },
         "sourceId": "WarIsHell",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "scorched-earth",
-          "evasive-maneuvers",
-          "lava-burst"
-        ]
+        "mutatorIds": ["scorched-earth", "evasive-maneuvers", "lava-burst"]
       },
       {
         "id": "special-delivery",
@@ -1292,11 +1276,7 @@
         },
         "sourceId": "ShuttleSurprise",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "alien-incubation",
-          "aggressive-deployment",
-          "self-destruction"
-        ]
+        "mutatorIds": ["alien-incubation", "aggressive-deployment", "self-destruction"]
       },
       {
         "id": "first-strike",
@@ -1310,11 +1290,7 @@
         },
         "sourceId": "FirstStrike",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "long-range",
-          "shortsighted",
-          "laser-drill"
-        ]
+        "mutatorIds": ["long-range", "shortsighted", "laser-drill"]
       },
       {
         "id": "bad-weather",
@@ -1328,10 +1304,7 @@
         },
         "sourceId": "BadWeather",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "twister",
-          "void-rifts"
-        ]
+        "mutatorIds": ["twister", "void-rifts"]
       },
       {
         "id": "spear-of-your-doom",
@@ -1345,11 +1318,7 @@
         },
         "sourceId": "EvilSoA",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "orbital-strike",
-          "temporal-field",
-          "purifier-beam"
-        ]
+        "mutatorIds": ["orbital-strike", "temporal-field", "purifier-beam"]
       },
       {
         "id": "white-out",
@@ -1363,10 +1332,7 @@
         },
         "sourceId": "WhiteOut",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "blizzard",
-          "slim-pickings"
-        ]
+        "mutatorIds": ["blizzard", "slim-pickings"]
       },
       {
         "id": "urban-warfare",
@@ -1380,11 +1346,7 @@
         },
         "sourceId": "Urban Warfare",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "photon-overload",
-          "we-move-unseen",
-          "minesweeper"
-        ]
+        "mutatorIds": ["photon-overload", "we-move-unseen", "minesweeper"]
       },
       {
         "id": "chaos-studios-1",
@@ -1398,9 +1360,7 @@
         },
         "sourceId": "ChaosStudios1",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       },
       {
         "id": "perfect-storm",
@@ -1414,11 +1374,7 @@
         },
         "sourceId": "PerfectStorm",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "blizzard",
-          "twister",
-          "shortsighted"
-        ]
+        "mutatorIds": ["blizzard", "twister", "shortsighted"]
       },
       {
         "id": "pain-train",
@@ -1432,11 +1388,7 @@
         },
         "sourceId": "Pain Train",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "going-nuclear",
-          "fear",
-          "self-destruction"
-        ]
+        "mutatorIds": ["going-nuclear", "fear", "self-destruction"]
       },
       {
         "id": "vampires",
@@ -1450,11 +1402,7 @@
         },
         "sourceId": "Vampires",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "life-leech",
-          "evasive-maneuvers",
-          "concussive-attacks"
-        ]
+        "mutatorIds": ["life-leech", "evasive-maneuvers", "concussive-attacks"]
       },
       {
         "id": "dark-ritual",
@@ -1468,10 +1416,7 @@
         },
         "sourceId": "DarkRitual",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "power-overwhelming",
-          "speed-freaks"
-        ]
+        "mutatorIds": ["power-overwhelming", "speed-freaks"]
       },
       {
         "id": "countdown-to-destruction",
@@ -1485,11 +1430,7 @@
         },
         "sourceId": "CountdownToDestruction",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "void-rifts",
-          "avenger",
-          "scorched-earth"
-        ]
+        "mutatorIds": ["void-rifts", "avenger", "scorched-earth"]
       },
       {
         "id": "out-of-control",
@@ -1503,11 +1444,7 @@
         },
         "sourceId": "OutOfControl",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "fear",
-          "evasive-maneuvers",
-          "vertigo"
-        ]
+        "mutatorIds": ["fear", "evasive-maneuvers", "vertigo"]
       },
       {
         "id": "environmental-destruction",
@@ -1521,11 +1458,7 @@
         },
         "sourceId": "EnvironmentalDestruction",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "missile-command",
-          "purifier-beam",
-          "going-nuclear"
-        ]
+        "mutatorIds": ["missile-command", "purifier-beam", "going-nuclear"]
       },
       {
         "id": "comm-failure",
@@ -1539,11 +1472,7 @@
         },
         "sourceId": "CommFailure",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "micro-transactions",
-          "darkness",
-          "time-warp"
-        ]
+        "mutatorIds": ["micro-transactions", "darkness", "time-warp"]
       },
       {
         "id": "relentless-dead",
@@ -1557,11 +1486,7 @@
         },
         "sourceId": "RelentlessDead",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "undying-evil",
-          "void-reanimators",
-          "walking-infested"
-        ]
+        "mutatorIds": ["undying-evil", "void-reanimators", "walking-infested"]
       },
       {
         "id": "trifecta",
@@ -1575,11 +1500,7 @@
         },
         "sourceId": "Trifecta",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "laser-drill",
-          "outbreak",
-          "orbital-strike"
-        ]
+        "mutatorIds": ["laser-drill", "outbreak", "orbital-strike"]
       },
       {
         "id": "growing-threat",
@@ -1593,11 +1514,7 @@
         },
         "sourceId": "GrowingThreat",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "transmutation",
-          "mutually-assured-destruction",
-          "alien-incubation"
-        ]
+        "mutatorIds": ["transmutation", "mutually-assured-destruction", "alien-incubation"]
       },
       {
         "id": "deadly-harvest",
@@ -1611,11 +1528,7 @@
         },
         "sourceId": "DeadlyHarvest",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "mag-nificent",
-          "fear",
-          "slim-pickings"
-        ]
+        "mutatorIds": ["mag-nificent", "fear", "slim-pickings"]
       },
       {
         "id": "false-dichotomy",
@@ -1629,11 +1542,7 @@
         },
         "sourceId": "FalseDichotomy",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "polarity",
-          "evasive-maneuvers",
-          "barrier"
-        ]
+        "mutatorIds": ["polarity", "evasive-maneuvers", "barrier"]
       },
       {
         "id": "burning-tide",
@@ -1647,11 +1556,7 @@
         },
         "sourceId": "BurningTide",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "walking-infested",
-          "scorched-earth",
-          "alien-incubation"
-        ]
+        "mutatorIds": ["walking-infested", "scorched-earth", "alien-incubation"]
       },
       {
         "id": "up-and-atom",
@@ -1665,11 +1570,7 @@
         },
         "sourceId": "UpAndAtom",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "self-destruction",
-          "mutually-assured-destruction",
-          "going-nuclear"
-        ]
+        "mutatorIds": ["self-destruction", "mutually-assured-destruction", "going-nuclear"]
       },
       {
         "id": "terrazine-overload",
@@ -1683,14 +1584,8 @@
         },
         "sourceId": "TerrazineOverload",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "speed-freaks",
-          "avenger",
-          "aggressive-deployment"
-        ],
-        "aliasesZhCN": [
-          "造恶之息"
-        ]
+        "mutatorIds": ["speed-freaks", "avenger", "aggressive-deployment"],
+        "aliasesZhCN": ["造恶之息"]
       },
       {
         "id": "chaos-studios-2",
@@ -1704,9 +1599,7 @@
         },
         "sourceId": "ChaosStudios2",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       },
       {
         "id": "oct-holiday",
@@ -1720,10 +1613,7 @@
         },
         "sourceId": "OctHoliday",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "afraid-of-the-dark",
-          "trick-or-treat"
-        ]
+        "mutatorIds": ["afraid-of-the-dark", "trick-or-treat"]
       },
       {
         "id": "nov-holiday",
@@ -1737,10 +1627,7 @@
         },
         "sourceId": "NovHoliday",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "turkey-shoot",
-          "sharing-is-caring"
-        ]
+        "mutatorIds": ["turkey-shoot", "sharing-is-caring"]
       },
       {
         "id": "opo",
@@ -1754,11 +1641,7 @@
         },
         "sourceId": "OPO",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "power-overwhelming",
-          "photon-overload",
-          "long-range"
-        ]
+        "mutatorIds": ["power-overwhelming", "photon-overload", "long-range"]
       },
       {
         "id": "shir-madness",
@@ -1772,11 +1655,7 @@
         },
         "sourceId": "ShirMadness",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "outbreak",
-          "speed-freaks",
-          "just-die"
-        ]
+        "mutatorIds": ["outbreak", "speed-freaks", "just-die"]
       },
       {
         "id": "death-from-above-below",
@@ -1790,10 +1669,7 @@
         },
         "sourceId": "DeathFromAboveBelow",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "void-reanimators",
-          "purifier-beam"
-        ]
+        "mutatorIds": ["void-reanimators", "purifier-beam"]
       },
       {
         "id": "survival-of-the-fittest",
@@ -1807,10 +1683,7 @@
         },
         "sourceId": "SurvivalOfTheFittest",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "barrier",
-          "transmutation"
-        ]
+        "mutatorIds": ["barrier", "transmutation"]
       },
       {
         "id": "terrors-in-the-mist",
@@ -1824,11 +1697,7 @@
         },
         "sourceId": "TerrorsInTheMist",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "we-move-unseen",
-          "aggressive-deployment",
-          "temporal-field"
-        ]
+        "mutatorIds": ["we-move-unseen", "aggressive-deployment", "temporal-field"]
       },
       {
         "id": "ultimate-price",
@@ -1842,11 +1711,7 @@
         },
         "sourceId": "UltimatePrice",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "micro-transactions",
-          "missile-command",
-          "mineral-shields"
-        ]
+        "mutatorIds": ["micro-transactions", "missile-command", "mineral-shields"]
       },
       {
         "id": "underground-pound",
@@ -1860,10 +1725,7 @@
         },
         "sourceId": "UndergroundPound",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "void-reanimators",
-          "scorched-earth"
-        ]
+        "mutatorIds": ["void-reanimators", "scorched-earth"]
       },
       {
         "id": "shields-up",
@@ -1877,11 +1739,7 @@
         },
         "sourceId": "ShieldsUp",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "diffusion",
-          "mineral-shields",
-          "shortsighted"
-        ]
+        "mutatorIds": ["diffusion", "mineral-shields", "shortsighted"]
       },
       {
         "id": "sick-micro",
@@ -1895,10 +1753,7 @@
         },
         "sourceId": "SickMicro",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "black-death",
-          "micro-transactions"
-        ]
+        "mutatorIds": ["black-death", "micro-transactions"]
       },
       {
         "id": "neutron-bomb",
@@ -1912,10 +1767,7 @@
         },
         "sourceId": "NeutronBomb",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "eminent-domain",
-          "mutually-assured-destruction"
-        ]
+        "mutatorIds": ["eminent-domain", "mutually-assured-destruction"]
       },
       {
         "id": "dank-portal",
@@ -1929,10 +1781,7 @@
         },
         "sourceId": "DankPortal",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "void-rifts",
-          "power-overwhelming"
-        ]
+        "mutatorIds": ["void-rifts", "power-overwhelming"]
       },
       {
         "id": "chaos-studios-3",
@@ -1946,9 +1795,7 @@
         },
         "sourceId": "ChaosStudios3",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       },
       {
         "id": "dec-holiday",
@@ -1962,10 +1809,7 @@
         },
         "sourceId": "DecHoliday",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "gift-exchange",
-          "naughty-list"
-        ]
+        "mutatorIds": ["gift-exchange", "naughty-list"]
       },
       {
         "id": "injustice-league",
@@ -1979,11 +1823,7 @@
         },
         "sourceId": "InjusticeLeague",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "heroes-from-the-storm",
-          "inspiration",
-          "hardened-will"
-        ]
+        "mutatorIds": ["heroes-from-the-storm", "inspiration", "hardened-will"]
       },
       {
         "id": "lunar-new-year",
@@ -1997,10 +1837,7 @@
         },
         "sourceId": "LunarNewYear",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "fireworks",
-          "lucky-envelopes"
-        ]
+        "mutatorIds": ["fireworks", "lucky-envelopes"]
       },
       {
         "id": "frostbite",
@@ -2014,10 +1851,7 @@
         },
         "sourceId": "Frostbite",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "mag-nificent",
-          "blizzard"
-        ]
+        "mutatorIds": ["mag-nificent", "blizzard"]
       },
       {
         "id": "occupational-hazard",
@@ -2031,11 +1865,7 @@
         },
         "sourceId": "OccupationalHazard",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "missile-command",
-          "laser-drill",
-          "eminent-domain"
-        ]
+        "mutatorIds": ["missile-command", "laser-drill", "eminent-domain"]
       },
       {
         "id": "grave-danger",
@@ -2049,11 +1879,7 @@
         },
         "sourceId": "GraveDanger",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "void-reanimators",
-          "transmutation",
-          "walking-infested"
-        ]
+        "mutatorIds": ["void-reanimators", "transmutation", "walking-infested"]
       },
       {
         "id": "mo-money-mo-problems",
@@ -2067,11 +1893,7 @@
         },
         "sourceId": "MoMoneyMoProblems",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "slim-pickings",
-          "self-destruction",
-          "twister"
-        ]
+        "mutatorIds": ["slim-pickings", "self-destruction", "twister"]
       },
       {
         "id": "fields-of-death",
@@ -2085,10 +1907,7 @@
         },
         "sourceId": "FieldsOfDeath",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "polarity",
-          "minesweeper"
-        ]
+        "mutatorIds": ["polarity", "minesweeper"]
       },
       {
         "id": "dead-by-dawn",
@@ -2102,10 +1921,7 @@
         },
         "sourceId": "DeadByDawn",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "speed-freaks",
-          "black-death"
-        ]
+        "mutatorIds": ["speed-freaks", "black-death"]
       },
       {
         "id": "unseen-threat",
@@ -2119,10 +1935,7 @@
         },
         "sourceId": "UnseenThreat",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "we-move-unseen",
-          "purifier-beam"
-        ]
+        "mutatorIds": ["we-move-unseen", "purifier-beam"]
       },
       {
         "id": "chaos-studios-4",
@@ -2136,9 +1949,7 @@
         },
         "sourceId": "ChaosStudios4",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       },
       {
         "id": "dangerous-ambition",
@@ -2152,11 +1963,7 @@
         },
         "sourceId": "DangerousAmbition",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "double-edged",
-          "self-destruction",
-          "mutually-assured-destruction"
-        ]
+        "mutatorIds": ["double-edged", "self-destruction", "mutually-assured-destruction"]
       },
       {
         "id": "propagator-intro",
@@ -2170,11 +1977,7 @@
         },
         "sourceId": "PropagatorIntro",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "propagators",
-          "temporal-field",
-          "concussive-attacks"
-        ]
+        "mutatorIds": ["propagators", "temporal-field", "concussive-attacks"]
       },
       {
         "id": "certain-demise",
@@ -2188,10 +1991,7 @@
         },
         "sourceId": "CertainDemise",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "avenger",
-          "void-reanimators"
-        ]
+        "mutatorIds": ["avenger", "void-reanimators"]
       },
       {
         "id": "dead-heat",
@@ -2205,11 +2005,7 @@
         },
         "sourceId": "DeadHeat",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "fatal-attraction",
-          "self-destruction",
-          "walking-infested"
-        ]
+        "mutatorIds": ["fatal-attraction", "self-destruction", "walking-infested"]
       },
       {
         "id": "delivery-guaranteed",
@@ -2223,11 +2019,7 @@
         },
         "sourceId": "DeliveryGuaranteed",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "just-die",
-          "going-nuclear",
-          "barrier"
-        ]
+        "mutatorIds": ["just-die", "going-nuclear", "barrier"]
       },
       {
         "id": "cold-is-the-void",
@@ -2241,11 +2033,7 @@
         },
         "sourceId": "ColdIsTheVoid",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "blizzard",
-          "void-reanimators",
-          "void-rifts"
-        ]
+        "mutatorIds": ["blizzard", "void-reanimators", "void-rifts"]
       },
       {
         "id": "hard-target",
@@ -2259,11 +2047,7 @@
         },
         "sourceId": "HardTarget",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "hardened-will",
-          "polarity",
-          "barrier"
-        ]
+        "mutatorIds": ["hardened-will", "polarity", "barrier"]
       },
       {
         "id": "tide-of-terror",
@@ -2277,10 +2061,7 @@
         },
         "sourceId": "TideOfTerror",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "void-rifts",
-          "fear"
-        ]
+        "mutatorIds": ["void-rifts", "fear"]
       },
       {
         "id": "slow-and-steady",
@@ -2294,11 +2075,7 @@
         },
         "sourceId": "SlowAndSteady",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "time-warp",
-          "speed-freaks",
-          "concussive-attacks"
-        ]
+        "mutatorIds": ["time-warp", "speed-freaks", "concussive-attacks"]
       },
       {
         "id": "unwelcome-visitors",
@@ -2312,11 +2089,7 @@
         },
         "sourceId": "UnwelcomeVisitors",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "just-die",
-          "long-range",
-          "inspiration"
-        ]
+        "mutatorIds": ["just-die", "long-range", "inspiration"]
       },
       {
         "id": "moth-into-flame",
@@ -2330,11 +2103,7 @@
         },
         "sourceId": "MothIntoFlame",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "fatal-attraction",
-          "purifier-beam",
-          "alien-incubation"
-        ]
+        "mutatorIds": ["fatal-attraction", "purifier-beam", "alien-incubation"]
       },
       {
         "id": "charnel-house",
@@ -2348,11 +2117,7 @@
         },
         "sourceId": "CharnelHouse",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "darkness",
-          "photon-overload",
-          "black-death"
-        ]
+        "mutatorIds": ["darkness", "photon-overload", "black-death"]
       },
       {
         "id": "battle-bots",
@@ -2366,10 +2131,7 @@
         },
         "sourceId": "BattleBots",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "kill-bots",
-          "moment-of-silence"
-        ]
+        "mutatorIds": ["kill-bots", "moment-of-silence"]
       },
       {
         "id": "eye-for-an-eye",
@@ -2383,10 +2145,7 @@
         },
         "sourceId": "EyeForAnEye",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "double-edged",
-          "mutually-assured-destruction"
-        ]
+        "mutatorIds": ["double-edged", "mutually-assured-destruction"]
       },
       {
         "id": "magnetic-pull",
@@ -2400,11 +2159,7 @@
         },
         "sourceId": "MagneticPull",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "mag-nificent",
-          "fatal-attraction",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["mag-nificent", "fatal-attraction", "we-move-unseen"]
       },
       {
         "id": "death-from-below",
@@ -2418,11 +2173,7 @@
         },
         "sourceId": "DeathFromBelow",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "scorched-earth",
-          "lava-burst",
-          "minesweeper"
-        ]
+        "mutatorIds": ["scorched-earth", "lava-burst", "minesweeper"]
       },
       {
         "id": "death-from-above",
@@ -2436,11 +2187,7 @@
         },
         "sourceId": "DeathFromAbove",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "aggressive-deployment",
-          "orbital-strike",
-          "missile-command"
-        ]
+        "mutatorIds": ["aggressive-deployment", "orbital-strike", "missile-command"]
       },
       {
         "id": "think-fast",
@@ -2454,10 +2201,7 @@
         },
         "sourceId": "ThinkFast",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "speed-freaks",
-          "propagators"
-        ]
+        "mutatorIds": ["speed-freaks", "propagators"]
       },
       {
         "id": "bannable-offense",
@@ -2471,10 +2215,7 @@
         },
         "sourceId": "BannableOffense",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "power-overwhelming",
-          "evasive-maneuvers"
-        ]
+        "mutatorIds": ["power-overwhelming", "evasive-maneuvers"]
       },
       {
         "id": "vampire-hybrids",
@@ -2488,11 +2229,7 @@
         },
         "sourceId": "VampireHybrids",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "life-leech",
-          "shortsighted",
-          "fear"
-        ]
+        "mutatorIds": ["life-leech", "shortsighted", "fear"]
       },
       {
         "id": "night-drive",
@@ -2506,10 +2243,7 @@
         },
         "sourceId": "NightDrive",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "afraid-of-the-dark",
-          "mag-nificent"
-        ]
+        "mutatorIds": ["afraid-of-the-dark", "mag-nificent"]
       },
       {
         "id": "get-out-more",
@@ -2523,11 +2257,7 @@
         },
         "sourceId": "GetOutMore",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "eminent-domain",
-          "mineral-shields",
-          "self-destruction"
-        ]
+        "mutatorIds": ["eminent-domain", "mineral-shields", "self-destruction"]
       },
       {
         "id": "quick-killers",
@@ -2541,11 +2271,7 @@
         },
         "sourceId": "QuickKillers",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "kill-bots",
-          "inspiration",
-          "speed-freaks"
-        ]
+        "mutatorIds": ["kill-bots", "inspiration", "speed-freaks"]
       },
       {
         "id": "unstable-environment",
@@ -2559,11 +2285,7 @@
         },
         "sourceId": "UnstableEnvironment",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "twister",
-          "lava-burst",
-          "time-warp"
-        ]
+        "mutatorIds": ["twister", "lava-burst", "time-warp"]
       },
       {
         "id": "remember-propagator",
@@ -2577,10 +2299,7 @@
         },
         "sourceId": "RememberPropagator",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "propagators",
-          "moment-of-silence"
-        ]
+        "mutatorIds": ["propagators", "moment-of-silence"]
       },
       {
         "id": "endless-infection",
@@ -2594,11 +2313,7 @@
         },
         "sourceId": "EndlessInfection",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "black-death",
-          "alien-incubation",
-          "walking-infested"
-        ]
+        "mutatorIds": ["black-death", "alien-incubation", "walking-infested"]
       },
       {
         "id": "missile-commanders",
@@ -2612,11 +2327,7 @@
         },
         "sourceId": "MissileCommanders",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "missile-command",
-          "inspiration",
-          "hardened-will"
-        ]
+        "mutatorIds": ["missile-command", "inspiration", "hardened-will"]
       },
       {
         "id": "cold-adaptation",
@@ -2630,10 +2341,7 @@
         },
         "sourceId": "ColdAdaptation",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "blizzard",
-          "transmutation"
-        ]
+        "mutatorIds": ["blizzard", "transmutation"]
       },
       {
         "id": "bot-farm",
@@ -2647,10 +2355,7 @@
         },
         "sourceId": "BotFarm",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "kill-bots",
-          "micro-transactions"
-        ]
+        "mutatorIds": ["kill-bots", "micro-transactions"]
       },
       {
         "id": "negative-reinforcement",
@@ -2664,10 +2369,7 @@
         },
         "sourceId": "NegativeReinforcement",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "fatal-attraction",
-          "avenger"
-        ]
+        "mutatorIds": ["fatal-attraction", "avenger"]
       },
       {
         "id": "karmatic-invaders",
@@ -2681,10 +2383,7 @@
         },
         "sourceId": "KarmaticInvaders",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "void-rifts",
-          "double-edged"
-        ]
+        "mutatorIds": ["void-rifts", "double-edged"]
       },
       {
         "id": "rise-from-ashes",
@@ -2698,11 +2397,7 @@
         },
         "sourceId": "RiseFromAshes",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "self-destruction",
-          "void-reanimators",
-          "lava-burst"
-        ]
+        "mutatorIds": ["self-destruction", "void-reanimators", "lava-burst"]
       },
       {
         "id": "warp-zone",
@@ -2716,11 +2411,7 @@
         },
         "sourceId": "WarpZone",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "temporal-field",
-          "time-warp",
-          "twister"
-        ]
+        "mutatorIds": ["temporal-field", "time-warp", "twister"]
       },
       {
         "id": "well-trained",
@@ -2734,11 +2425,7 @@
         },
         "sourceId": "WellTrained",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "inspiration",
-          "aggressive-deployment",
-          "avenger"
-        ]
+        "mutatorIds": ["inspiration", "aggressive-deployment", "avenger"]
       },
       {
         "id": "nuke-from-orbit",
@@ -2752,11 +2439,7 @@
         },
         "sourceId": "NukeFromOrbit",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "propagators",
-          "going-nuclear",
-          "orbital-strike"
-        ]
+        "mutatorIds": ["propagators", "going-nuclear", "orbital-strike"]
       },
       {
         "id": "safety-violation",
@@ -2770,11 +2453,7 @@
         },
         "sourceId": "SafetyViolation",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "self-destruction",
-          "laser-drill",
-          "mag-nificent"
-        ]
+        "mutatorIds": ["self-destruction", "laser-drill", "mag-nificent"]
       },
       {
         "id": "double-life",
@@ -2788,11 +2467,7 @@
         },
         "sourceId": "Double Life",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "just-die",
-          "life-leech",
-          "barrier"
-        ]
+        "mutatorIds": ["just-die", "life-leech", "barrier"]
       },
       {
         "id": "frenzied-protectors",
@@ -2806,11 +2481,7 @@
         },
         "sourceId": "FrenziedProtectors",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "speed-freaks",
-          "photon-overload",
-          "avenger"
-        ]
+        "mutatorIds": ["speed-freaks", "photon-overload", "avenger"]
       },
       {
         "id": "attrition-warfare",
@@ -2824,10 +2495,7 @@
         },
         "sourceId": "AttritionWarfare",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "diffusion",
-          "minesweeper"
-        ]
+        "mutatorIds": ["diffusion", "minesweeper"]
       },
       {
         "id": "together-forever",
@@ -2841,10 +2509,7 @@
         },
         "sourceId": "TogetherForever",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "just-die",
-          "polarity"
-        ]
+        "mutatorIds": ["just-die", "polarity"]
       },
       {
         "id": "spectre-of-death",
@@ -2858,10 +2523,7 @@
         },
         "sourceId": "SpectreOfDeath",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "void-reanimators",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["void-reanimators", "we-move-unseen"]
       },
       {
         "id": "distant-threat",
@@ -2875,11 +2537,7 @@
         },
         "sourceId": "DistantThreat",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "long-range",
-          "purifier-beam",
-          "time-warp"
-        ]
+        "mutatorIds": ["long-range", "purifier-beam", "time-warp"]
       },
       {
         "id": "radiation-zone",
@@ -2893,11 +2551,7 @@
         },
         "sourceId": "RadiationZone",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "going-nuclear",
-          "outbreak",
-          "black-death"
-        ]
+        "mutatorIds": ["going-nuclear", "outbreak", "black-death"]
       },
       {
         "id": "inner-power",
@@ -2911,10 +2565,7 @@
         },
         "sourceId": "InnerPower",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "alien-incubation",
-          "power-overwhelming"
-        ]
+        "mutatorIds": ["alien-incubation", "power-overwhelming"]
       },
       {
         "id": "moving-fees",
@@ -2928,10 +2579,7 @@
         },
         "sourceId": "MovingFees",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "micro-transactions",
-          "scorched-earth"
-        ]
+        "mutatorIds": ["micro-transactions", "scorched-earth"]
       },
       {
         "id": "memorable-boss",
@@ -2945,10 +2593,7 @@
         },
         "sourceId": "MemorableBoss",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "moment-of-silence",
-          "heroes-from-the-storm"
-        ]
+        "mutatorIds": ["moment-of-silence", "heroes-from-the-storm"]
       },
       {
         "id": "flip-my-base",
@@ -2962,11 +2607,7 @@
         },
         "sourceId": "FlipMyBase",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "missile-command",
-          "purifier-beam",
-          "eminent-domain"
-        ]
+        "mutatorIds": ["missile-command", "purifier-beam", "eminent-domain"]
       },
       {
         "id": "firewall",
@@ -2980,11 +2621,7 @@
         },
         "sourceId": "Firewall",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "lava-burst",
-          "minesweeper",
-          "barrier"
-        ]
+        "mutatorIds": ["lava-burst", "minesweeper", "barrier"]
       },
       {
         "id": "death-and-taxes",
@@ -2998,11 +2635,7 @@
         },
         "sourceId": "DeathAndTaxes",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "micro-transactions",
-          "slim-pickings",
-          "black-death"
-        ]
+        "mutatorIds": ["micro-transactions", "slim-pickings", "black-death"]
       },
       {
         "id": "chaos-studios-5",
@@ -3016,9 +2649,7 @@
         },
         "sourceId": "ChaosStudios5",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       },
       {
         "id": "rubber-and-glue",
@@ -3032,11 +2663,7 @@
         },
         "sourceId": "RubberAndGlue",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "double-edged",
-          "diffusion",
-          "temporal-field"
-        ]
+        "mutatorIds": ["double-edged", "diffusion", "temporal-field"]
       },
       {
         "id": "hell-train",
@@ -3050,10 +2677,7 @@
         },
         "sourceId": "HellTrain",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "just-die",
-          "scorched-earth"
-        ]
+        "mutatorIds": ["just-die", "scorched-earth"]
       },
       {
         "id": "infection-detected",
@@ -3067,11 +2691,7 @@
         },
         "sourceId": "InfectionDetected",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "alien-incubation",
-          "outbreak",
-          "self-destruction"
-        ]
+        "mutatorIds": ["alien-incubation", "outbreak", "self-destruction"]
       },
       {
         "id": "opportunities-unleashed",
@@ -3085,11 +2705,7 @@
         },
         "sourceId": "OpportunitiesUnleashed",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "speed-freaks",
-          "barrier",
-          "power-overwhelming"
-        ]
+        "mutatorIds": ["speed-freaks", "barrier", "power-overwhelming"]
       },
       {
         "id": "one-for-all",
@@ -3103,11 +2719,7 @@
         },
         "sourceId": "OneForAll",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "hardened-will",
-          "transmutation",
-          "inspiration"
-        ]
+        "mutatorIds": ["hardened-will", "transmutation", "inspiration"]
       },
       {
         "id": "experimental-artillery",
@@ -3121,11 +2733,7 @@
         },
         "sourceId": "ExperimentalArtillery",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "laser-drill",
-          "photon-overload",
-          "long-range"
-        ]
+        "mutatorIds": ["laser-drill", "photon-overload", "long-range"]
       },
       {
         "id": "nuclear-family",
@@ -3139,11 +2747,7 @@
         },
         "sourceId": "NuclearFamily",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "mutually-assured-destruction",
-          "outbreak",
-          "hardened-will"
-        ]
+        "mutatorIds": ["mutually-assured-destruction", "outbreak", "hardened-will"]
       },
       {
         "id": "die-together",
@@ -3157,10 +2761,7 @@
         },
         "sourceId": "DieTogether",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "just-die",
-          "polarity"
-        ]
+        "mutatorIds": ["just-die", "polarity"]
       },
       {
         "id": "burning-evacuation",
@@ -3174,11 +2775,7 @@
         },
         "sourceId": "BurningEvacuation",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "eminent-domain",
-          "scorched-earth",
-          "avenger"
-        ]
+        "mutatorIds": ["eminent-domain", "scorched-earth", "avenger"]
       },
       {
         "id": "assembly-of-vengeance",
@@ -3192,10 +2789,7 @@
         },
         "sourceId": "AssemblyOfVengeance",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "heroes-from-the-storm",
-          "avenger"
-        ]
+        "mutatorIds": ["heroes-from-the-storm", "avenger"]
       },
       {
         "id": "railroad-switch",
@@ -3209,10 +2803,7 @@
         },
         "sourceId": "RailroadSwitch",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "just-die",
-          "polarity"
-        ]
+        "mutatorIds": ["just-die", "polarity"]
       },
       {
         "id": "hostile-territory",
@@ -3226,11 +2817,7 @@
         },
         "sourceId": "HostileTerritory",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "barrier",
-          "photon-overload",
-          "power-overwhelming"
-        ]
+        "mutatorIds": ["barrier", "photon-overload", "power-overwhelming"]
       },
       {
         "id": "media-blackout",
@@ -3244,11 +2831,7 @@
         },
         "sourceId": "MediaBlackout",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "darkness",
-          "missile-command",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["darkness", "missile-command", "we-move-unseen"]
       },
       {
         "id": "thunder-dome",
@@ -3262,10 +2845,7 @@
         },
         "sourceId": "ThunderDome",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "heroes-from-the-storm",
-          "mag-nificent"
-        ]
+        "mutatorIds": ["heroes-from-the-storm", "mag-nificent"]
       },
       {
         "id": "dodge-this",
@@ -3279,11 +2859,7 @@
         },
         "sourceId": "DodgeThis",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "darkness",
-          "going-nuclear",
-          "orbital-strike"
-        ]
+        "mutatorIds": ["darkness", "going-nuclear", "orbital-strike"]
       },
       {
         "id": "binary-choice",
@@ -3297,10 +2873,7 @@
         },
         "sourceId": "BinaryChoice",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "polarity",
-          "void-reanimators"
-        ]
+        "mutatorIds": ["polarity", "void-reanimators"]
       },
       {
         "id": "the-ascended",
@@ -3314,10 +2887,7 @@
         },
         "sourceId": "TheAscended",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "inspiration",
-          "transmutation"
-        ]
+        "mutatorIds": ["inspiration", "transmutation"]
       },
       {
         "id": "enhanced-defenses",
@@ -3331,11 +2901,7 @@
         },
         "sourceId": "EnhancedDefenses",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "barrier",
-          "going-nuclear",
-          "photon-overload"
-        ]
+        "mutatorIds": ["barrier", "going-nuclear", "photon-overload"]
       },
       {
         "id": "double-trouble",
@@ -3349,10 +2915,7 @@
         },
         "sourceId": "DoubleTrouble",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "kill-bots",
-          "propagators"
-        ]
+        "mutatorIds": ["kill-bots", "propagators"]
       },
       {
         "id": "and-drops-and-rifts",
@@ -3366,10 +2929,7 @@
         },
         "sourceId": "AndDropsandRifts",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "aggressive-deployment",
-          "void-rifts"
-        ]
+        "mutatorIds": ["aggressive-deployment", "void-rifts"]
       },
       {
         "id": "catch-the-train",
@@ -3383,11 +2943,7 @@
         },
         "sourceId": "CatchTheTrain",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "afraid-of-the-dark",
-          "shortsighted",
-          "speed-freaks"
-        ]
+        "mutatorIds": ["afraid-of-the-dark", "shortsighted", "speed-freaks"]
       },
       {
         "id": "temple-of-terror",
@@ -3401,11 +2957,7 @@
         },
         "sourceId": "TempleOfTerror",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "alien-incubation",
-          "afraid-of-the-dark",
-          "fear"
-        ]
+        "mutatorIds": ["alien-incubation", "afraid-of-the-dark", "fear"]
       },
       {
         "id": "shining-bright",
@@ -3419,11 +2971,7 @@
         },
         "sourceId": "ShiningBright",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "concussive-attacks",
-          "laser-drill",
-          "purifier-beam"
-        ]
+        "mutatorIds": ["concussive-attacks", "laser-drill", "purifier-beam"]
       },
       {
         "id": "endless-sparkles",
@@ -3437,10 +2985,7 @@
         },
         "sourceId": "EndlessSparkles",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "alien-incubation",
-          "self-destruction"
-        ]
+        "mutatorIds": ["alien-incubation", "self-destruction"]
       },
       {
         "id": "graveyard-shift",
@@ -3454,10 +2999,7 @@
         },
         "sourceId": "GraveyardShift",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "afraid-of-the-dark",
-          "purifier-beam"
-        ]
+        "mutatorIds": ["afraid-of-the-dark", "purifier-beam"]
       },
       {
         "id": "robotic-revival",
@@ -3471,11 +3013,7 @@
         },
         "sourceId": "RoboticRevival",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "fear",
-          "just-die",
-          "laser-drill"
-        ]
+        "mutatorIds": ["fear", "just-die", "laser-drill"]
       },
       {
         "id": "secret-storm",
@@ -3489,11 +3027,7 @@
         },
         "sourceId": "SecretStorm",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "aggressive-deployment",
-          "twister",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["aggressive-deployment", "twister", "we-move-unseen"]
       },
       {
         "id": "undermined",
@@ -3507,10 +3041,7 @@
         },
         "sourceId": "Undermined",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "minesweeper",
-          "void-rifts"
-        ]
+        "mutatorIds": ["minesweeper", "void-rifts"]
       },
       {
         "id": "astigmatism",
@@ -3524,11 +3055,7 @@
         },
         "sourceId": "Astigmatism",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "long-range",
-          "shortsighted",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["long-range", "shortsighted", "we-move-unseen"]
       },
       {
         "id": "never-say-die",
@@ -3542,11 +3069,7 @@
         },
         "sourceId": "NeverSayDie",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "barrier",
-          "just-die",
-          "life-leech"
-        ]
+        "mutatorIds": ["barrier", "just-die", "life-leech"]
       },
       {
         "id": "medieval-times",
@@ -3560,10 +3083,7 @@
         },
         "sourceId": "MedievalTimes",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "black-death",
-          "transmutation"
-        ]
+        "mutatorIds": ["black-death", "transmutation"]
       },
       {
         "id": "onslaught",
@@ -3577,11 +3097,7 @@
         },
         "sourceId": "Onslaught",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "aggressive-deployment",
-          "outbreak",
-          "void-reanimators"
-        ]
+        "mutatorIds": ["aggressive-deployment", "outbreak", "void-reanimators"]
       },
       {
         "id": "equivalent-exchange",
@@ -3595,10 +3111,7 @@
         },
         "sourceId": "EquivalentExchange",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "diffusion",
-          "just-die"
-        ]
+        "mutatorIds": ["diffusion", "just-die"]
       },
       {
         "id": "encroaching-madness",
@@ -3612,11 +3125,7 @@
         },
         "sourceId": "EncroachingMadness",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "eminent-domain",
-          "purifier-beam",
-          "void-rifts"
-        ]
+        "mutatorIds": ["eminent-domain", "purifier-beam", "void-rifts"]
       },
       {
         "id": "season-of-giving",
@@ -3630,11 +3139,7 @@
         },
         "sourceId": "SeasonofGiving",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "blizzard",
-          "gift-exchange",
-          "naughty-list"
-        ]
+        "mutatorIds": ["blizzard", "gift-exchange", "naughty-list"]
       },
       {
         "id": "choices-choices",
@@ -3648,11 +3153,7 @@
         },
         "sourceId": "ChoicesChoices",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "hardened-will",
-          "inspiration",
-          "mutually-assured-destruction"
-        ]
+        "mutatorIds": ["hardened-will", "inspiration", "mutually-assured-destruction"]
       },
       {
         "id": "pure-vengeance",
@@ -3666,10 +3167,7 @@
         },
         "sourceId": "PureVengeance",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "avenger",
-          "power-overwhelming"
-        ]
+        "mutatorIds": ["avenger", "power-overwhelming"]
       },
       {
         "id": "hot-are-the-nukes",
@@ -3683,11 +3181,7 @@
         },
         "sourceId": "HotAreTheNukes",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "going-nuclear",
-          "lava-burst",
-          "scorched-earth"
-        ]
+        "mutatorIds": ["going-nuclear", "lava-burst", "scorched-earth"]
       },
       {
         "id": "bonus-rifts",
@@ -3701,10 +3195,7 @@
         },
         "sourceId": "BonusRifts",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "temporal-field",
-          "void-rifts"
-        ]
+        "mutatorIds": ["temporal-field", "void-rifts"]
       },
       {
         "id": "blind-tribute",
@@ -3718,10 +3209,7 @@
         },
         "sourceId": "BlindTribute",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "kill-bots",
-          "shortsighted"
-        ]
+        "mutatorIds": ["kill-bots", "shortsighted"]
       },
       {
         "id": "barrier-to-entry",
@@ -3735,11 +3223,7 @@
         },
         "sourceId": "BarrierToEntry",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "barrier",
-          "mineral-shields",
-          "just-die"
-        ]
+        "mutatorIds": ["barrier", "mineral-shields", "just-die"]
       },
       {
         "id": "descent-of-the-masses",
@@ -3753,11 +3237,7 @@
         },
         "sourceId": "DescentOfTheMasses",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "alien-incubation",
-          "missile-command",
-          "outbreak"
-        ]
+        "mutatorIds": ["alien-incubation", "missile-command", "outbreak"]
       },
       {
         "id": "getting-along",
@@ -3771,10 +3251,7 @@
         },
         "sourceId": "GettingAlong",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "polarity",
-          "sharing-is-caring"
-        ]
+        "mutatorIds": ["polarity", "sharing-is-caring"]
       },
       {
         "id": "knock-knock",
@@ -3788,10 +3265,7 @@
         },
         "sourceId": "KnockKnock",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "avenger",
-          "propagators"
-        ]
+        "mutatorIds": ["avenger", "propagators"]
       },
       {
         "id": "dance-dance-evolution",
@@ -3805,11 +3279,7 @@
         },
         "sourceId": "DanceDanceEvolution",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "moment-of-silence",
-          "speed-freaks",
-          "transmutation"
-        ]
+        "mutatorIds": ["moment-of-silence", "speed-freaks", "transmutation"]
       },
       {
         "id": "train-of-pain",
@@ -3823,11 +3293,7 @@
         },
         "sourceId": "TrainOfPain",
         "mapId": "oblivion-express",
-        "mutatorIds": [
-          "double-edged",
-          "going-nuclear",
-          "mutually-assured-destruction"
-        ]
+        "mutatorIds": ["double-edged", "going-nuclear", "mutually-assured-destruction"]
       },
       {
         "id": "resilient-rifts",
@@ -3841,10 +3307,7 @@
         },
         "sourceId": "ResilientRifts",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "just-die",
-          "void-rifts"
-        ]
+        "mutatorIds": ["just-die", "void-rifts"]
       },
       {
         "id": "silent-killer",
@@ -3858,11 +3321,7 @@
         },
         "sourceId": "SilentKiller",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "black-death",
-          "outbreak",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["black-death", "outbreak", "we-move-unseen"]
       },
       {
         "id": "call-it-a-comeback",
@@ -3876,11 +3335,7 @@
         },
         "sourceId": "CallItAComeback",
         "mapId": "temple-of-the-past",
-        "mutatorIds": [
-          "avenger",
-          "eminent-domain",
-          "just-die"
-        ]
+        "mutatorIds": ["avenger", "eminent-domain", "just-die"]
       },
       {
         "id": "explosive-hunt",
@@ -3894,10 +3349,7 @@
         },
         "sourceId": "ExplosiveHunt",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "minesweeper",
-          "slim-pickings"
-        ]
+        "mutatorIds": ["minesweeper", "slim-pickings"]
       },
       {
         "id": "tax-day",
@@ -3911,10 +3363,7 @@
         },
         "sourceId": "TaxDay",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "fear",
-          "micro-transactions"
-        ]
+        "mutatorIds": ["fear", "micro-transactions"]
       },
       {
         "id": "aggressive-recruitment",
@@ -3928,11 +3377,7 @@
         },
         "sourceId": "AggressiveRecruitment",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "propagators",
-          "speed-freaks",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["propagators", "speed-freaks", "we-move-unseen"]
       },
       {
         "id": "scary-scavengers",
@@ -3946,10 +3391,7 @@
         },
         "sourceId": "ScaryScavengers",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "outbreak",
-          "slim-pickings"
-        ]
+        "mutatorIds": ["outbreak", "slim-pickings"]
       },
       {
         "id": "call-of-the-void",
@@ -3963,10 +3405,7 @@
         },
         "sourceId": "CallOfTheVoid",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "void-reanimators",
-          "void-rifts"
-        ]
+        "mutatorIds": ["void-reanimators", "void-rifts"]
       },
       {
         "id": "in-the-name-of-love",
@@ -3980,11 +3419,7 @@
         },
         "sourceId": "InTheNameOfLove",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "concussive-attacks",
-          "time-warp",
-          "purifier-beam"
-        ]
+        "mutatorIds": ["concussive-attacks", "time-warp", "purifier-beam"]
       },
       {
         "id": "locked-and-loaded",
@@ -3998,11 +3433,7 @@
         },
         "sourceId": "LockedAndLoaded",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "kill-bots",
-          "mineral-shields",
-          "temporal-field"
-        ]
+        "mutatorIds": ["kill-bots", "mineral-shields", "temporal-field"]
       },
       {
         "id": "of-mines-and-miners",
@@ -4016,11 +3447,7 @@
         },
         "sourceId": "OfMinesAndMiners",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "mag-nificent",
-          "minesweeper",
-          "missile-command"
-        ]
+        "mutatorIds": ["mag-nificent", "minesweeper", "missile-command"]
       },
       {
         "id": "the-league-of-vermillains",
@@ -4034,10 +3461,7 @@
         },
         "sourceId": "TheLeagueOfVermillains",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "evasive-maneuvers",
-          "heroes-from-the-storm"
-        ]
+        "mutatorIds": ["evasive-maneuvers", "heroes-from-the-storm"]
       },
       {
         "id": "chain-explosion",
@@ -4051,10 +3475,7 @@
         },
         "sourceId": "ChainExplosion",
         "mapId": "chain-of-ascension",
-        "mutatorIds": [
-          "lava-burst",
-          "walking-infested"
-        ]
+        "mutatorIds": ["lava-burst", "walking-infested"]
       },
       {
         "id": "operation-cooperation",
@@ -4068,10 +3489,7 @@
         },
         "sourceId": "OperationCooperation",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "polarity",
-          "propagators"
-        ]
+        "mutatorIds": ["polarity", "propagators"]
       },
       {
         "id": "hot-n-cold",
@@ -4085,11 +3503,7 @@
         },
         "sourceId": "Hot'n'Cold",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "blizzard",
-          "lava-burst",
-          "scorched-earth"
-        ]
+        "mutatorIds": ["blizzard", "lava-burst", "scorched-earth"]
       },
       {
         "id": "what-we-do-in-the-shadows",
@@ -4103,11 +3517,7 @@
         },
         "sourceId": "WhatWeDointheShadows",
         "mapId": "void-thrashing",
-        "mutatorIds": [
-          "darkness",
-          "shortsighted",
-          "we-move-unseen"
-        ]
+        "mutatorIds": ["darkness", "shortsighted", "we-move-unseen"]
       },
       {
         "id": "hardware-malfunction",
@@ -4121,11 +3531,7 @@
         },
         "sourceId": "HardwareMalfunction",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "kill-bots",
-          "laser-drill",
-          "minesweeper"
-        ]
+        "mutatorIds": ["kill-bots", "laser-drill", "minesweeper"]
       },
       {
         "id": "shared-pain",
@@ -4139,10 +3545,7 @@
         },
         "sourceId": "SharedPain",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "diffusion",
-          "fatal-attraction"
-        ]
+        "mutatorIds": ["diffusion", "fatal-attraction"]
       },
       {
         "id": "the-longest-night",
@@ -4156,11 +3559,7 @@
         },
         "sourceId": "TheLongestNight",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "just-die",
-          "long-range",
-          "photon-overload"
-        ]
+        "mutatorIds": ["just-die", "long-range", "photon-overload"]
       },
       {
         "id": "the-quick-and-the-undead",
@@ -4174,10 +3573,7 @@
         },
         "sourceId": "TheQuickandtheUndead",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "speed-freaks",
-          "void-reanimators"
-        ]
+        "mutatorIds": ["speed-freaks", "void-reanimators"]
       },
       {
         "id": "decade-of-decadence",
@@ -4191,11 +3587,7 @@
         },
         "sourceId": "DecadeofDecadence",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "fireworks",
-          "lucky-envelopes",
-          "gift-exchange"
-        ]
+        "mutatorIds": ["fireworks", "lucky-envelopes", "gift-exchange"]
       },
       {
         "id": "bubble-pop",
@@ -4209,11 +3601,7 @@
         },
         "sourceId": "BubblePop",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "barrier",
-          "mineral-shields",
-          "time-warp"
-        ]
+        "mutatorIds": ["barrier", "mineral-shields", "time-warp"]
       },
       {
         "id": "coordinated-defense",
@@ -4227,10 +3615,7 @@
         },
         "sourceId": "CoordinatedDefense",
         "mapId": "map-e30c71c3d37c",
-        "mutatorIds": [
-          "missile-command",
-          "polarity"
-        ]
+        "mutatorIds": ["missile-command", "polarity"]
       },
       {
         "id": "beggars-cant-be-choosers",
@@ -4244,11 +3629,7 @@
         },
         "sourceId": "BeggarsCan'tBeChoosers",
         "mapId": "lock-and-load",
-        "mutatorIds": [
-          "mag-nificent",
-          "minesweeper",
-          "slim-pickings"
-        ]
+        "mutatorIds": ["mag-nificent", "minesweeper", "slim-pickings"]
       },
       {
         "id": "my-bots",
@@ -4262,10 +3643,7 @@
         },
         "sourceId": "MyBots!",
         "mapId": "map-942b4d7d18ba",
-        "mutatorIds": [
-          "boom-bots",
-          "kill-bots"
-        ]
+        "mutatorIds": ["boom-bots", "kill-bots"]
       },
       {
         "id": "multitasking-trainer",
@@ -4279,10 +3657,7 @@
         },
         "sourceId": "MultitaskingTrainer",
         "mapId": "map-77fa060614f3",
-        "mutatorIds": [
-          "micro-transactions",
-          "void-rifts"
-        ]
+        "mutatorIds": ["micro-transactions", "void-rifts"]
       },
       {
         "id": "hello-my-old-friend",
@@ -4296,11 +3671,7 @@
         },
         "sourceId": "HelloMyOldFriend",
         "mapId": "map-420ba96ed84c",
-        "mutatorIds": [
-          "black-death",
-          "darkness",
-          "moment-of-silence"
-        ]
+        "mutatorIds": ["black-death", "darkness", "moment-of-silence"]
       },
       {
         "id": "of-one-mind",
@@ -4314,11 +3685,7 @@
         },
         "sourceId": "OfOneMind",
         "mapId": "rifts-to-korhal",
-        "mutatorIds": [
-          "boom-bots",
-          "polarity",
-          "sharing-is-caring"
-        ]
+        "mutatorIds": ["boom-bots", "polarity", "sharing-is-caring"]
       },
       {
         "id": "blasting-off-again",
@@ -4332,11 +3699,7 @@
         },
         "sourceId": "BlastingOffAgain",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "going-nuclear",
-          "lava-burst",
-          "power-overwhelming"
-        ]
+        "mutatorIds": ["going-nuclear", "lava-burst", "power-overwhelming"]
       },
       {
         "id": "enter-the-nexus",
@@ -4350,10 +3713,7 @@
         },
         "sourceId": "EnterTheNexus",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "heroes-from-the-storm",
-          "blizzard"
-        ]
+        "mutatorIds": ["heroes-from-the-storm", "blizzard"]
       },
       {
         "id": "death-is-fleeting",
@@ -4367,10 +3727,7 @@
         },
         "sourceId": "DeathIsFleeting",
         "mapId": "map-00072c95164a",
-        "mutatorIds": [
-          "void-reanimators",
-          "just-die"
-        ]
+        "mutatorIds": ["void-reanimators", "just-die"]
       },
       {
         "id": "mass-manufacturing",
@@ -4384,10 +3741,7 @@
         },
         "sourceId": "MassManufacturing",
         "mapId": "map-63c69c9ba4f3",
-        "mutatorIds": [
-          "propagators",
-          "void-rifts"
-        ]
+        "mutatorIds": ["propagators", "void-rifts"]
       },
       {
         "id": "fire-in-the-hole",
@@ -4401,10 +3755,7 @@
         },
         "sourceId": "FireInTheHole",
         "mapId": "map-f11bf0e27aab",
-        "mutatorIds": [
-          "boom-bots",
-          "missile-command"
-        ]
+        "mutatorIds": ["boom-bots", "missile-command"]
       },
       {
         "id": "chaos-studios-6",
@@ -4418,9 +3769,7 @@
         },
         "sourceId": "ChaosStudios6",
         "mapId": "void-launch",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       },
       {
         "id": "chaos-studios-7",
@@ -4434,9 +3783,7 @@
         },
         "sourceId": "ChaosStudios7",
         "mapId": "map-933478d4ebff",
-        "mutatorIds": [
-          "chaos-studios"
-        ]
+        "mutatorIds": ["chaos-studios"]
       }
     ],
     "rotationOrder": [

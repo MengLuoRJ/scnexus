@@ -32,7 +32,7 @@ export async function readAppStatus() {
   } catch {
     // Status remains readable even when the optional game profile is unavailable.
   }
-  return { version: app.getVersion(), gameConfigured: configured, capabilities, readOnly: true }
+  return { version: app.getVersion(), gameConfigured: configured, capabilities, readOnly: false }
 }
 export async function readCampaigns(offset: number, limit: number) {
   await requireGame()

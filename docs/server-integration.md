@@ -175,7 +175,7 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 - `GET /sc2/coop/weekly-mutations/current`：省略 region 按后端约定默认 CN。展示主题、展开地图、本周因子及北京时间区间；区分 `projected` 轮换推算与 `verified` 已核验，`lastVerifiedAt: null` 不显示核验时间。
 - `GET /sc2/coop/mutators`：展示全部目录，支持中文名、英文名和描述搜索。社区评分仅在存在且非负时显示，`-1` 不当作实际评分；不将 `iconName` 当远程图片 URL；按因子 `id` 从 `src/assets/mutators/{id}.png` 通过 Vite glob URL 映射加载，静态导入 `Ui_coop_ingame_mutatorframe.webp` 外框并叠加，生产资源路径由构建器生成，不再拼接 public URL。图标缺失时显示占位，装饰图片不重复朗读名称。页面采用局部突变绿主题，不影响其他模块，保持 1000×700 双列布局。
 - `available: false` 的 `NO_SCHEDULE` 和 `OUTSIDE_VALIDITY` 是成功的空状态，不报网络故障。有效期为 `[startsAt, endsAt)`；到期或恢复可见时检查到期状态，停止展示旧安排，由用户刷新，不将过期响应直接外推、不循环重试。
-- 响应通过普通 TypeScript 校验，仅保留显示字段；描述以纯文本渲染，不使用 HTML。两个接口独立加载，各自以后端成功响应优先；请求失败（含无效响应）时使用随包的 `src/assets/mutators/weekly-data-default.json` 回退，不弹出网络失败提示。后端成功返回不可用或空目录时不回退。本周回退按本地快照的 CN 周历锚点、有效范围及覆盖记录计算，覆盖优先，区间同样为半开区间；不把任意第一条当作本周。手动刷新仍先请求后端。移除轮换推算说明句，保留状态标记。页面卸载后迟到结果不更新页面或提示。
+- 响应通过普通 TypeScript 校验，仅保留显示字段；描述以纯文本渲染，不使用 HTML。两个接口独立加载，各自以后端成功响应优先；请求失败（含无效响应）时使用随包的 `packages/app-shared/src/mutations/weekly-data-default.json` 回退，不弹出网络失败提示。后端成功返回不可用或空目录时不回退。本周回退按本地快照的 CN 周历锚点、有效范围及覆盖记录计算，覆盖优先，区间同样为半开区间；不把任意第一条当作本周。手动刷新仍先请求后端。移除轮换推算说明句，保留状态标记。页面卸载后迟到结果不更新页面或提示。
 
 本机只读联调成功：当前返回“光炫神迷 / 机会渺茫”、3 个本周因子和 69 个目录因子。后端后续移除本周响应 `source` 字段，客户端已停止要求及保留该字段，兼容旧响应多余字段但不显示、不访问其 URL；对应回归覆盖无 `source` 的成功返回。因子卡片同排等高（Grid stretch），高度由本行最长说明决定，不裁切文字。1000×700 浏览器验收，两列各 402px，无横向溢出；中文搜索“激光”返回 1 项。开发来源使用后端已允许的 `http://localhost:5173`；其他临时端口未被 CORS 允许，不通过放宽安全配置绕过。生产 API 与打包环境仍需部署后独立验收；本轮未修改后端。
 
@@ -276,3 +276,5 @@ renderer 语言资源按 `src/locales/{zh,en,zh-Hant}/{module}.json` 组织，�
 下载管理“打开下载位置”通过专用 IPC 打开设置中的当前下载目录，不把任意路径交给 renderer；目录不安全或系统打开失败时显示 toast。打开当前目录不要求登录或启用工坊，无桌面桥接时按钮禁用。删除下载文件仅针对对应任务文件，不删除同目录其他内容，也不卸载已安装作品。
 
 最终验证：`pnpm run typecheck`、`pnpm run lint` 通过；主进程 575 项、preload 19 项、renderer（`--maxWorkers=2`）426 项通过。语言拆分对原每语 501 个键值逐键核对无变化，新增位置按钮词条后三语各 503 键。main/preload 构建通过。renderer 最后构建被独立资源删除阻塞：作者工具箱仍引用已删除的 `src/assets/menu/Menu_Customize_Test.png`；本轮未擅自恢复或替换该资源，不宣称最终 renderer 构建通过。1000×700 浏览器已检查顶部位置按钮无横向溢出、无桌面桥接时禁用；实际系统目录打开使用受控回调测试，未在真实 Electron 中启动资源管理器。
+
+- AI 助手的因子与本周突变只读查询复用 `@scnexus/app-shared/mutations/local-data` 的同一份快照与计算，通过 `mutations/contracts` 投影显示字段，不返回来源标识、资源 URL 或快照内部字段。默认地区 CN、语言 zhCN；支持地区 CN/NA/EU/AS，语言 zhCN/enUS/ruRU/koKR/frFR/deDE。因子搜索匹配 ID、多语言名称及描述，分页默认 20、最大 100。仅在官方服务与每周突变校准均开启时匿名校准，网络失败、无效或空校准保留本地结果；请求最长 5 秒并支持取消，取消不转为成功回退。

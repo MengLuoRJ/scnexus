@@ -1,10 +1,16 @@
 import * as z from 'zod'
+import type { MutationLanguage, MutationRegion } from '@scnexus/app-shared/mutations/contracts'
 
 export interface AiAssistantTool {
   name: string
   description: string
   inputSchema: z.ZodRawShape
-  execute(args: Record<string, unknown>, signal: AbortSignal): Promise<unknown>
+  readOnly?: boolean
+  execute(
+    args: Record<string, unknown>,
+    signal: AbortSignal,
+    beginMutation?: () => void,
+  ): Promise<unknown>
 }
 
 export interface ReadOnlyAiAssistantAdapters {
@@ -60,6 +66,77 @@ export function createReadOnlyAiAssistantTools(
       description: 'Read a local download task by identifier.',
       inputSchema: identifier,
       execute: (args) => adapters.readTaskStatus(args.id as string),
+    },
+  ]
+}
+
+export interface AiAssistantActionAdapters {
+  activateCampaign(id: string, signal: AbortSignal, beginMutation?: () => void): Promise<unknown>
+  switchCampaign(id: string, signal: AbortSignal, beginMutation?: () => void): Promise<unknown>
+  restoreCampaign(id: string, signal: AbortSignal, beginMutation?: () => void): Promise<unknown>
+  uninstallCampaign(id: string, signal: AbortSignal, beginMutation?: () => void): Promise<unknown>
+  readMutators(
+    args: { language?: MutationLanguage; search?: string; offset?: number; limit?: number },
+    signal: AbortSignal,
+  ): Promise<unknown>
+  readWeeklyMutation(
+    args: { region?: MutationRegion; language?: MutationLanguage },
+    signal: AbortSignal,
+  ): Promise<unknown>
+}
+export function createAiAssistantTools(
+  adapters: ReadOnlyAiAssistantAdapters & AiAssistantActionAdapters,
+): AiAssistantTool[] {
+  const actions: [string, string, AiAssistantActionAdapters['activateCampaign']][] = [
+    [
+      'activate_campaign',
+      'Activate an installed campaign. Conflicts require manual review; changes local game files.',
+      adapters.activateCampaign,
+    ],
+    [
+      'switch_campaign',
+      'Switch to an installed campaign of the same category. Conflicts require manual review; changes local game files.',
+      adapters.switchCampaign,
+    ],
+    [
+      'restore_campaign',
+      'Deactivate the active custom campaign to restore the original campaign. Requires approval in the desktop application.',
+      adapters.restoreCampaign,
+    ],
+    [
+      'uninstall_campaign',
+      'Uninstall an installed campaign. Requires approval in the desktop application; conflicts require manual review.',
+      adapters.uninstallCampaign,
+    ],
+  ]
+  const language = z.enum(['zhCN', 'enUS', 'ruRU', 'koKR', 'frFR', 'deDE']).default('zhCN')
+  return [
+    ...createReadOnlyAiAssistantTools(adapters),
+    ...actions.map(([name, description, execute]): AiAssistantTool => ({
+      name,
+      description,
+      readOnly: false,
+      inputSchema: { id: z.string().min(1).max(200) },
+      execute: (args, signal, beginMutation) => execute(args.id as string, signal, beginMutation),
+    })),
+    {
+      name: 'list_mutators',
+      description:
+        'Query mutator catalog using local data and optional online calibration. Search by name or identifier.',
+      inputSchema: {
+        language,
+        search: z.string().max(100).default(''),
+        offset: z.number().int().min(0).max(100000).default(0),
+        limit: z.number().int().min(1).max(100).default(20),
+      },
+      execute: (args, signal) => adapters.readMutators(args, signal),
+    },
+    {
+      name: 'get_weekly_mutation',
+      description:
+        'Query current weekly mutation using local prediction and optional online calibration. Does not require sign-in.',
+      inputSchema: { region: z.enum(['CN', 'NA', 'EU', 'AS']).default('CN'), language },
+      execute: (args, signal) => adapters.readWeeklyMutation(args, signal),
     },
   ]
 }

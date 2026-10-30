@@ -248,6 +248,7 @@ renderer-v2 的 `/customize` 路由提供自制作品列表、详情、刷新/�
 - [app-main 模块与存储设计](./app-main-design.md)
 - [全局错误码与日志设计](./logging-and-errors.md)
 - [本地 AI 助手与 MCP 设计](./ai-assistant-design.md)
+- [录像库与复盘分析设计（提案）](./replay-analysis-design.md)
 
 - [开发规范](../AGENTS.md)
 - [v2 包说明](../packages/app-renderer-v2/README.md)

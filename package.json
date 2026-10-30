@@ -19,6 +19,7 @@
     "build:preload": "pnpm --filter @scnexus/app-preload build",
     "build:renderer": "pnpm --filter @scnexus/app-renderer-v2 build-only",
     "build:standard": "pnpm --filter @scnexus/standard build",
+    "build:replay-parser": "pnpm --filter @scnexus/replay-parser build",
     "publish:standard": "pnpm run build:standard && pnpm run test:standard && node --test scripts/__tests__/standard-distribution.test.mjs && pnpm --dir packages/standard publish --access public --tag latest --registry=https://registry.npmjs.org --no-git-checks",
     "build:app:prepare": "pnpm run script:app:sync-version",
     "build:app": "pnpm run build:app:prepare && cross-env MODE=production pnpm run build && pnpm --filter @scnexus/app-main build:app",

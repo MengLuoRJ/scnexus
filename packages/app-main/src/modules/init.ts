@@ -24,6 +24,7 @@ import { initSciiGameSettingModule } from './scii-game-setting'
 import { initContentPackageModule } from './content-package'
 import { initCampaignModule } from './campaign'
 import { initCustomizeModule } from './customize'
+import { initReplayModule } from './replay'
 import { startWorkshop, stopWorkshop } from './workshop-runtime'
 import { initDependencyIpc } from './dependency/dependency.ipc'
 import { getMainWindow } from './window'
@@ -40,6 +41,7 @@ export async function initModules() {
     initContentPackageModule()
     initCampaignModule()
     initCustomizeModule()
+    initReplayModule()
     initDependencyIpc()
     contentStarted = true
   })

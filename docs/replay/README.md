@@ -1,0 +1,29 @@
+# Replay Center
+
+本目录记录 SCNexus 的录像管理与分析设计方案，目标是把 `.SC2Replay` 文件当作受管理的本地资产，而不是临时文件。
+
+## 目标
+
+- 支持识别本地录像目录和压缩包中的录像文件
+- 支持索引、筛选、导入、删除、重命名与归档
+- 支持最小可用的 replay metadata 抽取
+- 将解析能力拆为 MPQ / Components / Metadata / Analysis 四层
+- 在桌面端保持本地优先、可验证、可恢复
+
+## 设计原则
+
+1. 先保证「管理能力」可靠，再做「深度分析」
+2. 区分「文件识别」「基础信息解析」「事件分析」「聚合统计」
+3. 明确版本不支持时返回 `unsupported` / `partial` / `failed`，不静默回退
+4. 以本地 SQLite 和本地文件索引为主，上传/社区对比归后续扩展
+
+## 文档索引
+
+- [replay-architecture.md](./replay-architecture.md) — 架构与能力拆分
+- [replay-parser-package.md](./replay-parser-package.md) — `@scnexus/replay-parser` 包设计
+
+## 关键原则
+
+- 录像文件不是“视频”，而是包含协议结构和事件流的压缩存档。
+- StormLib 负责 MPQ 读取；解析器负责语义解码；统计器负责高层分析。
+- 未知 build 与损坏文件必须显式标记，不要把“最近协议”伪装成“兼容”。

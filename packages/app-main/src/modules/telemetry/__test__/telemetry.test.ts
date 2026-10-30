@@ -29,7 +29,7 @@ test('consent gates transport and reports, deduplicates errors and blocks old se
   const options = mocks.init.mock.calls[0][0]!
   const transport = options.transport!({
     url: 'https://example.invalid/api/1/envelope/',
-    recordDroppedEvent: () => { },
+    recordDroppedEvent: () => {},
   })
   const error = { code: 'M002', name: 'error', errorId: 'same' }
   service.reportTelemetry(error)
@@ -81,7 +81,7 @@ test('flush is bounded and revoking consent prevents any subsequent draining', a
   vi.useFakeTimers()
   try {
     service.enableTelemetry('client')
-    mocks.flush.mockImplementationOnce(() => new Promise(() => { }))
+    mocks.flush.mockImplementationOnce(() => new Promise(() => {}))
     const flushing = service.flushTelemetry(50)
     await vi.advanceTimersByTimeAsync(50)
     await expect(flushing).resolves.toBe(false)
@@ -133,6 +133,57 @@ test('partial SDK initialization failure requires restart instead of registering
     expect(mocks.init).toHaveBeenCalledTimes(calls + 1)
     await isolated.disableTelemetry()
     expect(isolated.getTelemetryStatus()).toEqual({ savedEnabled: false, state: 'disabled' })
+  } finally {
+    vi.unstubAllEnvs()
+  }
+})
+test('official renderer errors require current consent and are sanitized before transport', async () => {
+  vi.resetModules()
+  const service = await import('../telemetry')
+  vi.stubEnv('VITE_SENTRY_DSN', 'https://example.invalid/1')
+  try {
+    service.enableTelemetry('client')
+    const options = mocks.init.mock.calls[0][0]!
+    const sessionId = service.getTelemetryStatus().sessionId!
+    const event = {
+      type: undefined,
+      event_id: 'official-renderer-event',
+      exception: {
+        values: [
+          {
+            type: 'Error',
+            value: 'password=synthetic-secret',
+            stacktrace: {
+              frames: [{ filename: 'C:\\Users\\SyntheticUser\\app.js?secret=1', lineno: 10 }],
+            },
+          },
+        ],
+      },
+      tags: { scnexusConsent: sessionId, 'event.process': 'renderer' },
+      extra: { password: 'secret' },
+      contexts: { vue: { props: 'private' } },
+      request: { url: 'secret' },
+    }
+    const clean = await options.beforeSend!(event, {})
+    expect(clean?.tags).toEqual({ process: 'renderer' })
+    expect(clean?.exception?.values?.[0]?.value).toBe('password=[redacted]')
+    expect(JSON.stringify(clean)).not.toContain('SyntheticUser')
+    expect(clean).not.toHaveProperty('extra')
+    expect(clean).not.toHaveProperty('contexts')
+    expect(clean).not.toHaveProperty('request')
+    const transport = options.transport!({
+      url: 'https://example.invalid/envelope',
+      recordDroppedEvent: () => {},
+    })
+    const calls = mocks.send.mock.calls.length
+    await transport.send([{}, [[{ type: 'event' }, clean!]]])
+    expect(mocks.send).toHaveBeenCalledTimes(calls + 1)
+    await service.disableTelemetry()
+    expect(options.beforeSend!(event, {})).toBeNull()
+    service.enableTelemetry('client')
+    expect(service.getTelemetryStatus().sessionId).not.toBe(sessionId)
+    expect(options.beforeSend!(event, {})).toBeNull()
+    await service.disableTelemetry()
   } finally {
     vi.unstubAllEnvs()
   }

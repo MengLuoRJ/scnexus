@@ -14,6 +14,9 @@ const config: UserConfig = {
   mode: process.env.MODE,
   root: PACKAGE_ROOT,
   envDir: PROJECT_ROOT,
+  ssr: {
+    noExternal: ['@sentry/electron'],
+  },
   resolve: {
     alias: {
       '@/': join(PACKAGE_ROOT, 'src') + '/',

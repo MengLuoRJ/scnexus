@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import * as Sentry from '@sentry/electron/main'
-import { AppError, ERRORS, type AppErrorDto } from '@scnexus/app-shared/errors/app.error'
+import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type { TelemetryStatus } from '@scnexus/app-shared/types/desktop.type'
 import { redact } from '../logging/redact'
 import { getMainWindow } from '../window/window'
@@ -24,7 +24,7 @@ function publish() {
 }
 
 export function enableTelemetry(clientId: string) {
-  status = { savedEnabled: true, state: 'starting' }
+  status = { ...status, savedEnabled: true, state: 'starting' }
   publish()
   const dsn = import.meta.env.VITE_SENTRY_DSN
   if (!app.isPackaged || !dsn) {
@@ -80,6 +80,44 @@ export function enableTelemetry(clientId: string) {
           }
         },
         beforeSend(event) {
+          if (
+            canSend &&
+            event.event_id &&
+            event.tags?.scnexusConsent === status.sessionId &&
+            status.sessionId &&
+            event.tags?.['event.process'] === 'renderer'
+          ) {
+            const values = event.exception?.values?.slice(-4).map((value) => ({
+              type: redact(value.type ?? 'Error').slice(0, 150),
+              value: redact(value.value ?? '').slice(0, 2000),
+              ...(value.stacktrace?.frames
+                ? {
+                    stacktrace: {
+                      frames: value.stacktrace.frames.slice(-40).map((frame) => ({
+                        filename: frame.filename
+                          ? redact(frame.filename).split(/[?#]/)[0]
+                          : undefined,
+                        function: frame.function ? redact(frame.function).slice(0, 200) : undefined,
+                        lineno: frame.lineno,
+                        colno: frame.colno,
+                        in_app: frame.in_app,
+                      })),
+                    },
+                  }
+                : {}),
+            }))
+            if (!values?.length) return null
+            const clean: Sentry.ErrorEvent = {
+              type: undefined,
+              event_id: event.event_id,
+              level: 'error',
+              platform: 'javascript',
+              exception: { values },
+              tags: { process: 'renderer' },
+            }
+            pending.set(event.event_id, { session, event: clean })
+            if (pending.size > 1000) pending.delete(pending.keys().next().value!)
+          }
           const entry = event.event_id ? pending.get(event.event_id) : undefined
           if (!canSend || entry?.session !== session) return null
           return {
@@ -99,6 +137,7 @@ export function enableTelemetry(clientId: string) {
     Sentry.setUser({ id: clientId })
     canSend = true
     status.state = 'enabled'
+    status.sessionId = globalThis.crypto.randomUUID()
     publish()
   } catch (cause) {
     canSend = false
@@ -106,6 +145,7 @@ export function enableTelemetry(clientId: string) {
     pending.clear()
     session++
     status.state = 'failed'
+    delete status.sessionId
     publish()
     throw new AppError(ERRORS.TELEMETRY_INITIALIZATION_FAILED, {}, { cause })
   }
@@ -166,14 +206,14 @@ export function reportTelemetry(
     seen.add(current)
     const frames = current.stack
       ? Sentry.defaultStackParser(redact(current.stack).slice(0, 8192))
-        .slice(-40)
-        .map((frame) => ({
-          filename: frame.filename ? redact(frame.filename).split(/[?#]/)[0] : undefined,
-          function: frame.function ? redact(frame.function).slice(0, 200) : undefined,
-          lineno: frame.lineno,
-          colno: frame.colno,
-          in_app: frame.in_app,
-        }))
+          .slice(-40)
+          .map((frame) => ({
+            filename: frame.filename ? redact(frame.filename).split(/[?#]/)[0] : undefined,
+            function: frame.function ? redact(frame.function).slice(0, 200) : undefined,
+            lineno: frame.lineno,
+            colno: frame.colno,
+            in_app: frame.in_app,
+          }))
       : []
     values.unshift({
       type: redact(current.name).slice(0, 150),
@@ -200,12 +240,4 @@ export function reportTelemetry(
   pending.set(eventId, { session, event })
   if (pending.size > 1000) pending.delete(pending.keys().next().value!)
   Sentry.captureEvent(event)
-}
-export function reportRendererError(
-  error: AppErrorDto,
-  stack?: string,
-  scope = 'renderer',
-  process: 'renderer' | 'preload' = 'renderer',
-) {
-  reportTelemetry({ ...error, stack }, scope, process)
 }

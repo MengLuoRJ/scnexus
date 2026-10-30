@@ -283,9 +283,11 @@ telemetry 提供 getStatus，区分 savedEnabled 与实际运行状态（disable
 
 关闭后的门控必须阻止继续发送，包括仍在处理中的异常及自动集成。若 SDK 清理失败，仍保持发送关闭并报告诊断；若保存 false 失败，当前会话保持关闭、UI 明确显示未持久化，不能声称重启后一定关闭。此时用户需要重试保存，不能自动恢复本会话上报。
 
-renderer 初始化前、关闭后或重新加载时读取有效授权状态，不根据本地 Pinia/旧 localStorage 自行初始化 SDK。renderer/main 同一故障按 errorId 去重，避免同一 IPC 失败同时由两个 SDK 重复上报。
+renderer 初始化前、关闭后或重新加载时读取 main 有效授权状态，不根据本地 Pinia/旧 localStorage 自行授权。main 在开启时生成 sessionId，关闭时撤销；renderer 在事件捕获时关联该授权会话，双方发送前再次校验，迟到的旧会话事件不能在重新开启后补发。
 
-renderer 不安装 Sentry SDK：Vue/window/rejection 入口经日志 IPC 传入 main，由 main 权限门控决定是否远程发送。同一 Error 对象去重，每分钟最多二十次自动捕获；卸载清理 handler 和监听器。堆栈限制长度，main 再校验输入及总负载大小。设置页订阅实际状态，迟到查询不能覆盖更新事件；enabled 只表示本地可发送，不证明服务端收到。
+renderer 使用官方 `@sentry/electron/renderer` 的 init，并将 `@sentry/vue` 的 init 作为框架初始化函数；启用 Vue、全局异常、cause 链和去重集成，禁用组件 props、breadcrumb 及默认自动集成，不启用追踪或回放。首次有效授权才初始化，后续开关复用同一客户端，每分钟最多发送二十个错误。官方信封经 sandbox preload 内联的 `@sentry/electron/preload` 桥接交 main，main 重新构造脱敏字段白名单并以同一 DSN 发送，不为 renderer 创建第二个 DSN。
+
+原有 Vue/window/rejection 捕获仍经应用日志 IPC 写入本地日志，但 main 日志 IPC 不再调用遥测，因此不会二次远程上报。Vue SDK 保留并调用原本地 errorHandler；本地日志与远程捕获独立限流。卸载撤销 renderer 发送授权、取消状态订阅，并恢复本地 handler。设置页订阅实际状态，迟到查询不能覆盖更新事件；enabled 只表示本地 main 可发送，不证明 renderer 初始化或服务端收件成功。
 
 正常退出先 flush 再禁用；主进程未捕获异常/拒绝在记录后最多等待默认两秒再 exit(1)，flush 上限五秒，失败不阻止退出。用户撤销授权不触发 flush。当前未启用原生 minidump、截图、附件、性能追踪、回放及磁盘离线队列，也未新增 source map 上传配置；不能将其描述为完整原生崩溃捕获。
 

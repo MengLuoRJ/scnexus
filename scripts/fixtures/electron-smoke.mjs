@@ -58,10 +58,22 @@ async function run() {
   const result = await window.webContents.executeJavaScript(`(async () => ({
     version: await window.scnexus.app.getVersion(),
     webUtils: typeof window.webUtils.getPathForFile,
+    sentryBridge: typeof window.__SENTRY_IPC__?.['sentry-ipc']?.sendEnvelope,
     isolated: typeof require === 'undefined' && typeof process === 'undefined'
   }))()`)
   assert.deepEqual(result.version, { ok: true, data: process.versions.electron })
   assert.equal(result.webUtils, 'function')
+  assert.equal(result.sentryBridge, 'function')
+  const envelope = new Promise((resolve) => {
+    ipcMain.once('sentry-ipc.envelope', (event, body) => {
+      assert.equal(event.sender, window.webContents)
+      resolve(body)
+    })
+  })
+  await window.webContents.executeJavaScript(
+    `window.__SENTRY_IPC__['sentry-ipc'].sendEnvelope('synthetic-smoke-envelope')`,
+  )
+  assert.equal(await envelope, 'synthetic-smoke-envelope')
   assert.equal(result.isolated, true)
   assert.equal(window.webContents.getLastWebPreferences().sandbox, true)
   window.destroy()

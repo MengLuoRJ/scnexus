@@ -11,7 +11,7 @@
 - `pnpm run test:electron`：需要图形桌面的真实 Electron 45 冒烟，不包含在默认 `test` 中；先运行 `build:prepare` 和 `build:preload`。
 - `pnpm run build:app`：同步版本、完整类型检查和三个运行包构建，随后生成 Windows `--dir` 产物；不发布。不与其他修改相同 dist/release 输出的构建并行。
 
-`test:electron` 仅启动持久化测试 fixture，不加载业务 main、Sentry 或用户设置。所有 userData/sessionData/log/crash 路径均放在仓库内独立随机目录，退出后删除。测试禁用 Chromium 后台联网，并拦截测试 session 的 HTTP/WebSocket 请求，不发送业务遥测。隐藏窗口使用 `sandbox: true`、`contextIsolation: true`、`nodeIntegration: false`，加载真实构建 preload，通过受控模拟 handler 验证桥接往返及主世界 Node 隔离。另验证 Electron 版本、async safeStorage 可用性、加解密的 `.result` 往返，以及旧同步 API 密文的异步解密兼容；只有 fixture 使用已弃用同步加密 API，不打印密文。
+`test:electron` 仅启动持久化测试 fixture，不加载业务 main、不初始化 Sentry 上报客户端、不读取用户设置。所有 userData/sessionData/log/crash 路径均放在仓库内独立随机目录，退出后删除。测试禁用 Chromium 后台联网，并拦截测试 session 的 HTTP/WebSocket 请求，不发送业务遥测。隐藏窗口使用 `sandbox: true`、`contextIsolation: true`、`nodeIntegration: false`，加载真实构建 preload，通过受控模拟 handler 验证桥接往返及主世界 Node 隔离；同时检查内联官方 Sentry preload 桥接，用合成字符串验证 `sendEnvelope` 的隔离 IPC 往返，不连接 Sentry。另验证 Electron 版本、async safeStorage 可用性、加解密的 `.result` 往返，以及旧同步 API 密文的异步解密兼容；只有 fixture 使用已弃用同步加密 API，不打印密文。
 
 Electron 45 移除了 sandbox preload 的 events/timers/url shim 和 Buffer/setImmediate 等全局；模拟 Electron 的单元测试不能覆盖这项兼容性，必须执行真实冒烟。
 

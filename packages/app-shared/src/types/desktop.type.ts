@@ -29,6 +29,7 @@ export type WindowStatus = {
 export type TelemetryStatus = {
   savedEnabled: boolean
   state: 'disabled' | 'starting' | 'enabled' | 'failed'
+  sessionId?: string
 }
 export type LogInput = {
   level: LogLevel

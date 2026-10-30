@@ -10,10 +10,16 @@ import { i18n } from './locales'
 import App from './App.vue'
 import router from './router'
 import { installErrorReporting } from './utils/error-reporting'
+import { installRendererTelemetry } from './utils/renderer-telemetry'
 
 disableIconRequests()
 const app = createApp(App)
-app.onUnmount(installErrorReporting(app))
+const telemetry = installRendererTelemetry(app)
+const stopErrorLogging = installErrorReporting(app, window, telemetry.recordError)
+app.onUnmount(() => {
+  telemetry.dispose()
+  stopErrorLogging()
+})
 
 app.use(createPinia())
 app.use(i18n as unknown as Plugin)

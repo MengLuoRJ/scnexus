@@ -23,7 +23,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@scnexus/app-shared": "workspace:*"
+    "@scnexus/app-shared": "workspace:*",
+    "@sentry/electron": "8.3.0"
   },
   "devDependencies": {
     "electron": "^45.1.0",

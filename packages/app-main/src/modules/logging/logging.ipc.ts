@@ -23,6 +23,8 @@ export function initLoggingIpc() {
         typeof value.message !== 'string' ||
         value.message.length > 8192 ||
         (value.error !== undefined && !isErrorDto(value.error)) ||
+        (value.errorStack !== undefined &&
+          (typeof value.errorStack !== 'string' || value.errorStack.length > 8192)) ||
         (value.taskId !== undefined &&
           (typeof value.taskId !== 'string' || value.taskId.length > 200))
       )
@@ -30,7 +32,13 @@ export function initLoggingIpc() {
       const size = JSON.stringify(value).length
       if (size > 16384) return
       writeLog(value, source === 'preload' ? 'preload' : 'renderer')
-      if (value.error) reportRendererError(value.error)
+      if (value.error)
+        reportRendererError(
+          value.error,
+          value.errorStack,
+          value.scope,
+          source === 'preload' ? 'preload' : 'renderer',
+        )
     } catch {
       return
     }

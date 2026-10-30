@@ -2,7 +2,7 @@
 
 ## 1. 状态与目标
 
-main 与 preload 的错误注册表、结构化 IPC、日志归集和受控遥测基础能力已实现；renderer-v2 尚未接入，页面端异常捕获、设置 UI 和完整生产遥测验证仍待完成。三个应用包共用错误契约；main 使用 electron-log，renderer-v2 后续通过 preload 受控桥接归集到 main。
+main 与 preload 的错误注册表、结构化 IPC、日志归集和受控遥测基础能力已实现；renderer-v2 已接入 Vue、window error 和未处理 Promise rejection，并在设置页展示保存偏好与实际运行状态。三个应用包共用错误契约；main 使用 electron-log，renderer-v2 通过 preload 受控桥接归集到 main。完整生产遥测收件验证仍待完成。
 
 用户已确认：**共用一个持久化等级，同时控制控制台与文件输出，默认 error；preload 也遵循同一等级。** 开发模式不自动放宽为 debug。
 
@@ -265,25 +265,29 @@ renderer/preload 不维护另一个独立等级设置，main 接收器是最终�
 
 遥测由独立 telemetry 模块负责，同样包含 index.ts、telemetry.ipc.ts、telemetry.ts。setting 保存 telemetryEnabled，默认 false；模块按明确授权初始化，不在应用 import 或启动入口无条件初始化 Sentry。
 
-- false 或设置无法可靠读取时，不初始化 Sentry、不绑定用户、不发送事件。
+- 启动时 false 或设置无法可靠读取，不初始化 Sentry、不绑定用户、不发送事件；曾启用后撤销时保留不发送的 SDK 实例，避免重复注册 SDK IPC handler。
 - true 时为用户启用 Sentry：main 负责 SDK 生命周期，通过受控初始化将 renderer-v2 错误能力接入；preload 只提供桥接诊断，不运行第三份独立上报器。
 - 使用已保存 clientId 作为匿名安装身份（如 Sentry user.id），不是登录账户身份，不默认附带姓名、邮箱或访问令牌。匿名安装标识仍属于可关联数据，需要向用户说明用途。
 - DSN 缺失或 SDK 初始化失败时，不声称遥测已启用；通过有效状态反馈给 UI。开发/测试不应实际发送事件，使用模拟 transport 验证。
 - 本地 electron-log 与遥测独立：errorId/code/name 保持一致，本地日志等级不决定是否授权，也不自动把 debug 日志上传为 breadcrumb。
 - 默认只上报诊断所需错误，不自动启用性能追踪、会话回放、文件附件或个人信息收集。
-- Sentry 事件用 code/name/errorId 关联故障，业务 taskId 仅在脱敏且适合上传时附加；异常 stack、URL、路径及上下文统一脱敏，不上传认证深链接原文。
+- Sentry 事件以白名单保留 code/name/errorId、scope、进程来源、错误及最多四层 cause、每层最多四十帧堆栈；不附加业务 taskId、请求、任意 extra 或 SDK 自动上下文。过滤认证深链接、恢复码数组、令牌、验证器 URI、邮箱及常见用户主目录，移除堆栈文件名查询参数。文本脱敏不是任意个人信息的完整识别器，业务仍须构造安全错误。
 
 ### 开关生命周期
 
 telemetry 提供 getStatus，区分 savedEnabled 与实际运行状态（disabled、starting、enabled、failed）。telemetry:set-enabled 委托 setting 协调流程；通用偏好 patch 不可绕过该流程。其他 main 模块只捕获并报告错误，不能替用户开启遥测。
 
-开启：校验明确授权 → 保存 true → 初始化受控 SDK 并绑定 clientId → 同步有效状态。保存失败不初始化；初始化失败保留用户已保存的授权选择，但报告 failed 和登记错误，用户可重试或关闭，不能返回“已生效”。再次启动只有已保存 true 才重试初始化。不回传开启之前收集的错误或日志。
+开启：校验明确授权 → 保存 true → 首次初始化受控 SDK（后续开启复用实例）并绑定 clientId → 同步有效状态。保存失败不初始化；初始化失败保留用户已保存的授权选择，但报告 failed 和登记错误，不能返回“已生效”。SDK 部分初始化失败后要求重启，避免重复注册 IPC；再次启动只有已保存 true 才重试初始化。不回传开启之前收集的错误或日志。
 
-关闭：先撤销 main/renderer 上报入口及统一发送门控 → 清理身份和未发送队列 → 关闭/释放 SDK → 保存 false → 同步有效状态。不能使用会主动 flush 待发事件的默认关闭方式替代撤销；实现时针对选定 Sentry 版本验证关闭与队列行为。已发出的在途请求不能承诺撤回。
+关闭：先撤销统一发送门控并推进授权会话版本 → 清理身份和事件白名单 → 保留 SDK 空闲实例 → 保存 false → 同步有效状态。beforeSend 和 transport 均核验事件属于当前授权会话，拒绝旧事件及非错误信封；不调用会主动 flush 的 close。已发出的在途请求不能承诺撤回。
 
 关闭后的门控必须阻止继续发送，包括仍在处理中的异常及自动集成。若 SDK 清理失败，仍保持发送关闭并报告诊断；若保存 false 失败，当前会话保持关闭、UI 明确显示未持久化，不能声称重启后一定关闭。此时用户需要重试保存，不能自动恢复本会话上报。
 
 renderer 初始化前、关闭后或重新加载时读取有效授权状态，不根据本地 Pinia/旧 localStorage 自行初始化 SDK。renderer/main 同一故障按 errorId 去重，避免同一 IPC 失败同时由两个 SDK 重复上报。
+
+renderer 不安装 Sentry SDK：Vue/window/rejection 入口经日志 IPC 传入 main，由 main 权限门控决定是否远程发送。同一 Error 对象去重，每分钟最多二十次自动捕获；卸载清理 handler 和监听器。堆栈限制长度，main 再校验输入及总负载大小。设置页订阅实际状态，迟到查询不能覆盖更新事件；enabled 只表示本地可发送，不证明服务端收到。
+
+正常退出先 flush 再禁用；主进程未捕获异常/拒绝在记录后最多等待默认两秒再 exit(1)，flush 上限五秒，失败不阻止退出。用户撤销授权不触发 flush。当前未启用原生 minidump、截图、附件、性能追踪、回放及磁盘离线队列，也未新增 source map 上传配置；不能将其描述为完整原生崩溃捕获。
 
 ### 错误定义与验证
 

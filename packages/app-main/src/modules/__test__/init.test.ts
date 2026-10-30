@@ -60,7 +60,8 @@ vi.mock('../updater', () => ({
 }))
 vi.mock('../telemetry', () => ({
   initTelemetryModule: vi.fn<typeof import('../telemetry').initTelemetryModule>(),
-  disableTelemetry: vi.fn<typeof import('../telemetry').disableTelemetry>(),
+  disableTelemetry: vi.fn<typeof import('../telemetry').disableTelemetry>(async () => {}),
+  flushTelemetry: vi.fn<typeof import('../telemetry').flushTelemetry>(),
   getTelemetryStatus: vi.fn<typeof import('../telemetry').getTelemetryStatus>(),
 }))
 vi.mock('../window', () => ({
@@ -77,7 +78,8 @@ vi.mock('../workshop', () => ({
   initWorkshopModule: vi.fn<typeof import('../workshop').initWorkshopModule>(),
 }))
 vi.mock('../logging', () => ({ reportError: (error: unknown) => error }))
-import { initModules } from '../init'
+import { initModules, disposeModules } from '../init'
+import { flushTelemetry, disableTelemetry } from '../telemetry'
 test('store failures defer content; later successful game initialization starts modules once', async () => {
   expect(await initModules()).toHaveLength(2)
   expect(mock.data).toHaveBeenCalledWith('test-home', 'test-userData')
@@ -101,4 +103,13 @@ test('a migration failure prevents business initialization instead of using empt
   expect(mock.stores).not.toHaveBeenCalled()
   expect(mock.content).not.toHaveBeenCalled()
   expect(mock.setting).not.toHaveBeenCalled()
+})
+test('normal disposal drains authorized telemetry before disabling the sending gate', async () => {
+  vi.clearAllMocks()
+  await disposeModules()
+  expect(flushTelemetry).toHaveBeenCalledOnce()
+  expect(disableTelemetry).toHaveBeenCalledOnce()
+  expect(vi.mocked(flushTelemetry).mock.invocationCallOrder[0]).toBeLessThan(
+    vi.mocked(disableTelemetry).mock.invocationCallOrder[0]!,
+  )
 })

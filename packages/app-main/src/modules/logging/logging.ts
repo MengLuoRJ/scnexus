@@ -3,7 +3,7 @@ import { normalizeError, toErrorDto, type AppError } from '@scnexus/app-shared/e
 import { LOG_LEVELS, type LogInput, type LogLevel } from '@scnexus/app-shared/types/desktop.type'
 
 let level: LogLevel = 'error'
-let reportTelemetry: ((error: AppError) => void) | undefined
+let reportTelemetry: ((error: AppError, scope: string) => void) | undefined
 const reported = new Set<string>()
 
 import { redact } from './redact'
@@ -29,7 +29,7 @@ export function applyLogLevel(next: LogLevel): void {
 export function getLogConfig() {
   return { level }
 }
-export function setTelemetryReporter(reporter?: (error: AppError) => void) {
+export function setTelemetryReporter(reporter?: (error: AppError, scope: string) => void) {
   reportTelemetry = reporter
 }
 
@@ -79,7 +79,7 @@ export function reportError(value: unknown, scope: string): AppError {
     taskId: dto.taskId,
   })
   try {
-    reportTelemetry?.(error)
+    reportTelemetry?.(error, scope)
   } catch {
     /* A failed remote reporter must not recurse through logging. */
   }

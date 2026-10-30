@@ -6,6 +6,7 @@ import { initLoggingModule, reportError } from './modules/logging'
 import { initModules, disposeModules } from './modules/init'
 import { captureDeepLink } from './modules/deep-link'
 import { restoreOrCreateWindow } from './modules/window'
+import { flushTelemetry } from './modules/telemetry'
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()
@@ -15,14 +16,18 @@ if (!app.requestSingleInstanceLock()) {
 registerApplicationScheme()
 initLoggingModule()
 
-process.on('uncaughtException', (error) => {
-  reportError(error, 'uncaught-exception')
-  app.exit(1)
-})
-process.on('unhandledRejection', (error) => {
-  reportError(error, 'unhandled-rejection')
-  app.quit()
-})
+let terminating = false
+function terminate(error: unknown, scope: string) {
+  if (terminating) return
+  terminating = true
+  try {
+    reportError(error, scope)
+  } finally {
+    void flushTelemetry().finally(() => app.exit(1))
+  }
+}
+process.on('uncaughtException', (error) => terminate(error, 'uncaught-exception'))
+process.on('unhandledRejection', (error) => terminate(error, 'unhandled-rejection'))
 
 function receiveDeepLink(url: string) {
   try {

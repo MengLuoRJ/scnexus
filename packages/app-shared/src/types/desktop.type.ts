@@ -35,6 +35,7 @@ export type LogInput = {
   scope: string
   message: string
   error?: import('../errors/app.error.js').AppErrorDto
+  errorStack?: string
   taskId?: string
 }
 export type SettingSnapshot = SettingData & {

@@ -5,7 +5,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
-import type { SettingPreferences, SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
+import type {
+  SettingPreferences,
+  SettingSnapshot,
+  TelemetryStatus,
+} from '@scnexus/app-shared/types/desktop.type'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import SettingsView from '../SettingsView.vue'
 import zh from '../../locales/zh'
@@ -24,6 +28,9 @@ const mocks = vi.hoisted(() => ({
   detect: vi.fn<() => Promise<IpcResult<GameSnapshot>>>(),
   path: vi.fn<(name: string) => Promise<IpcResult<string>>>(),
   open: vi.fn<(path: string) => Promise<IpcResult<string | undefined>>>(),
+  telemetry: vi.fn<() => Promise<IpcResult<TelemetryStatus>>>(),
+  stopTelemetry: vi.fn<() => void>(),
+  onTelemetry: undefined as ((status: TelemetryStatus) => void) | undefined,
 }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('../../ipcs', () => ({
@@ -44,6 +51,11 @@ vi.mock('../../ipcs', () => ({
   ipcUpdaterOnDownloadProgress: () => () => {},
   ipcUpdaterOnUpdateDownloaded: () => () => {},
   ipcUpdaterOnError: () => () => {},
+  ipcTelemetryGetStatus: mocks.telemetry,
+  ipcTelemetryOnStatus: (listener: (status: TelemetryStatus) => void) => {
+    mocks.onTelemetry = listener
+    return mocks.stopTelemetry
+  },
 }))
 const snapshot = {
   aiAssistantEnabled: false,
@@ -92,6 +104,7 @@ const wrappers: { unmount: () => void }[] = []
 beforeEach(() => {
   vi.stubGlobal('scnexus', {})
   mocks.settings.mockResolvedValue({ ok: true, data: snapshot })
+  mocks.telemetry.mockResolvedValue({ ok: true, data: { savedEnabled: false, state: 'disabled' } })
   mocks.game.mockResolvedValue({ ok: true, data: game })
   mocks.configure.mockResolvedValue({ ok: true, data: game })
   mocks.detect.mockResolvedValue({ ok: true, data: game })
@@ -155,6 +168,31 @@ test('directory change persists immediately, shows a toast and has no editable p
   expect(
     wrapper.findAllComponents({ name: 'Alert' }).map((item) => item.props('color')),
   ).not.toContain('success')
+})
+test('shows real telemetry failure despite saved consent and unsubscribes on unmount', async () => {
+  mocks.settings.mockResolvedValueOnce({ ok: true, data: { ...snapshot, telemetryEnabled: true } })
+  mocks.telemetry.mockResolvedValueOnce({ ok: true, data: { savedEnabled: true, state: 'failed' } })
+  const wrapper = await render()
+  expect(wrapper.text()).toContain('运行状态：初始化失败')
+  mocks.onTelemetry!({ savedEnabled: false, state: 'disabled' })
+  await flushPromises()
+  expect(wrapper.text()).toContain('运行状态：已关闭')
+  wrapper.unmount()
+  expect(mocks.stopTelemetry).toHaveBeenCalledOnce()
+})
+test('a late initial telemetry query cannot replace a newer status event', async () => {
+  let resolve!: (value: IpcResult<TelemetryStatus>) => void
+  mocks.telemetry.mockReturnValueOnce(
+    new Promise((done) => {
+      resolve = done
+    }),
+  )
+  const wrapper = await render()
+  mocks.onTelemetry!({ savedEnabled: false, state: 'disabled' })
+  resolve({ ok: true, data: { savedEnabled: true, state: 'enabled' } })
+  await flushPromises()
+  expect(wrapper.text()).toContain('运行状态：已关闭')
+  expect(wrapper.text()).not.toContain('运行状态：错误上报已启用')
 })
 
 test('cancelling directory selection does not save or show success', async () => {

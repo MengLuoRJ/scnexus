@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
@@ -11,6 +11,7 @@ import type {
   SettingSnapshot,
   SettingPreferences,
   LogLevel,
+  TelemetryStatus,
 } from '@scnexus/app-shared/types/desktop.type'
 import type { IpcResult, AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 defineOptions({ name: 'SettingsView' })
@@ -18,6 +19,13 @@ const { t } = useI18n()
 const toast = useToast()
 const contentCenter = useContentCenterStore()
 const settings = ref<SettingSnapshot | null>(null)
+const telemetry = ref<TelemetryStatus | null>(null)
+let telemetryRevision = 0
+let stopTelemetry: (() => void) | undefined
+onUnmounted(() => {
+  telemetryRevision++
+  stopTelemetry?.()
+})
 const game = ref<GameSnapshot | null>(null)
 const logDirectory = ref('')
 const version = ref('—')
@@ -167,6 +175,10 @@ const links = [
   { key: 'sponsor', url: 'https://scnexus.net/sponsor.html' },
 ]
 if (available) {
+  stopTelemetry = desktopIpc.ipcTelemetryOnStatus((value) => {
+    telemetryRevision++
+    telemetry.value = value
+  })
   desktopIpc.ipcSettingOnChanged(sync)
   desktopIpc.ipcUpdaterOnCheckingForUpdate(() => (updater.value = 'checking'))
   desktopIpc.ipcUpdaterOnUpdateAvailable(() => (updater.value = 'available'))
@@ -183,6 +195,13 @@ if (available) {
 }
 onMounted(async () => {
   if (!available) return
+  const revision = telemetryRevision
+  void desktopIpc
+    .ipcTelemetryGetStatus()
+    .then((result) => {
+      if (revision === telemetryRevision && result.ok) telemetry.value = result.data
+    })
+    .catch(() => {})
   await run(async () => {
     const results = await Promise.all([
       desktopIpc.ipcSettingGetSnapshot(),
@@ -418,6 +437,9 @@ onMounted(async () => {
                   :model-value="settings?.telemetryEnabled ?? false"
                   :disabled="!settings || busy"
                   @update:model-value="(value: boolean) => save({ telemetryEnabled: value })" />
+                <p class="mt-1 text-xs text-muted" role="status">
+                  {{ t(`ui.telemetryState.${telemetry?.state ?? 'unknown'}`) }}
+                </p>
               </UFormField>
             </div>
           </UCard>

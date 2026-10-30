@@ -14,7 +14,12 @@ import { initTrayModule, destroyTray } from './tray'
 import { setBeforeUpdateInstall } from './updater'
 import { initUpdaterModule } from './updater'
 import { initSettingModule, disposeSetting } from './setting'
-import { initTelemetryModule, disableTelemetry, getTelemetryStatus } from './telemetry'
+import {
+  initTelemetryModule,
+  disableTelemetry,
+  flushTelemetry,
+  getTelemetryStatus,
+} from './telemetry'
 import { initSciiGameSettingModule } from './scii-game-setting'
 import { initContentPackageModule } from './content-package'
 import { initCampaignModule } from './campaign'
@@ -83,5 +88,6 @@ export async function disposeModules() {
   disposeAuth()
   disposeSetting()
   destroyTray()
+  await flushTelemetry()
   await disableTelemetry().catch((error) => reportError(error, 'telemetry'))
 }

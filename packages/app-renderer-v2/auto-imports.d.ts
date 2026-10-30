@@ -131,6 +131,7 @@ declare global {
   const getPathForFile: typeof import('./src/ipcs/files').getPathForFile
   const h: typeof import('vue').h
   const inject: typeof import('vue').inject
+  const installErrorReporting: typeof import('./src/utils/error-reporting').installErrorReporting
   const ipcAiAssistantClearRecords: typeof import('./src/ipcs/ai-assistant').ipcAiAssistantClearRecords
   const ipcAiAssistantGetConnectionInfo: typeof import('./src/ipcs/ai-assistant').ipcAiAssistantGetConnectionInfo
   const ipcAiAssistantGetStatus: typeof import('./src/ipcs/ai-assistant').ipcAiAssistantGetStatus
@@ -417,6 +418,7 @@ declare module 'vue' {
     readonly getCurrentWatcher: UnwrapRef<typeof import('vue')['getCurrentWatcher']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
+    readonly installErrorReporting: UnwrapRef<typeof import('./src/utils/error-reporting')['installErrorReporting']>
     readonly ipcAiAssistantClearRecords: UnwrapRef<typeof import('./src/ipcs/ai-assistant')['ipcAiAssistantClearRecords']>
     readonly ipcAiAssistantGetConnectionInfo: UnwrapRef<typeof import('./src/ipcs/ai-assistant')['ipcAiAssistantGetConnectionInfo']>
     readonly ipcAiAssistantGetStatus: UnwrapRef<typeof import('./src/ipcs/ai-assistant')['ipcAiAssistantGetStatus']>

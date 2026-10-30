@@ -29,7 +29,7 @@ test('consent gates transport and reports, deduplicates errors and blocks old se
   const options = mocks.init.mock.calls[0][0]!
   const transport = options.transport!({
     url: 'https://example.invalid/api/1/envelope/',
-    recordDroppedEvent: () => {},
+    recordDroppedEvent: () => { },
   })
   const error = { code: 'M002', name: 'error', errorId: 'same' }
   service.reportTelemetry(error)
@@ -81,7 +81,7 @@ test('flush is bounded and revoking consent prevents any subsequent draining', a
   vi.useFakeTimers()
   try {
     service.enableTelemetry('client')
-    mocks.flush.mockImplementationOnce(() => new Promise(() => {}))
+    mocks.flush.mockImplementationOnce(() => new Promise(() => { }))
     const flushing = service.flushTelemetry(50)
     await vi.advanceTimersByTimeAsync(50)
     await expect(flushing).resolves.toBe(false)

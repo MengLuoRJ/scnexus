@@ -15,7 +15,7 @@ import SettingsView from '../SettingsView.vue'
 import zh from '../../locales/zh'
 
 vi.mock('../../stores/content-center', () => ({
-  useContentCenterStore: () => ({ accept: () => {} }),
+  useContentCenterStore: () => ({ accept: () => { } }),
 }))
 const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
@@ -44,13 +44,13 @@ vi.mock('../../ipcs', () => ({
   ipcShellOpenPath: mocks.open,
   ipcAppGetVersion: async () => ({ ok: true, data: '1.0' }),
   ipcUpdaterGetStatus: async () => ({ ok: true, data: { state: 'idle' } }),
-  ipcSettingOnChanged: () => () => {},
-  ipcUpdaterOnCheckingForUpdate: () => () => {},
-  ipcUpdaterOnUpdateAvailable: () => () => {},
-  ipcUpdaterOnUpdateNotAvailable: () => () => {},
-  ipcUpdaterOnDownloadProgress: () => () => {},
-  ipcUpdaterOnUpdateDownloaded: () => () => {},
-  ipcUpdaterOnError: () => () => {},
+  ipcSettingOnChanged: () => () => { },
+  ipcUpdaterOnCheckingForUpdate: () => () => { },
+  ipcUpdaterOnUpdateAvailable: () => () => { },
+  ipcUpdaterOnUpdateNotAvailable: () => () => { },
+  ipcUpdaterOnDownloadProgress: () => () => { },
+  ipcUpdaterOnUpdateDownloaded: () => () => { },
+  ipcUpdaterOnError: () => () => { },
   ipcTelemetryGetStatus: mocks.telemetry,
   ipcTelemetryOnStatus: (listener: (status: TelemetryStatus) => void) => {
     mocks.onTelemetry = listener

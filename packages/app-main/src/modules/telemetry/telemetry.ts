@@ -166,14 +166,14 @@ export function reportTelemetry(
     seen.add(current)
     const frames = current.stack
       ? Sentry.defaultStackParser(redact(current.stack).slice(0, 8192))
-          .slice(-40)
-          .map((frame) => ({
-            filename: frame.filename ? redact(frame.filename).split(/[?#]/)[0] : undefined,
-            function: frame.function ? redact(frame.function).slice(0, 200) : undefined,
-            lineno: frame.lineno,
-            colno: frame.colno,
-            in_app: frame.in_app,
-          }))
+        .slice(-40)
+        .map((frame) => ({
+          filename: frame.filename ? redact(frame.filename).split(/[?#]/)[0] : undefined,
+          function: frame.function ? redact(frame.function).slice(0, 200) : undefined,
+          lineno: frame.lineno,
+          colno: frame.colno,
+          in_app: frame.in_app,
+        }))
       : []
     values.unshift({
       type: redact(current.name).slice(0, 150),

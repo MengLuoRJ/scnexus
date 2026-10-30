@@ -349,7 +349,7 @@ test('local AI switch is default-off and independent of official services', asyn
   const wrapper = await render()
   const control = wrapper
     .findAllComponents({ name: 'Switch' })
-    .find((item) => item.attributes('label') === 'AI 助手')!
+    .find((item) => item.attributes('label') === '智能助手')!
   expect(control.attributes('modelvalue')).toBe('false')
   expect(control.attributes('disabled')).toBe('false')
   control.vm.$emit('update:modelValue', true)

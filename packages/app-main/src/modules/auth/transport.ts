@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { resolveServerApiBase } from '@scnexus/app-shared/config/server'
 import { failure, type AuthFailureReason } from './validation'
 
 export type AuthOperation =
@@ -29,7 +30,7 @@ const routes: Record<AuthOperation, string> = {
 export function createAuthTransport(): AuthTransport {
   // The Node adapter bypasses Chromium's cookie jar; redirects and proxy environment are disabled.
   const client = axios.create({
-    baseURL: import.meta.env.DEV ? 'http://127.0.0.1:3000' : 'https://api.scnexus.net',
+    baseURL: resolveServerApiBase(import.meta.env.DEV),
     adapter: 'http',
     timeout: 10000,
     maxRedirects: 0,

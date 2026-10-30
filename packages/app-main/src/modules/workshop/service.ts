@@ -113,7 +113,7 @@ function publicTask(task: StoredTask): WorkshopTask {
 function uuid(value: unknown): asserts value is string {
   assert(
     typeof value === 'string' &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
   )
 }
 function etag(value: string) {
@@ -124,9 +124,11 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   const apiUrl = new URL(deps.apiOrigin)
   assert(
     apiUrl.origin === deps.apiOrigin &&
-      !apiUrl.username &&
-      !apiUrl.password &&
-      (apiUrl.protocol === 'https:' || deps.apiOrigin === 'http://127.0.0.1:3000'),
+    !apiUrl.username &&
+    !apiUrl.password &&
+    (apiUrl.protocol === 'https:' ||
+      (apiUrl.protocol === 'http:' &&
+        ['localhost', '127.0.0.1', '[::1]'].includes(apiUrl.hostname))),
     'INVALID_API_ORIGIN',
   )
   const apiOrigin = deps.apiOrigin
@@ -171,8 +173,8 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       uuid(task.taskId)
       assert(
         ['download', 'upload', 'image'].includes(task.kind) &&
-          Number.isSafeInteger(task.size) &&
-          task.size >= 0,
+        Number.isSafeInteger(task.size) &&
+        task.size >= 0,
         'INVALID_TASK_STORE',
       )
       if (!['completed', 'cancelled'].includes(task.status)) task.status = 'paused'
@@ -186,7 +188,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   const persist = () => {
     const data = JSON.stringify({ version: 1, tasks: [...tasks.values()] })
     saving = saving
-      .catch(() => {})
+      .catch(() => { })
       .then(async () => {
         const path = join(root, 'tasks.json.new')
         await writeFile(path, data, { mode: 0o600 })
@@ -288,12 +290,12 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     const parsed = new URL(url)
     assert(
       parsed.origin === origin &&
-        parsed.protocol === 'https:' &&
-        !parsed.username &&
-        !parsed.password &&
-        !parsed.search &&
-        !parsed.hash &&
-        parsed.pathname === route,
+      parsed.protocol === 'https:' &&
+      !parsed.username &&
+      !parsed.password &&
+      !parsed.search &&
+      !parsed.hash &&
+      parsed.pathname === route,
       'UNTRUSTED_WORKER_URL',
     )
     return parsed.href
@@ -320,8 +322,8 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     }
     assert(
       info.isDirectory() &&
-        !info.isSymbolicLink() &&
-        relative(directory, await realpath(directory)) === '',
+      !info.isSymbolicLink() &&
+      relative(directory, await realpath(directory)) === '',
       'UNSAFE_CACHE',
     )
   }
@@ -368,22 +370,22 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     uuid(auth.fileId)
     assert(
       Number.isSafeInteger(auth.size) &&
-        auth.size > 0 &&
-        auth.size <= 300000000 &&
-        auth.chunkSize === PART_SIZE &&
-        /^[a-f0-9]{64}$/.test(auth.sha256) &&
-        typeof auth.etag === 'string' &&
-        auth.etag.length > 0 &&
-        typeof auth.token === 'string',
+      auth.size > 0 &&
+      auth.size <= 300000000 &&
+      auth.chunkSize === PART_SIZE &&
+      /^[a-f0-9]{64}$/.test(auth.sha256) &&
+      typeof auth.etag === 'string' &&
+      auth.etag.length > 0 &&
+      typeof auth.token === 'string',
       'INVALID_DOWNLOAD_AUTHORIZATION',
     )
     workerUrl(auth.url, workshopOrigin, `/v1/files/${auth.fileId}`)
     if (task.sha256)
       assert(
         task.sha256 === auth.sha256 &&
-          task.etag === auth.etag &&
-          task.size === auth.size &&
-          task.fileId === auth.fileId,
+        task.etag === auth.etag &&
+        task.size === auth.size &&
+        task.fileId === auth.fileId,
         'DOWNLOAD_OBJECT_CHANGED',
       )
     Object.assign(task, {
@@ -446,11 +448,11 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
           }
           assert(
             response &&
-              response.status === 206 &&
-              response.headers.get('content-range') === `bytes ${start}-${end}/${auth.size}` &&
-              response.headers.get('content-length') === String(end - start + 1) &&
-              response.headers.get('etag') === `"${etag(auth.etag)}"` &&
-              response.body,
+            response.status === 206 &&
+            response.headers.get('content-range') === `bytes ${start}-${end}/${auth.size}` &&
+            response.headers.get('content-length') === String(end - start + 1) &&
+            response.headers.get('etag') === `"${etag(auth.etag)}"` &&
+            response.body,
             'INVALID_RANGE_RESPONSE',
           )
           let position = start
@@ -470,7 +472,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
               reportProgress(task, value.length)
             }
           } finally {
-            await reader.cancel().catch(() => {})
+            await reader.cancel().catch(() => { })
             reader.releaseLock()
           }
           assert(position === end + 1, 'RANGE_SIZE_MISMATCH')
@@ -552,9 +554,9 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     const current = await fingerprint(task.path)
     assert(
       current.sha256 === task.sha256 &&
-        current.size === task.size &&
-        current.mtimeMs === task.mtimeMs &&
-        JSON.stringify(current.partMd5) === JSON.stringify(task.partMd5),
+      current.size === task.size &&
+      current.mtimeMs === task.mtimeMs &&
+      JSON.stringify(current.partMd5) === JSON.stringify(task.partMd5),
       'LOCAL_FILE_CHANGED',
     )
   }
@@ -819,9 +821,9 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     allowed(task)
     assert(
       !running.has(task.taskId) &&
-        !cancelling.has(task.taskId) &&
-        !removing.has(task.taskId) &&
-        !['completed', 'cancelled'].includes(task.status),
+      !cancelling.has(task.taskId) &&
+      !removing.has(task.taskId) &&
+      !['completed', 'cancelled'].includes(task.status),
       'TASK_CONFLICT',
     )
     const controller = new AbortController()
@@ -855,7 +857,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         }
       }
     })()
-    void promise.catch(() => {})
+    void promise.catch(() => { })
     running.set(task.taskId, { controller, promise })
     return publicTask(task)
   }
@@ -953,14 +955,14 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       assert(workshopOrigin, 'WORKSHOP_STORAGE_NOT_CONFIGURED')
       assert(
         source?.kind === 'workshop' &&
-          Object.keys(source).every((key) => ['kind', 'versionId', 'projectScnid'].includes(key)),
+        Object.keys(source).every((key) => ['kind', 'versionId', 'projectScnid'].includes(key)),
         'UNSUPPORTED_SOURCE',
       )
       uuid(source.versionId)
       assert(
         Number.isInteger(source.projectScnid) &&
-          source.projectScnid > 0 &&
-          source.projectScnid <= 2147483647,
+        source.projectScnid > 0 &&
+        source.projectScnid <= 2147483647,
       )
       const downloadDirectory = await currentDownloadDirectory()
       const task = make('download', `Workshop ${source.projectScnid}`, 0)
@@ -1124,7 +1126,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     },
   }
   const stopEnabled = deps.onEnabledChanged?.((value) => {
-    void service.setEnabled(value).catch(() => {})
+    void service.setEnabled(value).catch(() => { })
   })
   await persist()
   return service

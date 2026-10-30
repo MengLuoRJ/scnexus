@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { resolveServerApiBase } from '@scnexus/app-shared/config/server'
 
 export type AnalyticsOperation =
   | 'register-anonymous'
@@ -32,7 +33,7 @@ const routes: Record<AnalyticsOperation, string> = {
 
 export function createAnalyticsTransport(): AnalyticsTransport {
   const client = axios.create({
-    baseURL: import.meta.env.DEV ? 'http://127.0.0.1:3000' : 'https://api.scnexus.net',
+    baseURL: resolveServerApiBase(import.meta.env.DEV),
     adapter: 'http',
     timeout: 5000,
     maxRedirects: 0,

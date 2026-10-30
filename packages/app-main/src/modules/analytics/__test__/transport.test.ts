@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const { post, create } = vi.hoisted(() => {
   const post =
     vi.fn<
@@ -14,6 +14,14 @@ vi.mock('axios', () => ({
   },
 }))
 import { createAnalyticsTransport } from '../transport'
+afterEach(() => vi.unstubAllEnvs())
+it('injects the deployment API origin into analytics', () => {
+  vi.stubEnv('VITE_SCNEXUS_API_ORIGIN', 'https://backend.example.invalid')
+  createAnalyticsTransport()
+  expect(create).toHaveBeenLastCalledWith(
+    expect.objectContaining({ baseURL: 'https://backend.example.invalid' }),
+  )
+})
 beforeEach(() => {
   post.mockReset()
   create.mockClear()

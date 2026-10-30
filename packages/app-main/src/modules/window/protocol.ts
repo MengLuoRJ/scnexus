@@ -2,7 +2,7 @@ import { app, protocol } from 'electron'
 import { readFile, realpath } from 'node:fs/promises'
 import { extname, join, relative, isAbsolute, sep } from 'node:path'
 import { applicationResourcePath } from './origin'
-import { PRODUCTION_SERVER_API } from '@scnexus/app-shared/config/server'
+import { resolveServerApiBase } from '@scnexus/app-shared/config/server'
 
 function filesImageOrigin() {
   const value = process.env.SCNEXUS_FILES_ORIGIN
@@ -16,19 +16,21 @@ function filesImageOrigin() {
     return ''
   }
 }
-const policy = [
-  "default-src 'none'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${filesImageOrigin()}`,
-  "font-src 'self' data:",
-  `connect-src 'self' ${PRODUCTION_SERVER_API}`,
-  "object-src 'none'",
-  "base-uri 'none'",
-  "frame-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'none'",
-].join('; ')
+function contentSecurityPolicy() {
+  return [
+    "default-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    `img-src 'self' data: blob: ${filesImageOrigin()}`,
+    "font-src 'self' data:",
+    `connect-src 'self' ${resolveServerApiBase(import.meta.env.DEV)}`,
+    "object-src 'none'",
+    "base-uri 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'none'",
+  ].join('; ')
+}
 
 export function registerApplicationScheme() {
   protocol.registerSchemesAsPrivileged([
@@ -44,6 +46,7 @@ export function registerApplicationScheme() {
   ])
 }
 export function installApplicationProtocol() {
+  const policy = contentSecurityPolicy()
   const root = join(app.getAppPath(), 'packages', 'app-renderer-v2', 'dist')
   protocol.handle('app', async (request) => {
     try {

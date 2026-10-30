@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const { request, create } = vi.hoisted(() => {
   const request = vi.fn<(config: unknown) => Promise<unknown>>()
   return {
@@ -14,7 +14,42 @@ vi.mock('axios', () => ({
   },
 }))
 import { createAuthTransport } from '../transport'
+import { resolveServerApiBase } from '@scnexus/app-shared/config/server'
+it('validates deployment API origins and retains defaults when unset', () => {
+  expect(resolveServerApiBase(true)).toBe('http://127.0.0.1:3000')
+  expect(resolveServerApiBase(false)).toBe('https://api.scnexus.net')
+  expect(resolveServerApiBase(true, 'http://localhost:3100')).toBe('http://localhost:3100')
+  expect(resolveServerApiBase(false, 'https://backend.example.invalid')).toBe(
+    'https://backend.example.invalid',
+  )
+  for (const value of [
+    '',
+    'http://backend.example.invalid',
+    'https://backend.example.invalid/',
+    'https://user:password@backend.example.invalid',
+    'https://backend.example.invalid/api',
+    'https://backend.example.invalid?query=1',
+    'https://backend.example.invalid#hash',
+    'https://backend.example.invalid;script-src *',
+  ]) {
+    expect(() => resolveServerApiBase(false, value)).toThrow('Invalid VITE_SCNEXUS_API_ORIGIN')
+  }
+  expect(() => resolveServerApiBase(false, 'http://localhost:3100')).toThrow(
+    'Invalid VITE_SCNEXUS_API_ORIGIN',
+  )
+  expect(() => resolveServerApiBase(true, 'http://backend.example.invalid')).toThrow(
+    'Invalid VITE_SCNEXUS_API_ORIGIN',
+  )
+})
 beforeEach(() => request.mockReset())
+afterEach(() => vi.unstubAllEnvs())
+it('injects the configured API origin into the authentication transport', () => {
+  vi.stubEnv('VITE_SCNEXUS_API_ORIGIN', 'https://backend.example.invalid')
+  createAuthTransport()
+  expect(create).toHaveBeenLastCalledWith(
+    expect.objectContaining({ baseURL: 'https://backend.example.invalid' }),
+  )
+})
 it('uses a fixed Node transport with no cookies redirects proxy or renderer URL', async () => {
   const transport = createAuthTransport()
   expect(create).toHaveBeenLastCalledWith(

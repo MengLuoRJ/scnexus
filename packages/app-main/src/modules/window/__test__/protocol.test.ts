@@ -19,6 +19,7 @@ afterEach(async () => {
   if (mocks.root) await rm(mocks.root, { recursive: true, force: true })
   mocks.root = ''
   mocks.handlers.clear()
+  vi.unstubAllEnvs()
 })
 test('privileged scheme serves only bundled files with CSP and no MIME sniffing', async () => {
   mocks.root = await mkdtemp(join(process.cwd(), '.application-protocol-'))
@@ -38,7 +39,7 @@ test('privileged scheme serves only bundled files with CSP and no MIME sniffing'
   expect(response.status).toBe(200)
   expect(await response.text()).toBe('<html>local</html>')
   expect(response.headers.get('Content-Security-Policy')).toContain(
-    "connect-src 'self' https://api.scnexus.net",
+    "connect-src 'self' http://127.0.0.1:3000",
   )
   expect(response.headers.get('Content-Security-Policy')).not.toContain('unsafe-eval')
   expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff')
@@ -50,4 +51,19 @@ test('privileged scheme serves only bundled files with CSP and no MIME sniffing'
   expect(
     await (await handler(new Request('app://localhost/index.html', { method: 'HEAD' }))).text(),
   ).toBe('')
+})
+test('CSP uses the configured API origin and rejects invalid configuration', async () => {
+  mocks.root = await mkdtemp(join(process.cwd(), '.application-protocol-'))
+  const root = join(mocks.root, 'packages', 'app-renderer-v2', 'dist')
+  await mkdir(root, { recursive: true })
+  await writeFile(join(root, 'index.html'), '<html>local</html>')
+  vi.stubEnv('VITE_SCNEXUS_API_ORIGIN', 'https://backend.example.invalid')
+  installApplicationProtocol()
+  const response = await mocks.handlers.get('app')!(new Request('app://localhost/index.html'))
+  expect(response.headers.get('Content-Security-Policy')).toContain(
+    "connect-src 'self' https://backend.example.invalid;",
+  )
+  expect(response.headers.get('Content-Security-Policy')).not.toContain('https://api.scnexus.net')
+  vi.stubEnv('VITE_SCNEXUS_API_ORIGIN', 'https://backend.example.invalid;script-src *')
+  expect(() => installApplicationProtocol()).toThrow('Invalid VITE_SCNEXUS_API_ORIGIN')
 })

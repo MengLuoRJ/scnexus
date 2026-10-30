@@ -4,7 +4,6 @@ import { ipcHandle } from '../../utils/ipc-util'
 import { isErrorDto } from '@scnexus/app-shared/errors/app.error'
 import { LOG_LEVELS, type LogInput } from '@scnexus/app-shared/types/desktop.type'
 import { getLogConfig, writeLog } from './logging'
-import { reportRendererError } from '../telemetry/telemetry'
 import { updateSetting } from '../setting/setting'
 
 export function initLoggingIpc() {
@@ -32,13 +31,6 @@ export function initLoggingIpc() {
       const size = JSON.stringify(value).length
       if (size > 16384) return
       writeLog(value, source === 'preload' ? 'preload' : 'renderer')
-      if (value.error)
-        reportRendererError(
-          value.error,
-          value.errorStack,
-          value.scope,
-          source === 'preload' ? 'preload' : 'renderer',
-        )
     } catch {
       return
     }

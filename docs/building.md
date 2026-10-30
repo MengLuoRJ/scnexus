@@ -15,6 +15,26 @@
 
 Electron 45 移除了 sandbox preload 的 events/timers/url shim 和 Buffer/setImmediate 等全局；模拟 Electron 的单元测试不能覆盖这项兼容性，必须执行真实冒烟。
 
+## 后端 API 环境配置
+
+main 与 renderer 的 Vite 配置均以仓库根目录作为 `envDir`。在根目录创建 `.env.development.local`（开发）或 `.env.production.local`（生产），使用同一变量配置后端 API origin：
+
+```dotenv
+# .env.development.local
+VITE_SCNEXUS_API_ORIGIN=http://127.0.0.1:3000
+```
+
+```dotenv
+# .env.production.local
+VITE_SCNEXUS_API_ORIGIN=https://api.scnexus.net
+```
+
+未设置时保留上述开发/生产默认地址；显式空值或非法值报错，不回退。只接受精确 origin，不带末尾 `/`、路径（包括 `/api`）、查询、片段或用户名密码。生产仅允许 HTTPS，开发额外允许 localhost、127.0.0.1、[::1] 的 HTTP origin，可指定本机端口。
+
+配置在 Vite 启动/构建时注入，修改后重启开发流程；分发应用需重新构建 main 和 renderer 并打包，不会读取安装目录中的 `.env`。两个包必须使用同一环境配置构建。认证、在线统计、renderer HTTP、工坊 API 和生产页面 CSP 共用该入口；工坊 Worker/Files origin 仍是独立配置。更换后端地址还需核对服务器允许的客户端来源。
+
+`VITE_*` 会进入客户端构建产物，只填写公开地址，不填写后端密钥。Sentry 可在同一生产环境文件另设 `VITE_SENTRY_DSN`，其打包环境与用户授权条件不变。本地环境文件已被 Git 忽略。
+
 ## TypeScript 配置与静态检查
 
 各包保留现有编译器版本，不依赖 `ignoreDeprecations` 隐藏迁移问题。为兼容 TypeScript 7 移除的 `baseUrl`，项目配置已删除该选项；`paths` 的目标均以 `./` 开头，相对于所属配置文件解析。现有 TypeScript 5.7 与 6.0 检查通过不等于已在 TypeScript 7 编译器下验收。

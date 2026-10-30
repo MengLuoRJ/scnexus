@@ -16,6 +16,9 @@ export type SettingPreferences = Pick<
   | 'workshopEnabled'
   | 'aiAssistantEnabled'
   | 'aiAssistantPort'
+  | 'aiAutoApproveSwitchCampaign'
+  | 'aiAutoApproveRestoreCampaign'
+  | 'aiAutoApproveUninstallCampaign'
 >
 export type SettingPatchKeys = keyof SettingPreferences
 export type WindowStatus = {

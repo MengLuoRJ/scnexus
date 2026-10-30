@@ -2,7 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
-import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
+import { ERRORS, type IpcResult } from '@scnexus/app-shared/errors/app.error'
+import type { SettingSnapshot } from '@scnexus/app-shared/types/desktop.type'
 import { useContentCenterStore } from '../../stores/content-center'
 import { useAiAssistantStore } from '../../stores/ai-assistant'
 import {
@@ -12,6 +13,7 @@ import {
   ipcAiAssistantGetConnectionInfo,
   ipcSettingGetSnapshot,
   ipcSettingUpdate,
+  ipcSettingOnChanged,
 } from '../../ipcs'
 
 defineOptions({ name: 'AiAssistantView' })
@@ -29,7 +31,24 @@ const tabs = computed(() => [
   { label: t('aiAssistant.capabilities'), value: 'capabilities', slot: 'capabilities' as const },
   { label: t('aiAssistant.history'), value: 'history', slot: 'history' as const },
 ])
-const tools = [
+type ApprovalKey =
+  | 'aiAutoApproveSwitchCampaign'
+  | 'aiAutoApproveRestoreCampaign'
+  | 'aiAutoApproveUninstallCampaign'
+const approvals = ref<Record<ApprovalKey, boolean>>({
+  aiAutoApproveSwitchCampaign: false,
+  aiAutoApproveRestoreCampaign: false,
+  aiAutoApproveUninstallCampaign: false,
+})
+const preferencesLoading = ref(true)
+let preferencesRevision = 0
+let disposeSettings: (() => void) | undefined
+const tools: {
+  name: string
+  limit: string
+  access: string
+  approval?: ApprovalKey
+}[] = [
   { name: 'get_app_status', limit: 'noParameters', access: 'read' },
   { name: 'list_campaigns', limit: 'pagination', access: 'read' },
   { name: 'get_campaign_details', limit: 'identifier', access: 'read' },
@@ -37,9 +56,24 @@ const tools = [
   { name: 'list_downloads', limit: 'pagination', access: 'read' },
   { name: 'get_task_status', limit: 'identifier', access: 'read' },
   { name: 'activate_campaign', limit: 'identifier', access: 'action' },
-  { name: 'switch_campaign', limit: 'identifier', access: 'action' },
-  { name: 'restore_campaign', limit: 'identifier', access: 'confirmation' },
-  { name: 'uninstall_campaign', limit: 'identifier', access: 'confirmation' },
+  {
+    name: 'switch_campaign',
+    limit: 'identifier',
+    access: 'action',
+    approval: 'aiAutoApproveSwitchCampaign',
+  },
+  {
+    name: 'restore_campaign',
+    limit: 'identifier',
+    access: 'confirmation',
+    approval: 'aiAutoApproveRestoreCampaign',
+  },
+  {
+    name: 'uninstall_campaign',
+    limit: 'identifier',
+    access: 'confirmation',
+    approval: 'aiAutoApproveUninstallCampaign',
+  },
   { name: 'list_mutators', limit: 'mutators', access: 'read' },
   { name: 'get_weekly_mutation', limit: 'weeklyMutation', access: 'read' },
 ]
@@ -91,6 +125,51 @@ function accept<T>(result: IpcResult<T>): T | undefined {
     return
   }
   return result.data
+}
+function applyPreferences(settings: SettingSnapshot) {
+  if (disposed) return
+  preferencesRevision++
+  for (const key of Object.keys(approvals.value) as ApprovalKey[]) {
+    approvals.value[key] = settings[key] === true
+  }
+  preferencesLoading.value = false
+}
+async function refreshPreferences() {
+  const revision = preferencesRevision
+  preferencesLoading.value = true
+  try {
+    const result = await ipcSettingGetSnapshot()
+    if (disposed || revision !== preferencesRevision) return
+    if (result.ok) {
+      applyPreferences(result.data)
+      port.value = String(result.data.aiAssistantPort ?? 17861)
+    } else {
+      toast.add({ color: 'error', title: t('aiAssistant.autoApprove.error') })
+    }
+  } catch {
+    if (!disposed) toast.add({ color: 'error', title: t('aiAssistant.autoApprove.error') })
+  }
+}
+async function updateApproval(key: ApprovalKey, enabled: boolean) {
+  if (!center.aiAssistantEnabled || preferencesLoading.value || busy.value) return
+  await run(async () => {
+    try {
+      const result = await ipcSettingUpdate({ [key]: enabled })
+      if (disposed) return
+      if (result.ok) {
+        applyPreferences(result.data)
+        return
+      }
+      if (result.error.code !== ERRORS.TASK_CANCELLED.code) {
+        toast.add({ color: 'error', title: t('aiAssistant.autoApprove.error') })
+      }
+    } catch {
+      if (disposed) return
+      toast.add({ color: 'error', title: t('aiAssistant.autoApprove.error') })
+    }
+    // A failed write may have saved part of the preferences before returning an error.
+    await refreshPreferences()
+  })
 }
 async function start() {
   if (!validPort.value || !stopped.value) return
@@ -195,21 +274,23 @@ watch(
 async function initialize() {
   if (!center.aiAssistantEnabled || dispose || !window.scnexus) return
   dispose = assistant.subscribe()
+  await refreshPreferences()
+  if (disposed || !center.aiAssistantEnabled) return
   const result = await assistant.refresh()
   if (!result.ok) failure(result.error.message)
 }
-onMounted(() =>
-  run(async () => {
+onMounted(() => {
+  if (window.scnexus) disposeSettings = ipcSettingOnChanged(applyPreferences)
+  void run(async () => {
     await center.initialize()
     if (!center.aiAssistantEnabled || disposed) return
-    const settings = accept(await ipcSettingGetSnapshot())
-    if (settings) port.value = String(settings.aiAssistantPort ?? 17861)
-    if (!disposed) await initialize()
-  }),
-)
+    await initialize()
+  })
+})
 onUnmounted(() => {
   disposed = true
   dispose?.()
+  disposeSettings?.()
   forgetCredentials()
 })
 </script>
@@ -374,7 +455,11 @@ onUnmounted(() => {
                   size="sm"
                   variant="subtle"
                   :data-access="tool.access"
-                  >{{ t(`aiAssistant.access.${tool.access}`) }}</UBadge
+                  >{{
+                    t(
+                      `aiAssistant.access.${tool.approval && approvals[tool.approval] ? 'automatic' : tool.access}`,
+                    )
+                  }}</UBadge
                 >
               </div>
               <code class="block break-all text-xs text-muted">{{ tool.name }}</code>
@@ -382,6 +467,18 @@ onUnmounted(() => {
               <p class="text-xs break-words text-muted">
                 {{ t(`aiAssistant.limit.${tool.limit}`) }}
               </p>
+              <div v-if="tool.approval" class="space-y-1 border-t border-default pt-2">
+                <USwitch
+                  :model-value="approvals[tool.approval]"
+                  :disabled="busy || preferencesLoading || !center.aiAssistantEnabled"
+                  :label="t('aiAssistant.autoApprove.label')"
+                  :aria-label="`${toolLabel(tool.name)}: ${t('aiAssistant.autoApprove.label')}`"
+                  :data-approval="tool.approval"
+                  size="sm"
+                  @update:model-value="updateApproval(tool.approval, $event)"
+                />
+                <p class="text-xs text-muted">{{ t(`aiAssistant.autoApprove.${tool.name}`) }}</p>
+              </div>
             </UCard>
           </div>
         </section>

@@ -63,3 +63,16 @@ test('AI assistant preferences accept booleans and bounded integer ports', () =>
     })
   }
 })
+
+test('per-tool auto-approval preferences accept only strict booleans', () => {
+  for (const key of [
+    'aiAutoApproveSwitchCampaign',
+    'aiAutoApproveRestoreCampaign',
+    'aiAutoApproveUninstallCampaign',
+  ]) {
+    for (const value of [true, false])
+      assert.deepEqual(validatePreferencePatch({ [key]: value }), { [key]: value })
+    for (const value of ['true', 'false', 1, 0, null, undefined])
+      assert.throws(() => validatePreferencePatch({ [key]: value }))
+  }
+})

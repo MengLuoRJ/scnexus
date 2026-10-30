@@ -1,3 +1,4 @@
+import type { IpcMainInvokeEvent } from 'electron'
 import { ipcHandle } from '../../utils/ipc-util'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { getSettingSnapshot, getSettingKey, updateSetting, updateSettingKey } from './setting'
@@ -10,9 +11,22 @@ const legacyKeys: Record<string, string> = {
 export function initSettingIpc() {
   ipcHandle('setting:get-snapshot', getSettingSnapshot)
   ipcHandle('setting:get-key', getSettingKey)
-  ipcHandle('setting:update-key', updateSettingKey)
-  ipcHandle('setting:update', updateSetting)
-  ipcHandle('setting:replace', (data: unknown) => updateSetting(data, true))
+  ipcHandle(
+    'setting:update-key',
+    (event: IpcMainInvokeEvent, key: unknown, value: unknown) =>
+      updateSettingKey(key, value, event),
+    true,
+  )
+  ipcHandle(
+    'setting:update',
+    (event: IpcMainInvokeEvent, data: unknown) => updateSetting(data, false, event),
+    true,
+  )
+  ipcHandle(
+    'setting:replace',
+    (event: IpcMainInvokeEvent, data: unknown) => updateSetting(data, true, event),
+    true,
+  )
   ipcHandle('setting:get-setting', () => {
     const data = getSettingSnapshot()
     return {
@@ -28,11 +42,15 @@ export function initSettingIpc() {
     if (typeof key !== 'string') throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
     return getSettingKey(legacyKeys[key] ?? key)
   })
-  ipcHandle('setting:set-setting-key', (key: unknown, value: unknown) => {
-    if (key === 'IS_INITIAL') return
-    if (typeof key !== 'string') throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
-    return updateSettingKey(legacyKeys[key] ?? key, value)
-  })
+  ipcHandle(
+    'setting:set-setting-key',
+    (event: IpcMainInvokeEvent, key: unknown, value: unknown) => {
+      if (key === 'IS_INITIAL') return
+      if (typeof key !== 'string') throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+      return updateSettingKey(legacyKeys[key] ?? key, value, event)
+    },
+    true,
+  )
   // Retained renderer login callbacks must not change telemetry consent or installation identity.
   ipcHandle('setting:set-tracker-user', () => undefined)
 }

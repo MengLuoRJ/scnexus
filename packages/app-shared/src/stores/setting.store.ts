@@ -17,6 +17,9 @@ export type SettingData = {
   workshopEnabled: boolean
   aiAssistantEnabled: boolean
   aiAssistantPort: number
+  aiAutoApproveSwitchCampaign: boolean
+  aiAutoApproveRestoreCampaign: boolean
+  aiAutoApproveUninstallCampaign: boolean
 }
 
 export type LegacySettingStore = {

@@ -1,8 +1,11 @@
 import { test, expect, vi } from 'vitest'
 import type { SettingData } from '@scnexus/app-shared/stores/setting.store'
 const mocks = vi.hoisted(() => ({
+  source: vi.fn<typeof import('../../../utils/ipc-source').assertIpcSource>(),
+  window: undefined as unknown,
+  dialog: vi.fn<(window: unknown, options: unknown) => Promise<{ response: number }>>(),
   data: {
-    _schemaVersion: 6,
+    _schemaVersion: 7,
     _revision: 0,
     lastUpdatedAt: null,
     _lastConfirmedVersion: null,
@@ -15,6 +18,9 @@ const mocks = vi.hoisted(() => ({
     workshopEnabled: true,
     aiAssistantEnabled: false,
     aiAssistantPort: 17861,
+    aiAutoApproveSwitchCampaign: false,
+    aiAutoApproveRestoreCampaign: false,
+    aiAutoApproveUninstallCampaign: false,
     clientId: 'client',
     displayLanguage: 'zh',
   } as SettingData,
@@ -31,7 +37,9 @@ vi.mock('../../ai-assistant', () => ({ setAiAssistantEnabled: mocks.aiAssistant 
 vi.mock('../../auth', () => ({ setOfficialServicesEnabled: mocks.officialServices }))
 vi.mock('../../workshop-lifecycle', () => ({ setWorkshopEnabled: mocks.workshop }))
 vi.mock('../../analytics-lifecycle', () => ({ setAnalyticsEnabled: mocks.analytics }))
+vi.mock('../../../utils/ipc-source', () => ({ assertIpcSource: mocks.source }))
 vi.mock('electron', () => ({
+  dialog: { showMessageBox: mocks.dialog },
   app: { getPreferredSystemLanguages: () => ['zh'] },
 }))
 vi.mock('../../../stores/setting', () => ({
@@ -52,7 +60,7 @@ vi.mock('../../telemetry/telemetry', () => ({
     vi.fn<typeof import('../../telemetry/telemetry').setSavedTelemetryEnabled>(),
 }))
 vi.mock('../../window/window', () => ({
-  getMainWindow: () => ({ webContents: { send: mocks.send } }),
+  getMainWindow: () => mocks.window ?? { webContents: { send: mocks.send } },
   onWindowReady: vi.fn<typeof import('../../window/window').onWindowReady>(),
 }))
 import { initializeSetting, updateSetting } from '../setting'
@@ -155,3 +163,72 @@ test('AI assistant shutdown failure preserves disabled consent and publishes it'
   expect(mocks.data.aiAssistantEnabled).toBe(false)
   expect(mocks.send).toHaveBeenCalled()
 })
+
+test('auto-approval enabling requires trusted native consent and cancellation preserves the whole batch', async () => {
+  const source = {} as import('electron').IpcMainInvokeEvent
+  const patch = { aiAutoApproveRestoreCampaign: true, analyticsEnabled: false }
+  await expect(updateSetting(patch)).rejects.toBeDefined()
+  const window = {
+    isDestroyed: () => false,
+    on: vi.fn<(event: string, listener: () => void) => void>(),
+    off: vi.fn<(event: string, listener: () => void) => void>(),
+    webContents: {
+      isDestroyed: () => false,
+      getURL: () => 'app://localhost/index.html',
+      on: vi.fn<(event: string, listener: () => void) => void>(),
+      off: vi.fn<(event: string, listener: () => void) => void>(),
+      send: mocks.send,
+    },
+  }
+  mocks.window = window
+  mocks.source.mockImplementationOnce(() => {
+    throw new Error('untrusted')
+  })
+  await expect(updateSetting(patch, false, source)).rejects.toThrow('untrusted')
+  mocks.dialog.mockResolvedValue({ response: 0 })
+  const before = { ...mocks.data }
+  await expect(updateSetting(patch, false, source)).rejects.toBeDefined()
+  expect(mocks.data).toEqual(before)
+  mocks.dialog.mockResolvedValue({ response: 1 })
+  await updateSetting(patch, false, source)
+  expect(mocks.data.aiAutoApproveRestoreCampaign).toBe(true)
+  expect(mocks.data.aiAutoApproveSwitchCampaign).toBe(false)
+  mocks.dialog.mockClear()
+  await updateSetting({ aiAutoApproveRestoreCampaign: false })
+  expect(mocks.dialog).not.toHaveBeenCalled()
+  expect(mocks.data.aiAutoApproveRestoreCampaign).toBe(false)
+  mocks.window = undefined
+})
+
+test.each(['no-window', 'untrusted-url', 'navigation', 'replacement'])(
+  'risk enabling refuses %s without saving any setting',
+  async (scenario) => {
+    const source = {} as import('electron').IpcMainInvokeEvent
+    const window = {
+      isDestroyed: () => scenario === 'no-window',
+      on: vi.fn<(event: string, listener: () => void) => void>(),
+      off: vi.fn<(event: string, listener: () => void) => void>(),
+      webContents: {
+        isDestroyed: () => false,
+        getURL: () =>
+          scenario === 'untrusted-url' ? 'https://evil.example/' : 'app://localhost/index.html',
+        on: vi.fn<(event: string, listener: () => void) => void>(),
+        off: vi.fn<(event: string, listener: () => void) => void>(),
+        send: mocks.send,
+      },
+    }
+    mocks.window = window
+    mocks.dialog.mockImplementation(async () => {
+      if (scenario === 'navigation') window.webContents.on.mock.calls[0]![1]()
+      if (scenario === 'replacement') mocks.window = { ...window }
+      return { response: 1 }
+    })
+    const before = { ...mocks.data }
+    await expect(
+      updateSetting({ aiAutoApproveSwitchCampaign: true, logLevel: 'debug' }, false, source),
+    ).rejects.toBeDefined()
+    expect(mocks.data).toEqual(before)
+    mocks.window = undefined
+    mocks.dialog.mockReset()
+  },
+)

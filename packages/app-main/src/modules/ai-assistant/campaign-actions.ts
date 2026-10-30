@@ -1,4 +1,6 @@
-import { dialog } from 'electron'
+import { dialog, type BrowserWindow } from 'electron'
+import type { SettingData } from '@scnexus/app-shared/stores/setting.store'
+import { getSettingStore } from '../../stores/setting'
 import type {
   ContentRecord,
   InstalledFile,
@@ -80,14 +82,24 @@ function plainName(name: string) {
     .join('')
     .slice(0, 120)
 }
+type ApprovalPreference = Extract<keyof SettingData, `aiAutoApprove${string}`>
+type ApprovalGrant =
+  | { preference: ApprovalPreference; window?: never }
+  | { window: BrowserWindow; preference?: never }
 async function confirm(
   record: ContentRecord,
   operation: 'restore' | 'uninstall',
   files: number,
   signal: AbortSignal,
   switchTarget?: ContentRecord,
-) {
+): Promise<ApprovalGrant | false> {
   check(signal)
+  const preference = switchTarget
+    ? 'aiAutoApproveSwitchCampaign'
+    : operation === 'restore'
+      ? 'aiAutoApproveRestoreCampaign'
+      : 'aiAutoApproveUninstallCampaign'
+  if (getSettingStore()[preference] === true) return { preference }
   const window = trustedWindow()
   if (!window) return false
   let invalidated = false
@@ -120,7 +132,7 @@ async function confirm(
     window.off('closed', invalidate)
   }
   check(signal)
-  return !invalidated && trustedWindow() === window && result.response === 1
+  return !invalidated && trustedWindow() === window && result.response === 1 ? { window } : false
 }
 
 // Removal previews detect drift since preparation, not pre-existing user edits.
@@ -196,16 +208,20 @@ async function remove(
   if (libraryPath && !library) return review(id, operation)
   check(signal)
   const files = operation === 'restore' ? current(record)!.installedFiles.length : record.fileCount
-  const approvalWindow = trustedWindow()
-  if (!(await confirm(record, operation, files, signal, switchTarget)))
-    return { id, operation, status: 'cancelled', errorCode: 'CANCELLED' }
+  const grant = await confirm(record, operation, files, signal, switchTarget)
+  if (!grant) return { id, operation, status: 'cancelled', errorCode: 'CANCELLED' }
   check(signal)
   if (state() !== before || !(await safeRemoval(find(id), operation, preview)))
     return review(id, operation)
   if (libraryPath && (await resourceState(libraryPath))?.hash !== library?.hash)
     return review(id, operation)
   check(signal)
-  if (state() !== before || !approvalWindow || trustedWindow() !== approvalWindow)
+  if (
+    state() !== before ||
+    (grant.preference
+      ? getSettingStore()[grant.preference] !== true
+      : trustedWindow() !== grant.window)
+  )
     return review(id, operation)
   beginMutation()
   if (operation === 'restore') await campaign.deactivate(preview.removalId, [])

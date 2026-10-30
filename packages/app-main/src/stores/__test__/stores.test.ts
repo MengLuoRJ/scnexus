@@ -105,7 +105,7 @@ test('first run writes validated defaults only once and snapshots are detached',
   const repository = setting()
   const backend = await fileBackend()
   const snapshot = repository.init(backend)
-  assert.equal(snapshot._schemaVersion, 6)
+  assert.equal(snapshot._schemaVersion, 7)
   assert.equal(snapshot._revision, 0)
   assert.equal(snapshot.lastUpdatedAt, null)
   assert.equal(snapshot.displayLanguage, 'system')
@@ -157,7 +157,7 @@ test('complete/key updates validate every field and commit one _revision atomica
     ['downloadDirectory', 'relative'],
     ['clientId', ''],
     ['lastUpdatedAt', -1],
-    ['_schemaVersion', 5],
+    ['_schemaVersion', 6],
     ['_revision', 99],
     ['unknown', true],
   ]) {
@@ -219,8 +219,8 @@ test('invalid JSON and schema back up without overwriting or becoming usable', a
 
 test('future versions cannot be overwritten, even by migration', async () => {
   for (const data of [
-    { _schemaVersion: 7, _revision: 10 },
-    { schemaVersion: 7, revision: 10 },
+    { _schemaVersion: 8, _revision: 10 },
+    { schemaVersion: 8, revision: 10 },
   ]) {
     const backend = await fileBackend(data)
     assert.throws(() => setting().init(backend), code(ERRORS.STORE_VERSION_UNSUPPORTED.code))
@@ -254,7 +254,7 @@ test('previous unprefixed model migrates exactly once without losing business fi
   }
   const backend = await fileBackend(original)
   const migrated = setting().init(backend)
-  assert.equal(migrated._schemaVersion, 6)
+  assert.equal(migrated._schemaVersion, 7)
   assert.equal(migrated._revision, 17)
   assert.equal(migrated._lastConfirmedVersion, '0.0.20')
   assert.equal(migrated.clientId, original.clientId)
@@ -393,7 +393,7 @@ test('setting v1 language codes migrate without losing user preferences', async 
     assert.equal(result.displayLanguage, next)
     assert.equal(result._revision, 9)
     assert.equal(result.telemetryEnabled, true)
-    assert.equal(result._schemaVersion, 6)
+    assert.equal(result._schemaVersion, 7)
     assert.equal(backend.backups.length, 1)
   }
 })
@@ -411,7 +411,7 @@ test('v2 settings migrate once with online analytics enabled and preserve disabl
   const repository = setting()
   const migrated = repository.init(backend)
   assert.equal(migrated.analyticsEnabled, true)
-  assert.equal(migrated._schemaVersion, 6)
+  assert.equal(migrated._schemaVersion, 7)
   assert.equal(migrated.displayLanguage, 'en')
   assert.equal(migrated.clientId, previous.clientId)
   assert.equal(migrated._revision, 12)
@@ -430,7 +430,7 @@ test('v3 settings enable Workshop by default and preserve the disabled preferenc
   const migrated = repository.init(backend)
   assert.equal(migrated.workshopEnabled, true)
   assert.equal(migrated.analyticsEnabled, false)
-  assert.equal(migrated._schemaVersion, 6)
+  assert.equal(migrated._schemaVersion, 7)
   repository.update({ ...migrated, workshopEnabled: false })
   assert.equal(setting().init(backend).workshopEnabled, false)
 })
@@ -605,7 +605,7 @@ test('v4 official service preferences default on, persist independently and reje
   assert.equal(migrated.workshopEnabled, false)
   assert.equal(migrated._revision, 7)
   assert.equal(migrated.clientId, defaults.clientId)
-  assert.equal(migrated._schemaVersion, 6)
+  assert.equal(migrated._schemaVersion, 7)
   assert.equal(backend.backups.length, 1)
   repository.update({
     ...migrated,
@@ -631,7 +631,7 @@ test('v5 settings migrate AI assistant defaults without losing preferences', asy
   const backend = await fileBackend({ ...previous, _schemaVersion: 5, workshopEnabled: false })
   const repository = setting()
   const migrated = repository.init(backend)
-  assert.equal(migrated._schemaVersion, 6)
+  assert.equal(migrated._schemaVersion, 7)
   assert.equal(migrated.aiAssistantEnabled, false)
   assert.equal(migrated.aiAssistantPort, 17861)
   assert.equal(migrated.workshopEnabled, false)
@@ -648,4 +648,25 @@ test('v5 settings migrate AI assistant defaults without losing preferences', asy
   assert.equal(setting().init(backend).aiAssistantPort, 65535)
   assert.equal(setting().init(backend).aiAssistantEnabled, true)
   assert.equal(backend.backups.length, 1)
+})
+
+test('v6 settings migrate auto-approval to false and validate strict booleans', async () => {
+  const repository = setting()
+  const defaults = repository.init(await fileBackend())
+  const keys = [
+    'aiAutoApproveSwitchCampaign',
+    'aiAutoApproveRestoreCampaign',
+    'aiAutoApproveUninstallCampaign',
+  ] as const
+  const previous = { ...defaults, _schemaVersion: 6 }
+  for (const key of keys) delete (previous as Partial<typeof previous>)[key]
+  const migrated = setting().init(await fileBackend(previous))
+  for (const key of keys) {
+    assert.equal(migrated[key], false)
+    for (const value of ['true', 1, null, undefined])
+      assert.throws(() => repository.updateKey(key, value as boolean))
+    repository.updateKey(key, true)
+    assert.equal(repository.getKey(key), true)
+    repository.updateKey(key, false)
+  }
 })

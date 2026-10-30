@@ -26,6 +26,9 @@ const mocks = vi.hoisted(() => ({
   info: vi.fn<() => Promise<IpcResult<{ url: string; token: string }>>>(),
   rotate: vi.fn<() => Promise<IpcResult<undefined>>>(),
   clear: vi.fn<() => Promise<IpcResult<undefined>>>(),
+  snapshot: vi.fn<() => Promise<IpcResult<Partial<SettingSnapshot>>>>(),
+  offSettings: vi.fn<() => void>(),
+  settings: undefined as undefined | ((value: SettingSnapshot) => void),
   update: vi.fn<(patch: unknown) => Promise<IpcResult<Partial<SettingSnapshot>>>>(),
   toast: vi.fn<(value: unknown) => void>(),
   offStatus: vi.fn<() => void>(),
@@ -50,10 +53,11 @@ vi.mock('../../../ipcs', () => ({
     mocks.record = cb
     return mocks.offRecord
   },
-  ipcSettingGetSnapshot: async () => ({
-    ok: true,
-    data: { aiAssistantEnabled: true, aiAssistantPort: 17861 },
-  }),
+  ipcSettingGetSnapshot: mocks.snapshot,
+  ipcSettingOnChanged: (cb: typeof mocks.settings) => {
+    mocks.settings = cb
+    return mocks.offSettings
+  },
   ipcSettingUpdate: mocks.update,
 }))
 const button = defineComponent({
@@ -67,6 +71,12 @@ const input = defineComponent({
   emits: ['update:modelValue'],
   template:
     '<input :value="modelValue" :disabled="disabled" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+})
+const approvalSwitch = defineComponent({
+  props: ['modelValue', 'disabled', 'label'],
+  emits: ['update:modelValue'],
+  template: `<button role="switch" :aria-checked="modelValue" :disabled="disabled"
+    @click="$emit('update:modelValue', !modelValue)">{{ label }}</button>`,
 })
 const modal = defineComponent({
   props: ['open'],
@@ -97,6 +107,10 @@ beforeEach(() => {
   })
   mocks.rotate.mockResolvedValue({ ok: true, data: undefined })
   mocks.clear.mockResolvedValue({ ok: true, data: undefined })
+  mocks.snapshot.mockResolvedValue({
+    ok: true,
+    data: { aiAssistantEnabled: true, aiAssistantPort: 17861 },
+  })
   mocks.update.mockResolvedValue({
     ok: true,
     data: { aiAssistantEnabled: true, aiAssistantPort: 17861 },
@@ -115,6 +129,7 @@ async function render(enabled = true) {
     global: {
       plugins: [createI18n({ legacy: false, locale: 'zh', flatJson: true, messages: { zh } })],
       stubs: {
+        Switch: approvalSwitch,
         Button: button,
         Tabs: tabs,
         Card: card,
@@ -341,7 +356,7 @@ test('tabs separate configuration, history and the twelve controlled capabilitie
   expect(wrapper.text()).toContain('1–200 个字符')
   expect(wrapper.text()).toContain('激活仅在无冲突时直接修改文件')
   expect(wrapper.text()).toContain('确认一次当前战役→目标战役')
-  expect(wrapper.text()).toContain('每次均需原生 Electron 确认，无可用窗口时拒绝')
+  expect(wrapper.text()).toContain('原生 Electron 确认，可分别开启自动批准')
   expect(wrapper.text()).toContain('文件冲突须在现有界面手动审核')
   expect(wrapper.text()).toContain('仅同时开启官方服务和每周突变校准')
   expect(wrapper.text()).toContain('search（string）≤100 字符')
@@ -416,3 +431,159 @@ test.each(['显示令牌', '复制令牌', '复制连接配置'])(
     expect(mocks.info).toHaveBeenCalledTimes(1)
   },
 )
+const approvalKeys = [
+  'aiAutoApproveSwitchCampaign',
+  'aiAutoApproveRestoreCampaign',
+  'aiAutoApproveUninstallCampaign',
+] as const
+
+test.each(approvalKeys)(
+  'persists %s independently, without starting MCP or fetching credentials',
+  async (key) => {
+    const saved = { aiAssistantEnabled: true, aiAssistantPort: 17861, [key]: true }
+    mocks.update.mockResolvedValue({ ok: true, data: saved })
+    const wrapper = await render()
+    await click(wrapper, 'MCP 能力')
+    expect(wrapper.findAll('[role="switch"]')).toHaveLength(3)
+    expect(
+      wrapper.findAll('[data-approval]').map((item) => item.attributes('data-approval')),
+    ).toEqual(approvalKeys)
+    expect(wrapper.findAll('[aria-checked="true"]')).toHaveLength(0)
+    const control = wrapper.get(`[data-approval="${key}"]`)
+    expect(control.attributes('disabled')).toBeUndefined()
+    await control.trigger('click')
+    await flushPromises()
+    expect(mocks.update).toHaveBeenCalledWith({ [key]: true })
+    expect(control.attributes('aria-checked')).toBe('true')
+    expect(wrapper.findAll('[aria-checked="true"]')).toHaveLength(1)
+    expect(wrapper.text()).toContain('自动批准')
+    mocks.snapshot.mockResolvedValue({ ok: true, data: saved })
+    wrapper.unmount()
+    const reopened = await render()
+    await click(reopened, 'MCP 能力')
+    expect(reopened.get(`[data-approval="${key}"]`).attributes('aria-checked')).toBe('true')
+    mocks.update.mockResolvedValue({ ok: true, data: { ...saved, [key]: false } })
+    await reopened.get(`[data-approval="${key}"]`).trigger('click')
+    await flushPromises()
+    expect(mocks.update).toHaveBeenLastCalledWith({ [key]: false })
+    expect(reopened.findAll('[aria-checked="true"]')).toHaveLength(0)
+    expect(mocks.start).not.toHaveBeenCalled()
+    expect(mocks.info).not.toHaveBeenCalled()
+  },
+)
+
+test('does not optimistically enable approval and disables all switches during native approval', async () => {
+  let resolve!: (result: IpcResult<Partial<SettingSnapshot>>) => void
+  mocks.update.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done
+      }),
+  )
+  const wrapper = await render()
+  await click(wrapper, 'MCP 能力')
+  await wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').trigger('click')
+  expect(wrapper.findAll('[aria-checked="true"]')).toHaveLength(0)
+  expect(wrapper.findAll('[role="switch"][disabled]')).toHaveLength(3)
+  resolve({ ok: true, data: { aiAutoApproveRestoreCampaign: true } })
+  await flushPromises()
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').attributes('aria-checked'),
+  ).toBe('true')
+  expect(wrapper.findAll('[role="switch"][disabled]')).toHaveLength(0)
+})
+
+test.each(['denied', 'rejected'] as const)(
+  '%s approval keeps it off and reloads saved preferences',
+  async (mode) => {
+    const wrapper = await render()
+    await click(wrapper, 'MCP 能力')
+    if (mode === 'denied')
+      mocks.update.mockResolvedValueOnce({
+        ok: false,
+        error: toErrorDto(new AppError(ERRORS.TASK_CANCELLED)),
+      })
+    else mocks.update.mockRejectedValueOnce(new Error('write failed'))
+    await wrapper.get('[data-approval="aiAutoApproveSwitchCampaign"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[aria-checked="true"]')).toHaveLength(0)
+    expect(mocks.snapshot).toHaveBeenCalledTimes(2)
+    expect(mocks.toast).toHaveBeenCalledTimes(mode === 'denied' ? 0 : 1)
+  },
+)
+
+test('refreshes actual partially saved permissions after update failure', async () => {
+  const wrapper = await render()
+  await click(wrapper, 'MCP 能力')
+  mocks.update.mockRejectedValueOnce(new Error('later write failed'))
+  mocks.snapshot.mockResolvedValueOnce({ ok: true, data: { aiAutoApproveUninstallCampaign: true } })
+  await wrapper.get('[data-approval="aiAutoApproveUninstallCampaign"]').trigger('click')
+  await flushPromises()
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveUninstallCampaign"]').attributes('aria-checked'),
+  ).toBe('true')
+})
+
+test('reloads preferences when AI is enabled and reflects external settings, cleaning up on unmount', async () => {
+  const wrapper = await render(false)
+  expect(mocks.snapshot).not.toHaveBeenCalled()
+  mocks.snapshot.mockResolvedValue({ ok: true, data: { aiAutoApproveRestoreCampaign: true } })
+  useContentCenterStore().aiAssistantEnabled = true
+  await flushPromises()
+  await click(wrapper, 'MCP 能力')
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').attributes('aria-checked'),
+  ).toBe('true')
+  mocks.settings!({ aiAutoApproveUninstallCampaign: true } as SettingSnapshot)
+  await flushPromises()
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').attributes('aria-checked'),
+  ).toBe('false')
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveUninstallCampaign"]').attributes('aria-checked'),
+  ).toBe('true')
+  wrapper.unmount()
+  expect(mocks.offSettings).toHaveBeenCalledTimes(1)
+})
+
+test('keeps permission controls disabled until saved preferences load', async () => {
+  let resolve!: (result: IpcResult<Partial<SettingSnapshot>>) => void
+  mocks.snapshot.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done
+      }),
+  )
+  const wrapper = await render()
+  await click(wrapper, 'MCP 能力')
+  expect(wrapper.findAll('[role="switch"][disabled]')).toHaveLength(3)
+  resolve({ ok: true, data: {} })
+  await flushPromises()
+  expect(wrapper.findAll('[role="switch"][disabled]')).toHaveLength(0)
+})
+
+test('awaits saved false preferences after failed write before re-enabling switches', async () => {
+  mocks.snapshot.mockResolvedValueOnce({ ok: true, data: { aiAutoApproveRestoreCampaign: true } })
+  const wrapper = await render()
+  await click(wrapper, 'MCP 能力')
+  mocks.update.mockRejectedValueOnce(new Error('partial write'))
+  let resolve!: (result: IpcResult<Partial<SettingSnapshot>>) => void
+  mocks.snapshot.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done
+      }),
+  )
+  await wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').trigger('click')
+  await flushPromises()
+  expect(wrapper.findAll('[role="switch"][disabled]')).toHaveLength(3)
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').attributes('aria-checked'),
+  ).toBe('true')
+  resolve({ ok: true, data: { aiAutoApproveRestoreCampaign: false } })
+  await flushPromises()
+  expect(
+    wrapper.get('[data-approval="aiAutoApproveRestoreCampaign"]').attributes('aria-checked'),
+  ).toBe('false')
+  expect(wrapper.findAll('[role="switch"][disabled]')).toHaveLength(0)
+})

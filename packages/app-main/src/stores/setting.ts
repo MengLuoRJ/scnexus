@@ -12,6 +12,9 @@ export function createSettingRepository(downloadDirectory: () => string) {
     bool(data.officialServicesEnabled)
     bool(data.weeklyMutationCalibrationEnabled)
     bool(data.aiAssistantEnabled)
+    bool(data.aiAutoApproveSwitchCampaign)
+    bool(data.aiAutoApproveRestoreCampaign)
+    bool(data.aiAutoApproveUninstallCampaign)
     if (
       !Number.isInteger(data.aiAssistantPort) ||
       (data.aiAssistantPort as number) < 1024 ||
@@ -21,7 +24,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 6,
+      _schemaVersion: 7,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
@@ -36,10 +39,13 @@ export function createSettingRepository(downloadDirectory: () => string) {
       workshopEnabled: true,
       aiAssistantEnabled: false,
       aiAssistantPort: 17861,
+      aiAutoApproveSwitchCampaign: false,
+      aiAutoApproveRestoreCampaign: false,
+      aiAutoApproveUninstallCampaign: false,
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 6 },
+      _schemaVersion: { const: 7 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -61,11 +67,21 @@ export function createSettingRepository(downloadDirectory: () => string) {
       weeklyMutationCalibrationEnabled: { type: 'boolean' },
       workshopEnabled: { type: 'boolean' },
       aiAssistantEnabled: { type: 'boolean' },
+      aiAutoApproveSwitchCampaign: { type: 'boolean' },
+      aiAutoApproveRestoreCampaign: { type: 'boolean' },
+      aiAutoApproveUninstallCampaign: { type: 'boolean' },
       aiAssistantPort: { type: 'integer', minimum: 1024, maximum: 65535 },
     },
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if ([1, 2, 3, 4, 5, 6].includes(data._schemaVersion as number)) {
+        data.aiAutoApproveSwitchCampaign = false
+        data.aiAutoApproveRestoreCampaign = false
+        data.aiAutoApproveUninstallCampaign = false
+      }
+      if (data._schemaVersion === 6)
+        return { ...data, _schemaVersion: defaults._schemaVersion } as SettingData
       if ([1, 2, 3, 4, 5].includes(data._schemaVersion as number)) {
         data.aiAssistantEnabled = defaults.aiAssistantEnabled
         data.aiAssistantPort = defaults.aiAssistantPort

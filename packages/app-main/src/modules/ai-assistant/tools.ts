@@ -95,17 +95,17 @@ export function createAiAssistantTools(
     ],
     [
       'switch_campaign',
-      'Switch to an installed campaign of the same category. Conflicts require manual review; changes local game files.',
+      'Switch to an installed campaign of the same category. Replacing an active campaign requires desktop confirmation unless the player enabled auto-approval for switching. Conflicts always require manual review; changes local game files.',
       adapters.switchCampaign,
     ],
     [
       'restore_campaign',
-      'Deactivate the active custom campaign to restore the original campaign. Requires approval in the desktop application.',
+      'Deactivate the active custom campaign to restore the original campaign. Requires desktop confirmation unless the player explicitly enabled persistent auto-approval for this tool.',
       adapters.restoreCampaign,
     ],
     [
       'uninstall_campaign',
-      'Uninstall an installed campaign. Requires approval in the desktop application; conflicts require manual review.',
+      'Uninstall an installed campaign. Requires desktop confirmation unless the player explicitly enabled persistent auto-approval for this tool; conflicts always require manual review.',
       adapters.uninstallCampaign,
     ],
   ]

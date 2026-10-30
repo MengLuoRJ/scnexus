@@ -1,16 +1,16 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
+  preferences: {} as Record<string, boolean>,
   list: vi.fn<() => { records: (typeof record)[] }>(),
   active: vi.fn<() => { active: { WOL: typeof active } }>(),
-  prepareActivation:
-    vi.fn<
-      () => Promise<{
-        activationId?: string
-        localId: string
-        conflicts: unknown[]
-        files?: unknown[]
-      }>
-    >(),
+  prepareActivation: vi.fn<
+    () => Promise<{
+      activationId?: string
+      localId: string
+      conflicts: unknown[]
+      files?: unknown[]
+    }>
+  >(),
   activate: vi.fn<() => Promise<unknown> | unknown>(),
   prepareDeactivation:
     vi.fn<
@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   hash: vi.fn<() => Promise<string>>(),
   resource: vi.fn<() => Promise<{ hash: string }>>(),
 }))
+vi.mock('../../../stores/setting', () => ({ getSettingStore: () => mocks.preferences }))
 vi.mock('electron', () => ({ dialog: { showMessageBox: mocks.dialog } }))
 vi.mock('../../campaign', () => ({
   list: mocks.list,
@@ -96,6 +97,7 @@ let window: {
 } | null
 beforeEach(() => {
   vi.resetAllMocks()
+  mocks.preferences = {}
   record = {
     localId: 'known',
     external: true,
@@ -343,3 +345,56 @@ test('navigation invalidates native approval even if trusted origin returns', as
   expect(mocks.deactivate).not.toHaveBeenCalled()
   expect(window!.webContents.off).toHaveBeenCalled()
 })
+
+test.each(['restore', 'uninstall'] as const)(
+  '%s saved approval permits unattended actions only for that tool',
+  async (operation) => {
+    if (operation === 'restore') setActive()
+    const run = operation === 'restore' ? restoreCampaign : uninstallCampaign
+    const key =
+      operation === 'restore' ? 'aiAutoApproveRestoreCampaign' : 'aiAutoApproveUninstallCampaign'
+    mocks.preferences.aiAutoApproveSwitchCampaign = true
+    window = null
+    expect((await run('known', signal())).status).toBe('cancelled')
+    mocks.preferences[key] = true
+    expect((await run('known', signal())).status).toBe('completed')
+    expect(mocks.dialog).not.toHaveBeenCalled()
+  },
+)
+test('revoking approval during removal preflight prevents submission', async () => {
+  setActive()
+  mocks.preferences.aiAutoApproveRestoreCampaign = true
+  window = null
+  let visits = 0
+  mocks.walk.mockImplementation(async (_root, visit) => {
+    await visit('PRIVATE_FILE', '', { isFile: () => true })
+    if (++visits === 2) mocks.preferences.aiAutoApproveRestoreCampaign = false
+  })
+  const begin = vi.fn<() => void>()
+  expect((await restoreCampaign('known', signal(), begin)).status).toBe('requires-review')
+  expect(mocks.deactivate).not.toHaveBeenCalled()
+  expect(begin).not.toHaveBeenCalled()
+})
+test.each(['aiAutoApproveRestoreCampaign', 'aiAutoApproveSwitchCampaign'])(
+  'switch uses only switch approval, not %s',
+  async (key) => {
+    const old = { ...record, localId: 'previous' }
+    mocks.list.mockImplementation(() => ({ records: [record, old] }))
+    active = { localId: 'previous', descriptorPath: 'PRIVATE_ACTIVE', installedFiles: [file] }
+    mocks.prepareDeactivation.mockResolvedValue({
+      removalId: 'restore-preview',
+      localId: 'previous',
+      operation: 'deactivate',
+      files: [],
+    })
+    mocks.deactivate.mockImplementation(async () => {
+      active = undefined
+    })
+    mocks.preferences[key] = true
+    window = null
+    expect((await switchCampaign('known', signal())).status).toBe(
+      key === 'aiAutoApproveSwitchCampaign' ? 'completed' : 'cancelled',
+    )
+    expect(mocks.dialog).not.toHaveBeenCalled()
+  },
+)

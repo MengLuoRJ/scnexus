@@ -32,6 +32,7 @@ const items = computed(() => [
   { label: t('customize.title'), image: customizeIcon, to: '/customize' },
   { label: t('weekly.title'), image: mutationIcon, to: '/weekly-mutations' },
   { label: t('toolbox.title'), image: toolboxIcon, to: '/editor-toolbox' },
+  { label: t('replay.title'), image: campaignIcon, to: '/replays' },
   ...(contentCenter.enabled
     ? [{ label: t('contentCenter.workshop'), image: workshopIcon, to: '/workshop' }]
     : []),

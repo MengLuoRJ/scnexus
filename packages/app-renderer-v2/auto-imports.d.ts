@@ -203,6 +203,11 @@ declare global {
   const ipcLoggingGetConfig: typeof import('./src/ipcs/logging').ipcLoggingGetConfig
   const ipcLoggingSetLevel: typeof import('./src/ipcs/logging').ipcLoggingSetLevel
   const ipcLoggingWrite: typeof import('./src/ipcs/logging').ipcLoggingWrite
+  const ipcReplayDelete: typeof import('./src/ipcs/replay').ipcReplayDelete
+  const ipcReplayImportArchive: typeof import('./src/ipcs/replay').ipcReplayImportArchive
+  const ipcReplayIndexFile: typeof import('./src/ipcs/replay').ipcReplayIndexFile
+  const ipcReplayList: typeof import('./src/ipcs/replay').ipcReplayList
+  const ipcReplayScanDirectory: typeof import('./src/ipcs/replay').ipcReplayScanDirectory
   const ipcSettingGetKey: typeof import('./src/ipcs/setting').ipcSettingGetKey
   const ipcSettingGetSnapshot: typeof import('./src/ipcs/setting').ipcSettingGetSnapshot
   const ipcSettingOnChanged: typeof import('./src/ipcs/setting').ipcSettingOnChanged
@@ -491,6 +496,11 @@ declare module 'vue' {
     readonly ipcLoggingGetConfig: UnwrapRef<typeof import('./src/ipcs/logging')['ipcLoggingGetConfig']>
     readonly ipcLoggingSetLevel: UnwrapRef<typeof import('./src/ipcs/logging')['ipcLoggingSetLevel']>
     readonly ipcLoggingWrite: UnwrapRef<typeof import('./src/ipcs/logging')['ipcLoggingWrite']>
+    readonly ipcReplayDelete: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayDelete']>
+    readonly ipcReplayImportArchive: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayImportArchive']>
+    readonly ipcReplayIndexFile: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayIndexFile']>
+    readonly ipcReplayList: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayList']>
+    readonly ipcReplayScanDirectory: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayScanDirectory']>
     readonly ipcSettingGetKey: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingGetKey']>
     readonly ipcSettingGetSnapshot: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingGetSnapshot']>
     readonly ipcSettingOnChanged: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingOnChanged']>

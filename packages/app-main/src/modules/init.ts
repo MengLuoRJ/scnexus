@@ -42,7 +42,6 @@ export async function initModules() {
     initContentPackageModule()
     initCampaignModule()
     initCustomizeModule()
-    initReplayModule()
     initDependencyIpc()
     contentStarted = true
   })
@@ -60,6 +59,7 @@ export async function initModules() {
     ['app', initAppModule],
     ['auth', initAuthModule],
     ['dialog', initDialogModule],
+    ['replay', initReplayModule],
     ['shell', initShellModule],
     ['deep-link', initDeepLinkModule],
     ['tray', initTrayModule],

@@ -1,4 +1,8 @@
-import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS } from './registry.js'
+import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS, type ReplayComponentName } from './registry.js'
+import { parseReplayHeader, parseReplayDetails } from './metadata.js'
+export { decodeVersioned } from './versioned.js'
+export { parseReplayHeader, parseReplayDetails } from './metadata.js'
+export type { ReplayHeader } from './metadata.js'
 
 export type { ReplayComponent, ReplayComponentName } from './registry.js'
 export { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS } from './registry.js'
@@ -45,7 +49,17 @@ export function looksLikeReplay(path: string): boolean {
   return REPLAY_FILE_EXTENSIONS.some((suffix) => normalized.endsWith(suffix))
 }
 
-export async function inspectReplayFile(path: string): Promise<ReplayInspectionResult> {
+export type ReplayInspectionInput = {
+  header?: Uint8Array
+  components?: Partial<Record<ReplayComponentName, Uint8Array>>
+  availableComponents?: ReplayComponentName[]
+}
+
+/** Archive I/O belongs to the host; only supplied component bytes are decoded here. */
+export async function inspectReplayFile(
+  path: string,
+  input?: ReplayInspectionInput,
+): Promise<ReplayInspectionResult> {
   const fileName = path.split(/[\\/]/).pop() ?? path
   const detected = looksLikeReplay(path)
   const result: ReplayInspectionResult = {
@@ -74,8 +88,58 @@ export async function inspectReplayFile(path: string): Promise<ReplayInspectionR
     return result
   }
 
+  if (!input) {
+    result.warnings.push(
+      'File extension matches a replay candidate; no archive components were supplied.',
+    )
+    return result
+  }
+
+  result.components = REPLAY_COMPONENTS.map((component) => ({
+    name: component.name,
+    required: component.required,
+    found:
+      input.availableComponents?.includes(component.name) === true ||
+      input.components?.[component.name] !== undefined,
+  }))
+  let decoded = false
+  let invalid = false
+  if (input.header) {
+    try {
+      const header = parseReplayHeader(input.header)
+      result.summary.gameVersion = header.gameVersion
+      result.summary.baseBuild = header.baseBuild
+      result.summary.durationSeconds = header.durationSeconds
+      decoded = true
+    } catch (error) {
+      invalid = true
+      result.warnings.push(
+        `replay.header: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+  const details = input.components?.['replay.details']
+  if (details) {
+    try {
+      const metadata = parseReplayDetails(details)
+      result.summary.mapName = metadata.mapName
+      result.summary.players = metadata.players
+      decoded = true
+    } catch (error) {
+      invalid = true
+      result.warnings.push(
+        `replay.details: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+  result.status = invalid ? 'corrupt' : decoded ? 'partial' : 'unsupported'
+  result.supportLevel = decoded ? 'metadata-only' : 'unsupported'
+  if (result.summary.durationSeconds !== null)
+    result.warnings.push(
+      'Duration uses 16 game loops/s (game time), not Faster-speed wall-clock time.',
+    )
   result.warnings.push(
-    'File extension matches a replay candidate; archive validation and protocol decoding are not implemented.',
+    'Only self-describing header/details metadata is decoded; build-specific initData and event analysis are not supported.',
   )
   return result
 }

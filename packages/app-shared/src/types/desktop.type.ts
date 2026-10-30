@@ -50,6 +50,7 @@ export type DeepLinkWorkshop = {
 }
 
 export interface DesktopApi {
+  replay: import('./replay.type.js').ReplayApi
   aiAssistant: import('./ai-assistant.type.js').AiAssistantApi
   dependency: import('./content-api.type.js').ContentApi
   workshop: import('./workshop.type.js').WorkshopApi

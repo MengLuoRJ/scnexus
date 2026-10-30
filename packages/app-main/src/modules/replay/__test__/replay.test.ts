@@ -1,9 +1,18 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../utils/7zip-wrapper', () => ({ SevenZipWrapper: class {} }))
+const archiveMock = vi.hoisted(() => ({
+  list: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  readFile: vi.fn<(...args: unknown[]) => Promise<Buffer>>(),
+}))
+vi.mock('../../../utils/7zip-wrapper', () => ({
+  SevenZipWrapper: class {
+    list = archiveMock.list
+    readFile = archiveMock.readFile
+  },
+}))
 vi.mock('../../../utils/application-data', () => ({
   getApplicationDataDirectory: vi.fn<() => string>(),
 }))
@@ -19,6 +28,8 @@ beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), 'scnexus-replay-service-'))
   vi.mocked(getApplicationDataDirectory).mockReturnValue(directory)
   service = new ReplayLibraryService()
+  archiveMock.list.mockReset()
+  archiveMock.readFile.mockReset()
 })
 
 afterEach(async () => {
@@ -27,6 +38,54 @@ afterEach(async () => {
 })
 
 describe('ReplayLibraryService', () => {
+  function entry(path = 'nested/test.SC2Replay', extra = {}) {
+    return { path, size: 9, isDirectory: false, attributes: 'A', properties: {}, ...extra }
+  }
+
+  it('imports only replay entries into a new directory without overwriting existing files', async () => {
+    archiveMock.list.mockResolvedValue({ entries: [entry(), entry('notes.txt')] })
+    archiveMock.readFile.mockResolvedValue(Buffer.from('candidate'))
+    const first = await service.importReplayArchive('pack.zip', directory)
+    const second = await service.importReplayArchive('pack.zip', directory)
+    expect(first).toHaveLength(1)
+    expect(second).toHaveLength(1)
+    expect(first[0]!.path).not.toBe(second[0]!.path)
+    expect(await readFile(first[0]!.path, 'utf8')).toBe('candidate')
+    expect(archiveMock.readFile).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    '../escape.SC2Replay',
+    'C:\\escape.SC2Replay',
+    '/escape.SC2Replay',
+    'a/CON.SC2Replay',
+    'a/trailing./test.SC2Replay',
+  ])('rejects unsafe import paths: %s', async (path) => {
+    archiveMock.list.mockResolvedValue({ entries: [entry(path)] })
+    await expect(service.importReplayArchive('pack.zip', directory)).rejects.toThrow('unsafe path')
+    expect(archiveMock.readFile).not.toHaveBeenCalled()
+  })
+
+  it('rejects archive links, duplicate paths and oversized entries', async () => {
+    for (const entries of [
+      [entry('link.SC2Replay', { properties: { 'Symbolic Link': 'target' } })],
+      [entry('a.SC2Replay'), entry('A.sc2replay')],
+      [entry('a.SC2Replay', { size: 129 * 1024 * 1024 })],
+    ]) {
+      archiveMock.list.mockResolvedValue({ entries })
+      await expect(service.importReplayArchive('pack.zip', directory)).rejects.toThrow(
+        /links|duplicate|size limit/,
+      )
+    }
+  })
+
+  it('cleans incomplete imports when archive reads fail', async () => {
+    archiveMock.list.mockResolvedValue({ entries: [entry()] })
+    archiveMock.readFile.mockRejectedValue(new Error('read failed'))
+    await expect(service.importReplayArchive('pack.zip', directory)).rejects.toThrow('read failed')
+    expect((await readdir(directory)).some((name) => name.startsWith('pack-'))).toBe(false)
+  })
+
   it('manually scans nested replay files and keeps stable identities on reindex', async () => {
     const root = join(directory, 'replays')
     await mkdir(join(root, 'nested'), { recursive: true })

@@ -17,6 +17,14 @@ function contentApi(
   }
 }
 const api: DesktopApi = {
+  replay: {
+    list: () => invoke('replay:list'),
+    scanDirectory: (rootDir) => invoke('replay:scan-directory', rootDir),
+    indexFile: (filePath) => invoke('replay:index-file', filePath),
+    importArchive: (archivePath, destinationDir) =>
+      invoke('replay:import-archive', archivePath, destinationDir),
+    delete: (filePath) => invoke('replay:delete', filePath),
+  },
   aiAssistant: {
     getStatus: () => invoke('ai-assistant:getStatus'),
     start: (port) => invoke('ai-assistant:start', port),

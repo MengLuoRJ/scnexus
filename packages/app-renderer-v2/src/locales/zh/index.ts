@@ -1,3 +1,4 @@
+import replay from './replay.json'
 import aiAssistant from './aiAssistant.json'
 import account from './account.json'
 import campaign from './campaign.json'
@@ -13,6 +14,7 @@ import weekly from './weekly.json'
 import workshop from './workshop.json'
 
 export default {
+  ...replay,
   ...aiAssistant,
   ...account,
   ...campaign,

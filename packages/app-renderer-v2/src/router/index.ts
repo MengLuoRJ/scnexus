@@ -6,6 +6,12 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      path: '/replays',
+      name: 'replays',
+      component: () => import('../views/replay/ReplayView.vue'),
+      meta: { titleKey: 'replay.title' },
+    },
+    {
       path: '/ai-assistant',
       name: 'ai-assistant',
       component: () => import('../views/ai-assistant/AiAssistantView.vue'),

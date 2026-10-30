@@ -78,6 +78,11 @@ export class MpqArchive implements MpqArchiveApi {
     return { ...this.reader.info, fileCount: this.fileCount }
   }
 
+  async readUserData(): Promise<Buffer | undefined> {
+    this.assertOpen()
+    return this.reader.readUserData()
+  }
+
   get fileCount(): number {
     this.assertOpen()
     return (

@@ -197,7 +197,7 @@ function createUserDataHeader(size: number) {
   header.writeUInt32LE(0x1b51504d, 0)
   header.writeUInt32LE(totalSize, 4)
   header.writeUInt32LE(totalSize, 8)
-  header.writeUInt32LE(0x10, 0x0c)
+  header.writeUInt32LE(size, 0x0c)
   return header
 }
 

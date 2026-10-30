@@ -1,30 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { lstat, readdir, unlink } from 'node:fs/promises'
-import { basename, extname, join, resolve } from 'node:path'
-import {
-  inspectReplayFile,
-  looksLikeReplay,
-  type ReplayInspectionResult,
-} from '@scnexus/replay-parser'
+import { lstat, mkdir, mkdtemp, readdir, rm, unlink, writeFile } from 'node:fs/promises'
+import { basename, dirname, extname, join, resolve } from 'node:path'
+import { looksLikeReplay } from '@scnexus/replay-parser'
+import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
+import { inspectLocalReplay } from './replay-inspection'
 import { SevenZipWrapper } from '../../utils/7zip-wrapper'
-
-export type ReplayRecord = {
-  id: string
-  path: string
-  fileName: string
-  extension: string
-  sizeBytes: number
-  mtimeMs: number
-  status: ReplayInspectionResult['status']
-  supportLevel: ReplayInspectionResult['supportLevel']
-  mapName: string | null
-  gameVersion: string | null
-  baseBuild: number | null
-  durationSeconds: number | null
-  players: ReplayInspectionResult['summary']['players']
-  warnings: string[]
-}
 
 export class ReplayLibraryService {
   private readonly archiveReader = new SevenZipWrapper()
@@ -65,7 +47,7 @@ export class ReplayLibraryService {
     if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
     const fileStat = await lstat(filePath)
     if (!fileStat.isFile()) throw new Error('Replay must be a regular file')
-    const inspection = await inspectReplayFile(filePath)
+    const inspection = await inspectLocalReplay(filePath)
     const record: ReplayRecord = {
       id: randomUUID(),
       path: filePath,
@@ -88,10 +70,63 @@ export class ReplayLibraryService {
 
   async importReplayArchive(archivePath: string, destinationDir: string): Promise<ReplayRecord[]> {
     await this.ensureReady()
-    const archiveFileName = basename(archivePath)
-    const outputDir = join(destinationDir, archiveFileName.replace(/\.[^.]+$/, ''))
-
-    await this.archiveReader.extract(archivePath, { outputDir })
+    const listing = await this.archiveReader.list(archivePath)
+    const paths = new Set<string>()
+    let totalBytes = 0
+    const entries = listing.entries.filter((entry) => {
+      const parts = entry.path.split(/[\\/]/)
+      if (
+        parts.some(
+          (part) =>
+            !part ||
+            part === '.' ||
+            part === '..' ||
+            /[:<>"|?*]/.test(part) ||
+            [...part].some((char) => char.charCodeAt(0) < 32) ||
+            /[. ]$/.test(part) ||
+            /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part),
+        )
+      ) {
+        throw new Error('Archive contains an unsafe path')
+      }
+      if (
+        Object.keys(entry.properties).some((key) => /symbolic link|hard link|reparse/i.test(key)) ||
+        /l/i.test(entry.attributes ?? '')
+      ) {
+        throw new Error('Archive links are not supported')
+      }
+      if (entry.isDirectory || !looksLikeReplay(entry.path)) return false
+      const key = parts.join('\\').toLowerCase()
+      if (paths.has(key)) throw new Error('Archive contains duplicate replay paths')
+      paths.add(key)
+      if (entry.size === undefined || entry.size < 0 || entry.size > 128 * 1024 * 1024)
+        throw new Error('Replay archive entry exceeds size limit')
+      totalBytes += entry.size
+      return true
+    })
+    if (entries.length === 0) throw new Error('Archive contains no .SC2Replay files')
+    if (entries.length > 2000 || totalBytes > 1024 * 1024 * 1024)
+      throw new Error('Replay archive exceeds import limits')
+    const stem =
+      basename(archivePath, extname(archivePath))
+        .replace(/[^\p{L}\p{N}_-]/gu, '_')
+        .slice(0, 60) || 'replays'
+    const outputDir = await mkdtemp(join(resolve(destinationDir), `${stem}-`))
+    try {
+      for (const entry of entries) {
+        const target = join(outputDir, ...entry.path.split(/[\\/]/))
+        const data = await this.archiveReader.readFile(archivePath, entry.path, {
+          maxBytes: 128 * 1024 * 1024,
+        })
+        if (data.length !== entry.size)
+          throw new Error('Replay archive entry size changed during import')
+        await mkdir(dirname(target), { recursive: true })
+        await writeFile(target, data, { flag: 'wx' })
+      }
+    } catch (error) {
+      await rm(outputDir, { recursive: true, force: true })
+      throw error
+    }
     return this.scanDirectory(outputDir)
   }
 

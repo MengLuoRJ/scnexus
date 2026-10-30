@@ -22,6 +22,27 @@ vi.mock('electron', () => ({
 import '../ipc/desktop'
 const desktopApi = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
 
+test('replay exposes only controlled business methods and preserves result envelopes', async () => {
+  mocks.invoke.mockClear()
+  const success = { ok: true, data: [] }
+  mocks.invoke.mockResolvedValue(success)
+  expect(await desktopApi.replay.list()).toBe(success)
+  await desktopApi.replay.scanDirectory('D:\\replays')
+  await desktopApi.replay.indexFile('D:\\replay.SC2Replay')
+  await desktopApi.replay.importArchive('D:\\archive.zip', 'D:\\destination')
+  await desktopApi.replay.delete('D:\\replay.SC2Replay')
+  expect(mocks.invoke.mock.calls).toEqual([
+    ['replay:list'], ['replay:scan-directory', 'D:\\replays'],
+    ['replay:index-file', 'D:\\replay.SC2Replay'],
+    ['replay:import-archive', 'D:\\archive.zip', 'D:\\destination'],
+    ['replay:delete', 'D:\\replay.SC2Replay'],
+  ])
+  expect(Object.keys(desktopApi.replay).sort()).toEqual(['delete', 'importArchive', 'indexFile', 'list', 'scanDirectory'])
+  const failure = { ok: false, error: toErrorDto(new AppError(ERRORS.IPC_INVALID_ARGUMENT)) }
+  mocks.invoke.mockResolvedValueOnce(failure)
+  expect(await desktopApi.replay.list()).toBe(failure)
+})
+
 test.each([false, true])(
   'workshop deep links forward the DTO and unsubscribe (download=%s)',
   (download) => {

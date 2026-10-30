@@ -41,12 +41,14 @@
     "hash-wasm": "^4.12.0",
     "regedit": "^5.1.4",
     "semver": "^7.8.5",
+    "sql.js": "^1.15.2",
     "uuid": "^14.0.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@scnexus/app-shared": "workspace:*",
     "@types/semver": "^7.8.0",
+    "@types/sql.js": "^1.4.11",
     "electron": "^45.1.0",
     "electron-builder": "^26.18.0",
     "typescript": "~6.0.3",

@@ -21,6 +21,7 @@
 
 - [replay-architecture.md](./replay-architecture.md) — 架构与能力拆分
 - [replay-parser-package.md](./replay-parser-package.md) — `@scnexus/replay-parser` 包设计
+- [replay-database.md](./replay-database.md) — 本地 SQLite 数据结构与 replay 持久化设计
 
 ## 关键原则
 

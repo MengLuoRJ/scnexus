@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { readdir, rm, stat } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { inspectReplayFile, looksLikeReplay, type ReplayInspectionResult } from '@scnexus/replay-parser'
+import { replayDatabase } from './replay-db'
 import { SevenZipWrapper } from '../../utils/7zip-wrapper'
 
 export type ReplayRecord = {
@@ -24,7 +25,17 @@ export type ReplayRecord = {
 export class ReplayLibraryService {
   private readonly archiveReader = new SevenZipWrapper()
 
+  async ensureReady() {
+    await replayDatabase.initialize()
+  }
+
+  async listStoredReplays(): Promise<ReplayRecord[]> {
+    await this.ensureReady()
+    return replayDatabase.listReplays()
+  }
+
   async scanDirectory(rootDir: string): Promise<ReplayRecord[]> {
+    await this.ensureReady()
     const entries = await readdir(rootDir, { withFileTypes: true })
     const results: ReplayRecord[] = []
 
@@ -45,10 +56,10 @@ export class ReplayLibraryService {
   }
 
   async indexReplayFile(filePath: string): Promise<ReplayRecord> {
+    await this.ensureReady()
     const fileStat = await stat(filePath)
     const inspection = await inspectReplayFile(filePath)
-
-    return {
+    const record: ReplayRecord = {
       id: randomUUID(),
       path: filePath,
       fileName: basename(filePath),
@@ -64,9 +75,13 @@ export class ReplayLibraryService {
       players: inspection.summary.players,
       warnings: inspection.warnings,
     }
+
+    await replayDatabase.upsertReplay(record)
+    return record
   }
 
   async importReplayArchive(archivePath: string, destinationDir: string): Promise<ReplayRecord[]> {
+    await this.ensureReady()
     const archiveFileName = basename(archivePath)
     const outputDir = join(destinationDir, archiveFileName.replace(/\.[^.]+$/, ''))
 
@@ -75,7 +90,9 @@ export class ReplayLibraryService {
   }
 
   async deleteReplay(filePath: string): Promise<void> {
+    await this.ensureReady()
     await rm(filePath, { force: true, recursive: true })
+    await replayDatabase.deleteReplayByPath(filePath)
   }
 }
 

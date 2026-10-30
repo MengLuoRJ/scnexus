@@ -1,12 +1,6 @@
-import {
-  REPLAY_COMPONENTS,
-  REPLAY_FILE_EXTENSIONS,
-} from './registry.js'
+import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS } from './registry.js'
 
-export type {
-  ReplayComponent,
-  ReplayComponentName,
-} from './registry.js'
+export type { ReplayComponent, ReplayComponentName } from './registry.js'
 export { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS } from './registry.js'
 
 export type ReplayFileStatus = 'supported' | 'partial' | 'unsupported' | 'corrupt'
@@ -80,22 +74,8 @@ export async function inspectReplayFile(path: string): Promise<ReplayInspectionR
     return result
   }
 
-  const knownComponents = ['replay.details', 'replay.initData', 'replay.game.events']
-  result.components = result.components.map((component) => ({
-    ...component,
-    found: knownComponents.includes(component.name),
-  }))
-
-  result.status = 'partial'
-  result.supportLevel = 'metadata-only'
-  result.summary.mapName = 'Unknown map'
-  result.summary.gameVersion = 'unresolved'
-  result.summary.baseBuild = 0
-  result.summary.durationSeconds = 0
-  result.summary.players = [
-    { slot: 1, name: null, race: null, team: 1, result: null },
-    { slot: 2, name: null, race: null, team: 1, result: null },
-  ]
-  result.warnings.push('Replay parser has detected a replay candidate but not yet completed protocol-level extraction.')
+  result.warnings.push(
+    'File extension matches a replay candidate; archive validation and protocol decoding are not implemented.',
+  )
   return result
 }

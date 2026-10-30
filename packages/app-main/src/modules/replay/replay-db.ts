@@ -1,7 +1,6 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { createRequire } from 'node:module'
-import initSqlJs, { type Database as SqlDatabase } from 'sql.js'
+import { mkdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { getApplicationDataDirectory } from '../../utils/application-data'
 import type { ReplayRecord } from './replay'
 
@@ -25,23 +24,22 @@ type ReplayDatabaseRow = {
 }
 
 export class ReplayDatabase {
-  private db: SqlDatabase | null = null
-  private dbPath = ''
+  private db: DatabaseSync | null = null
 
-  async initialize(): Promise<void> {
-    const dataDirectory = join(getApplicationDataDirectory(), 'SCNexusStorage')
-    await mkdir(dataDirectory, { recursive: true })
-    this.dbPath = join(dataDirectory, 'replay.db')
+  constructor(private readonly databasePath?: string) {}
 
-    const require = createRequire(import.meta.url)
-    const wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm')
-    const SQL = await initSqlJs({
-      locateFile: (file: string) => (file === 'sql-wasm.wasm' ? wasmPath : require.resolve(`sql.js/dist/${file}`)),
-    })
-
-    const fileBuffer = await readFile(this.dbPath).catch(() => null)
-    this.db = new SQL.Database(fileBuffer ? new Uint8Array(fileBuffer) : undefined)
-    this.db.run(`
+  initialize(): void {
+    if (this.db) return
+    const dbPath =
+      this.databasePath ?? join(getApplicationDataDirectory(), 'SCNexusStorage', 'replay.db')
+    mkdirSync(dirname(dbPath), { recursive: true })
+    const db = new DatabaseSync(dbPath)
+    try {
+      const version = db.prepare('PRAGMA user_version').get()!.user_version as number
+      if (version > 1) throw new Error(`Unsupported replay database version: ${version}`)
+      db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;')
+      db.exec('BEGIN IMMEDIATE')
+      db.exec(`
       CREATE TABLE IF NOT EXISTS replay_files (
         id TEXT PRIMARY KEY,
         path TEXT NOT NULL UNIQUE,
@@ -61,7 +59,7 @@ export class ReplayDatabase {
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `)
-    this.db.run(`
+      db.exec(`
       CREATE TABLE IF NOT EXISTS replay_runs (
         id TEXT PRIMARY KEY,
         replay_id TEXT NOT NULL,
@@ -72,25 +70,27 @@ export class ReplayDatabase {
         FOREIGN KEY (replay_id) REFERENCES replay_files (id)
       );
     `)
-    this.db.run(`CREATE INDEX IF NOT EXISTS replay_files_path_idx ON replay_files(path);`)
-    this.db.run(`CREATE INDEX IF NOT EXISTS replay_files_status_idx ON replay_files(status);`)
+      db.exec('CREATE INDEX IF NOT EXISTS replay_files_status_idx ON replay_files(status)')
+      db.exec('PRAGMA user_version = 1; COMMIT;')
+      this.db = db
+    } catch (error) {
+      db.close()
+      throw error
+    }
   }
 
-  private ensureReady() {
+  close(): void {
+    this.db?.close()
+    this.db = null
+  }
+
+  private ensureReady(): DatabaseSync {
     if (!this.db) throw new Error('Replay database is not initialized')
-  }
-
-  private async flush(): Promise<void> {
-    this.ensureReady()
-    if (!this.dbPath) throw new Error('Replay database path is not initialized')
-    const db = this.db!
-    const data = Buffer.from(db.export())
-    await writeFile(this.dbPath, data)
+    return this.db
   }
 
   async upsertReplay(record: ReplayRecord): Promise<ReplayRecord> {
-    this.ensureReady()
-    const db = this.db!
+    const db = this.ensureReady()
     const timestamp = new Date().toISOString()
     const params = [
       record.id,
@@ -111,8 +111,9 @@ export class ReplayDatabase {
       timestamp,
     ]
 
-    db.run(
-      `
+    const row = db
+      .prepare(
+        `
         INSERT INTO replay_files (
           id, path, file_name, extension, size_bytes, mtime_ms, status, support_level,
           map_name, game_version, base_build, duration_seconds, players_json, warnings_json,
@@ -132,28 +133,25 @@ export class ReplayDatabase {
           players_json = excluded.players_json,
           warnings_json = excluded.warnings_json,
           updated_at = excluded.updated_at
+        RETURNING *
       `,
-      params,
-    )
-
-    await this.flush()
-    return record
+      )
+      .get(...params) as ReplayDatabaseRow | undefined
+    if (!row) throw new Error('Replay upsert did not return a record')
+    return this.toRecord(row)
   }
 
   async listReplays(): Promise<ReplayRecord[]> {
-    this.ensureReady()
-    const rows = this.db!.exec(`
-      SELECT
-        id, path, file_name, extension, size_bytes, mtime_ms, status, support_level,
-        map_name, game_version, base_build, duration_seconds, players_json, warnings_json
-      FROM replay_files
-      ORDER BY mtime_ms DESC
-    `) as unknown as Array<{ values: ReplayDatabaseRow[] }>
+    const rows = this.ensureReady()
+      .prepare(`
+      SELECT * FROM replay_files ORDER BY mtime_ms DESC, path ASC
+    `)
+      .all() as ReplayDatabaseRow[]
+    return rows.map((row) => this.toRecord(row))
+  }
 
-    const first = rows[0]
-    if (!first) return []
-
-    return first.values.map((row) => ({
+  private toRecord(row: ReplayDatabaseRow): ReplayRecord {
+    return {
       id: row.id,
       path: row.path,
       fileName: row.file_name,
@@ -168,13 +166,22 @@ export class ReplayDatabase {
       durationSeconds: row.duration_seconds,
       players: JSON.parse(row.players_json ?? '[]') as ReplayRecord['players'],
       warnings: JSON.parse(row.warnings_json ?? '[]') as ReplayRecord['warnings'],
-    }))
+    }
   }
 
   async deleteReplayByPath(filePath: string): Promise<void> {
-    this.ensureReady()
-    this.db!.run('DELETE FROM replay_files WHERE path = ?', [filePath])
-    await this.flush()
+    const db = this.ensureReady()
+    db.exec('BEGIN IMMEDIATE')
+    try {
+      db.prepare(
+        'DELETE FROM replay_runs WHERE replay_id IN (SELECT id FROM replay_files WHERE path = ?)',
+      ).run(filePath)
+      db.prepare('DELETE FROM replay_files WHERE path = ?').run(filePath)
+      db.exec('COMMIT')
+    } catch (error) {
+      db.exec('ROLLBACK')
+      throw error
+    }
   }
 }
 

@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { readdir, rm, stat } from 'node:fs/promises'
-import { basename, extname, join } from 'node:path'
-import { inspectReplayFile, looksLikeReplay, type ReplayInspectionResult } from '@scnexus/replay-parser'
+import { lstat, readdir, unlink } from 'node:fs/promises'
+import { basename, extname, join, resolve } from 'node:path'
+import {
+  inspectReplayFile,
+  looksLikeReplay,
+  type ReplayInspectionResult,
+} from '@scnexus/replay-parser'
 import { replayDatabase } from './replay-db'
 import { SevenZipWrapper } from '../../utils/7zip-wrapper'
 
@@ -57,7 +61,10 @@ export class ReplayLibraryService {
 
   async indexReplayFile(filePath: string): Promise<ReplayRecord> {
     await this.ensureReady()
-    const fileStat = await stat(filePath)
+    filePath = resolve(filePath)
+    if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
+    const fileStat = await lstat(filePath)
+    if (!fileStat.isFile()) throw new Error('Replay must be a regular file')
     const inspection = await inspectReplayFile(filePath)
     const record: ReplayRecord = {
       id: randomUUID(),
@@ -76,8 +83,7 @@ export class ReplayLibraryService {
       warnings: inspection.warnings,
     }
 
-    await replayDatabase.upsertReplay(record)
-    return record
+    return replayDatabase.upsertReplay(record)
   }
 
   async importReplayArchive(archivePath: string, destinationDir: string): Promise<ReplayRecord[]> {
@@ -91,7 +97,18 @@ export class ReplayLibraryService {
 
   async deleteReplay(filePath: string): Promise<void> {
     await this.ensureReady()
-    await rm(filePath, { force: true, recursive: true })
+    filePath = resolve(filePath)
+    if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
+    const records = await replayDatabase.listReplays()
+    if (!records.some((record) => record.path === filePath))
+      throw new Error('Replay is not indexed')
+    try {
+      const fileStat = await lstat(filePath)
+      if (!fileStat.isFile()) throw new Error('Replay must be a regular file')
+      await unlink(filePath)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
     await replayDatabase.deleteReplayByPath(filePath)
   }
 }

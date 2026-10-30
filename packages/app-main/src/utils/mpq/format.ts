@@ -158,7 +158,7 @@ function parseUserDataHeader(data: Buffer, offset: bigint): MpqUserDataHeader {
   const size = data.readUInt32LE(4)
   const headerOffset = data.readUInt32LE(8)
   const headerSize = data.readUInt32LE(0x0c)
-  if (headerSize > size || size > headerOffset) {
+  if (headerSize > size || size > headerOffset || 0x10 + headerSize > headerOffset) {
     throw new MpqFormatError('Invalid MPQ user data header')
   }
   return { offset, size, headerOffset, headerSize }

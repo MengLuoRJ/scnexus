@@ -429,6 +429,9 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   mocks.getAnalysis.mockResolvedValueOnce({
     ok: true,
     data: {
+      capabilities: {
+        tracker: { state: 'partial', decoder: 'tracker-versioned-v1', sourceBuild: 99999 },
+      },
       insights: {
         version: '1',
         timeBasis: 'game-loops-16',
@@ -460,6 +463,8 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   await click(wrapper, 'Details')
   const dialog = wrapper.get('[role="dialog"]')
   expect(dialog.text()).toContain('<b>Player</b>')
+  expect(dialog.text()).toContain('may be incomplete')
+  expect(dialog.text()).not.toContain('tracker-versioned-v1')
   expect(dialog.find('b').exists()).toBe(false)
   expect(dialog.find('img').exists()).toBe(false)
   expect(dialog.findAll('svg')).toHaveLength(2)

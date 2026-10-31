@@ -26,6 +26,12 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
     baseBuild: record.baseBuild,
     status: 'unsupported',
     components: { initData: null, attributes: null, tracker: null },
+    capabilities: Object.fromEntries(
+      ['initData', 'attributes', 'tracker'].map((key) => [
+        key,
+        { state: 'missing', decoder: null, sourceBuild: record.baseBuild },
+      ]),
+    ) as NonNullable<ReplayAnalysis['capabilities']>,
     warnings: [],
     analyzedAt: new Date().toISOString(),
   }
@@ -64,19 +70,24 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
       try {
         const data = parse(await archive.readFile(name, { maxBytes }))
         result.components[key] = data as ReplayJson
+        result.capabilities![key] = {
+          state: 'available',
+          decoder: data.protocolVersion,
+          sourceBuild: record.baseBuild,
+        }
         if (key === 'tracker') {
           const tracker = data as ReplayTrackerEvents
           result.insights = buildReplayInsights(tracker, record.players)
-          if (tracker.compatibility)
-            result.warnings.push(
-              'Tracker-only compatibility profile: baseBuild 98370, reference s2protocol 98310; field tags verified, not an official 98370 schema. initData remains unsupported.',
-            )
+          if (tracker.skippedEvents) result.capabilities!.tracker.state = 'partial'
+          result.warnings.push(...tracker.warnings)
         }
       } catch (error) {
         const protocolUnsupported =
           error instanceof UnsupportedReplayBuildError ||
           error instanceof UnsupportedReplayProtocolError
         if ((error as NodeJS.ErrnoException).code && !protocolUnsupported) throw error
+        result.capabilities![key].state =
+          protocolUnsupported || error instanceof MpqCompressionError ? 'unsupported' : 'corrupt'
         unsupported ||= protocolUnsupported || error instanceof MpqCompressionError
         corrupt ||= !(protocolUnsupported || error instanceof MpqCompressionError)
         result.warnings.push(`${name}: ${error instanceof Error ? error.message : String(error)}`)
@@ -93,7 +104,8 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
   const count = Object.values(result.components).filter((value) => value !== null).length
   result.status = corrupt
     ? 'corrupt'
-    : count === 3
+    : count === 3 &&
+        Object.values(result.capabilities!).every((capability) => capability.state === 'available')
       ? 'completed'
       : count > 0
         ? 'partial'

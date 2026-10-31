@@ -12,13 +12,15 @@ export type {
   ReplayInitData,
   ReplayTrackerEvent,
   ReplayTrackerEvents,
+  ReplayTrackerParseOptions,
   ReplayProtocolStamp,
 } from './components.js'
 export type { ReplayBlob, ReplayProtocolValue } from './protocol-decoder.js'
 export {
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
   SUPPORTED_REPLAY_BASE_BUILDS,
-  COMPATIBLE_TRACKER_BASE_BUILDS,
+  REPLAY_TRACKER_PROTOCOL_VERSION,
+  REPLAY_TRACKER_DECODER_STRATEGY,
   UnsupportedReplayBuildError,
   UnsupportedReplayProtocolError,
 } from './protocol-schema.js'

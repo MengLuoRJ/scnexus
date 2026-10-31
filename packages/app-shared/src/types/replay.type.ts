@@ -60,7 +60,17 @@ export type ReplayJson =
   | ReplayJson[]
   | { [key: string]: ReplayJson }
 
+export type ReplayComponentCapability = {
+  state: 'available' | 'partial' | 'missing' | 'unsupported' | 'corrupt'
+  decoder: string | null
+  sourceBuild: number | null
+}
 export type ReplayAnalysis = {
+  capabilities?: {
+    initData: ReplayComponentCapability
+    attributes: ReplayComponentCapability
+    tracker: ReplayComponentCapability
+  }
   insights?: import('./replay-insights.type.js').ReplayInsights
   replayId: string
   contentHash: string

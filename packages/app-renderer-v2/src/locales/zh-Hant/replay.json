@@ -133,5 +133,6 @@
   "replay.production.construction-completed": "生產完成",
   "replay.production.upgrade-completed": "升級完成",
   "replay.analysisUnavailable": "此錄像已嘗試分析，但當前版本或錄像內容暫無法生成對局數據。",
-  "replay.analysisCorrupt": "錄像數據損壞或不完整，無法生成完整對局數據。"
+  "replay.analysisCorrupt": "錄像數據損壞或不完整，無法生成完整對局數據。",
+  "replay.partialInsights": "部分錄像事件暫無法識別，以下曲線與時間線僅包含已確認的數據，可能不完整。"
 }

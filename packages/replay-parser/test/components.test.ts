@@ -5,8 +5,6 @@ import {
   parseReplayTrackerEvents,
   UnsupportedReplayBuildError,
   SUPPORTED_REPLAY_BASE_BUILDS,
-  COMPATIBLE_TRACKER_BASE_BUILDS,
-  UnsupportedReplayProtocolError,
 } from '../src/index.js'
 import { ProtocolDecoder, ReplayBitReader } from '../src/protocol-decoder.js'
 import { replayProtocol } from '../src/protocol-schema.js'
@@ -90,9 +88,6 @@ describe('component protocol foundation', () => {
       expect(() => parseReplayInitData(new Uint8Array(), build)).toThrow(
         UnsupportedReplayBuildError,
       )
-      expect(() => parseReplayTrackerEvents(new Uint8Array(), build)).toThrow(
-        UnsupportedReplayBuildError,
-      )
     }
   })
   it.each([70154, 98310])('decodes complete synthetic initData for %i', (build) => {
@@ -150,12 +145,12 @@ describe('component protocol foundation', () => {
       expect(() => parseReplayTrackerEvents(bytes.subarray(0, -1), build)).toThrow(
         /Truncated|Invalid/,
       )
-      expect(() =>
+      expect(
         parseReplayTrackerEvents(
           Uint8Array.from([...delta(0), ...integer(15), ...struct([])]),
           build,
         ),
-      ).toThrow('Unknown tracker event')
+      ).toMatchObject({ unknownEventIds: [15], skippedEvents: 1, events: [] })
       expect(() =>
         parseReplayTrackerEvents(
           Uint8Array.from([...delta(-1), ...integer(9), ...struct([])]),
@@ -164,41 +159,166 @@ describe('component protocol foundation', () => {
       ).toThrow('bounds')
     },
   )
-  it('enables explicit tracker-only 98370 compatibility, never initData or nearest builds', () => {
-    expect(COMPATIBLE_TRACKER_BASE_BUILDS).toEqual([98370])
-    expect(() => parseReplayInitData(new Uint8Array(), 98370)).toThrow(UnsupportedReplayBuildError)
-    for (const build of [98369, 98371])
+  it.each([1, 98369, 98370, 98371, 1000000])(
+    'keeps initData unsupported for unregistered build %i',
+    (build) => {
+      expect(() => parseReplayInitData(new Uint8Array(), build)).toThrow(
+        UnsupportedReplayBuildError,
+      )
+    },
+  )
+  it.each([1, 70154, 98310, 98369, 98370, 98371, 1000000])(
+    'uses the explicitly versioned tracker capability for source build %i',
+    (build) => {
+      const setup = struct([integer(1), integer(2), [4, 1, ...integer(0)], [4, 0]])
+      const data = Uint8Array.from([...delta(15), ...integer(9), ...setup])
+      const result = parseReplayTrackerEvents(data, build)
+      expect(result).toMatchObject({
+        baseBuild: build,
+        protocolVersion: 'tracker-versioned-v1',
+        decoderStrategy: 'self-describing-versioned',
+        unknownEventIds: [],
+        skippedEvents: 0,
+        warnings: [],
+      })
+      expect(result.events).toEqual(parseReplayTrackerEvents(data, 98310).events)
+    },
+  )
+  it('projects available fields without defaults and ignores unknown field tags', () => {
+    const extra = struct([integer(1), integer(2), [4, 0], [4, 0], integer(99)])
+    const result = parseReplayTrackerEvents(
+      Uint8Array.from([
+        ...delta(0),
+        ...integer(9),
+        ...extra,
+        ...delta(1),
+        ...integer(9),
+        ...struct([integer(1)]),
+      ]),
+      98370,
+    )
+    expect(result.skippedEvents).toBe(0)
+    expect(result.events[0]!.data).toEqual({
+      m_playerId: 1,
+      m_type: 2,
+      m_userId: null,
+      m_slotId: null,
+    })
+    expect(result.events[1]!.data).toEqual({ m_playerId: 1 })
+  })
+  it('counts unknown and mismatched events against the budget and retains safe cumulative loops', () => {
+    const data = Uint8Array.from([
+      ...delta(2),
+      ...integer(77),
+      ...struct([integer(4)]),
+      ...delta(3),
+      ...integer(9),
+      ...struct([integer(16)]),
+      ...delta(4),
+      ...integer(0),
+      ...struct([integer(1), struct([integer(42)])]),
+    ])
+    const result = parseReplayTrackerEvents(data, 99999)
+    expect(result).toMatchObject({ unknownEventIds: [77], skippedEvents: 2 })
+    expect(result.warnings).toHaveLength(2)
+    expect(result.events).toHaveLength(1)
+    expect(result.events[0]).toMatchObject({
+      gameLoop: 9,
+      data: { m_playerId: 1, m_stats: { m_scoreValueMineralsCurrent: 42 } },
+    })
+    expect(() => parseReplayTrackerEvents(data, 99999, { maxEvents: 2 })).toThrow('event limit')
+  })
+  it.each(
+    [
+      struct([integer(-1)]),
+      struct([integer(16)]),
+      struct([[6, 1]]),
+      struct([[3, 0, ...integer(1)]]),
+      struct([[4, 1, ...integer(1)]]),
+      struct([integer(1), integer(2), integer(0)]),
+      struct([integer(1), integer(2), [4, 1, ...integer(4294967296)]]),
+      struct([integer(1), integer(2), [4, 0], [4, 1, ...integer(-1)]]),
+    ].map((body) => [body]),
+  )('skips structurally complete schema-incompatible known events', (body) => {
+    const result = parseReplayTrackerEvents(
+      Uint8Array.from([
+        ...delta(1),
+        ...integer(9),
+        ...body,
+        ...delta(2),
+        ...integer(9),
+        ...struct([integer(2)]),
+      ]),
+      98370,
+    )
+    expect(result.skippedEvents).toBe(1)
+    expect(result.warnings[0]).toContain('schema mismatch')
+    expect(result.events).toHaveLength(1)
+    expect(result.events[0]!.gameLoop).toBe(3)
+  })
+  it('deduplicates unknown ids but counts every skipped payload including non-struct values', () => {
+    const result = parseReplayTrackerEvents(
+      Uint8Array.from([
+        ...delta(0),
+        ...integer(1000),
+        ...integer(3),
+        ...delta(1),
+        ...integer(1000),
+        0,
+        ...vint(1),
+        ...struct([]),
+      ]),
+      98370,
+    )
+    expect(result).toMatchObject({ unknownEventIds: [1000], skippedEvents: 2, events: [] })
+    expect(result.warnings).toHaveLength(1)
+  })
+  it.each([0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+    'rejects invalid source build %s',
+    (build) => {
       expect(() => parseReplayTrackerEvents(new Uint8Array(), build)).toThrow(
         UnsupportedReplayBuildError,
       )
-    const setup = struct([integer(1), integer(2), [4, 1, ...integer(0)], [4, 0]])
-    const data = Uint8Array.from([...delta(15), ...integer(9), ...setup])
-    const result = parseReplayTrackerEvents(data, 98370)
-    expect(result).toMatchObject({
-      baseBuild: 98370,
-      protocolVersion: 'tracker-98370-compatible-98310-v1',
-      compatibility: { referenceBaseBuild: 98310, scope: 'tracker-only', verifiedFieldTags: true },
-    })
-    expect(result.events).toEqual(parseReplayTrackerEvents(data, 98310).events)
+    },
+  )
+  it.each([0, -1, 1.5, NaN, 100001])('rejects invalid event budget %s', (maxEvents) => {
+    expect(() => parseReplayTrackerEvents(new Uint8Array(), 98370, { maxEvents })).toThrow(
+      RangeError,
+    )
   })
-  it('rejects unverified tracker fields and missing required fields, not silently projecting them', () => {
-    const extra = struct([integer(1), integer(2), [4, 0], [4, 0], integer(99)])
-    expect(() =>
-      parseReplayTrackerEvents(Uint8Array.from([...delta(0), ...integer(9), ...extra]), 98370),
-    ).toThrow(UnsupportedReplayProtocolError)
-    const missing = struct([integer(1)])
-    expect(() =>
-      parseReplayTrackerEvents(Uint8Array.from([...delta(0), ...integer(9), ...missing]), 98370),
-    ).toThrow('Missing verified tracker field')
+  it.each(
+    [[5], [255], [5, 2, 0], [4, 2], [9, 128], [5, 4, 0, ...integer(1), 0, ...integer(2)]].map(
+      (body) => [body],
+    ),
+  )('halts on corrupt or truncated known and unknown payloads', (body) => {
+    for (const eventId of [9, 999]) {
+      expect(() =>
+        parseReplayTrackerEvents(
+          Uint8Array.from([...delta(0), ...integer(eventId), ...body]),
+          98370,
+        ),
+      ).toThrow(/Truncated|Invalid|Duplicate|Unknown/)
+    }
+  })
+  it('halts on truncated or invalid envelope without trying later event boundaries', () => {
+    const data = [...delta(1), ...integer(9), ...struct([integer(1)])]
+    for (let length = 1; length < data.length; length++)
+      expect(() => parseReplayTrackerEvents(Uint8Array.from(data.slice(0, length)), 98370)).toThrow(
+        /Truncated|Invalid|Duplicate|Unknown/,
+      )
+    for (const id of [-1, Number.MAX_SAFE_INTEGER + 1])
+      expect(() =>
+        parseReplayTrackerEvents(
+          Uint8Array.from([...delta(1), ...integer(id), ...struct([])]),
+          98370,
+        ),
+      ).toThrow('event id')
     expect(() =>
       parseReplayTrackerEvents(
-        Uint8Array.from([...delta(0), ...integer(10), ...struct([])]),
+        Uint8Array.from([...delta(4294967296), ...integer(9), ...struct([])]),
         98370,
       ),
-    ).toThrow(UnsupportedReplayProtocolError)
-    expect(() =>
-      parseReplayTrackerEvents(Uint8Array.from([...delta(0), ...integer(9), 5]), 98370),
-    ).toThrow('Truncated')
+    ).toThrow('bounds')
   })
   it('reads little-endian attribute records with exact count and byte-view offsets', () => {
     const bytes = new Uint8Array(22)

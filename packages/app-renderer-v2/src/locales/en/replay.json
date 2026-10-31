@@ -133,5 +133,6 @@
   "replay.production.construction-completed": "Production completed",
   "replay.production.upgrade-completed": "Upgrade completed",
   "replay.analysisUnavailable": "Analysis was attempted, but this replay version or content cannot currently provide match data.",
-  "replay.analysisCorrupt": "Replay data is corrupt or incomplete; complete match data is unavailable."
+  "replay.analysisCorrupt": "Replay data is corrupt or incomplete; complete match data is unavailable.",
+  "replay.partialInsights": "Some replay events could not be interpreted. Charts and timelines contain confirmed data only and may be incomplete."
 }

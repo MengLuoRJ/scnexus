@@ -4,7 +4,8 @@ import {
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
   replayProtocol,
   replayTrackerProtocol,
-  UnsupportedReplayProtocolError,
+  REPLAY_TRACKER_PROTOCOL_VERSION,
+  REPLAY_TRACKER_DECODER_STRATEGY,
 } from './protocol-schema.js'
 import { decodeVersionedPrefix } from './versioned.js'
 
@@ -21,8 +22,10 @@ export type ReplayTrackerEvent = {
   data: Record<string, ReplayProtocolValue>
 }
 export type ReplayTrackerEvents = ReplayProtocolStamp & {
-  /** Present only for explicitly verified, self-describing tracker compatibility profiles. */
-  compatibility?: { referenceBaseBuild: number; scope: 'tracker-only'; verifiedFieldTags: true }
+  decoderStrategy: typeof REPLAY_TRACKER_DECODER_STRATEGY
+  unknownEventIds: number[]
+  skippedEvents: number
+  warnings: string[]
   events: ReplayTrackerEvent[]
 }
 export type ReplayTrackerParseOptions = {
@@ -80,43 +83,65 @@ export function parseReplayTrackerEvents(
     throw new RangeError('Invalid tracker maxEvents')
   const schema = replayTrackerProtocol(baseBuild)
   bounded(data, 32 * 1024 * 1024)
-  const compatible = baseBuild === 98370
-  const decoder = new ProtocolDecoder(schema, undefined, compatible)
   const events: ReplayTrackerEvent[] = []
+  const unknownEventIds = new Set<number>()
+  const warnings = new Set<string>()
+  let skippedEvents = 0
+  let processedEvents = 0
   let offset = 0
   let gameLoop = 0
-  const read = (typeId: number): ReplayProtocolValue => {
-    const next = decodeVersionedPrefix(data, offset)
+  const read = () => {
+    const next = decodeVersionedPrefix(data, offset, true)
     offset = next.nextOffset
-    return decoder.decode(typeId, next.value)
+    return next
   }
   while (offset < data.length) {
-    if (events.length >= maxEvents) throw new Error('Replay tracker event limit exceeded')
-    const delta = Object.values(record(read(schema.delta)))[0]
+    if (++processedEvents > maxEvents) throw new Error('Replay tracker event limit exceeded')
+    const decoder = new ProtocolDecoder(schema)
+    const rawDelta = read()
+    const delta = Object.values(
+      record(decoder.decode(schema.delta, rawDelta.value, 0, rawDelta.wire)),
+    )[0]
     if (typeof delta !== 'number' || !Number.isInteger(delta) || delta < 0 || delta > 0xffffffff)
       throw new Error('Invalid tracker game-loop delta')
     gameLoop += delta
     if (!Number.isSafeInteger(gameLoop)) throw new Error('Tracker game-loop overflow')
-    const eventId = read(schema.eventId)
-    if (typeof eventId !== 'number' || !Number.isInteger(eventId))
+    const rawId = read()
+    if (
+      rawId.wire.type !== 9 ||
+      typeof rawId.value !== 'bigint' ||
+      rawId.value < 0n ||
+      rawId.value > BigInt(Number.MAX_SAFE_INTEGER)
+    )
       throw new Error('Invalid tracker event id')
+    const eventId = Number(rawId.value)
+    // Fully consume the self-describing payload before deciding whether it is understood.
+    // Wire errors must escape: without a complete body there is no safe next-event boundary.
+    const body = read()
     const definition = schema.events[eventId]
-    if (!definition)
-      throw new UnsupportedReplayProtocolError(`Unknown tracker event id: ${eventId}`)
-    events.push({ eventId, eventType: definition[1], gameLoop, data: record(read(definition[0])) })
+    if (!definition) {
+      unknownEventIds.add(eventId)
+      skippedEvents++
+      warnings.add(`Unknown tracker event id ${eventId}; payload skipped`)
+      continue
+    }
+    try {
+      const decoded = record(decoder.decode(definition[0], body.value, 0, body.wire))
+      events.push({ eventId, eventType: definition[1], gameLoop, data: decoded })
+    } catch (error) {
+      skippedEvents++
+      warnings.add(
+        `Tracker event ${eventId} schema mismatch: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
   }
   return {
     ...stamp(baseBuild),
-    ...(compatible
-      ? {
-          protocolVersion: 'tracker-98370-compatible-98310-v1',
-          compatibility: {
-            referenceBaseBuild: 98310,
-            scope: 'tracker-only' as const,
-            verifiedFieldTags: true as const,
-          },
-        }
-      : {}),
+    protocolVersion: REPLAY_TRACKER_PROTOCOL_VERSION,
+    decoderStrategy: REPLAY_TRACKER_DECODER_STRATEGY,
+    unknownEventIds: [...unknownEventIds],
+    skippedEvents,
+    warnings: [...warnings],
     events,
   }
 }

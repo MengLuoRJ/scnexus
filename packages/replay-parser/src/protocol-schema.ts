@@ -1,6 +1,6 @@
 import build70154 from './protocols/build70154.js'
 import build98310 from './protocols/build98310.js'
-import build98370Tracker from './protocols/build98370-tracker.js'
+import trackerVersionedV1 from './protocols/tracker-versioned-v1.js'
 
 export type Bounds = [number, number]
 export type ProtocolType =
@@ -21,10 +21,11 @@ export type ProtocolSchema = {
 
 export type TrackerProtocolSchema = Omit<ProtocolSchema, 'initData'>
 
-export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '1.1.0'
+export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '1.2.0'
 /** Builds with complete initData and tracker schemas, not tracker-only compatibility. */
 export const SUPPORTED_REPLAY_BASE_BUILDS = [70154, 98310] as const
-export const COMPATIBLE_TRACKER_BASE_BUILDS = [98370] as const
+export const REPLAY_TRACKER_PROTOCOL_VERSION = 'tracker-versioned-v1' as const
+export const REPLAY_TRACKER_DECODER_STRATEGY = 'self-describing-versioned' as const
 
 export class UnsupportedReplayProtocolError extends Error {
   readonly code = 'UNSUPPORTED_REPLAY_PROTOCOL'
@@ -34,10 +35,11 @@ export class UnsupportedReplayProtocolError extends Error {
   }
 }
 
-/** 98370 is a bounded tracker-only compatibility profile, never an initData alias. */
+/** Capability dispatch: positive source builds use stable self-describing tracker tags only. */
 export function replayTrackerProtocol(baseBuild: number): TrackerProtocolSchema {
-  if (baseBuild === 98370) return build98370Tracker
-  return replayProtocol(baseBuild)
+  if (!Number.isSafeInteger(baseBuild) || baseBuild <= 0)
+    throw new UnsupportedReplayBuildError(baseBuild)
+  return trackerVersionedV1
 }
 
 export class UnsupportedReplayBuildError extends Error {

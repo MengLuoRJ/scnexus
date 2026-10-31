@@ -84,27 +84,28 @@ const initData = parseReplayInitData(initDataBytes, header.baseBuild)
 const tracker = parseReplayTrackerEvents(trackerBytes, header.baseBuild)
 ```
 
-- initData 完整协议精确注册 `70154`、`98310`，没有最新版本、相邻版本或未知 build fallback；`98370` 仅有显式 tracker 兼容配置（见验证边界），不支持其 initData。未注册值抛出 `UnsupportedReplayBuildError`，包含 `code: 'UNSUPPORTED_REPLAY_BUILD'` 与 `baseBuild`；未知 tracker 事件或兼容配置的未验证字段抛出 `UnsupportedReplayProtocolError`，host 记为不支持而非损坏；截断等损坏输入和资源超限抛出 Error，由 host 转换为 IPC DTO。
-- `ReplayInitData`：`{ baseBuild, protocolVersion, algorithmVersion, data }`；`data.m_syncLobbyState` 保留原始协议字段名，包含用户、gameDescription（例如 `m_gameSpeed`）及 lobby/slot 信息。
-- `ReplayTrackerEvents`：相同版本戳，加 `events: ReplayTrackerEvent[]`。事件含 `eventId`、完整 `eventType`、累积 `gameLoop`、原始字段 `data`。实现全部十类 tracker 事件（0–9）：PlayerStats、UnitBorn、UnitDied、UnitOwnerChange、UnitTypeChange、Upgrade、UnitInit、UnitDone、UnitPositions、PlayerSetup。tracker 流使用 Versioned 编码，不是 game/message 的 bit-packed 编码；没有 user-id 前缀。
+- initData 精确注册 `70154`、`98310`，无最新或相邻版本 fallback；包括 `98370` 的未注册值抛出 `UnsupportedReplayBuildError`（`code: 'UNSUPPORTED_REPLAY_BUILD'` 与 `baseBuild`）。tracker 不使用该 registry：所有正安全整数 baseBuild 均使用明确命名的 `tracker-versioned-v1` 能力，保留源 baseBuild，不声称相应完整 build 协议兼容。
+- `ReplayInitData`：`{ baseBuild, protocolVersion, algorithmVersion, data }`；`data.m_syncLobbyState` 保留原始协议字段名。
+- `ReplayTrackerEvents`：版本戳加 `decoderStrategy: 'self-describing-versioned'`、`unknownEventIds: number[]`（去重、首次出现顺序）、`skippedEvents: number`（未知或 schema 不匹配事件总数）、`warnings: string[]`（去重）及 `events: ReplayTrackerEvent[]`。事件含 `eventId`、完整 `eventType`、累积 `gameLoop`、原始字段 `data`。稳定事件表为 0–9：PlayerStats、UnitBorn、UnitDied、UnitOwnerChange、UnitTypeChange、Upgrade、UnitInit、UnitDone、UnitPositions、PlayerSetup。tracker 使用 Versioned 编码，没有 user-id 前缀，不是 game/message 的 bit-packed 编码。
+- 先完整读取自描述 delta、eventId、body，确定边界后才投影字段。未知事件跳过并报告；已知字段验证 wire 类型及整数范围，缺少字段不补默认值，未知字段可跳过。结构有效但 schema 不匹配的已知事件整条跳过并报告；其他有效事件保留。错误 envelope、负 delta、gameLoop 安全整数溢出、截断、重复 tag、非法 wire 或资源超限抛错，绝不猜测下一条边界。消费者不能将有跳过诊断的结果标记为完整分析。
 - `ReplayAttributes`：`{ protocolVersion: 'attributes-v1', algorithmVersion, source, mapNamespace, attributes }`；每项 `ReplayAttribute` 为 `{ namespace, attributeId, scope, value }`，保留重复项。`value` 是反序并去两端零字节后的 FourCC，而非 UI 标签。严格校验头部声明数量。
 - `ReplayProtocolValue` 是 JSON-safe 递归值：安全整数使用 number，超出安全范围的整数使用十进制 string；blob 使用 `ReplayBlob = { kind: 'blob', hex, text }`（非 UTF-8 时 text=null）；bitarray 使用 `{ bitLength, value }`，value 为无损十进制 string；optional 为 null。不会泄露 Map、Uint8Array 或 bigint 至 IPC/JSON。字段名不是翻译后的产品 DTO，host/共享层负责业务映射。
-- 完整协议的 `protocolVersion` 为 `s2protocol-${baseBuild}`；98370 tracker 为 `tracker-98370-compatible-98310-v1`，同时返回 `compatibility: { referenceBaseBuild: 98310, scope: 'tracker-only', verifiedFieldTags: true }`，不冒充官方98370协议。`REPLAY_PROTOCOL_ALGORITHM_VERSION` 当前为 `1.1.0`。持久化分析时保存两者，并由 host 绑定录像 contentHash；算法改变需要提升版本，不能仅按文件路径复用结果。本次版本提升会使旧的“不支持”缓存失效。
-- 固定预算：initData/attributes 最大 4 MiB，tracker 最大 32 MiB；每个协议解码器最多 1,000,000 节点、64 层；数组与事件最多 100,000 项，bitarray 最多 65,536 位。Versioned 单值另有 100,000 节点预算。失败不返回伪完整结果。initData 拒绝多余完整尾字节，允许协议的末字节对齐 padding。
+- initData 的 `protocolVersion` 为 `s2protocol-${baseBuild}`；tracker 始终为 `tracker-versioned-v1`。后者是本项目字段投影策略版本，不是 Blizzard build 协议版本，不再返回 build 特例 `compatibility`。公开常量为 `REPLAY_TRACKER_PROTOCOL_VERSION`、`REPLAY_TRACKER_DECODER_STRATEGY`；`REPLAY_PROTOCOL_ALGORITHM_VERSION` 为 `1.2.0`。持久化分析须保存版本并由 host 绑定 contentHash，算法改变不能仅按路径复用缓存。
+- 固定预算：initData/attributes 最大4 MiB，tracker 最大32 MiB；单事件协议解码最多1,000,000节点、64层；数组与事件最多100,000项，bitarray 最多65,536位；Versioned 单值另有100,000节点预算。`parseReplayTrackerEvents(data, baseBuild, { maxEvents })` 可降低上限（1–100,000），识别及跳过的事件均占预算，超限抛错而非截断。initData 拒绝多余完整尾字节，允许协议末字节 padding。
 
 现有 `inspectReplayFile` 仍只编排 header/details 元数据，不自动运行这些较重的组件 API，也不因精确协议注册而将录像标成 full。游戏速度代码、tracker 原始统计字段和单位事件不等同于已完成 APM、build order、真实时间换算或战术分析。
 
-## 98370 tracker 局部兼容验证
+## 稳定 tracker schema 与历史样本验证
 
 截至本次核对，官方版本目录仅到98310，公开代码检索没有找到 `protocol98370.py`，因此**没有注册官方98370完整协议**。公开基准为 Blizzard 自动化发布的 [commit 901804e41283269d43d7bfc3b8dc5be2a9dd350a](https://github.com/Blizzard/s2protocol/commit/901804e41283269d43d7bfc3b8dc5be2a9dd350a) 中的 [protocol98310.py](https://github.com/Blizzard/s2protocol/blob/901804e41283269d43d7bfc3b8dc5be2a9dd350a/s2protocol/versions/protocol98310.py)，源文件 SHA-256 为 `2941e39e970c21bfa7bb9c5c6d340c09366a5743f223b516fe19443f67c578e5`。本地安装的官方 Python s2protocol 文件与该固定源文件哈希完全一致。
 
-`build98370-tracker.ts` 仅保留上述 tracker 可达的25个类型及事件表，不包含 initData。tracker 为自描述 Versioned 数据；98370配置逐层校验已知字段 tag 和必需字段，拒绝未知事件、未知字段及缺少必需字段，不静默丢弃新字段。该检查表示已验证的字段投影，不表示上游声明98370兼容。支持范围不推广至 initData、game/message 或未来 build。
+`tracker-versioned-v1.ts` 独立保留上述 tracker 可达的25个类型和稳定事件表，不引用“最新”build schema，不包含 initData。这是自描述 tracker 的显式解析能力，而非任意 build 全协议兼容声明；未来语义变化仍可能需要新的策略版本。不推广到 initData、game/message。与旧98370特例相比，未知事件和结构有效的 schema 不匹配产生可观察的跳过诊断，可用已知字段保留，缺失字段不伪造。
 
 实际本机用户录像（baseBuild98370，5.0.15.98370）只读对拍：官方 `decode_replay_tracker_events` 与本实现的581个事件、事件ID、gameLoop及全部 data 字段一致，最后 gameLoop11740。事件数量为 `0:151, 1:261, 2:47, 4:1, 5:15, 6:46, 7:38, 8:20, 9:2`；样本**没有覆盖ID3 owner-change**，因此不声称覆盖全部98370事件。归一化后递归按键排序的紧凑 UTF-8 JSON SHA-256 为 `d564d99213babc9797ff98402fdbe802b2f3eee4acf8fce147359ce66f00752d`（blob保留 kind/hex/text，移除官方事件内部元数据后映射 eventId/eventType/gameLoop/data）。
 
 随后通过 main 的 `analyzeLocalReplay` 直接读取同一原路径：状态 `partial`，initData明确不支持；两名玩家分别得到75/76个经济采样点及93/46个生产时间线节点。主进程报告 tracker-only兼容警告。原文件大小和修改时间检查不变，录像、组件、玩家数据未复制、未上传或纳入仓库；本结果仅证明这份样本的局部兼容。
 
-可复验的只读本地集成测试为 `replay-local-validation.test.ts`：设置 `SCNEXUS_LOCAL_REPLAY` 指向原录像，再运行 `pnpm --filter @scnexus/app-main test src\\modules\\replay\\__test__\\replay-local-validation.test.ts --silent=false --reporter=verbose`。可设置 `SCNEXUS_TRACKER_ORACLE_SHA256` 为独立官方 oracle 得到的归一化哈希，检查整个事件投影；不设置原路径时测试跳过，不能视为真实样本覆盖。正常回归另覆盖精确build派发、兼容stamp、字段拒绝、截断错误和主进程“不支持/损坏”分类。
+可复验的只读本地集成测试为 `replay-local-validation.test.ts`：设置 `SCNEXUS_LOCAL_REPLAY` 指向原录像，再运行 `pnpm --filter @scnexus/app-main test src\\modules\\replay\\__test__\\replay-local-validation.test.ts --silent=false --reporter=verbose`。可设置 `SCNEXUS_TRACKER_ORACLE_SHA256` 为独立官方 oracle 得到的归一化哈希，检查整个事件投影；不设置原路径时测试跳过，不能视为真实样本覆盖。parser 回归覆盖 initData 精确派发、未知正 build 的通用 tracker stamp、未知事件跳过、缺失字段、wire/schema 不匹配、截断及所有事件预算。上述本地对拍是旧策略历史证据，不能替代当前策略或未来 build 的实际样本验证。
 
 ## 主进程 tracker 业务投影
 

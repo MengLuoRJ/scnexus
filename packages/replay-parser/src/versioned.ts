@@ -5,6 +5,11 @@ export type VersionedValue =
   | Map<number, VersionedValue>
   | null
 
+export type VersionedWireNode = {
+  type: number
+  children: Map<number, VersionedWireNode>
+}
+
 /** Self-describing wire types used by replay.header and replay.details, not bit-packed event streams. */
 export function decodeVersioned(data: Uint8Array): VersionedValue {
   return decodeVersionedPrefix(data).value
@@ -14,7 +19,8 @@ export function decodeVersioned(data: Uint8Array): VersionedValue {
 export function decodeVersionedPrefix(
   data: Uint8Array,
   start = 0,
-): { value: VersionedValue; nextOffset: number } {
+  strict = false,
+): { value: VersionedValue; nextOffset: number; wire: VersionedWireNode } {
   if (!Number.isSafeInteger(start) || start < 0 || start > data.length)
     throw new Error('Invalid versioned stream offset')
   let offset = start
@@ -56,13 +62,19 @@ export function decodeVersionedPrefix(
     return Number(value)
   }
 
-  function read(depth: number): VersionedValue {
+  function read(depth: number, wire: VersionedWireNode): VersionedValue {
     if (depth > 64 || ++nodes > 100_000) throw new Error('Versioned replay decoding limit exceeded')
     const type = byte()
+    wire.type = type
+    const child = (key: number): VersionedValue => {
+      const node: VersionedWireNode = { type: -1, children: new Map() }
+      wire.children.set(key, node)
+      return read(depth + 1, node)
+    }
     switch (type) {
       case 0: {
         const length = count()
-        return Array.from({ length }, () => read(depth + 1))
+        return Array.from({ length }, (_, i) => child(i))
       }
       case 1:
         return bytes(Math.ceil(count() / 8))
@@ -72,10 +84,14 @@ export function decodeVersionedPrefix(
         const tag = integer()
         if (tag < BigInt(Number.MIN_SAFE_INTEGER) || tag > BigInt(Number.MAX_SAFE_INTEGER))
           throw new Error('Invalid choice tag')
-        return new Map([[Number(tag), read(depth + 1)]])
+        return new Map([[Number(tag), child(Number(tag))]])
       }
-      case 4:
-        return byte() === 0 ? null : read(depth + 1)
+      case 4: {
+        const present = byte()
+        if (strict && present !== 0 && present !== 1)
+          throw new Error('Invalid versioned optional marker')
+        return present === 0 ? null : child(0)
+      }
       case 5: {
         const length = count()
         const fields = new Map<number, VersionedValue>()
@@ -85,7 +101,7 @@ export function decodeVersionedPrefix(
             throw new Error('Invalid field tag')
           const key = Number(tag)
           if (fields.has(key)) throw new Error('Duplicate versioned field tag')
-          fields.set(key, read(depth + 1))
+          fields.set(key, child(key))
         }
         return fields
       }
@@ -104,8 +120,9 @@ export function decodeVersionedPrefix(
     }
   }
 
-  const value = read(0)
-  return { value, nextOffset: offset }
+  const wire: VersionedWireNode = { type: -1, children: new Map() }
+  const value = read(0, wire)
+  return { value, nextOffset: offset, wire }
 }
 
 export function versionedStruct(value: VersionedValue | undefined): Map<number, VersionedValue> {

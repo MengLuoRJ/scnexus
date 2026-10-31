@@ -84,7 +84,9 @@ it('keeps build-independent attributes but never falls back for unknown protocol
   const archive = await createMpq(path)
   await archive.add(Buffer.alloc(9), { archivePath: 'replay.attributes.events' })
   await archive.add(Buffer.from([0]), { archivePath: 'replay.initData' })
-  await archive.add(Buffer.from([0]), { archivePath: 'replay.tracker.events' })
+  await archive.add(Buffer.from([3, 0, 9, 0, 9, 0, 5, 4, 0, 9, 2, 2, 5, 2, 0, 9, 100]), {
+    archivePath: 'replay.tracker.events',
+  })
   await archive.save()
   await archive.close()
   const service = new ReplayLibraryService(() => directory)
@@ -93,20 +95,32 @@ it('keeps build-independent attributes but never falls back for unknown protocol
   const analysis = await service.analyzeReplay(scope, record.id)
   expect(analysis.status).toBe('partial')
   expect(analysis.components.initData).toBeNull()
-  expect(analysis.components.tracker).toBeNull()
+  expect(analysis.components.tracker).not.toBeNull()
   expect(analysis.components.attributes).not.toBeNull()
+  expect(analysis.insights?.players[0]?.economy[0]?.minerals).toBe(50)
+  expect(analysis.capabilities?.initData.state).toBe('unsupported')
+  expect(analysis.capabilities?.tracker).toMatchObject({
+    state: 'available',
+    decoder: 'tracker-versioned-v1',
+    sourceBuild: 99999,
+  })
   expect(
     analysis.warnings.filter((message) => message.includes('Unsupported replay base build: 99999')),
-  ).toHaveLength(2)
+  ).toHaveLength(1)
   expect(await service.getAnalysis(scope, record.id)).toEqual(analysis)
 })
 
 it.each([
-  { event: [3, 0, 9, 0, 9, 30, 5, 0], status: 'partial', warning: 'Unknown tracker event id: 15' },
-  { event: [3, 0, 9, 0, 9, 18, 5], status: 'corrupt', warning: 'Truncated' },
+  { event: [3, 0, 9, 0, 9, 30, 5, 0], status: 'partial', warning: '15', trackerAvailable: true },
+  {
+    event: [3, 0, 9, 0, 9, 18, 5],
+    status: 'corrupt',
+    warning: 'Truncated',
+    trackerAvailable: false,
+  },
 ])(
   'classifies unsupported tracker schema separately from malformed bytes: $status',
-  async ({ event, status, warning }) => {
+  async ({ event, status, warning, trackerAvailable }) => {
     const path = join(
       directory,
       'Accounts',
@@ -127,8 +141,8 @@ it.each([
     const analysis = await service.analyzeReplay(scope, record.id)
     expect(analysis.status).toBe(status)
     expect(analysis.warnings.some((message) => message.includes(warning))).toBe(true)
-    expect(analysis.components.tracker).toBeNull()
-    expect(analysis.insights).toBeUndefined()
+    expect(analysis.components.tracker !== null).toBe(trackerAvailable)
+    expect(analysis.insights !== undefined).toBe(trackerAvailable)
   },
 )
 

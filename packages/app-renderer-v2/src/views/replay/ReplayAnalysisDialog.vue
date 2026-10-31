@@ -160,6 +160,11 @@ watch([selectedId, () => props.analysis], () => {
         <p v-else-if="props.loaded && !players.length" class="text-muted">
           {{ t('replay.noInsights') }}
         </p>
+        <p
+          v-if="players.length && props.analysis?.capabilities?.tracker.state === 'partial'"
+          class="text-warning">
+          {{ t('replay.partialInsights') }}
+        </p>
         <template v-if="players.length">
           <label class="block space-y-1">
             <span class="text-xs text-muted">{{ t('replay.participant') }}</span>

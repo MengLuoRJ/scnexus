@@ -115,8 +115,9 @@ export type ReplayAnalysis = {
 ## 7. 关键原则
 
 - 让解析器首先输出“可信的基础信息”，再做高层分析。
-- 对缺失字段和未知 build 的处理必须清晰，不做静默回退。
+- 对缺失字段和未知 build 的处理按组件区分：header/details、attributes 和自描述 tracker 尝试结构化解码；未知 build 不阻止已校验的 tracker 业务分析。位打包 initData/game/message 仍要求明确协议表，禁止套用最近版本。
 - 本地数据库保存的是解析结果和聚合统计，上传只作为后续选项。
+- 分析缓存记录每个组件的能力状态、实际 decoder 与源 build，未知事件在边界确定且字节完整时可跳过，tracker 标为 partial；已识别事件仍用于业务数据。截断、wire type 或结构损坏不得当作未知版本跳过。详情提示部分数据可能不完整，不暴露原始技术诊断。
 - 分析器必须保留 `algorithmVersion` 和 `protocolVersion`，便于后续校准。
 
 ## 8. 初始执行顺序（前三项已落地，后续进度见第 10 节）

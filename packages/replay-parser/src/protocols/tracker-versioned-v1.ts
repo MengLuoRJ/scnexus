@@ -1,8 +1,5 @@
-// Tracker-only compatibility profile for baseBuild 98370; NOT an official 98370 schema.
-// Field tags/types from Blizzard s2protocol 901804e41283269d43d7bfc3b8dc5be2a9dd350a,
-// versions/protocol98310.py (MIT; see LICENSE.s2protocol). See docs/replay/replay-parser-package.md.
-// Versioned tracker fields were checked against a local 98370 sample and the official decoder.
-// No bit-packed initData/game/message schema is inferred by this profile.
+// Stable Versioned tracker field tags, not a build compatibility claim.
+// Derived from Blizzard s2protocol protocol98310.py (MIT; see LICENSE.s2protocol).
 import type { TrackerProtocolSchema } from '../protocol-schema.js'
 
 export default {

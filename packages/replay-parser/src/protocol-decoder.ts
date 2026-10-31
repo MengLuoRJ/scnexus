@@ -1,6 +1,6 @@
 import { UnsupportedReplayProtocolError } from './protocol-schema.js'
 import type { Bounds, TrackerProtocolSchema } from './protocol-schema.js'
-import type { VersionedValue } from './versioned.js'
+import type { VersionedValue, VersionedWireNode } from './versioned.js'
 
 export type ReplayBlob = { kind: 'blob'; hex: string; text: string | null }
 export type ReplayProtocolValue =
@@ -80,12 +80,31 @@ export class ProtocolDecoder {
     readonly strictFields = false,
   ) {}
 
-  decode(typeId: number, raw?: VersionedValue, depth = 0): ReplayProtocolValue {
+  decode(
+    typeId: number,
+    raw?: VersionedValue,
+    depth = 0,
+    wire?: VersionedWireNode,
+  ): ReplayProtocolValue {
     if (++this.nodes > 1_000_000 || depth > 64)
       throw new Error('Replay protocol decoding limit exceeded')
     const type = this.schema.types[typeId]
     if (!type) throw new Error(`Unknown protocol type: ${typeId}`)
-    const child = (id: number, value?: VersionedValue) => this.decode(id, value, depth + 1)
+    const child = (id: number, value?: VersionedValue, key = 0) =>
+      this.decode(id, value, depth + 1, wire?.children.get(key))
+    if (wire) {
+      const expected = {
+        _int: 9,
+        _bool: 6,
+        _blob: 2,
+        _bitarray: 1,
+        _optional: 4,
+        _array: 0,
+        _choice: 3,
+        _struct: 5,
+      }[type[0]]
+      if (wire.type !== expected) throw new Error(`Wrong wire type for ${type[0]}`)
+    }
     const reader = this.reader
     const invalid = (): never => {
       throw new Error(`Invalid versioned value for ${type[0]}`)
@@ -103,7 +122,11 @@ export class ProtocolDecoder {
         return jsonInteger(value)
       }
       case '_bool':
-        return reader ? reader.bits(1) !== 0n : typeof raw === 'bigint' ? raw !== 0n : invalid()
+        return reader
+          ? reader.bits(1) !== 0n
+          : typeof raw === 'bigint' && (raw === 0n || raw === 1n)
+            ? raw !== 0n
+            : invalid()
       case '_blob':
         return replayBlob(
           reader
@@ -135,7 +158,7 @@ export class ProtocolDecoder {
             : invalid()
         if (length > 100_000) throw new Error('Replay array limit exceeded')
         return Array.from({ length }, (_, i) =>
-          child(type[1][1], Array.isArray(raw) ? raw[i] : undefined),
+          child(type[1][1], Array.isArray(raw) ? raw[i] : undefined, i),
         )
       }
       case '_choice': {
@@ -146,7 +169,7 @@ export class ProtocolDecoder {
             : invalid()
         const field = type[1][1][tag]
         if (!field) throw new Error(`Unknown protocol choice: ${tag}`)
-        return { [field[0]]: child(field[1], raw instanceof Map ? raw.get(tag) : undefined) }
+        return { [field[0]]: child(field[1], raw instanceof Map ? raw.get(tag) : undefined, tag) }
       }
       case '_struct': {
         if (!reader && !(raw instanceof Map)) return invalid()
@@ -164,7 +187,7 @@ export class ProtocolDecoder {
         const result: Record<string, ReplayProtocolValue> = {}
         for (const [name, id, tag] of type[1][0]) {
           if (!reader && raw instanceof Map && !raw.has(tag)) continue
-          result[name] = child(id, raw instanceof Map ? raw.get(tag) : undefined)
+          result[name] = child(id, raw instanceof Map ? raw.get(tag) : undefined, tag)
         }
         return result
       }

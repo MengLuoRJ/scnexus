@@ -54,5 +54,14 @@
   "ui.warning": "Operation warning",
   "ui.modifyDirectory": "Change directory",
   "ui.openDirectory": "Open directory",
-  "ui.logDirectory": "Log directory"
+  "ui.logDirectory": "Log directory",
+  "ui.starCraftDocumentsDir": "StarCraft II documents directory",
+  "ui.starCraftProfiles": "StarCraft profiles",
+  "ui.recognizeProfiles": "Identify StarCraft profiles",
+  "ui.useDefaultDirectory": "Use default directory",
+  "ui.starCraftDocumentsDefault": "Using the StarCraft II folder in your system documents directory.",
+  "ui.starCraftDocumentsCustom": "Using a custom StarCraft II folder.",
+  "ui.starCraftDocumentsHelp": "Choose the StarCraft II folder containing Accounts. Identification only reads profile directories; it does not scan or index replays.",
+  "ui.noStarCraftProfiles": "No StarCraft profiles found. Check the directory and create a profile in the game first.",
+  "ui.starCraftAccountId": "Account ID"
 }

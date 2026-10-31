@@ -19,17 +19,17 @@ function contentApi(
 const api: DesktopApi = {
   replay: {
     chooseExportPath: () => invoke('replay:choose-export-path'),
-    analyze: (replayId) => invoke('replay:analyze', replayId),
-    getAnalysis: (replayId) => invoke('replay:get-analysis', replayId),
-    discoverDirectories: () => invoke('replay:discover-directories'),
-    listDuplicates: () => invoke('replay:duplicates'),
-    exportArchive: (ids, destination) => invoke('replay:export-archive', ids, destination),
-    list: () => invoke('replay:list'),
-    scanDirectory: (rootDir) => invoke('replay:scan-directory', rootDir),
-    indexFile: (filePath) => invoke('replay:index-file', filePath),
-    importArchive: (archivePath, destinationDir) =>
-      invoke('replay:import-archive', archivePath, destinationDir),
-    delete: (filePath) => invoke('replay:delete', filePath),
+    profiles: () => invoke('replay:profiles'),
+    analyze: (scope, replayId) => invoke('replay:analyze', scope, replayId),
+    getAnalysis: (scope, replayId) => invoke('replay:get-analysis', scope, replayId),
+    listDuplicates: (scope) => invoke('replay:duplicates', scope),
+    exportArchive: (scope, ids, destination) =>
+      invoke('replay:export-archive', scope, ids, destination),
+    list: (scope) => invoke('replay:list', scope),
+    scan: (scope) => invoke('replay:scan', scope),
+    importFile: (scope, filePath) => invoke('replay:import-file', scope, filePath),
+    importArchive: (scope, archivePath) => invoke('replay:import-archive', scope, archivePath),
+    delete: (scope, id) => invoke('replay:delete', scope, id),
   },
   aiAssistant: {
     getStatus: () => invoke('ai-assistant:getStatus'),

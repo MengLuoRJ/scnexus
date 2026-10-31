@@ -1,6 +1,6 @@
 import { extname, isAbsolute } from 'node:path'
-import { app, dialog } from 'electron'
-import { discoverReplayDirectories } from './replay-files'
+import { dialog } from 'electron'
+import { validateReplayScope } from './replay-scope'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { ipcHandle } from '../../utils/ipc-util'
 import { replayLibraryService } from './replay'
@@ -31,41 +31,46 @@ export function initReplayModule() {
     })
     return result.canceled ? null : (result.filePath ?? null)
   })
-  ipcHandle('replay:analyze', (id: unknown) =>
-    replayLibraryService.analyzeReplay(replayIdArgument(id)),
-  )
-  ipcHandle('replay:get-analysis', (id: unknown) =>
-    replayLibraryService.getAnalysis(replayIdArgument(id)),
-  )
-  ipcHandle('replay:discover-directories', () =>
-    discoverReplayDirectories(app.getPath('documents')),
-  )
-  ipcHandle('replay:duplicates', () => replayLibraryService.listDuplicates())
-  ipcHandle('replay:export-archive', (ids: unknown, destination: unknown) => {
-    if (
-      !Array.isArray(ids) ||
-      !ids.length ||
-      ids.length > 2000 ||
-      ids.some((id) => typeof id !== 'string' || !id || id.length > 100) ||
-      new Set(ids).size !== ids.length
-    )
+  const scopeArgument = (value: unknown) => {
+    try {
+      return validateReplayScope(value)
+    } catch {
       throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
-    return replayLibraryService.exportReplayArchive(ids, pathArgument(destination, ['.zip']))
+    }
+  }
+  ipcHandle('replay:profiles', () => replayLibraryService.profiles())
+  ipcHandle('replay:analyze', (scope: unknown, id: unknown) =>
+    replayLibraryService.analyzeReplay(scopeArgument(scope), replayIdArgument(id)),
+  )
+  ipcHandle('replay:get-analysis', (scope: unknown, id: unknown) =>
+    replayLibraryService.getAnalysis(scopeArgument(scope), replayIdArgument(id)),
+  )
+  ipcHandle('replay:duplicates', (scope: unknown) =>
+    replayLibraryService.listDuplicates(scopeArgument(scope)),
+  )
+  ipcHandle('replay:export-archive', (scope: unknown, ids: unknown, destination: unknown) => {
+    if (!Array.isArray(ids) || !ids.length || ids.length > 2000 || new Set(ids).size !== ids.length)
+      throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+    return replayLibraryService.exportReplayArchive(
+      scopeArgument(scope),
+      ids.map(replayIdArgument),
+      pathArgument(destination, ['.zip']),
+    )
   })
-  ipcHandle('replay:list', () => replayLibraryService.listStoredReplays())
-  ipcHandle('replay:scan-directory', (rootDir: unknown) =>
-    replayLibraryService.scanDirectory(pathArgument(rootDir)),
+  ipcHandle('replay:list', (scope: unknown) =>
+    replayLibraryService.listStoredReplays(scopeArgument(scope)),
   )
-  ipcHandle('replay:index-file', (filePath: unknown) =>
-    replayLibraryService.indexReplayFile(pathArgument(filePath, ['.sc2replay'])),
+  ipcHandle('replay:scan', (scope: unknown) => replayLibraryService.scan(scopeArgument(scope)))
+  ipcHandle('replay:import-file', (scope: unknown, path: unknown) =>
+    replayLibraryService.importFile(scopeArgument(scope), pathArgument(path, ['.sc2replay'])),
   )
-  ipcHandle('replay:import-archive', (archivePath: unknown, destinationDir: unknown) =>
+  ipcHandle('replay:import-archive', (scope: unknown, path: unknown) =>
     replayLibraryService.importReplayArchive(
-      pathArgument(archivePath, ['.zip', '.7z', '.rar']),
-      pathArgument(destinationDir),
+      scopeArgument(scope),
+      pathArgument(path, ['.zip', '.7z', '.rar']),
     ),
   )
-  ipcHandle('replay:delete', (filePath: unknown) =>
-    replayLibraryService.deleteReplay(pathArgument(filePath, ['.sc2replay'])),
+  ipcHandle('replay:delete', (scope: unknown, id: unknown) =>
+    replayLibraryService.deleteReplay(scopeArgument(scope), replayIdArgument(id)),
   )
 }

@@ -1,5 +1,4 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -13,6 +12,8 @@ let dbPath: string
 function record(overrides: Partial<ReplayRecord> = {}): ReplayRecord {
   return {
     id: 'replay-1',
+    profileHandle: null,
+    category: null,
     path: 'C:\\Replays\\test.SC2Replay',
     fileName: 'test.SC2Replay',
     extension: '.sc2replay',
@@ -33,7 +34,7 @@ function record(overrides: Partial<ReplayRecord> = {}): ReplayRecord {
 }
 
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'scnexus-replay-db-'))
+  directory = await mkdtemp(join(process.cwd(), 'scnexus-replay-db-'))
   dbPath = join(directory, 'replay.db')
   database = new ReplayDatabase(dbPath)
 })
@@ -173,8 +174,8 @@ describe('ReplayDatabase', () => {
 
   it('rejects a newer schema without resetting it', () => {
     const future = new DatabaseSync(dbPath)
-    future.exec('PRAGMA user_version = 4')
+    future.exec('PRAGMA user_version = 5')
     future.close()
-    expect(() => database.initialize()).toThrow('Unsupported replay database version: 4')
+    expect(() => database.initialize()).toThrow('Unsupported replay database version: 5')
   })
 })

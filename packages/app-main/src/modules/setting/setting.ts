@@ -2,7 +2,7 @@ import { app, dialog, type IpcMainInvokeEvent } from 'electron'
 import { assertIpcSource } from '../../utils/ipc-source'
 import { isTrustedRendererUrl } from '../window/origin'
 import { gt, valid } from 'semver'
-import { isAbsolute } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { stat, access } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
@@ -24,6 +24,8 @@ export function getSettingSnapshot(): SettingSnapshot {
   const data = getSettingStore()
   return {
     ...data,
+    effectiveStarCraftDocumentsDirectory:
+      data.starCraftDocumentsDirectory || join(app.getPath('documents'), 'StarCraft II'),
     effectiveLanguage: resolveDisplayLanguage(
       data.displayLanguage,
       app.getPreferredSystemLanguages(),
@@ -110,6 +112,18 @@ async function applyUpdate(
       throw new AppError(
         ERRORS.SETTING_INVALID_VALUE,
         { message: 'Download directory must be writable' },
+        { cause },
+      )
+    }
+  }
+  if (patch.starCraftDocumentsDirectory) {
+    try {
+      if (!(await stat(patch.starCraftDocumentsDirectory as string)).isDirectory())
+        throw new Error('Not a directory')
+    } catch (cause) {
+      throw new AppError(
+        ERRORS.SETTING_INVALID_VALUE,
+        { message: 'StarCraft II documents path must be a directory' },
         { cause },
       )
     }

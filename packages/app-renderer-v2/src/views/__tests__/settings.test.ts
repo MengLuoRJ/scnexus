@@ -10,14 +10,16 @@ import type {
   SettingSnapshot,
   TelemetryStatus,
 } from '@scnexus/app-shared/types/desktop.type'
+import type { StarCraftProfile } from '@scnexus/app-shared/types/replay.type'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import SettingsView from '../SettingsView.vue'
 import zh from '../../locales/zh'
 
 vi.mock('../../stores/content-center', () => ({
-  useContentCenterStore: () => ({ accept: () => { } }),
+  useContentCenterStore: () => ({ accept: () => {} }),
 }))
 const mocks = vi.hoisted(() => ({
+  profiles: vi.fn<() => Promise<IpcResult<StarCraftProfile[]>>>(),
   toast: vi.fn<(value: unknown) => void>(),
   settings: vi.fn<() => Promise<IpcResult<SettingSnapshot>>>(),
   update: vi.fn<(patch: Partial<SettingPreferences>) => Promise<IpcResult<SettingSnapshot>>>(),
@@ -34,6 +36,7 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('../../ipcs', () => ({
+  ipcReplayProfiles: mocks.profiles,
   ipcSettingGetSnapshot: mocks.settings,
   ipcSettingUpdate: mocks.update,
   ipcDialogShowOpenDialog: mocks.dialog,
@@ -44,13 +47,13 @@ vi.mock('../../ipcs', () => ({
   ipcShellOpenPath: mocks.open,
   ipcAppGetVersion: async () => ({ ok: true, data: '1.0' }),
   ipcUpdaterGetStatus: async () => ({ ok: true, data: { state: 'idle' } }),
-  ipcSettingOnChanged: () => () => { },
-  ipcUpdaterOnCheckingForUpdate: () => () => { },
-  ipcUpdaterOnUpdateAvailable: () => () => { },
-  ipcUpdaterOnUpdateNotAvailable: () => () => { },
-  ipcUpdaterOnDownloadProgress: () => () => { },
-  ipcUpdaterOnUpdateDownloaded: () => () => { },
-  ipcUpdaterOnError: () => () => { },
+  ipcSettingOnChanged: () => () => {},
+  ipcUpdaterOnCheckingForUpdate: () => () => {},
+  ipcUpdaterOnUpdateAvailable: () => () => {},
+  ipcUpdaterOnUpdateNotAvailable: () => () => {},
+  ipcUpdaterOnDownloadProgress: () => () => {},
+  ipcUpdaterOnUpdateDownloaded: () => () => {},
+  ipcUpdaterOnError: () => () => {},
   ipcTelemetryGetStatus: mocks.telemetry,
   ipcTelemetryOnStatus: (listener: (status: TelemetryStatus) => void) => {
     mocks.onTelemetry = listener
@@ -62,6 +65,8 @@ const snapshot = {
   aiAssistantPort: 17861,
   _schemaVersion: 6,
   downloadDirectory: 'D:\\Downloads',
+  starCraftDocumentsDirectory: '',
+  effectiveStarCraftDocumentsDirectory: 'D:\\Real Documents\\StarCraft II',
   displayLanguage: 'zh',
   logLevel: 'info',
   telemetryEnabled: false,
@@ -108,9 +113,21 @@ beforeEach(() => {
   mocks.game.mockResolvedValue({ ok: true, data: game })
   mocks.configure.mockResolvedValue({ ok: true, data: game })
   mocks.detect.mockResolvedValue({ ok: true, data: game })
-  mocks.path.mockResolvedValue({ ok: true, data: 'D:\\Logs' })
+  mocks.path.mockImplementation(async (name) => ({
+    ok: true,
+    data: name === 'documents' ? 'D:\\Real Documents' : 'D:\\Logs',
+  }))
+  mocks.profiles.mockResolvedValue({ ok: true, data: [] })
   mocks.open.mockResolvedValue({ ok: true, data: '' })
-  mocks.update.mockImplementation(async (patch) => ({ ok: true, data: { ...snapshot, ...patch } }))
+  mocks.update.mockImplementation(async (patch) => ({
+    ok: true,
+    data: {
+      ...snapshot,
+      ...patch,
+      effectiveStarCraftDocumentsDirectory:
+        patch.starCraftDocumentsDirectory || snapshot.effectiveStarCraftDocumentsDirectory,
+    },
+  }))
 })
 afterEach(() => {
   for (const wrapper of wrappers.splice(0)) wrapper.unmount()
@@ -208,7 +225,7 @@ test('opening each directory uses the exact existing path and reads the logs pat
   const wrapper = await render()
   expect(mocks.path).toHaveBeenCalledExactlyOnceWith('logs')
   const buttons = wrapper.findAll('button').filter((item) => item.text() === '打开目录')
-  expect(buttons).toHaveLength(5)
+  expect(buttons).toHaveLength(6)
   for (const item of buttons) {
     await item.trigger('click')
     await flushPromises()
@@ -218,6 +235,7 @@ test('opening each directory uses the exact existing path and reads the logs pat
     game.gameRoot,
     game.paths!.customizeDataRoot,
     game.paths!.ccmRoot,
+    snapshot.effectiveStarCraftDocumentsDirectory,
     'D:\\Logs',
   ])
   expect(mocks.toast).not.toHaveBeenCalled()
@@ -393,4 +411,66 @@ test('local AI switch is default-off and independent of official services', asyn
   control.vm.$emit('update:modelValue', true)
   await flushPromises()
   expect(mocks.update).toHaveBeenLastCalledWith({ aiAssistantEnabled: true })
+})
+
+test('documents default uses the actual system path and recognition is explicit with handles primary', async () => {
+  mocks.profiles.mockResolvedValue({
+    ok: true,
+    data: [
+      {
+        accountId: '123456',
+        handle: '5-S2-1-789',
+        path: 'D:\\profile',
+        replayPath: 'D:\\profile\\Replays',
+      },
+    ],
+  })
+  const wrapper = await render()
+  expect(wrapper.findAll('input').map((item) => item.element.value)).toContain(
+    'D:\\Real Documents\\StarCraft II',
+  )
+  expect(mocks.profiles).not.toHaveBeenCalled()
+  await namedButton(wrapper, '识别星际资料').trigger('click')
+  await flushPromises()
+  expect(mocks.profiles).toHaveBeenCalledOnce()
+  expect(wrapper.find('li .font-medium').text()).toBe('5-S2-1-789')
+  expect(wrapper.find('li').text()).toContain('账号 ID: 123456')
+})
+
+test('documents picker saves the selected root and reset restores the system default', async () => {
+  mocks.dialog.mockResolvedValue({
+    ok: true,
+    data: { canceled: false, filePaths: ['E:\\StarCraft II'] },
+  })
+  const wrapper = await render()
+  await wrapper
+    .findAll('button')
+    .filter((item) => item.text() === '修改目录')[1]!
+    .trigger('click')
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ starCraftDocumentsDirectory: 'E:\\StarCraft II' })
+  expect(wrapper.findAll('input').map((item) => item.element.value)).toContain('E:\\StarCraft II')
+  await namedButton(wrapper, '使用默认目录').trigger('click')
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ starCraftDocumentsDirectory: '' })
+  expect(wrapper.findAll('input').map((item) => item.element.value)).toContain(
+    'D:\\Real Documents\\StarCraft II',
+  )
+  expect(mocks.profiles).not.toHaveBeenCalled()
+})
+
+test('profile recognition reports empty results and IPC failures without saving settings', async () => {
+  const wrapper = await render()
+  await namedButton(wrapper, '识别星际资料').trigger('click')
+  await flushPromises()
+  expect(wrapper.text()).toContain('未找到星际资料')
+  mocks.profiles.mockResolvedValueOnce({
+    ok: false,
+    error: toErrorDto(new AppError(ERRORS.SETTING_INVALID_VALUE)),
+  })
+  await namedButton(wrapper, '识别星际资料').trigger('click')
+  await flushPromises()
+  expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
+  expect(wrapper.text()).not.toContain('未找到星际资料')
+  expect(mocks.update).not.toHaveBeenCalled()
 })

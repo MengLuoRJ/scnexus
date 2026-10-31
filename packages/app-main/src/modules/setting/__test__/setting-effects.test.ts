@@ -1,3 +1,4 @@
+import { resolve, join } from 'node:path'
 import { test, expect, vi } from 'vitest'
 import type { SettingData } from '@scnexus/app-shared/stores/setting.store'
 const mocks = vi.hoisted(() => ({
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     lastUpdatedAt: null,
     _lastConfirmedVersion: null,
     downloadDirectory: 'D:\\Downloads',
+    starCraftDocumentsDirectory: '',
     logLevel: 'error',
     telemetryEnabled: false,
     analyticsEnabled: true,
@@ -40,7 +42,7 @@ vi.mock('../../analytics-lifecycle', () => ({ setAnalyticsEnabled: mocks.analyti
 vi.mock('../../../utils/ipc-source', () => ({ assertIpcSource: mocks.source }))
 vi.mock('electron', () => ({
   dialog: { showMessageBox: mocks.dialog },
-  app: { getPreferredSystemLanguages: () => ['zh'] },
+  app: { getPreferredSystemLanguages: () => ['zh'], getPath: () => 'D:\\Documents' },
 }))
 vi.mock('../../../stores/setting', () => ({
   getSettingStore: () => ({ ...mocks.data }),
@@ -63,7 +65,7 @@ vi.mock('../../window/window', () => ({
   getMainWindow: () => mocks.window ?? { webContents: { send: mocks.send } },
   onWindowReady: vi.fn<typeof import('../../window/window').onWindowReady>(),
 }))
-import { initializeSetting, updateSetting } from '../setting'
+import { getSettingSnapshot, initializeSetting, updateSetting } from '../setting'
 test('settings compensate log-level failure, serialize later writes and preserve consent revocation despite SDK failure', async () => {
   mocks.apply.mockImplementationOnce(() => {
     throw new Error('transport')
@@ -232,3 +234,21 @@ test.each(['no-window', 'untrusted-url', 'navigation', 'replacement'])(
     mocks.dialog.mockReset()
   },
 )
+
+test('documents root validates existing directory type and exposes the runtime default', async () => {
+  await updateSetting({ starCraftDocumentsDirectory: '' })
+  expect(getSettingSnapshot().effectiveStarCraftDocumentsDirectory).toBe(
+    join('D:\\Documents', 'StarCraft II'),
+  )
+  const custom = resolve('.')
+  await updateSetting({ starCraftDocumentsDirectory: custom })
+  expect(getSettingSnapshot().effectiveStarCraftDocumentsDirectory).toBe(custom)
+  const before = { ...mocks.data }
+  for (const path of [resolve('package.json'), resolve('.missing-starcraft-directory')]) {
+    await expect(updateSetting({ starCraftDocumentsDirectory: path })).rejects.toMatchObject({
+      code: 'M010',
+    })
+    expect(mocks.data).toEqual(before)
+  }
+  await updateSetting({ starCraftDocumentsDirectory: '' })
+})

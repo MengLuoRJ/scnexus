@@ -1,12 +1,11 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { discoverReplayDirectories, hashReplayFile } from '../replay-files'
 
 let directory: string
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'scnexus-replay-files-'))
+  directory = await mkdtemp(join(process.cwd(), 'scnexus-replay-files-'))
 })
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true })

@@ -1,19 +1,24 @@
-import { ipcDesktop, ipcRequest } from './internal/ipc-common'
+import { ipcDesktop, ipcRequest, ipcSnapshot } from './internal/ipc-common'
+import type { ReplayScope } from '@scnexus/app-shared/types/replay.type'
 
 const replay = () => ipcDesktop().replay
+export const ipcReplayProfiles = () => ipcRequest(() => replay().profiles())
 export const ipcReplayChooseExportPath = () => ipcRequest(() => replay().chooseExportPath())
-export const ipcReplayAnalyze = (replayId: string) => ipcRequest(() => replay().analyze(replayId))
-export const ipcReplayGetAnalysis = (replayId: string) =>
-  ipcRequest(() => replay().getAnalysis(replayId))
-export const ipcReplayDiscoverDirectories = () => ipcRequest(() => replay().discoverDirectories())
-export const ipcReplayListDuplicates = () => ipcRequest(() => replay().listDuplicates())
-export const ipcReplayExportArchive = (ids: string[], destination: string) =>
-  ipcRequest(() => replay().exportArchive(ids, destination))
-export const ipcReplayList = () => ipcRequest(() => replay().list())
-export const ipcReplayScanDirectory = (rootDir: string) =>
-  ipcRequest(() => replay().scanDirectory(rootDir))
-export const ipcReplayIndexFile = (filePath: string) =>
-  ipcRequest(() => replay().indexFile(filePath))
-export const ipcReplayImportArchive = (archivePath: string, destinationDir: string) =>
-  ipcRequest(() => replay().importArchive(archivePath, destinationDir))
-export const ipcReplayDelete = (filePath: string) => ipcRequest(() => replay().delete(filePath))
+export const ipcReplayAnalyze = (scope: ReplayScope, id: string) =>
+  ipcRequest(() => replay().analyze(ipcSnapshot(scope), id))
+export const ipcReplayGetAnalysis = (scope: ReplayScope, id: string) =>
+  ipcRequest(() => replay().getAnalysis(ipcSnapshot(scope), id))
+export const ipcReplayListDuplicates = (scope: ReplayScope) =>
+  ipcRequest(() => replay().listDuplicates(ipcSnapshot(scope)))
+export const ipcReplayExportArchive = (scope: ReplayScope, ids: string[], destination: string) =>
+  ipcRequest(() => replay().exportArchive(ipcSnapshot(scope), [...ids], destination))
+export const ipcReplayList = (scope: ReplayScope) =>
+  ipcRequest(() => replay().list(ipcSnapshot(scope)))
+export const ipcReplayScan = (scope: ReplayScope) =>
+  ipcRequest(() => replay().scan(ipcSnapshot(scope)))
+export const ipcReplayImportFile = (scope: ReplayScope, path: string) =>
+  ipcRequest(() => replay().importFile(ipcSnapshot(scope), path))
+export const ipcReplayImportArchive = (scope: ReplayScope, path: string) =>
+  ipcRequest(() => replay().importArchive(ipcSnapshot(scope), path))
+export const ipcReplayDelete = (scope: ReplayScope, id: string) =>
+  ipcRequest(() => replay().delete(ipcSnapshot(scope), id))

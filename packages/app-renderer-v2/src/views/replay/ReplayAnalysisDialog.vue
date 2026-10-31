@@ -7,6 +7,8 @@ import type {
   ReplayRecord,
 } from '@scnexus/app-shared/types/replay.type'
 
+import { replayPlayerName, replayResultClass } from './display'
+
 defineOptions({ name: 'ReplayAnalysisDialog' })
 const props = defineProps<{
   record: ReplayRecord
@@ -132,10 +134,19 @@ watch([component, () => props.analysis], () => {
           <p v-if="!props.record.players.length">{{ t('replay.unknown') }}</p>
           <ul v-else class="space-y-1">
             <li v-for="player in props.record.players" :key="player.slot" class="break-all">
-              <span class="font-medium">{{ player.name ?? t('replay.unknown') }}</span>
-              · {{ t('replay.race') }}: {{ raceLabel(player.race) }} · {{ t('replay.team') }}:
-              {{ player.team ?? t('replay.unknown') }} · {{ t('replay.result') }}:
-              {{ player.result ? t(`replay.result.${player.result}`) : t('replay.unknown') }}
+              <span class="font-medium">
+                {{
+                  t('replay.playerRace', {
+                    name: replayPlayerName(player.name, t('replay.unknown')),
+                    race: raceLabel(player.race),
+                  })
+                }}
+              </span>
+              · {{ t('replay.team') }}: {{ player.team ?? t('replay.unknown') }} ·
+              <span :class="replayResultClass(player.result)">
+                {{ t('replay.result') }}:
+                {{ player.result ? t(`replay.result.${player.result}`) : t('replay.unknown') }}
+              </span>
             </li>
           </ul>
         </section>

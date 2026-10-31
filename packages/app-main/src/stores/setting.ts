@@ -9,6 +9,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
     const data = record(value)
     if (typeof data.clientId !== 'string' || !data.clientId.trim()) invalidData('Missing client ID')
     directory(data.downloadDirectory)
+    if (data.starCraftDocumentsDirectory !== '') directory(data.starCraftDocumentsDirectory)
     bool(data.officialServicesEnabled)
     bool(data.weeklyMutationCalibrationEnabled)
     bool(data.aiAssistantEnabled)
@@ -24,12 +25,13 @@ export function createSettingRepository(downloadDirectory: () => string) {
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 7,
+      _schemaVersion: 8,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
       _lastConfirmedVersion: null,
       downloadDirectory: downloadDirectory(),
+      starCraftDocumentsDirectory: '',
       displayLanguage: 'system',
       logLevel: 'error',
       telemetryEnabled: false,
@@ -45,7 +47,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 7 },
+      _schemaVersion: { const: 8 },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -53,6 +55,7 @@ export function createSettingRepository(downloadDirectory: () => string) {
         pattern: '^[^\\u0000]*$',
       },
       downloadDirectory: stringSchema,
+      starCraftDocumentsDirectory: stringSchema,
       displayLanguage: {
         type: 'string',
         enum: ['system', 'zh', 'en', 'zh-Hant'],
@@ -75,6 +78,10 @@ export function createSettingRepository(downloadDirectory: () => string) {
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if ([1, 2, 3, 4, 5, 6, 7].includes(data._schemaVersion as number))
+        data.starCraftDocumentsDirectory = defaults.starCraftDocumentsDirectory
+      if (data._schemaVersion === 7)
+        return { ...data, _schemaVersion: defaults._schemaVersion } as SettingData
       if ([1, 2, 3, 4, 5, 6].includes(data._schemaVersion as number)) {
         data.aiAutoApproveSwitchCampaign = false
         data.aiAutoApproveRestoreCampaign = false

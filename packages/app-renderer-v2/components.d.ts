@@ -34,6 +34,7 @@ declare module 'vue' {
     UButton: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/Button.vue')['default']
     UCard: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/Card.vue')['default']
     UCheckbox: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/Checkbox.vue')['default']
+    UDropdownMenu: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/DropdownMenu.vue')['default']
     UEditor: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/Editor.vue')['default']
     UEditorToolbar: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/EditorToolbar.vue')['default']
     UForm: typeof import('./../../node_modules/.pnpm/@nuxt+ui@4.12.0_9870e1fb3199f39b340438e914138b57/node_modules/@nuxt/ui/dist/runtime/components/Form.vue')['default']

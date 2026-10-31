@@ -6,6 +6,7 @@ import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-share
 import * as desktopIpc from '../ipcs'
 import { useContentCenterStore } from '../stores/content-center'
 import SettingsDirectoryField from './components/SettingsDirectoryField.vue'
+import type { StarCraftProfile } from '@scnexus/app-shared/types/replay.type'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
 import type {
   SettingSnapshot,
@@ -28,6 +29,7 @@ onUnmounted(() => {
 })
 const game = ref<GameSnapshot | null>(null)
 const logDirectory = ref('')
+const profiles = ref<StarCraftProfile[] | null>(null)
 const version = ref('—')
 const updater = ref<desktopIpc.UpdaterStatus['state']>('unavailable')
 const progress = ref(0)
@@ -73,6 +75,8 @@ function accept<T>(result: IpcResult<T>): T | undefined {
   return result.data
 }
 function sync(value: SettingSnapshot) {
+  if (settings.value?.starCraftDocumentsDirectory !== value.starCraftDocumentsDirectory)
+    profiles.value = null
   settings.value = value
   contentCenter.accept(value)
 }
@@ -101,12 +105,18 @@ async function save(patch: Partial<SettingPreferences>) {
     }
   })
 }
-async function choose(kind: 'game' | 'download') {
+async function choose(kind: 'game' | 'download' | 'documents') {
   await run(async () => {
     const picked = accept(
       await desktopIpc.ipcDialogShowOpenDialog({
         properties: ['openDirectory'],
-        title: t(kind === 'game' ? 'ui.gameDir' : 'ui.downloadDir'),
+        title: t(
+          kind === 'game'
+            ? 'ui.gameDir'
+            : kind === 'documents'
+              ? 'ui.starCraftDocumentsDir'
+              : 'ui.downloadDir',
+        ),
       }),
     )
     if (!picked || picked.canceled || !picked.filePaths[0]) return
@@ -118,13 +128,22 @@ async function choose(kind: 'game' | 'download') {
       } else error.value = result.error
     } else {
       const result = await desktopIpc.ipcSettingUpdate({
-        downloadDirectory: picked.filePaths[0],
+        [kind === 'documents' ? 'starCraftDocumentsDirectory' : 'downloadDirectory']:
+          picked.filePaths[0],
       })
       if (result.ok) {
         sync(accept(result)!)
         notifySaved()
       } else error.value = result.error
     }
+  })
+}
+async function recognizeProfiles() {
+  await run(async () => {
+    profiles.value = null
+    const result = await desktopIpc.ipcReplayProfiles()
+    if (result.ok) profiles.value = accept(result)!
+    else error.value = result.error
   })
 }
 async function detect() {
@@ -357,6 +376,63 @@ onMounted(async () => {
                 :path="game?.paths?.ccmRoot ?? ''"
                 :disabled="!available || busy"
                 @open="openDirectory" />
+            </div>
+          </UCard>
+          <UCard :ui="{ header: 'p-2 sm:p-2', body: 'p-2 sm:p-2' }">
+            <template #header>
+              <h2 class="font-semibold">{{ t('ui.starCraftProfiles') }}</h2>
+            </template>
+            <div class="space-y-2">
+              <SettingsDirectoryField
+                :label="t('ui.starCraftDocumentsDir')"
+                :path="settings?.effectiveStarCraftDocumentsDirectory ?? ''"
+                :disabled="!available || busy"
+                @open="openDirectory">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  :disabled="!settings || busy"
+                  @click="choose('documents')">
+                  {{ t('ui.modifyDirectory') }}
+                </UButton>
+              </SettingsDirectoryField>
+              <p class="text-xs text-muted">
+                {{
+                  t(
+                    settings?.starCraftDocumentsDirectory
+                      ? 'ui.starCraftDocumentsCustom'
+                      : 'ui.starCraftDocumentsDefault',
+                  )
+                }}
+              </p>
+              <p class="text-xs text-muted">{{ t('ui.starCraftDocumentsHelp') }}</p>
+              <div class="flex gap-2">
+                <UButton :disabled="!available || !settings || busy" @click="recognizeProfiles">
+                  {{ t('ui.recognizeProfiles') }}
+                </UButton>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  :disabled="!settings?.starCraftDocumentsDirectory || busy"
+                  @click="save({ starCraftDocumentsDirectory: '' })">
+                  {{ t('ui.useDefaultDirectory') }}
+                </UButton>
+              </div>
+              <p v-if="profiles?.length === 0" class="text-sm text-muted">
+                {{ t('ui.noStarCraftProfiles') }}
+              </p>
+              <ul v-if="profiles?.length" class="max-h-40 space-y-2 overflow-y-auto">
+                <li
+                  v-for="profile in profiles"
+                  :key="profile.path"
+                  class="rounded border border-default p-2">
+                  <p class="break-all font-medium">{{ profile.handle }}</p>
+                  <p class="break-all text-xs text-muted">
+                    {{ t('ui.starCraftAccountId') }}: {{ profile.accountId }}
+                  </p>
+                  <p class="break-all text-xs text-muted">{{ profile.path }}</p>
+                </li>
+              </ul>
             </div>
           </UCard>
         </div>

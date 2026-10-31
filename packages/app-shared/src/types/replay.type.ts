@@ -1,5 +1,14 @@
 import type { IpcResult } from '../errors/app.error.js'
 
+export type ReplayCategory = 'Multiplayer' | 'Campaign' | 'Challenge'
+export type ReplayScope = { profileHandle: string; category: ReplayCategory }
+export type StarCraftProfile = {
+  accountId: string
+  handle: string
+  path: string
+  replayPath: string
+}
+
 export type ReplayPlayer = {
   slot: number
   name: string | null
@@ -10,6 +19,8 @@ export type ReplayPlayer = {
 
 export type ReplayRecord = {
   id: string
+  profileHandle: string | null
+  category: ReplayCategory | null
   path: string
   fileName: string
   extension: string
@@ -64,18 +75,19 @@ export type ReplayAnalysis = {
 }
 
 export interface ReplayApi {
-  analyze(replayId: string): Promise<IpcResult<ReplayAnalysis>>
-  getAnalysis(replayId: string): Promise<IpcResult<ReplayAnalysis | null>>
-  discoverDirectories(): Promise<IpcResult<ReplayDirectory[]>>
-  listDuplicates(): Promise<IpcResult<ReplayDuplicateGroup[]>>
+  profiles(): Promise<IpcResult<StarCraftProfile[]>>
+  analyze(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis>>
+  getAnalysis(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis | null>>
+  listDuplicates(scope: ReplayScope): Promise<IpcResult<ReplayDuplicateGroup[]>>
   chooseExportPath(): Promise<IpcResult<string | null>>
   exportArchive(
+    scope: ReplayScope,
     replayIds: string[],
     destination: string,
   ): Promise<IpcResult<{ path: string; count: number }>>
-  list(): Promise<IpcResult<ReplayRecord[]>>
-  scanDirectory(rootDir: string): Promise<IpcResult<ReplayRecord[]>>
-  indexFile(filePath: string): Promise<IpcResult<ReplayRecord>>
-  importArchive(archivePath: string, destinationDir: string): Promise<IpcResult<ReplayRecord[]>>
-  delete(filePath: string): Promise<IpcResult<void>>
+  list(scope: ReplayScope): Promise<IpcResult<ReplayRecord[]>>
+  scan(scope: ReplayScope): Promise<IpcResult<ReplayRecord[]>>
+  importFile(scope: ReplayScope, filePath: string): Promise<IpcResult<ReplayRecord>>
+  importArchive(scope: ReplayScope, archivePath: string): Promise<IpcResult<ReplayRecord[]>>
+  delete(scope: ReplayScope, replayId: string): Promise<IpcResult<void>>
 }

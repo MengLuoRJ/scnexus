@@ -105,7 +105,8 @@ test('first run writes validated defaults only once and snapshots are detached',
   const repository = setting()
   const backend = await fileBackend()
   const snapshot = repository.init(backend)
-  assert.equal(snapshot._schemaVersion, 7)
+  assert.equal(snapshot._schemaVersion, 8)
+  assert.equal(snapshot.starCraftDocumentsDirectory, '')
   assert.equal(snapshot._revision, 0)
   assert.equal(snapshot.lastUpdatedAt, null)
   assert.equal(snapshot.displayLanguage, 'system')
@@ -155,6 +156,9 @@ test('complete/key updates validate every field and commit one _revision atomica
     ['aiAssistantPort', 65536],
     ['aiAssistantPort', 17861.5],
     ['downloadDirectory', 'relative'],
+    ['starCraftDocumentsDirectory', 'relative'],
+    ['starCraftDocumentsDirectory', null],
+    ['starCraftDocumentsDirectory', 'D:\\bad\0path'],
     ['clientId', ''],
     ['lastUpdatedAt', -1],
     ['_schemaVersion', 6],
@@ -219,8 +223,8 @@ test('invalid JSON and schema back up without overwriting or becoming usable', a
 
 test('future versions cannot be overwritten, even by migration', async () => {
   for (const data of [
-    { _schemaVersion: 8, _revision: 10 },
-    { schemaVersion: 8, revision: 10 },
+    { _schemaVersion: 9, _revision: 10 },
+    { schemaVersion: 9, revision: 10 },
   ]) {
     const backend = await fileBackend(data)
     assert.throws(() => setting().init(backend), code(ERRORS.STORE_VERSION_UNSUPPORTED.code))
@@ -254,7 +258,7 @@ test('previous unprefixed model migrates exactly once without losing business fi
   }
   const backend = await fileBackend(original)
   const migrated = setting().init(backend)
-  assert.equal(migrated._schemaVersion, 7)
+  assert.equal(migrated._schemaVersion, 8)
   assert.equal(migrated._revision, 17)
   assert.equal(migrated._lastConfirmedVersion, '0.0.20')
   assert.equal(migrated.clientId, original.clientId)
@@ -393,7 +397,7 @@ test('setting v1 language codes migrate without losing user preferences', async 
     assert.equal(result.displayLanguage, next)
     assert.equal(result._revision, 9)
     assert.equal(result.telemetryEnabled, true)
-    assert.equal(result._schemaVersion, 7)
+    assert.equal(result._schemaVersion, 8)
     assert.equal(backend.backups.length, 1)
   }
 })
@@ -411,7 +415,7 @@ test('v2 settings migrate once with online analytics enabled and preserve disabl
   const repository = setting()
   const migrated = repository.init(backend)
   assert.equal(migrated.analyticsEnabled, true)
-  assert.equal(migrated._schemaVersion, 7)
+  assert.equal(migrated._schemaVersion, 8)
   assert.equal(migrated.displayLanguage, 'en')
   assert.equal(migrated.clientId, previous.clientId)
   assert.equal(migrated._revision, 12)
@@ -430,7 +434,7 @@ test('v3 settings enable Workshop by default and preserve the disabled preferenc
   const migrated = repository.init(backend)
   assert.equal(migrated.workshopEnabled, true)
   assert.equal(migrated.analyticsEnabled, false)
-  assert.equal(migrated._schemaVersion, 7)
+  assert.equal(migrated._schemaVersion, 8)
   repository.update({ ...migrated, workshopEnabled: false })
   assert.equal(setting().init(backend).workshopEnabled, false)
 })
@@ -605,7 +609,7 @@ test('v4 official service preferences default on, persist independently and reje
   assert.equal(migrated.workshopEnabled, false)
   assert.equal(migrated._revision, 7)
   assert.equal(migrated.clientId, defaults.clientId)
-  assert.equal(migrated._schemaVersion, 7)
+  assert.equal(migrated._schemaVersion, 8)
   assert.equal(backend.backups.length, 1)
   repository.update({
     ...migrated,
@@ -631,7 +635,7 @@ test('v5 settings migrate AI assistant defaults without losing preferences', asy
   const backend = await fileBackend({ ...previous, _schemaVersion: 5, workshopEnabled: false })
   const repository = setting()
   const migrated = repository.init(backend)
-  assert.equal(migrated._schemaVersion, 7)
+  assert.equal(migrated._schemaVersion, 8)
   assert.equal(migrated.aiAssistantEnabled, false)
   assert.equal(migrated.aiAssistantPort, 17861)
   assert.equal(migrated.workshopEnabled, false)
@@ -669,4 +673,27 @@ test('v6 settings migrate auto-approval to false and validate strict booleans', 
     assert.equal(repository.getKey(key), true)
     repository.updateKey(key, false)
   }
+})
+
+test('schema 7 settings migrate documents default without losing existing preferences', async () => {
+  const defaults = setting().init(await fileBackend())
+  const { starCraftDocumentsDirectory: _, ...old } = defaults
+  const previous = {
+    ...old,
+    _schemaVersion: 7,
+    _revision: 12,
+    logLevel: 'debug',
+    downloadDirectory: 'D:\\CustomDownloads',
+  }
+  const backend = await fileBackend(previous)
+  const migrated = setting().init(backend)
+  assert.deepEqual(migrated, { ...previous, _schemaVersion: 8, starCraftDocumentsDirectory: '' })
+  assert.equal(backend.backups.length, 1)
+  assert.deepEqual(setting().init(backend), migrated)
+  const repository = setting()
+  repository.init(await fileBackend(migrated))
+  repository.updateKey('starCraftDocumentsDirectory', 'D:\\SC2Documents')
+  assert.equal(repository.getKey('starCraftDocumentsDirectory'), 'D:\\SC2Documents')
+  repository.updateKey('starCraftDocumentsDirectory', '')
+  assert.equal(repository.getKey('starCraftDocumentsDirectory'), '')
 })

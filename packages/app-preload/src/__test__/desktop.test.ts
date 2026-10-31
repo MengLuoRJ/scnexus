@@ -22,50 +22,51 @@ vi.mock('electron', () => ({
 import '../ipc/desktop'
 const desktopApi = mocks.expose.mock.calls.find(([name]) => name === 'scnexus')![1]
 
-test('replay exposes only controlled business methods and preserves result envelopes', async () => {
+test('replay exposes only scoped business methods and preserves result envelopes', async () => {
   mocks.invoke.mockClear()
+  const scope = { profileHandle: '1-S2-1-123', category: 'Campaign' as const }
   const success = { ok: true, data: [] }
   mocks.invoke.mockResolvedValue(success)
-  expect(await desktopApi.replay.list()).toBe(success)
-  await desktopApi.replay.scanDirectory('D:\\replays')
-  await desktopApi.replay.indexFile('D:\\replay.SC2Replay')
-  await desktopApi.replay.importArchive('D:\\archive.zip', 'D:\\destination')
-  await desktopApi.replay.delete('D:\\replay.SC2Replay')
+  expect(await desktopApi.replay.list(scope)).toBe(success)
+  await desktopApi.replay.scan(scope)
+  await desktopApi.replay.importFile(scope, 'D:\\replay.SC2Replay')
+  await desktopApi.replay.importArchive(scope, 'D:\\archive.zip')
+  await desktopApi.replay.delete(scope, 'id')
   await desktopApi.replay.chooseExportPath()
-  await desktopApi.replay.discoverDirectories()
-  await desktopApi.replay.listDuplicates()
-  await desktopApi.replay.exportArchive(['replay-id'], 'D:\\out.zip')
-  await desktopApi.replay.analyze('replay-id')
-  await desktopApi.replay.getAnalysis('replay-id')
+  await desktopApi.replay.profiles()
+  await desktopApi.replay.listDuplicates(scope)
+  await desktopApi.replay.exportArchive(scope, ['id'], 'D:\\out.zip')
+  await desktopApi.replay.analyze(scope, 'id')
+  await desktopApi.replay.getAnalysis(scope, 'id')
   expect(mocks.invoke.mock.calls).toEqual([
-    ['replay:list'],
-    ['replay:scan-directory', 'D:\\replays'],
-    ['replay:index-file', 'D:\\replay.SC2Replay'],
-    ['replay:import-archive', 'D:\\archive.zip', 'D:\\destination'],
-    ['replay:delete', 'D:\\replay.SC2Replay'],
+    ['replay:list', scope],
+    ['replay:scan', scope],
+    ['replay:import-file', scope, 'D:\\replay.SC2Replay'],
+    ['replay:import-archive', scope, 'D:\\archive.zip'],
+    ['replay:delete', scope, 'id'],
     ['replay:choose-export-path'],
-    ['replay:discover-directories'],
-    ['replay:duplicates'],
-    ['replay:export-archive', ['replay-id'], 'D:\\out.zip'],
-    ['replay:analyze', 'replay-id'],
-    ['replay:get-analysis', 'replay-id'],
+    ['replay:profiles'],
+    ['replay:duplicates', scope],
+    ['replay:export-archive', scope, ['id'], 'D:\\out.zip'],
+    ['replay:analyze', scope, 'id'],
+    ['replay:get-analysis', scope, 'id'],
   ])
   expect(Object.keys(desktopApi.replay).sort()).toEqual([
     'analyze',
     'chooseExportPath',
     'delete',
-    'discoverDirectories',
     'exportArchive',
     'getAnalysis',
     'importArchive',
-    'indexFile',
+    'importFile',
     'list',
     'listDuplicates',
-    'scanDirectory',
+    'profiles',
+    'scan',
   ])
   const failure = { ok: false, error: toErrorDto(new AppError(ERRORS.IPC_INVALID_ARGUMENT)) }
   mocks.invoke.mockResolvedValueOnce(failure)
-  expect(await desktopApi.replay.list()).toBe(failure)
+  expect(await desktopApi.replay.list(scope)).toBe(failure)
 })
 
 test.each([false, true])(

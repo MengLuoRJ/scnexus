@@ -1,3 +1,11 @@
+import { constants } from 'node:fs'
+import {
+  configuredReplayRoot,
+  discoverProfiles,
+  resolveReplayScope,
+  safeReplayPath,
+  contained,
+} from './replay-scope'
 import { randomUUID } from 'node:crypto'
 import {
   copyFile,
@@ -12,7 +20,7 @@ import {
 } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { looksLikeReplay } from '@scnexus/replay-parser'
-import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+import type { ReplayRecord, ReplayScope } from '@scnexus/app-shared/types/replay.type'
 export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
 import { inspectLocalReplay } from './replay-inspection'
@@ -24,13 +32,27 @@ import { SevenZipWrapper } from '../../utils/7zip-wrapper'
 export class ReplayLibraryService {
   private readonly archiveReader = new SevenZipWrapper()
 
+  constructor(private readonly rootDirectory: () => string = configuredReplayRoot) {}
+
+  profiles() {
+    return discoverProfiles(this.rootDirectory())
+  }
+
   async ensureReady() {
     await replayDatabase.initialize()
   }
 
-  async listStoredReplays(): Promise<ReplayRecord[]> {
+  async listStoredReplays(scope: ReplayScope): Promise<ReplayRecord[]> {
     await this.ensureReady()
-    return replayDatabase.listReplays()
+    const root = await resolveReplayScope(this.rootDirectory(), scope)
+    const records = await replayDatabase.listReplays(scope)
+    const visible: ReplayRecord[] = []
+    for (const record of records) {
+      if (!contained(root, record.path)) continue
+      if ((await safeReplayPath(root, record.path, true)) && (await lstat(record.path)).isFile())
+        visible.push(record)
+    }
+    return visible
   }
 
   private readonly analyses = new Map<
@@ -38,20 +60,21 @@ export class ReplayLibraryService {
     Promise<import('@scnexus/app-shared/types/replay.type').ReplayAnalysis>
   >()
 
-  async getAnalysis(replayId: string) {
+  async getAnalysis(scope: ReplayScope, replayId: string) {
     await this.ensureReady()
+    const record = await this.requireRecord(scope, replayId)
     const result = await replayDatabase.getAnalysis(replayId)
     if (!result || result.parserVersion !== REPLAY_ANALYSIS_VERSION) return null
-    const record = (await this.listStoredReplays()).find((item) => item.id === replayId)
     if (!record || (await hashReplayFile(record.path)) !== result.contentHash) return null
     return result
   }
 
-  async analyzeReplay(replayId: string) {
+  async analyzeReplay(scope: ReplayScope, replayId: string) {
+    await this.requireRecord(scope, replayId)
     const current = this.analyses.get(replayId)
     if (current) return current
     if (this.analyses.size >= 2) throw new Error('At most two replay analyses can run concurrently')
-    const job = this.performAnalysis(replayId)
+    const job = this.performAnalysis(scope, replayId)
     this.analyses.set(replayId, job)
     try {
       return await job
@@ -60,21 +83,21 @@ export class ReplayLibraryService {
     }
   }
 
-  private async performAnalysis(replayId: string) {
-    const record = (await this.listStoredReplays()).find((item) => item.id === replayId)
-    if (!record) throw new Error('Replay is not indexed')
+  private async performAnalysis(scope: ReplayScope, replayId: string) {
+    const record = await this.requireRecord(scope, replayId)
     if (!record.contentHash || (await hashReplayFile(record.path)) !== record.contentHash)
       throw new Error('Replay changed; reindex before analysis')
     const result = await runReplayAnalysis(record)
+    await this.requireRecord(scope, replayId)
     if ((await hashReplayFile(record.path)) !== record.contentHash)
       throw new Error('Replay changed during analysis')
     await replayDatabase.saveAnalysis(result)
     return result
   }
 
-  async listDuplicates() {
+  async listDuplicates(scope: ReplayScope) {
     const groups = new Map<string, ReplayRecord[]>()
-    for (const record of await this.listStoredReplays()) {
+    for (const record of await this.listStoredReplays(scope)) {
       if (!record.contentHash) continue
       const group = groups.get(record.contentHash) ?? []
       group.push(record)
@@ -86,6 +109,7 @@ export class ReplayLibraryService {
   }
 
   async exportReplayArchive(
+    scope: ReplayScope,
     replayIds: string[],
     destination: string,
   ): Promise<{ path: string; count: number }> {
@@ -97,7 +121,9 @@ export class ReplayLibraryService {
       throw new Error('Select between 1 and 2000 distinct replays')
     if (extname(destination).toLowerCase() !== '.zip')
       throw new Error('Replay export requires a .zip destination')
-    const stored = new Map((await this.listStoredReplays()).map((record) => [record.id, record]))
+    const stored = new Map(
+      (await this.listStoredReplays(scope)).map((record) => [record.id, record]),
+    )
     const records = replayIds.map((id) => {
       const record = stored.get(id)
       if (!record) throw new Error('Replay is not indexed')
@@ -112,6 +138,7 @@ export class ReplayLibraryService {
       await mkdir(files)
       const names: string[] = []
       for (const [index, record] of records.entries()) {
+        await safeReplayPath(await resolveReplayScope(this.rootDirectory(), scope), record.path)
         const info = await lstat(record.path)
         if (!info.isFile() || info.size > 128 * 1024 * 1024)
           throw new Error('Export source must be a regular replay under 128 MiB')
@@ -137,30 +164,51 @@ export class ReplayLibraryService {
     }
   }
 
-  async scanDirectory(rootDir: string): Promise<ReplayRecord[]> {
+  async scan(scope: ReplayScope): Promise<ReplayRecord[]> {
     await this.ensureReady()
-    const entries = await readdir(rootDir, { withFileTypes: true })
+    const root = await resolveReplayScope(this.rootDirectory(), scope)
+    if (!(await safeReplayPath(root, root, true))) return []
     const results: ReplayRecord[] = []
-
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue
-      const fullPath = join(rootDir, entry.name)
-      if (entry.isDirectory()) {
-        const nested = await this.scanDirectory(fullPath)
-        results.push(...nested)
-        continue
+    const visit = async (directory: string) => {
+      await safeReplayPath(root, directory)
+      for (const entry of await readdir(directory, { withFileTypes: true })) {
+        if (entry.name.startsWith('.') || entry.isSymbolicLink()) continue
+        const path = join(directory, entry.name)
+        if (entry.isDirectory()) await visit(path)
+        else if (entry.isFile() && looksLikeReplay(path))
+          results.push(await this.indexReplayFile(scope, path))
       }
-
-      if (!entry.isFile() || !looksLikeReplay(fullPath)) continue
-      results.push(await this.indexReplayFile(fullPath))
     }
-
+    await visit(root)
     return results
   }
 
-  async indexReplayFile(filePath: string): Promise<ReplayRecord> {
+  private async requireRecord(scope: ReplayScope, id: string): Promise<ReplayRecord> {
+    await this.ensureReady()
+    const root = await resolveReplayScope(this.rootDirectory(), scope)
+    const record = (await replayDatabase.listReplays(scope)).find((item) => item.id === id)
+    if (!record || !contained(root, record.path))
+      throw new Error('Replay is not indexed in selected scope')
+    await safeReplayPath(root, record.path, true)
+    return record
+  }
+
+  async importFile(scope: ReplayScope, filePath: string): Promise<ReplayRecord> {
+    if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
+    await safeReplayPath(dirname(filePath), filePath)
+    if (!(await lstat(filePath)).isFile()) throw new Error('Replay must be a regular file')
+    const root = await resolveReplayScope(this.rootDirectory(), scope)
+    await mkdir(root, { recursive: true })
+    await safeReplayPath(root, root)
+    const target = join(root, `${randomUUID()}-${basename(filePath)}`)
+    await copyFile(filePath, target, constants.COPYFILE_EXCL)
+    return this.indexReplayFile(scope, target)
+  }
+
+  private async indexReplayFile(scope: ReplayScope, filePath: string): Promise<ReplayRecord> {
     await this.ensureReady()
     filePath = resolve(filePath)
+    await safeReplayPath(await resolveReplayScope(this.rootDirectory(), scope), filePath)
     if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
     const fileStat = await lstat(filePath)
     if (!fileStat.isFile()) throw new Error('Replay must be a regular file')
@@ -177,6 +225,8 @@ export class ReplayLibraryService {
     }
     const record: ReplayRecord = {
       id: randomUUID(),
+      profileHandle: scope.profileHandle,
+      category: scope.category,
       path: filePath,
       fileName: basename(filePath),
       extension: extname(filePath).toLowerCase(),
@@ -197,8 +247,9 @@ export class ReplayLibraryService {
     return replayDatabase.upsertReplay(record)
   }
 
-  async importReplayArchive(archivePath: string, destinationDir: string): Promise<ReplayRecord[]> {
+  async importReplayArchive(scope: ReplayScope, archivePath: string): Promise<ReplayRecord[]> {
     await this.ensureReady()
+    const destinationDir = await resolveReplayScope(this.rootDirectory(), scope)
     const listing = await this.archiveReader.list(archivePath)
     const paths = new Set<string>()
     let totalBytes = 0
@@ -240,6 +291,8 @@ export class ReplayLibraryService {
       basename(archivePath, extname(archivePath))
         .replace(/[^\p{L}\p{N}_-]/gu, '_')
         .slice(0, 60) || 'replays'
+    await mkdir(destinationDir, { recursive: true })
+    await safeReplayPath(destinationDir, destinationDir)
     const outputDir = await mkdtemp(join(resolve(destinationDir), `${stem}-`))
     try {
       for (const entry of entries) {
@@ -256,16 +309,15 @@ export class ReplayLibraryService {
       await rm(outputDir, { recursive: true, force: true })
       throw error
     }
-    return this.scanDirectory(outputDir)
+    const records: ReplayRecord[] = []
+    for (const entry of entries)
+      records.push(await this.indexReplayFile(scope, join(outputDir, ...entry.path.split(/[\\/]/))))
+    return records
   }
 
-  async deleteReplay(filePath: string): Promise<void> {
-    await this.ensureReady()
-    filePath = resolve(filePath)
-    if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
-    const records = await replayDatabase.listReplays()
-    if (!records.some((record) => record.path === filePath))
-      throw new Error('Replay is not indexed')
+  async deleteReplay(scope: ReplayScope, replayId: string): Promise<void> {
+    const record = await this.requireRecord(scope, replayId)
+    const filePath = record.path
     try {
       const fileStat = await lstat(filePath)
       if (!fileStat.isFile()) throw new Error('Replay must be a regular file')

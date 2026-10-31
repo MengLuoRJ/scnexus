@@ -54,5 +54,14 @@
   "ui.warning": "操作警告",
   "ui.modifyDirectory": "修改目录",
   "ui.openDirectory": "打开目录",
-  "ui.logDirectory": "日志目录"
+  "ui.logDirectory": "日志目录",
+  "ui.starCraftDocumentsDir": "星际 II 文档目录",
+  "ui.starCraftProfiles": "星际资料",
+  "ui.recognizeProfiles": "识别星际资料",
+  "ui.useDefaultDirectory": "使用默认目录",
+  "ui.starCraftDocumentsDefault": "正在使用系统文档目录下的 StarCraft II 文件夹。",
+  "ui.starCraftDocumentsCustom": "正在使用自定义 StarCraft II 文件夹。",
+  "ui.starCraftDocumentsHelp": "请选择 StarCraft II 文件夹（其下包含 Accounts）。识别仅读取资料目录，不扫描或索引录像。",
+  "ui.noStarCraftProfiles": "未找到星际资料。请确认目录正确，并已在游戏中创建资料。",
+  "ui.starCraftAccountId": "账号 ID"
 }

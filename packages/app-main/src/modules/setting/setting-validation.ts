@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import {
   LOG_LEVELS,
@@ -7,6 +8,7 @@ import {
 
 export const PREFERENCE_KEYS = [
   'downloadDirectory',
+  'starCraftDocumentsDirectory',
   'displayLanguage',
   'logLevel',
   'telemetryEnabled',
@@ -32,6 +34,11 @@ export function validatePreferencePatch(raw: unknown, complete = false): Record<
   )
     throw new AppError(ERRORS.SETTING_INVALID_VALUE)
   for (const [key, value] of Object.entries(patch)) {
+    if (
+      key === 'starCraftDocumentsDirectory' &&
+      (typeof value !== 'string' || value.includes('\0') || (value !== '' && !isAbsolute(value)))
+    )
+      throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (key === 'logLevel' && !LOG_LEVELS.includes(value as never))
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (key === 'displayLanguage' && !['system', 'zh', 'en', 'zh-Hant'].includes(value as string))

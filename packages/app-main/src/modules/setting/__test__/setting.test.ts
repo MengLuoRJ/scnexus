@@ -76,3 +76,20 @@ test('per-tool auto-approval preferences accept only strict booleans', () => {
       assert.throws(() => validatePreferencePatch({ [key]: value }))
   }
 })
+
+test('StarCraft documents preferences accept the runtime default or absolute directories only', () => {
+  for (const starCraftDocumentsDirectory of ['', 'D:\\StarCraft II'])
+    assert.deepEqual(validatePreferencePatch({ starCraftDocumentsDirectory }), {
+      starCraftDocumentsDirectory,
+    })
+  for (const starCraftDocumentsDirectory of [
+    null,
+    undefined,
+    42,
+    [],
+    'relative',
+    ' ',
+    'D:\\bad\0path',
+  ])
+    assert.throws(() => validatePreferencePatch({ starCraftDocumentsDirectory }), AppError)
+})

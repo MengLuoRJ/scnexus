@@ -10,8 +10,9 @@ const mocks = vi.hoisted(() => ({
     getAnalysis: vi.fn(),
     listDuplicates: vi.fn(),
     exportReplayArchive: vi.fn(),
-    scanDirectory: vi.fn(),
-    indexReplayFile: vi.fn(),
+    scan: vi.fn(),
+    profiles: vi.fn(),
+    importFile: vi.fn(),
     importReplayArchive: vi.fn(),
     deleteReplay: vi.fn(),
   },
@@ -24,6 +25,7 @@ vi.mock('../../../app-main/src/utils/ipc-util', () => ({
   ipcHandle: (channel: string, handler: (...args: unknown[]) => unknown) =>
     mocks.handlers.set(channel, handler),
 }))
+vi.mock('../../../app-main/src/stores/setting', () => ({ settingRepository: { getKey: () => '' } }))
 vi.mock('../../../app-main/src/modules/replay/replay', () => ({
   replayLibraryService: mocks.service,
 }))
@@ -33,94 +35,73 @@ beforeEach(() => {
   vi.clearAllMocks()
   initReplayModule()
 })
-test('registers all replay methods with the trusted ipcHandle adapter', () => {
+const scope = { profileHandle: '1-S2-1-123', category: 'Multiplayer' }
+
+test('registers scoped replay operations without unscoped path operations', () => {
   expect([...mocks.handlers.keys()]).toEqual([
     'replay:choose-export-path',
+    'replay:profiles',
     'replay:analyze',
     'replay:get-analysis',
-    'replay:discover-directories',
     'replay:duplicates',
     'replay:export-archive',
     'replay:list',
-    'replay:scan-directory',
-    'replay:index-file',
+    'replay:scan',
+    'replay:import-file',
     'replay:import-archive',
     'replay:delete',
   ])
-  mocks.handlers.get('replay:list')!()
-  mocks.handlers.get('replay:scan-directory')!('D:\\replays')
-  mocks.handlers.get('replay:index-file')!('D:\\a.SC2Replay')
-  mocks.handlers.get('replay:import-archive')!('D:\\pack.zip', 'D:\\dest')
-  mocks.handlers.get('replay:delete')!('D:\\a.SC2Replay')
-  expect(mocks.service.listStoredReplays).toHaveBeenCalledOnce()
-  expect(mocks.service.scanDirectory).toHaveBeenCalledWith('D:\\replays')
-  expect(mocks.service.indexReplayFile).toHaveBeenCalledWith('D:\\a.SC2Replay')
-  expect(mocks.service.importReplayArchive).toHaveBeenCalledWith('D:\\pack.zip', 'D:\\dest')
-  expect(mocks.service.deleteReplay).toHaveBeenCalledWith('D:\\a.SC2Replay')
+  mocks.handlers.get('replay:scan')!(scope)
+  mocks.handlers.get('replay:import-file')!(scope, 'D:\\a.SC2Replay')
+  mocks.handlers.get('replay:import-archive')!(scope, 'D:\\pack.zip')
+  mocks.handlers.get('replay:delete')!(scope, 'id')
+  expect(mocks.service.scan).toHaveBeenCalledWith(scope)
+  expect(mocks.service.importFile).toHaveBeenCalledWith(scope, 'D:\\a.SC2Replay')
+  expect(mocks.service.importReplayArchive).toHaveBeenCalledWith(scope, 'D:\\pack.zip')
+  expect(mocks.service.deleteReplay).toHaveBeenCalledWith(scope, 'id')
+})
+test.each([
+  undefined,
+  null,
+  42,
+  {},
+  '',
+  { profileHandle: '../escape', category: 'Campaign' },
+  { ...scope, category: 'Unknown' },
+])('rejects malformed scopes: %j', (value) => {
+  for (const channel of [...mocks.handlers.keys()].filter(
+    (key) => !['replay:profiles', 'replay:choose-export-path'].includes(key),
+  ))
+    expect(() => mocks.handlers.get(channel)!(value)).toThrow()
 })
 test.each([undefined, null, 42, {}, '', ' ', 'relative.SC2Replay', 'D:\\bad\0.SC2Replay'])(
-  'rejects malformed paths before service access: %j',
+  'rejects malformed import paths: %j',
   (path) => {
-    for (const channel of ['replay:scan-directory', 'replay:index-file', 'replay:delete']) {
-      expect(() => mocks.handlers.get(channel)!(path)).toThrow(
+    for (const channel of ['replay:import-file', 'replay:import-archive'])
+      expect(() => mocks.handlers.get(channel)!(scope, path)).toThrow(
         expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
       )
-    }
-    expect(() => mocks.handlers.get('replay:import-archive')!(path, 'D:\\dest')).toThrow()
-    expect(() => mocks.handlers.get('replay:import-archive')!('D:\\pack.zip', path)).toThrow()
-    expect(mocks.service.scanDirectory).not.toHaveBeenCalled()
-    expect(mocks.service.indexReplayFile).not.toHaveBeenCalled()
-    expect(mocks.service.importReplayArchive).not.toHaveBeenCalled()
-    expect(mocks.service.deleteReplay).not.toHaveBeenCalled()
   },
 )
-test('export picker uses fixed ZIP options and cancellation returns null without writing', async () => {
-  mocks.saveDialog.mockResolvedValueOnce({ canceled: true })
-  expect(await mocks.handlers.get('replay:choose-export-path')!()).toBeNull()
-  mocks.saveDialog.mockResolvedValueOnce({ canceled: false, filePath: 'D:\\chosen.zip' })
-  expect(await mocks.handlers.get('replay:choose-export-path')!()).toBe('D:\\chosen.zip')
-  expect(mocks.saveDialog).toHaveBeenCalledWith({
-    defaultPath: 'SCNexus-replays.zip',
-    filters: [{ name: 'ZIP', extensions: ['zip'] }],
-  })
-  expect(mocks.service.exportReplayArchive).not.toHaveBeenCalled()
-})
-
-test('validates analysis record identifiers before service access', () => {
-  for (const id of [undefined, null, 42, '', 'a'.repeat(101)]) {
-    for (const channel of ['replay:analyze', 'replay:get-analysis']) {
-      expect(() => mocks.handlers.get(channel)!(id)).toThrow(
-        expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
-      )
-    }
-  }
-  mocks.handlers.get('replay:analyze')!('id')
-  mocks.handlers.get('replay:get-analysis')!('id')
-  expect(mocks.service.analyzeReplay).toHaveBeenCalledWith('id')
-  expect(mocks.service.getAnalysis).toHaveBeenCalledWith('id')
-})
-
-test('validates export selection and destination before service access', () => {
+test('validates identifiers and export selections', () => {
+  for (const id of [undefined, null, 42, '', 'a'.repeat(101)])
+    for (const channel of ['replay:delete', 'replay:analyze', 'replay:get-analysis'])
+      expect(() => mocks.handlers.get(channel)!(scope, id)).toThrow()
   for (const ids of [
     [],
     null,
     ['id', 'id'],
     [42],
     Array.from({ length: 2001 }, (_, i) => String(i)),
-  ]) {
-    expect(() => mocks.handlers.get('replay:export-archive')!(ids, 'D:\\out.zip')).toThrow(
-      expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
-    )
-  }
-  expect(() => mocks.handlers.get('replay:export-archive')!(['id'], 'D:\\out.txt')).toThrow(
-    expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
-  )
-  mocks.handlers.get('replay:export-archive')!(['id'], 'D:\\out.zip')
-  expect(mocks.service.exportReplayArchive).toHaveBeenCalledWith(['id'], 'D:\\out.zip')
+  ])
+    expect(() => mocks.handlers.get('replay:export-archive')!(scope, ids, 'D:\\out.zip')).toThrow()
+  expect(() => mocks.handlers.get('replay:export-archive')!(scope, ['id'], 'D:\\out.txt')).toThrow()
+  mocks.handlers.get('replay:export-archive')!(scope, ['id'], 'D:\\out.zip')
+  expect(mocks.service.exportReplayArchive).toHaveBeenCalledWith(scope, ['id'], 'D:\\out.zip')
 })
-
-test('rejects incorrect file suffixes', () => {
-  expect(() => mocks.handlers.get('replay:index-file')!('D:\\file.txt')).toThrow()
-  expect(() => mocks.handlers.get('replay:delete')!('D:\\file.zip')).toThrow()
-  expect(() => mocks.handlers.get('replay:import-archive')!('D:\\file.exe', 'D:\\dest')).toThrow()
+test('export picker uses fixed ZIP options and cancellation returns null', async () => {
+  mocks.saveDialog.mockResolvedValueOnce({ canceled: true })
+  expect(await mocks.handlers.get('replay:choose-export-path')!()).toBeNull()
+  mocks.saveDialog.mockResolvedValueOnce({ canceled: false, filePath: 'D:\\chosen.zip' })
+  expect(await mocks.handlers.get('replay:choose-export-path')!()).toBe('D:\\chosen.zip')
 })

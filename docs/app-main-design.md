@@ -102,6 +102,8 @@ _schemaVersion、_revision 是存储管理字段，不属于用户偏好。lastU
 
 显示语言存储“选择策略”和运行时“有效语言”分离：system 按系统首选语言顺序匹配 zh-CN、en-US、zh-TW，英文变体归入 en-US，繁体中文变体归入 zh-TW，简体中文归入 zh-CN；无法匹配时回退 zh-CN。显式选择不被系统语言覆盖。renderer 从 setting 快照获得有效语言并设置 Vue I18n，不独立保存另一份语言偏好。
 
+星际资料目录设置 `starCraftDocumentsDirectory` 为顶层字符串字段，默认空字符串表示运行时系统文档目录下的 `StarCraft II` 文件夹；设置快照通过 `effectiveStarCraftDocumentsDirectory` 返回实际路径。自定义值必须为不含 NUL 的绝对目录路径，保存时校验目录存在且为目录。schema 8 迁移为旧配置补充空字符串，保留其他偏好。设置中心使用原生目录选择器保存或恢复默认目录，仅在用户点击“识别星际资料”时读取资料目录；以全球唯一 handle 为主标识，账号 ID 为辅助信息，不创建资料、不扫描、索引或监听录像。
+
 setting 业务字段全部采用顶层结构，不增加 preferences 包装层。字段层级不承担权限划分：设置快照只读返回，用户可修改字段明确限定为 downloadDirectory、displayLanguage、logLevel、telemetryEnabled；clientId、lastUpdatedAt、_schemaVersion、_revision 由 main 维护。下载目录、语言、日志及遥测修改统一走 setting 业务入口；涉及运行时副作用的字段不可绕过协调流程直接提交 Store。默认 false 不等于已授权，旧配置没有明确授权也按关闭处理。
 
 ### 两种入口，共用业务服务

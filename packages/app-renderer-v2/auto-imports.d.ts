@@ -210,9 +210,12 @@ declare global {
   const ipcReplayExportArchive: typeof import('./src/ipcs/replay').ipcReplayExportArchive
   const ipcReplayGetAnalysis: typeof import('./src/ipcs/replay').ipcReplayGetAnalysis
   const ipcReplayImportArchive: typeof import('./src/ipcs/replay').ipcReplayImportArchive
+  const ipcReplayImportFile: typeof import('./src/ipcs/replay').ipcReplayImportFile
   const ipcReplayIndexFile: typeof import('./src/ipcs/replay').ipcReplayIndexFile
   const ipcReplayList: typeof import('./src/ipcs/replay').ipcReplayList
   const ipcReplayListDuplicates: typeof import('./src/ipcs/replay').ipcReplayListDuplicates
+  const ipcReplayProfiles: typeof import('./src/ipcs/replay').ipcReplayProfiles
+  const ipcReplayScan: typeof import('./src/ipcs/replay').ipcReplayScan
   const ipcReplayScanDirectory: typeof import('./src/ipcs/replay').ipcReplayScanDirectory
   const ipcSettingGetKey: typeof import('./src/ipcs/setting').ipcSettingGetKey
   const ipcSettingGetSnapshot: typeof import('./src/ipcs/setting').ipcSettingGetSnapshot
@@ -505,14 +508,14 @@ declare module 'vue' {
     readonly ipcReplayAnalyze: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayAnalyze']>
     readonly ipcReplayChooseExportPath: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayChooseExportPath']>
     readonly ipcReplayDelete: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayDelete']>
-    readonly ipcReplayDiscoverDirectories: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayDiscoverDirectories']>
     readonly ipcReplayExportArchive: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayExportArchive']>
     readonly ipcReplayGetAnalysis: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayGetAnalysis']>
     readonly ipcReplayImportArchive: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayImportArchive']>
-    readonly ipcReplayIndexFile: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayIndexFile']>
+    readonly ipcReplayImportFile: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayImportFile']>
     readonly ipcReplayList: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayList']>
     readonly ipcReplayListDuplicates: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayListDuplicates']>
-    readonly ipcReplayScanDirectory: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayScanDirectory']>
+    readonly ipcReplayProfiles: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayProfiles']>
+    readonly ipcReplayScan: UnwrapRef<typeof import('./src/ipcs/replay')['ipcReplayScan']>
     readonly ipcSettingGetKey: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingGetKey']>
     readonly ipcSettingGetSnapshot: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingGetSnapshot']>
     readonly ipcSettingOnChanged: UnwrapRef<typeof import('./src/ipcs/setting')['ipcSettingOnChanged']>

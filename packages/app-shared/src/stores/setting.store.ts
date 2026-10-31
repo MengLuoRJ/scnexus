@@ -8,6 +8,7 @@ export type SettingData = {
   lastUpdatedAt: number | null
   _lastConfirmedVersion: string | null
   downloadDirectory: string
+  starCraftDocumentsDirectory: string
   displayLanguage: DisplayLanguage
   logLevel: LogLevel
   telemetryEnabled: boolean

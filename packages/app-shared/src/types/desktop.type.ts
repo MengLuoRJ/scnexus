@@ -7,6 +7,7 @@ export type DisplayLanguage = 'system' | 'zh' | 'en' | 'zh-Hant'
 export type SettingPreferences = Pick<
   SettingData,
   | 'downloadDirectory'
+  | 'starCraftDocumentsDirectory'
   | 'displayLanguage'
   | 'logLevel'
   | 'telemetryEnabled'
@@ -40,6 +41,7 @@ export type LogInput = {
   taskId?: string
 }
 export type SettingSnapshot = SettingData & {
+  effectiveStarCraftDocumentsDirectory: string
   effectiveLanguage: Exclude<DisplayLanguage, 'system'>
 }
 

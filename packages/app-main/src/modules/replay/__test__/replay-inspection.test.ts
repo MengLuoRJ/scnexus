@@ -1,5 +1,4 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createMpq, openMpq } from '../../../utils/mpq'
@@ -7,7 +6,7 @@ import { inspectLocalReplay } from '../replay-inspection'
 
 let directory: string
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'scnexus-replay-mpq-'))
+  directory = await mkdtemp(join(process.cwd(), 'scnexus-replay-mpq-'))
 })
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true })

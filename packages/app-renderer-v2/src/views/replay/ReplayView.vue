@@ -1,24 +1,25 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
 import type {
   ReplayRecord,
-  ReplayDirectory,
-  ReplayDuplicateGroup,
+  StarCraftProfile,
+  ReplayScope,
+  ReplayCategory,
   ReplayAnalysis,
 } from '@scnexus/app-shared/types/replay.type'
 import ReplayAnalysisDialog from './ReplayAnalysisDialog.vue'
+import { replayPlayerName, replayResultClass } from './display'
 import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
 import {
-  ipcReplayList,
-  ipcReplayScanDirectory,
-  ipcReplayIndexFile,
+  ipcReplayScan,
+  ipcReplayImportFile,
   ipcReplayImportArchive,
   ipcReplayDelete,
   ipcDialogShowOpenDialog,
-  ipcReplayDiscoverDirectories,
-  ipcReplayListDuplicates,
+  ipcReplayProfiles,
+  ipcSettingOnChanged,
   ipcReplayChooseExportPath,
   ipcReplayExportArchive,
   ipcReplayAnalyze,
@@ -35,9 +36,11 @@ function playedAtLabel(record: ReplayRecord) {
 function playersLabel(record: ReplayRecord) {
   return record.players.length
     ? record.players
-        .map(
-          (player) =>
-            `${player.name ?? t('replay.unknown')} · ${raceLabel(player.race)} · ${player.result ? t(`replay.result.${player.result}`) : t('replay.unknown')}`,
+        .map((player) =>
+          t('replay.playerRace', {
+            name: replayPlayerName(player.name, t('replay.unknown')),
+            race: raceLabel(player.race),
+          }),
         )
         .join(' / ')
     : t('replay.unknown')
@@ -54,15 +57,57 @@ const records = shallowRef<ReplayRecord[]>([])
 const search = ref('')
 const busy = ref(false)
 const loaded = ref(false)
-const directories = shallowRef<ReplayDirectory[]>([])
-const directoriesLoaded = ref(false)
-const duplicates = shallowRef<ReplayDuplicateGroup[]>([])
-const duplicatesLoaded = ref(false)
-const duplicatesOnly = ref(false)
-const selected = ref<string[]>([])
-const duplicateIds = computed(
-  () => new Set(duplicates.value.flatMap((group) => group.replays.map((record) => record.id))),
+const profilesLoaded = ref(false)
+let settingsGeneration = 0
+const profiles = shallowRef<StarCraftProfile[]>([])
+const profileHandle = ref('')
+const category = ref<ReplayCategory>('Multiplayer')
+const scope = computed<ReplayScope | null>(() =>
+  profileHandle.value ? { profileHandle: profileHandle.value, category: category.value } : null,
 )
+const profileItems = computed(() =>
+  profiles.value.map((profile) => ({ label: profile.handle, value: profile.handle })),
+)
+const categoryItems = computed(() =>
+  ['Multiplayer', 'Campaign', 'Challenge'].map((value) => ({
+    label: t(`replay.category.${value}`),
+    value,
+  })),
+)
+let generation = 0
+function clearScope() {
+  generation++
+  records.value = []
+  loaded.value = false
+  selected.value = []
+  search.value = ''
+  exportMode.value = false
+  analysisTarget.value = null
+  deleteTarget.value = null
+}
+function requireScope(): ReplayScope {
+  if (!scope.value) throw new Error(t('replay.chooseProfile'))
+  return { ...scope.value }
+}
+const exportMode = ref(false)
+const selected = ref<string[]>([])
+const importItems = computed(() => [
+  { label: t('replay.index'), disabled: busy.value || !scope.value, onSelect: () => indexFile() },
+  {
+    label: t('replay.import'),
+    disabled: busy.value || !scope.value,
+    onSelect: () => importArchive(),
+  },
+])
+function toggleExportMode() {
+  if (busy.value || !scope.value) return
+  exportMode.value = !exportMode.value
+  selected.value = []
+}
+function selectVisible() {
+  if (!exportMode.value || busy.value || !scope.value) return
+  selected.value = [...new Set([...selected.value, ...filtered.value.map((record) => record.id)])]
+}
 const analysisTarget = shallowRef<ReplayRecord | null>(null)
 const analysis = shallowRef<ReplayAnalysis | null>(null)
 const analysisLoaded = ref(false)
@@ -76,15 +121,13 @@ const deleteOpen = computed({
 })
 const filtered = computed(() => {
   const query = search.value.trim().toLocaleLowerCase()
-  return records.value.filter(
-    (record) =>
-      (!duplicatesOnly.value || duplicateIds.value.has(record.id)) &&
-      [
-        record.fileName,
-        record.path,
-        record.mapName,
-        ...record.players.map((player) => player.name),
-      ].some((value) => value?.toLocaleLowerCase().includes(query)),
+  return records.value.filter((record) =>
+    [
+      record.fileName,
+      record.path,
+      record.mapName,
+      ...record.players.map((player) => replayPlayerName(player.name, t('replay.unknown'))),
+    ].some((value) => value?.toLocaleLowerCase().includes(query)),
   )
 })
 function unwrap<T>(result: IpcResult<T>): T {
@@ -92,17 +135,44 @@ function unwrap<T>(result: IpcResult<T>): T {
   return result.data
 }
 async function refresh() {
-  records.value = unwrap(await ipcReplayList())
+  const current = requireScope()
+  const token = generation
+  const result = unwrap(await ipcReplayScan(current))
+  if (token !== generation) return
+  records.value = result
   selected.value = selected.value.filter((id) => records.value.some((record) => record.id === id))
-  if (duplicatesLoaded.value) duplicates.value = unwrap(await ipcReplayListDuplicates())
   loaded.value = true
+}
+async function loadProfiles() {
+  const token = generation
+  const result = unwrap(await ipcReplayProfiles())
+  if (token !== generation) return
+  profiles.value = result
+  profilesLoaded.value = true
+  if (!result.some((profile) => profile.handle === profileHandle.value)) {
+    profileHandle.value = ''
+    clearScope()
+  }
+}
+function changeProfile(value: string) {
+  if (busy.value) return
+  clearScope()
+  profileHandle.value = value
+  if (value) return run(refresh)
+}
+function changeCategory(value: ReplayCategory) {
+  if (busy.value) return
+  clearScope()
+  category.value = value
+  if (scope.value) return run(refresh)
 }
 async function run(action: () => Promise<boolean | void>) {
   if (busy.value) return
   busy.value = true
+  const token = generation
   try {
     const changed = await action()
-    if (changed) {
+    if (changed && token === generation) {
       await refresh()
       toast.add({ title: t('replay.success'), color: 'success' })
     }
@@ -114,58 +184,44 @@ async function run(action: () => Promise<boolean | void>) {
     })
   } finally {
     busy.value = false
+    if (settingsGeneration) {
+      settingsGeneration = 0
+      void run(loadProfiles)
+    }
   }
 }
-async function pick(kind: 'directory' | 'replay' | 'archive', title?: string) {
+async function pick(kind: 'replay' | 'archive') {
   const result = unwrap(
     await ipcDialogShowOpenDialog({
-      title:
-        title ??
-        t(
-          kind === 'directory'
-            ? 'replay.scan'
-            : kind === 'replay'
-              ? 'replay.index'
-              : 'replay.import',
-        ),
-      properties: [kind === 'directory' ? 'openDirectory' : 'openFile'],
-      ...(kind === 'directory'
-        ? {}
-        : {
-            filters: [
-              {
-                name: t(kind === 'replay' ? 'replay.title' : 'replay.archive'),
-                extensions: kind === 'replay' ? ['SC2Replay'] : ['zip', '7z', 'rar'],
-              },
-            ],
-          }),
+      title: t(kind === 'replay' ? 'replay.index' : 'replay.import'),
+      properties: ['openFile'],
+      filters: [
+        {
+          name: t(kind === 'replay' ? 'replay.title' : 'replay.archive'),
+          extensions: kind === 'replay' ? ['SC2Replay'] : ['zip', '7z', 'rar'],
+        },
+      ],
     }),
   )
   return result.canceled ? undefined : result.filePaths[0]
 }
-function scan() {
-  return run(async () => {
-    const path = await pick('directory')
-    if (!path) return false
-    unwrap(await ipcReplayScanDirectory(path))
-    return true
-  })
-}
 function indexFile() {
   return run(async () => {
+    const current = requireScope()
+    const token = generation
     const path = await pick('replay')
-    if (!path) return false
-    unwrap(await ipcReplayIndexFile(path))
+    if (!path || token !== generation) return false
+    unwrap(await ipcReplayImportFile(current, path))
     return true
   })
 }
 function importArchive() {
   return run(async () => {
+    const current = requireScope()
+    const token = generation
     const archive = await pick('archive')
-    if (!archive) return false
-    const destination = await pick('directory', t('replay.destination'))
-    if (!destination) return false
-    unwrap(await ipcReplayImportArchive(archive, destination))
+    if (!archive || token !== generation) return false
+    unwrap(await ipcReplayImportArchive(current, archive))
     return true
   })
 }
@@ -176,32 +232,13 @@ function requestDelete(record: ReplayRecord) {
 function confirmDelete() {
   return run(async () => {
     if (!deleteTarget.value) return false
-    unwrap(await ipcReplayDelete(deleteTarget.value.path))
+    unwrap(await ipcReplayDelete(requireScope(), deleteTarget.value.id))
     deleteTarget.value = null
     return true
   })
 }
-function discoverDirectories() {
-  return run(async () => {
-    directories.value = unwrap(await ipcReplayDiscoverDirectories())
-    directoriesLoaded.value = true
-  })
-}
-function scanCandidate(path: string) {
-  return run(async () => {
-    unwrap(await ipcReplayScanDirectory(path))
-    return true
-  })
-}
-function showDuplicates() {
-  return run(async () => {
-    const result = unwrap(await ipcReplayListDuplicates())
-    duplicates.value = result
-    duplicatesLoaded.value = true
-    duplicatesOnly.value = !duplicatesOnly.value
-  })
-}
 function selectRecord(id: string, checked: boolean | 'indeterminate') {
+  if (!exportMode.value || busy.value || !scope.value) return
   selected.value =
     checked === true
       ? [...selected.value.filter((value) => value !== id), id]
@@ -209,10 +246,13 @@ function selectRecord(id: string, checked: boolean | 'indeterminate') {
 }
 function exportSelected() {
   return run(async () => {
-    if (!selected.value.length) return
+    if (!exportMode.value || !selected.value.length || selected.value.length > 2000) return
+    const current = requireScope()
+    const ids = [...selected.value]
+    const token = generation
     const path = unwrap(await ipcReplayChooseExportPath())
-    if (!path) return
-    const result = unwrap(await ipcReplayExportArchive([...selected.value], path))
+    if (!path || token !== generation) return
+    const result = unwrap(await ipcReplayExportArchive(current, ids, path))
     toast.add({
       title: t('replay.exportSuccess', { count: result.count }),
       description: result.path,
@@ -222,14 +262,19 @@ function exportSelected() {
 }
 function showAnalysis(record: ReplayRecord) {
   return run(async () => {
+    const current = requireScope()
+    const token = generation
     analysisTarget.value = record
     analysis.value = null
     analysisLoaded.value = false
     analysisError.value = ''
     try {
-      analysis.value = unwrap(await ipcReplayGetAnalysis(record.id))
+      const result = unwrap(await ipcReplayGetAnalysis(current, record.id))
+      if (token !== generation) return
+      analysis.value = result
       analysisLoaded.value = true
     } catch (error) {
+      if (token !== generation) return
       analysisError.value = error instanceof Error ? error.message : String(error)
       throw error
     }
@@ -237,66 +282,108 @@ function showAnalysis(record: ReplayRecord) {
 }
 function analyze(record: ReplayRecord) {
   return run(async () => {
+    const current = requireScope()
+    const token = generation
     analysisTarget.value = record
     analysis.value = null
     analysisLoaded.value = false
     analysisError.value = ''
     try {
-      analysis.value = unwrap(await ipcReplayAnalyze(record.id))
+      const result = unwrap(await ipcReplayAnalyze(current, record.id))
+      if (token !== generation) return
+      analysis.value = result
       analysisLoaded.value = true
       toast.add({ title: t('replay.analysisSaved'), color: 'success' })
     } catch (error) {
+      if (token !== generation) return
       analysisError.value = error instanceof Error ? error.message : String(error)
       throw error
     }
   })
 }
-onMounted(() => run(refresh))
+let stopSettings: (() => void) | undefined
+let previousDocumentsDirectory: string | undefined
+onMounted(() => {
+  void run(loadProfiles)
+  if (window.scnexus)
+    stopSettings = ipcSettingOnChanged((snapshot) => {
+      const directory = snapshot.effectiveStarCraftDocumentsDirectory
+      if (directory === previousDocumentsDirectory) return
+      previousDocumentsDirectory = directory
+      clearScope()
+      profiles.value = []
+      profilesLoaded.value = false
+      profileHandle.value = ''
+      if (busy.value) settingsGeneration++
+      else void run(loadProfiles)
+    })
+})
+onUnmounted(() => {
+  generation++
+  stopSettings?.()
+})
 </script>
 
 <template>
   <section class="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-4" :aria-busy="busy">
     <div class="flex shrink-0 items-center justify-between gap-2">
       <h1 class="text-lg font-semibold">{{ t('replay.title') }}</h1>
-      <UButton
-        :disabled="busy"
-        variant="ghost"
-        icon="i-tabler-refresh"
-        :label="t('replay.refresh')"
-        @click="run(refresh)" />
+      <div class="flex shrink-0 items-center gap-2">
+        <UButton
+          :disabled="busy || !scope"
+          variant="ghost"
+          icon="i-tabler-refresh"
+          :label="t('replay.refresh')"
+          @click="run(refresh)" />
+        <UDropdownMenu :items="importItems">
+          <UButton
+            :disabled="busy || !scope"
+            variant="outline"
+            trailing-icon="i-tabler-chevron-down"
+            :label="t('replay.importMenu')" />
+        </UDropdownMenu>
+        <UButton
+          :disabled="busy || !scope"
+          :variant="exportMode ? 'solid' : 'outline'"
+          :aria-pressed="exportMode"
+          :label="t(exportMode ? 'replay.cancel' : 'replay.multiExport')"
+          @click="toggleExportMode" />
+      </div>
     </div>
-    <p class="shrink-0 text-sm text-muted">{{ t('replay.description') }}</p>
     <div class="flex shrink-0 items-center gap-2">
-      <UButton :disabled="busy" :label="t('replay.scan')" @click="scan" />
-      <UButton :disabled="busy" variant="outline" :label="t('replay.index')" @click="indexFile" />
-      <UButton
-        :disabled="busy"
-        variant="outline"
-        :label="t('replay.import')"
-        @click="importArchive" />
+      <USelect
+        class="min-w-0 flex-1"
+        :disabled="busy || !profiles.length"
+        :items="profileItems"
+        :model-value="profileHandle || undefined"
+        :placeholder="t('replay.chooseProfile')"
+        :aria-label="t('replay.profile')"
+        @update:model-value="changeProfile($event as string)" />
+      <USelect
+        class="w-36 shrink-0"
+        :disabled="busy || !profileHandle"
+        :items="categoryItems"
+        :model-value="category"
+        :aria-label="t('replay.categoryLabel')"
+        @update:model-value="changeCategory($event as ReplayCategory)" />
     </div>
-    <div class="flex shrink-0 items-center gap-2">
-      <UButton
-        :disabled="busy"
-        variant="outline"
-        :label="t('replay.discover')"
-        @click="discoverDirectories" />
-      <UButton
-        :disabled="busy"
-        :variant="duplicatesOnly ? 'solid' : 'outline'"
-        :label="t(duplicatesOnly ? 'replay.showAll' : 'replay.duplicates')"
-        @click="showDuplicates" />
+    <div v-if="exportMode" class="flex shrink-0 items-center gap-2">
       <span class="text-xs text-muted">{{ t('replay.selected', { count: selected.length }) }}</span>
       <UButton
-        :disabled="busy || !selected.length || selected.length > 2000"
-        variant="outline"
-        :label="t('replay.export')"
-        @click="exportSelected" />
+        :disabled="busy || !scope || !filtered.length"
+        variant="ghost"
+        :label="t('replay.selectVisible')"
+        @click="selectVisible" />
       <UButton
-        :disabled="busy || !selected.length"
+        :disabled="busy || !scope || !selected.length"
         variant="ghost"
         :label="t('replay.clearSelection')"
         @click="selected = []" />
+      <UButton
+        :disabled="busy || !scope || !selected.length || selected.length > 2000"
+        variant="outline"
+        :label="t('replay.export')"
+        @click="exportSelected" />
     </div>
     <UInput
       v-model="search"
@@ -306,28 +393,13 @@ onMounted(() => run(refresh))
       :aria-label="t('replay.search')" />
     <p v-if="busy" role="status" class="text-sm text-muted">{{ t('replay.busy') }}</p>
     <div class="min-h-0 flex-1 space-y-3 overflow-y-auto">
-      <section
-        v-if="directoriesLoaded"
-        class="space-y-2 rounded-lg border border-default p-3"
-        :aria-label="t('replay.candidates')">
-        <h2 class="text-sm font-medium">{{ t('replay.candidates') }}</h2>
-        <p class="text-xs text-muted">{{ t('replay.candidatesNotice') }}</p>
-        <p v-if="!directories.length" class="text-sm text-muted">{{ t('replay.noDirectories') }}</p>
-        <div v-for="directory in directories" :key="directory.path" class="flex items-center gap-2">
-          <p class="min-w-0 flex-1 break-all text-xs">{{ directory.path }}</p>
-          <UButton
-            :disabled="busy"
-            size="xs"
-            variant="outline"
-            :label="t('replay.scanCandidate')"
-            @click="scanCandidate(directory.path)" />
-        </div>
-      </section>
-      <p v-if="duplicatesLoaded" class="text-xs text-muted">
-        {{ t('replay.duplicateSummary', { count: duplicates.length }) }}
-        {{ t('replay.duplicateNotice') }}
+      <p v-if="profilesLoaded && !profiles.length && !busy" class="text-sm text-muted">
+        {{ t('replay.noProfiles') }}
+        <RouterLink to="/settings" class="text-primary underline">
+          {{ t('replay.openSettings') }}
+        </RouterLink>
       </p>
-      <p class="text-xs text-muted">{{ t('replay.exportNotice') }}</p>
+      <p v-else-if="!scope" class="text-sm text-muted">{{ t('replay.chooseProfile') }}</p>
       <p v-if="loaded && !filtered.length" class="py-12 text-center text-muted">
         {{ t(records.length ? 'replay.noMatches' : 'replay.empty') }}
       </p>
@@ -336,41 +408,57 @@ onMounted(() => run(refresh))
         :key="record.id"
         class="flex min-w-0 items-center gap-3 rounded-lg border border-default px-3 py-2">
         <UCheckbox
-          :disabled="busy"
+          v-if="exportMode"
+          :disabled="busy || !scope"
           :model-value="selected.includes(record.id)"
           :aria-label="t('replay.selectRecord', { name: record.fileName })"
           @update:model-value="selectRecord(record.id, $event)" />
-        <div class="min-w-0 flex-1">
-          <div class="flex min-w-0 items-center gap-2 text-sm leading-5">
-            <h2
-              class="min-w-0 flex-1 truncate font-medium"
-              :title="record.mapName ?? t('replay.unknown')">
-              {{ record.mapName ?? t('replay.unknown') }}
-            </h2>
-            <UBadge
-              v-if="duplicateIds.has(record.id)"
-              class="shrink-0"
-              color="neutral"
-              variant="subtle">
-              {{ t('replay.duplicate') }}
-            </UBadge>
+        <div
+          class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] grid-rows-2 items-center gap-x-3 text-sm leading-5">
+          <h2 class="min-w-0 truncate font-medium" :title="record.mapName ?? t('replay.unknown')">
+            {{ record.mapName ?? t('replay.unknown') }}
+          </h2>
+          <div
+            class="min-w-0 truncate text-right text-xs"
+            :title="
+              record.players
+                .map(
+                  (player) =>
+                    `${replayPlayerName(player.name, t('replay.unknown'))}: ${player.result ? t(`replay.result.${player.result}`) : t('replay.unknown')}`,
+                )
+                .join(' / ')
+            "
+            :aria-label="t('replay.result')">
+            <template v-if="record.players.length">
+              <template v-for="(player, index) in record.players" :key="player.slot">
+                <span v-if="index" class="text-muted">/</span>
+                <span :class="replayResultClass(player.result)">
+                  {{ replayPlayerName(player.name, t('replay.unknown')) }}:
+                  {{ player.result ? t(`replay.result.${player.result}`) : t('replay.unknown') }}
+                </span>
+              </template>
+            </template>
+            <span v-else class="text-muted">{{ t('replay.unknown') }}</span>
+          </div>
+          <p class="min-w-0 truncate text-xs text-muted" :title="playersLabel(record)">
+            {{ playersLabel(record) }}
+          </p>
+          <div class="flex min-w-0 items-center justify-end gap-2">
             <time
-              class="shrink-0 whitespace-nowrap text-xs text-muted"
+              class="min-w-0 truncate text-xs text-muted"
+              :title="playedAtLabel(record)"
               :datetime="record.playedAt ?? undefined">
               {{ playedAtLabel(record) }}
             </time>
+            <UButton
+              :disabled="busy"
+              class="shrink-0"
+              size="xs"
+              variant="ghost"
+              :label="t('replay.details')"
+              @click="showAnalysis(record)" />
           </div>
-          <p class="truncate text-xs leading-5 text-muted" :title="playersLabel(record)">
-            {{ playersLabel(record) }}
-          </p>
         </div>
-        <UButton
-          :disabled="busy"
-          class="shrink-0"
-          size="xs"
-          variant="ghost"
-          :label="t('replay.details')"
-          @click="showAnalysis(record)" />
       </article>
     </div>
     <ReplayAnalysisDialog

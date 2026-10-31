@@ -6,6 +6,8 @@ import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.err
 import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import ReplayView from '../ReplayView.vue'
 import en from '../../../locales/en'
+import zh from '../../../locales/zh'
+import zhHant from '../../../locales/zh-Hant'
 
 const mocks = vi.hoisted(() => ({
   list: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
@@ -24,20 +26,29 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('../../../ipcs', () => ({
-  ipcReplayList: mocks.list,
-  ipcReplayScanDirectory: mocks.scan,
-  ipcReplayIndexFile: mocks.index,
+  ipcReplayList: mocks.scan,
+  ipcReplayScan: mocks.scan,
+  ipcReplayImportFile: mocks.index,
   ipcReplayImportArchive: mocks.archive,
   ipcReplayDelete: mocks.delete,
   ipcDialogShowOpenDialog: mocks.pick,
-  ipcReplayDiscoverDirectories: mocks.discover,
+  ipcReplayProfiles: mocks.discover,
   ipcReplayListDuplicates: mocks.duplicates,
   ipcReplayChooseExportPath: mocks.chooseExport,
   ipcReplayExportArchive: mocks.export,
   ipcReplayAnalyze: mocks.analyze,
   ipcReplayGetAnalysis: mocks.getAnalysis,
 }))
+const scope = { profileHandle: '5-S2-1-2206060', category: 'Multiplayer' as const }
+const profile = {
+  accountId: '197562485',
+  handle: scope.profileHandle,
+  path: 'D:\\SC2\\Accounts\\197562485\\5-S2-1-2206060',
+  replayPath: 'D:\\SC2\\Accounts\\197562485\\5-S2-1-2206060\\Replays',
+}
 const record: ReplayRecord = {
+  profileHandle: scope.profileHandle,
+  category: scope.category,
   id: '1',
   path: 'D:\\replays\\sample.SC2Replay',
   fileName: 'sample.SC2Replay',
@@ -72,13 +83,25 @@ const modal = defineComponent({
     '<div v-if="open" role="dialog"><h2>{{ title }}</h2><p>{{ description }}</p><slot name="body"/><slot name="footer"/></div>',
 })
 const wrappers: ReturnType<typeof mount>[] = []
-async function render() {
+async function render(selectProfile = true, locale = 'en') {
   const wrapper = mount(ReplayView, {
     global: {
-      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })],
+      plugins: [createI18n({ legacy: false, locale, messages: { en, zh, 'zh-Hant': zhHant } })],
       stubs: {
         Button: button,
+        DropdownMenu: defineComponent({
+          props: ['items'],
+          data: () => ({ open: false }),
+          template: `<div><div @click="open = !open"><slot /></div><div v-if="open" role="menu"><button v-for="item in items" :key="item.label" :disabled="item.disabled" @click="item.onSelect(); open = false">{{ item.label }}</button></div></div>`,
+        }),
         Input: input,
+        Select: defineComponent({
+          props: ['modelValue', 'items', 'disabled'],
+          emits: ['update:modelValue'],
+          template:
+            '<select :disabled="disabled" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option value=""></option><option v-for="item in items" :key="item.value" :value="item.value">{{ item.label }}</option></select>',
+        }),
+        RouterLink: { template: '<a><slot /></a>' },
         Modal: modal,
         Badge: { template: '<span><slot /></span>' },
         Checkbox: defineComponent({
@@ -92,6 +115,10 @@ async function render() {
   })
   wrappers.push(wrapper)
   await flushPromises()
+  if (selectProfile) {
+    await wrapper.findAll('select')[0]!.setValue(scope.profileHandle)
+    await flushPromises()
+  }
   return wrapper
 }
 async function click(wrapper: ReturnType<typeof mount>, label: string) {
@@ -103,11 +130,11 @@ async function click(wrapper: ReturnType<typeof mount>, label: string) {
 }
 beforeEach(() => {
   vi.resetAllMocks()
-  mocks.list.mockResolvedValue({ ok: true, data: [record] })
-  for (const method of [mocks.scan, mocks.index, mocks.archive, mocks.delete])
+  mocks.scan.mockResolvedValue({ ok: true, data: [record] })
+  for (const method of [mocks.index, mocks.archive, mocks.delete])
     method.mockResolvedValue({ ok: true, data: [] })
   mocks.pick.mockResolvedValue({ ok: true, data: { canceled: true, filePaths: [] } })
-  mocks.discover.mockResolvedValue({ ok: true, data: [] })
+  mocks.discover.mockResolvedValue({ ok: true, data: [profile] })
   mocks.duplicates.mockResolvedValue({ ok: true, data: [] })
   mocks.chooseExport.mockResolvedValue({ ok: true, data: null })
   mocks.getAnalysis.mockResolvedValue({ ok: true, data: null })
@@ -116,7 +143,7 @@ afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
 
 test('loads indexed records, exposes partial metadata honestly and filters search', async () => {
   const wrapper = await render()
-  expect(mocks.list).toHaveBeenCalledOnce()
+  expect(mocks.scan).toHaveBeenCalledOnce()
   expect(wrapper.get('article').text()).toContain('Test map')
   expect(
     wrapper
@@ -136,10 +163,10 @@ test('loads indexed records, exposes partial metadata honestly and filters searc
   await wrapper.get('input').setValue('not present')
   expect(wrapper.text()).toContain('No matching replays.')
   expect(wrapper.findAll('article')).toHaveLength(0)
-  expect(mocks.scan).not.toHaveBeenCalled()
+  expect(mocks.scan).toHaveBeenCalledExactlyOnceWith(scope)
 })
 test('shows player metadata and base build as escaped text, preserving unknown values', async () => {
-  mocks.list.mockResolvedValueOnce({
+  mocks.scan.mockResolvedValueOnce({
     ok: true,
     data: [
       {
@@ -158,7 +185,7 @@ test('shows player metadata and base build as escaped text, preserving unknown v
   const article = wrapper.get('article')
   expect(article.text()).not.toContain('Base build: 97364')
   expect(article.get('p').attributes('title')).toContain(
-    '<b>SC2 player</b> · Terran · Win / Opponent · Zerg · Loss / Ally · Protoss · Draw / Unknown · Unknown · Unknown',
+    '<b>SC2 player</b> (Terran) / Opponent (Zerg) / Ally (Protoss) / Unknown (Unknown)',
   )
   await click(wrapper, 'Details')
   const dialog = wrapper.get('[role="dialog"]')
@@ -166,14 +193,14 @@ test('shows player metadata and base build as escaped text, preserving unknown v
   expect(article.text()).toContain('<b>SC2 player</b>')
   expect(article.find('b').exists()).toBe(false)
   const players = dialog.findAll('li')
-  expect(players[0]!.text()).toContain('Race: Terran')
+  expect(players[0]!.text()).toContain('(Terran)')
   expect(players[0]!.text()).toContain('Team: 1')
   expect(players[0]!.text()).toContain('Result: Win')
-  expect(players[1]!.text()).toContain('Race: Zerg')
+  expect(players[1]!.text()).toContain('(Zerg)')
   expect(players[1]!.text()).toContain('Result: Loss')
-  expect(players[2]!.text()).toContain('Race: Protoss')
+  expect(players[2]!.text()).toContain('(Protoss)')
   expect(players[2]!.text()).toContain('Result: Draw')
-  expect(players[3]!.text()).toContain('Race: Unknown')
+  expect(players[3]!.text()).toContain('(Unknown)')
   expect(players[3]!.text()).toContain('Team: Unknown')
   expect(players[3]!.text()).toContain('Result: Unknown')
 })
@@ -186,7 +213,7 @@ test('compact cards keep long multiplayer summaries on one truncated row and sho
     team: slot + 1,
     result: slot % 2 ? 'loss' : 'win',
   }))
-  mocks.list.mockResolvedValueOnce({
+  mocks.scan.mockResolvedValueOnce({
     ok: true,
     data: [{ ...record, playedAt, mapName: 'Map '.repeat(100), players }],
   })
@@ -196,7 +223,7 @@ test('compact cards keep long multiplayer summaries on one truncated row and sho
   expect(card.get('p').classes()).toContain('truncate')
   expect(card.get('h2').classes()).toContain('truncate')
   expect(card.get('p').attributes('title')).toContain(players[15]!.name)
-  expect(card.get('p').attributes('title')).toContain('Terran · Loss')
+  expect(card.get('p').attributes('title')).toContain('Terran)')
   expect(card.get('time').attributes('datetime')).toBe(playedAt)
   expect(card.get('time').text()).toBe(new Date(playedAt).toLocaleString('en'))
   expect(card.text()).not.toContain(record.fileName)
@@ -208,37 +235,6 @@ test('compact cards keep long multiplayer summaries on one truncated row and sho
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
 
-test('cancellation never indexes, scans, imports, or emits success', async () => {
-  const wrapper = await render()
-  for (const label of ['Scan directory', 'Add replay', 'Import archive'])
-    await click(wrapper, label)
-  expect(mocks.scan).not.toHaveBeenCalled()
-  expect(mocks.index).not.toHaveBeenCalled()
-  expect(mocks.archive).not.toHaveBeenCalled()
-  mocks.pick.mockResolvedValueOnce({
-    ok: true,
-    data: { canceled: false, filePaths: ['D:\\pack.zip'] },
-  })
-  await click(wrapper, 'Import archive')
-  expect(mocks.archive).not.toHaveBeenCalled()
-  expect(mocks.toast).not.toHaveBeenCalled()
-})
-test('manual actions use selected paths and reload after completion', async () => {
-  const wrapper = await render()
-  const picked = (path: string) => ({ ok: true, data: { canceled: false, filePaths: [path] } })
-  mocks.pick.mockResolvedValueOnce(picked('D:\\replays'))
-  await click(wrapper, 'Scan directory')
-  expect(mocks.scan).toHaveBeenCalledWith('D:\\replays')
-  mocks.pick.mockResolvedValueOnce(picked(record.path))
-  await click(wrapper, 'Add replay')
-  expect(mocks.index).toHaveBeenCalledWith(record.path)
-  mocks.pick
-    .mockResolvedValueOnce(picked('D:\\pack.zip'))
-    .mockResolvedValueOnce(picked('D:\\destination'))
-  await click(wrapper, 'Import archive')
-  expect(mocks.archive).toHaveBeenCalledWith('D:\\pack.zip', 'D:\\destination')
-  expect(mocks.list).toHaveBeenCalledTimes(4)
-})
 test('requires physical deletion confirmation and cancellation does nothing', async () => {
   const wrapper = await render()
   await click(wrapper, 'Details')
@@ -254,7 +250,7 @@ test('requires physical deletion confirmation and cancellation does nothing', as
   await click(wrapper, 'Details')
   await click(wrapper, 'Delete')
   await click(wrapper, 'Delete permanently')
-  expect(mocks.delete).toHaveBeenCalledExactlyOnceWith(record.path)
+  expect(mocks.delete).toHaveBeenCalledExactlyOnceWith(scope, record.id)
   expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
 })
 test('failed deletion keeps confirmation and indexed record, showing error toast', async () => {
@@ -269,63 +265,59 @@ test('failed deletion keeps confirmation and indexed record, showing error toast
   expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
   expect(wrapper.findAll('article')).toHaveLength(1)
   expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
-  expect(mocks.list).toHaveBeenCalledOnce()
+  expect(mocks.scan).toHaveBeenCalledOnce()
 })
 test('load failure is not presented as an empty library and can be retried', async () => {
-  mocks.list.mockResolvedValueOnce({
+  mocks.scan.mockResolvedValueOnce({
     ok: false,
     error: toErrorDto(new AppError(ERRORS.IPC_TRANSPORT_FAILED)),
   })
   const wrapper = await render()
-  expect(wrapper.text()).not.toContain('No indexed replays.')
+  expect(wrapper.text()).not.toContain('No replays in this profile and type.')
   expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
-  mocks.list.mockResolvedValueOnce({ ok: true, data: [] })
+  mocks.scan.mockResolvedValueOnce({ ok: true, data: [] })
   await click(wrapper, 'Refresh')
-  expect(wrapper.text()).toContain('No indexed replays.')
+  expect(wrapper.text()).toContain('No replays in this profile and type.')
 })
-test('directory discovery never scans until explicitly selected', async () => {
+test('export mode is explicit, keeps selection across search and exports scoped IDs', async () => {
+  const other = { ...record, id: '2', fileName: 'other.SC2Replay', path: 'D:\\other.SC2Replay' }
+  mocks.scan.mockResolvedValue({ ok: true, data: [record, other] })
   const wrapper = await render()
-  expect(mocks.discover).not.toHaveBeenCalled()
-  mocks.discover.mockResolvedValueOnce({
-    ok: true,
-    data: [{ path: 'D:\\SC2\\Replays', account: '1', profile: '1-S2-1-2' }],
-  })
-  await click(wrapper, 'Find directories')
-  expect(wrapper.text()).toContain('D:\\SC2\\Replays')
-  expect(mocks.scan).not.toHaveBeenCalled()
-  await click(wrapper, 'Scan this directory')
-  expect(mocks.scan).toHaveBeenCalledExactlyOnceWith('D:\\SC2\\Replays')
-})
-
-test('duplicate filter marks records, preserves selection across search, and exports explicit IDs', async () => {
-  const other = { ...record, id: '2', fileName: 'other.SC2Replay' }
-  mocks.list.mockResolvedValue({ ok: true, data: [record, other] })
-  mocks.duplicates.mockResolvedValue({
-    ok: true,
-    data: [{ contentHash: 'same', replays: [record] }],
-  })
-  const wrapper = await render()
+  expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false)
+  for (const label of [
+    'Export ZIP',
+    'Clear',
+    'Select visible',
+    'Selected:',
+    'Refresh profiles',
+    'Show duplicates',
+  ])
+    expect(wrapper.text()).not.toContain(label)
+  expect(mocks.duplicates).not.toHaveBeenCalled()
+  await click(wrapper, 'Multi-select export')
   await wrapper.findAll('input[type="checkbox"]')[1]!.setValue(true)
-  await click(wrapper, 'Show duplicates')
+  await wrapper.get('input:not([type="checkbox"])').setValue('sample')
   expect(wrapper.findAll('article')).toHaveLength(1)
-  expect(wrapper.get('article').text()).toContain('Duplicate content')
   expect(wrapper.text()).toContain('Selected: 1')
   await click(wrapper, 'Export ZIP')
   expect(mocks.export).not.toHaveBeenCalled()
   mocks.chooseExport.mockResolvedValueOnce({ ok: true, data: 'D:\\out.zip' })
   mocks.export.mockResolvedValueOnce({ ok: true, data: { path: 'D:\\out.zip', count: 1 } })
   await click(wrapper, 'Export ZIP')
-  expect(mocks.export).toHaveBeenCalledExactlyOnceWith(['2'], 'D:\\out.zip')
-  expect(mocks.delete).not.toHaveBeenCalled()
-  expect(mocks.toast).toHaveBeenCalledWith(
-    expect.objectContaining({ title: 'Exported 1 replays', description: 'D:\\out.zip' }),
-  )
+  expect(mocks.export).toHaveBeenCalledExactlyOnceWith(scope, ['2'], 'D:\\out.zip')
   await click(wrapper, 'Clear')
+  await click(wrapper, 'Select visible')
+  expect(wrapper.text()).toContain('Selected: 1')
+  await click(wrapper, 'Cancel')
+  expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain('Export ZIP')
+  await click(wrapper, 'Multi-select export')
   expect(wrapper.text()).toContain('Selected: 0')
 })
 
 test('failed export preserves selection and reports failure without refreshing or deleting', async () => {
   const wrapper = await render()
+  await click(wrapper, 'Multi-select export')
   await wrapper.get('input[type="checkbox"]').setValue(true)
   mocks.chooseExport.mockResolvedValueOnce({ ok: true, data: 'D:\\existing.zip' })
   mocks.export.mockResolvedValueOnce({
@@ -335,14 +327,14 @@ test('failed export preserves selection and reports failure without refreshing o
   await click(wrapper, 'Export ZIP')
   expect(wrapper.text()).toContain('Selected: 1')
   expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
-  expect(mocks.list).toHaveBeenCalledOnce()
+  expect(mocks.scan).toHaveBeenCalledOnce()
   expect(mocks.delete).not.toHaveBeenCalled()
 })
 
 test('viewing saved analysis never starts parsing; null and failure stay distinct', async () => {
   const wrapper = await render()
   await click(wrapper, 'Details')
-  expect(mocks.getAnalysis).toHaveBeenCalledExactlyOnceWith('1')
+  expect(mocks.getAnalysis).toHaveBeenCalledExactlyOnceWith(scope, '1')
   expect(mocks.analyze).not.toHaveBeenCalled()
   expect(wrapper.get('[role="dialog"]').text()).toContain('No current saved analysis')
   await click(wrapper, 'Close')
@@ -404,7 +396,7 @@ test('manual component analysis opens saved result with honest partial status', 
   })
   await click(wrapper, 'Details')
   await click(wrapper, 'Analyze components')
-  expect(mocks.analyze).toHaveBeenCalledExactlyOnceWith('1')
+  expect(mocks.analyze).toHaveBeenCalledExactlyOnceWith(scope, '1')
   expect(wrapper.get('[role="dialog"]').text()).toContain('Partially decoded')
   expect(wrapper.text()).toContain('Unsupported replay base build: 99999')
   expect(wrapper.text()).toContain('not APM')
@@ -460,33 +452,174 @@ test('tracker details paginate raw events and safely escape replay text', async 
   expect(modal.text()).toContain('1 / 3')
 })
 
-test('busy operations disable controls and do not start duplicate work', async () => {
-  let finish!: (value: unknown) => void
-  mocks.pick.mockImplementationOnce(
-    () =>
-      new Promise((resolve) => {
-        finish = resolve
-      }),
-  )
-  const wrapper = await render()
-  await click(wrapper, 'Scan directory')
-  expect(
-    wrapper.findAll('button').every((button) => button.attributes('disabled') !== undefined),
-  ).toBe(true)
-  await click(wrapper, 'Add replay')
-  expect(mocks.pick).toHaveBeenCalledOnce()
-  finish({ ok: true, data: { canceled: true, filePaths: [] } })
+test('requires a profile and switches categories with immediate scoped reads and cleared selection', async () => {
+  const wrapper = await render(false)
+  expect(mocks.scan).not.toHaveBeenCalled()
+  expect(wrapper.findAll('article')).toHaveLength(0)
+  await wrapper.findAll('select')[0]!.setValue(scope.profileHandle)
   await flushPromises()
+  expect(mocks.scan).toHaveBeenLastCalledWith(scope)
+  await click(wrapper, 'Multi-select export')
+  await wrapper.get('input[type="checkbox"]').setValue(true)
+  mocks.scan.mockResolvedValueOnce({ ok: true, data: [] })
+  await wrapper.findAll('select')[1]!.setValue('Campaign')
+  await flushPromises()
+  expect(mocks.scan).toHaveBeenLastCalledWith({ ...scope, category: 'Campaign' })
+  expect(wrapper.findAll('article')).toHaveLength(0)
+  expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false)
+  await click(wrapper, 'Multi-select export')
+  expect(wrapper.text()).toContain('Selected: 0')
+  expect(mocks.analyze).not.toHaveBeenCalled()
+})
+
+test('profile switching never displays or exports the previous profile selection', async () => {
+  mocks.discover.mockResolvedValue({
+    ok: true,
+    data: [profile, { ...profile, handle: '1-S2-1-999' }],
+  })
+  const wrapper = await render()
+  await click(wrapper, 'Multi-select export')
+  await wrapper.get('input[type="checkbox"]').setValue(true)
+  mocks.scan.mockResolvedValueOnce({ ok: true, data: [] })
+  await wrapper.findAll('select')[0]!.setValue('1-S2-1-999')
+  await flushPromises()
+  expect(mocks.scan).toHaveBeenLastCalledWith({
+    profileHandle: '1-S2-1-999',
+    category: 'Multiplayer',
+  })
+  expect(wrapper.findAll('article')).toHaveLength(0)
+  expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false)
+  await click(wrapper, 'Multi-select export')
+  expect(wrapper.text()).toContain('Selected: 0')
+  expect(mocks.export).not.toHaveBeenCalled()
+})
+
+test('imports require a selected destination scope and cancellation does not copy', async () => {
+  const wrapper = await render()
+  await click(wrapper, 'Import')
+  await click(wrapper, 'Import replay')
+  await click(wrapper, 'Import')
+  await click(wrapper, 'Import archive')
+  expect(mocks.index).not.toHaveBeenCalled()
+  expect(mocks.archive).not.toHaveBeenCalled()
+  mocks.pick.mockResolvedValueOnce({
+    ok: true,
+    data: { canceled: false, filePaths: ['D:\\outside.SC2Replay'] },
+  })
+  await click(wrapper, 'Import')
+  await click(wrapper, 'Import replay')
+  expect(mocks.index).toHaveBeenCalledWith(scope, 'D:\\outside.SC2Replay')
+  mocks.pick.mockResolvedValueOnce({
+    ok: true,
+    data: { canceled: false, filePaths: ['D:\\pack.zip'] },
+  })
+  await click(wrapper, 'Import')
+  await click(wrapper, 'Import archive')
+  expect(mocks.archive).toHaveBeenCalledWith(scope, 'D:\\pack.zip')
+  expect(mocks.pick).toHaveBeenCalledTimes(4)
+})
+
+test('no detected profiles disables imports and points to settings without global records', async () => {
+  mocks.discover.mockResolvedValue({ ok: true, data: [] })
+  const wrapper = await render(false)
+  expect(wrapper.text()).toContain('No StarCraft profiles found')
+  expect(wrapper.findAll('article')).toHaveLength(0)
+  expect(mocks.scan).not.toHaveBeenCalled()
   expect(
     wrapper
       .findAll('button')
-      .find((button) => button.text() === 'Scan directory')!
+      .find((button) => button.text() === 'Import')!
       .attributes('disabled'),
-  ).toBeUndefined()
+  ).toBeDefined()
+})
+
+test('existing indexed SC2 names display safely in list, results, search and details without reindex', async () => {
+  mocks.scan.mockResolvedValueOnce({
+    ok: true,
+    data: [
+      {
+        ...record,
+        players: [
+          { slot: 0, name: '&lt;ACNet&gt;<sp/>MengLuoRJ', race: 'Protoss', team: 1, result: 'win' },
+          {
+            slot: 1,
+            name: '&lt;img src=x onerror=alert(1)&gt;',
+            race: 'Terran',
+            team: 2,
+            result: 'loss',
+          },
+        ],
+      },
+    ],
+  })
+  const wrapper = await render()
+  const card = wrapper.get('article')
+  expect(card.get('p').text()).toContain('<ACNet> MengLuoRJ (Protoss)')
+  expect(card.get('.text-success').text()).toBe('<ACNet> MengLuoRJ: Win')
+  expect(card.get('.text-error').text()).toContain(': Loss')
+  expect(card.find('img').exists()).toBe(false)
+  expect(card.find('acnet').exists()).toBe(false)
+  const grid = card.get('.grid')
+  expect(grid.classes()).toContain('grid-rows-2')
+  expect(grid.element.children[1]!.getAttribute('title')).toContain('<ACNet> MengLuoRJ: Win')
+  expect(grid.element.children[3]!.querySelector('time')).not.toBeNull()
+  await wrapper.get('input').setValue('<ACNet> MengLuoRJ')
+  expect(wrapper.findAll('article')).toHaveLength(1)
+  await click(wrapper, 'Details')
+  expect(wrapper.get('[role="dialog"]').text()).toContain('<ACNet> MengLuoRJ (Protoss)')
+  expect(wrapper.get('[role="dialog"]').find('img').exists()).toBe(false)
+  expect(mocks.index).not.toHaveBeenCalled()
+})
+
+test('header actions are ordered and disabled while loading or without a scope', async () => {
+  const wrapper = await render(false)
+  const actions = wrapper.findAll('button')
+  expect(actions.map((button) => button.text())).toEqual([
+    'Refresh',
+    'Import',
+    'Multi-select export',
+  ])
+  expect(actions.every((button) => button.attributes('disabled') !== undefined)).toBe(true)
+  await wrapper.findAll('select')[0]!.setValue(scope.profileHandle)
+  await flushPromises()
+  await click(wrapper, 'Multi-select export')
   expect(
     wrapper
       .findAll('button')
       .find((button) => button.text() === 'Export ZIP')!
       .attributes('disabled'),
   ).toBeDefined()
+  let finish!: (value: unknown) => void
+  mocks.scan.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  await click(wrapper, 'Refresh')
+  expect(
+    wrapper.findAll('button').every((button) => button.attributes('disabled') !== undefined),
+  ).toBe(true)
+  expect(wrapper.get('input[type="checkbox"]').attributes('disabled')).toBeDefined()
+  finish({ ok: true, data: [record] })
+  await flushPromises()
+})
+
+test.each([
+  ['zh', '多选导出', '选择可见项', 'MengLuoRJ（星灵）'],
+  ['zh-Hant', '多選導出', '選擇可見項', 'MengLuoRJ（星靈）'],
+])('localizes export controls and race suffix in %s', async (locale, toggle, select, player) => {
+  mocks.scan.mockResolvedValueOnce({
+    ok: true,
+    data: [
+      {
+        ...record,
+        players: [{ slot: 0, name: 'MengLuoRJ', race: 'Protoss', team: 1, result: 'win' }],
+      },
+    ],
+  })
+  const wrapper = await render(true, locale)
+  expect(wrapper.get('article p').text()).toBe(player)
+  await click(wrapper, toggle)
+  expect(wrapper.text()).toContain(select)
 })

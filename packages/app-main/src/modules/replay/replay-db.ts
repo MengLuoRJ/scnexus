@@ -2,11 +2,17 @@ import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { getApplicationDataDirectory } from '../../utils/application-data'
-import type { ReplayRecord, ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
+import type {
+  ReplayRecord,
+  ReplayAnalysis,
+  ReplayScope,
+} from '@scnexus/app-shared/types/replay.type'
 
 type ReplayDatabaseRow = {
   id: string
   path: string
+  profile_handle: string | null
+  category: ReplayRecord['category']
   file_name: string
   extension: string
   size_bytes: number
@@ -38,7 +44,7 @@ export class ReplayDatabase {
     const db = new DatabaseSync(dbPath)
     try {
       const version = db.prepare('PRAGMA user_version').get()!.user_version as number
-      if (version > 3) throw new Error(`Unsupported replay database version: ${version}`)
+      if (version > 4) throw new Error(`Unsupported replay database version: ${version}`)
       db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;')
       db.exec('BEGIN IMMEDIATE')
       db.exec(`
@@ -81,7 +87,14 @@ export class ReplayDatabase {
       if (!columns.some((column) => column.name === 'played_at')) {
         db.exec('ALTER TABLE replay_files ADD COLUMN played_at TEXT')
       }
-      db.exec('PRAGMA user_version = 3; COMMIT;')
+      if (!columns.some((column) => column.name === 'profile_handle'))
+        db.exec('ALTER TABLE replay_files ADD COLUMN profile_handle TEXT')
+      if (!columns.some((column) => column.name === 'category'))
+        db.exec('ALTER TABLE replay_files ADD COLUMN category TEXT')
+      db.exec(
+        'CREATE INDEX IF NOT EXISTS replay_files_scope_idx ON replay_files(profile_handle, category)',
+      )
+      db.exec('PRAGMA user_version = 4; COMMIT;')
       this.db = db
     } catch (error) {
       db.close()
@@ -121,6 +134,8 @@ export class ReplayDatabase {
       timestamp,
       record.contentHash,
       record.playedAt,
+      record.profileHandle,
+      record.category,
     ]
 
     const row = db
@@ -129,8 +144,8 @@ export class ReplayDatabase {
         INSERT INTO replay_files (
           id, path, file_name, extension, size_bytes, mtime_ms, status, support_level,
           map_name, game_version, base_build, duration_seconds, players_json, warnings_json,
-          created_at, updated_at, content_hash, played_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          created_at, updated_at, content_hash, played_at, profile_handle, category
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(path) DO UPDATE SET
           file_name = excluded.file_name,
           extension = excluded.extension,
@@ -146,7 +161,9 @@ export class ReplayDatabase {
           warnings_json = excluded.warnings_json,
           updated_at = excluded.updated_at,
           content_hash = excluded.content_hash,
-          played_at = excluded.played_at
+          played_at = excluded.played_at,
+          profile_handle = excluded.profile_handle,
+          category = excluded.category
         RETURNING *
       `,
       )
@@ -155,18 +172,20 @@ export class ReplayDatabase {
     return this.toRecord(row)
   }
 
-  async listReplays(): Promise<ReplayRecord[]> {
+  async listReplays(scope?: ReplayScope): Promise<ReplayRecord[]> {
     const rows = this.ensureReady()
       .prepare(`
-      SELECT * FROM replay_files ORDER BY mtime_ms DESC, path ASC
+      SELECT * FROM replay_files ${scope ? 'WHERE profile_handle = ? AND category = ?' : ''} ORDER BY mtime_ms DESC, path ASC
     `)
-      .all() as ReplayDatabaseRow[]
+      .all(...(scope ? [scope.profileHandle, scope.category] : [])) as ReplayDatabaseRow[]
     return rows.map((row) => this.toRecord(row))
   }
 
   private toRecord(row: ReplayDatabaseRow): ReplayRecord {
     return {
       id: row.id,
+      profileHandle: row.profile_handle,
+      category: row.category,
       path: row.path,
       fileName: row.file_name,
       extension: row.extension,

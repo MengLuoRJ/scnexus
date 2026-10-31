@@ -54,5 +54,14 @@
   "ui.warning": "操作警告",
   "ui.modifyDirectory": "修改目錄",
   "ui.openDirectory": "打開目錄",
-  "ui.logDirectory": "日誌目錄"
+  "ui.logDirectory": "日誌目錄",
+  "ui.starCraftDocumentsDir": "星際 II 文檔目錄",
+  "ui.starCraftProfiles": "星際資料",
+  "ui.recognizeProfiles": "識別星際資料",
+  "ui.useDefaultDirectory": "使用默認目錄",
+  "ui.starCraftDocumentsDefault": "正在使用系統文檔目錄下的 StarCraft II 文件夾。",
+  "ui.starCraftDocumentsCustom": "正在使用自定義 StarCraft II 文件夾。",
+  "ui.starCraftDocumentsHelp": "請選擇 StarCraft II 文件夾（其下包含 Accounts）。識別僅讀取資料目錄，不掃描或索引錄像。",
+  "ui.noStarCraftProfiles": "未找到星際資料。請確認目錄正確，並已在遊戲中創建資料。",
+  "ui.starCraftAccountId": "賬號 ID"
 }

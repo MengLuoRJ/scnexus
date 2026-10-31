@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Synchronous bounded libbz2 WebAssembly decoder",
+  "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

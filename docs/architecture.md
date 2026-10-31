@@ -212,7 +212,7 @@ src/
 
 ## 9. 当前差距与实施顺序
 
-当前 pnpm isolated 布局下，Sentry 依赖由 electron-builder 的生产依赖收集器保留，不再手工复制 browser SDK。`@sentry/electron@8.1.0` 使用 conventions 0.23，而其 browser 11.4 使用 conventions 0.25；将 browser 强行复制到 electron 的 node_modules 会令它误解析到上层 0.23，导致启动时报 `SENTRY_IS_LOCALHOST` 导出缺失。两份 conventions 共存是正常的，不能只按包名去重。修复验证：`pnpm run test:build` 14 项通过；`pnpm --filter @scnexus/app-main build:app --config.directories.output="C:\Users\mengl\.copilot\session-state\6824866d-f5c6-422c-871a-abc5e0e6fc35\files\sentry-package-validation" --config.win.signAndEditExecutable=false` 通过，ASAR 中 browser 位于顶层并使用 conventions 0.25，electron 自身保留嵌套 conventions 0.23。真实 Electron 加载该 ASAR main（临时 userData、模拟打包标志及资源根）成功显示首页和 preload 桥接，无错误对话框、退出码 0；未执行 NSIS 安装、签名或真实遥测发送。
+当前 pnpm isolated 布局下，Sentry 依赖由 electron-builder 的生产依赖收集器保留，不再手工复制 browser SDK。`@sentry/electron@8.1.0` 使用 conventions 0.23，而其 browser 11.4 使用 conventions 0.25；将 browser 强行复制到 electron 的 node_modules 会令它误解析到上层 0.23，导致启动时报 `SENTRY_IS_LOCALHOST` 导出缺失。两份 conventions 共存是正常的，不能只按包名去重。修复验证：`pnpm run test:build` 14 项通过；`pnpm --filter @scnexus/app-main build:app --config.directories.output=<临时输出目录> --config.win.signAndEditExecutable=false` 通过，ASAR 中 browser 位于顶层并使用 conventions 0.25，electron 自身保留嵌套 conventions 0.23。真实 Electron 加载该 ASAR main（临时 userData、模拟打包标志及资源根）成功显示首页和 preload 桥接，无错误对话框、退出码 0；未执行 NSIS 安装、签名或真实遥测发送。
 
 开发、生产页面及根目录构建/类型/测试入口已接入 renderer-v2，旧 renderer 已移除，应用只使用 renderer-v2。Node 26、Vite 8、Electron 45 已使用；electron-builder 当前仍为 26.15.3，未在本轮静默升级到目标 36。CI 应用安装包、真实安装升级和平台签名尚待独立验收。
 

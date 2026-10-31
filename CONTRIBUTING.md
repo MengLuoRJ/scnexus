@@ -6,29 +6,47 @@
 
 在开始贡献前敬请阅读本贡献指南，并阅读本项目的[贡献者公约](./CODE_OF_CONDUCT.md)。
 
-## 贡献代码
+## 开发环境
 
-- 对于新功能、新特性、新模块等贡献，请对 `upcoming-feat` 分支提交 Pull Request；
-- 对于 Bug / 漏洞修复、性能优化、小调整更新，请直接对 `main` 分支提交 Pull Request。
+- Node.js 26 及以上
+- pnpm 11 及以上
 
-构建、Electron 45 隔离冒烟及打包验证命令见 [构建指南](./docs/building.md)。
+```bash
+pnpm install
+pnpm run dev
+```
+
+本仓库为 pnpm monorepo，各包职责、代码规范与界面尺寸要求见 [AGENTS.md](./AGENTS.md)；构建、Electron 隔离冒烟及打包验证命令见[构建指南](./docs/building.md)。
 
 ### 🛠 应用程序开发技术栈
 
-- Electron + electron-builder
-- Vite + Vue.js 3 (Typescript) + Pinia + VueUse
-- NaiveUI + Unocss
+- Electron 45 + electron-builder
+- Vite 8 + Vue.js 3（组合式 API）+ Vue Router + Pinia + VueUse
+- Nuxt UI 4 + Tailwind CSS 4
+- TypeScript + Vitest
+
+## 贡献代码
+
+所有 Pull Request 均提交至 `main` 分支。提交前请在本地完成验证：
+
+```bash
+pnpm run typecheck
+pnpm run lint
+pnpm run test
+```
+
+测试可只运行改动涉及的包（例如 `pnpm run test:main`），但类型检查与静态检查须完整通过。界面改动请在 1000×700 主窗口尺寸下确认布局与显示效果。
 
 ## 贡献文档
 
-本项目文档仓库已分离至 [scnexus-docs](https://github.com/MengLuoRJ/scnexus-docs)：
-
-- 对于文档的内容更新、内容调整，请前往 [scnexus-docs] 仓库对 `main` 分支提交 Pull Request。
+- 本仓库 `docs/` 目录存放应用程序的开发文档，包括架构设计、构建方式、程序包格式与后端接入说明，随代码一并评审。
+- 面向用户的使用文档由独立的 [scnexus-docs](https://github.com/MengLuoRJ/scnexus-docs) 仓库维护；此类内容的新增与调整请在该仓库对 `main` 分支提交 Pull Request。
 
 ## 翻译指南
 
-本项目采用 [vue-i18n (Next)](https://github.com/intlify/vue-i18n) 进行用户界面翻译本地化，如果希望参与项目中相关国际化和翻译本地化开发，请先了解该插件的相关工作机制并浏览相关文档。
+本项目采用 [vue-i18n](https://vue-i18n.intlify.dev/) 进行用户界面翻译本地化，如果希望参与项目中相关国际化和翻译本地化开发，请先了解该插件的相关工作机制并浏览相关文档。
 
-相关翻译文件位于项目 `/src/locales` 目录下，请选择对应的语言文件夹进行翻译并提交 Pull Request。
+相关翻译文件位于 `packages/app-renderer-v2/src/locales` 目录下，按语言（`zh`、`zh-Hant`、`en`）与业务模块组织，文本键使用扁平结构。
 
-- 对于新增翻译和内容更新，请对 `locales` 分支提交 Pull Request。
+- 新增或修改文案时，请同步维护三套语言资源并保持键名一致；繁体中文与简体中文采用相同文本，仅转换汉字。
+- 翻译贡献同样提交至 `main` 分支。

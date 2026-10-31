@@ -1,12 +1,11 @@
 <div align="center">
-  <a href="https://english.scnexus.net" target="_blank">
+  <a href="https://scnexus.net" target="_blank">
     <img src="./packages/app-renderer-v2/public/application_icon.png" width="150">
   </a>
   <h1>SCNexus</h1>
-  <p>Nexus Application for SC Community</p>
+  <p>Nexus Application for the StarCraft Community</p>
   <p>
-    <a href="https://github.com/MengLuoRJ/scnexus/blob/main/README.md">中文</a> | 
-    ENGLISH
+    <a href="./README.md">中文</a> | ENGLISH
   </p>
 </div>
 
@@ -24,7 +23,7 @@
 
 To learn more about SCNexus Application, please visit the project's official website:
 
-✈️ [Official Website](https://scnexus.net) | 📖 [Documentation](https://scnexus.net/guide/)
+✈️ [Official Website](https://scnexus.net) | 📖 [User Guide](https://scnexus.net/guide/)
 
 ## Getting Started
 
@@ -32,40 +31,52 @@ To learn more about SCNexus Application, please visit the project's official web
 
 **Get the Application Installer**
 
-- Get the Windows NSIS Installer from official website: [SCNexus](https://scnexus.net/)
+- Download the Windows NSIS installer from the official website: [SCNexus](https://scnexus.net/)
 
 **Get the Application from Microsoft Store**
 
-Microsoft Store version is not available as the failure that can't build an Appx package with functional work.
+The Microsoft Store version is not available, as the APPX package does not function correctly under the current sandbox.
 
 <!-- <a href="https://apps.microsoft.com/store/detail/9PL7DCMCN13X?launch=true&mode=full">
 	<img src="https://get.microsoft.com/images/zh-CN%20dark.svg"/>
 </a> -->
 
-**Github Release**
+**GitHub Releases**
 
-As the CI build workflow is not ready yet, and this project have no enough money to purchase Code Sign Certificate, the Installer coundn't be shipped by Github Release in the short term.
+This repository does not ship prebuilt installers. Automated builds and code signing are not ready yet, and released versions are distributed through the official website.
 
-### Linux & MacOS
+### Linux & macOS
 
-Plan to support them in the future, but lack of development and testing for those platforms.
+Support is planned for the future, but the application currently lacks development and functional testing on these platforms.
+
+### Building from Source
+
+Development and building require Node.js 26 and pnpm 11 or later:
+
+```bash
+pnpm install
+pnpm run dev      # development mode
+pnpm run build    # type check and build the runtime packages
+```
+
+Packaging commands for Windows output, the isolated Electron smoke test and known limitations are documented in the [Build Guide](./docs/building.md).
 
 ## Features
 
-- **Richable Information Display**, featuring maps and mods with the more rich and useable information display for authors and content creators.
-- **Maps/Mods Ratings & Reviews**, coming with the more
-- **Custom Campaign Deliver & Management**, supporting SCNexus Custom Campaign Cloud Deliver & Package Standard, [CCM Package Standard](https://github.com/7thAce/SC2CCM) and native files.
-- **Cloud Sync Bank**, providing cloud sync bank service for local native campaign, local custom campaign and arcade maps that joined the Project Arcade Cloud Bank Service.
+- **Rich information display** — provides content creators with richer, more useful information for maps and mods.
+- **Map and mod ratings & reviews** — planned.
+- **Custom campaign distribution and management** — helps creators distribute custom campaigns and custom content, and gives players the ability to install and manage them. Supports the SCNexus Standard and the [CCM Package Standard](https://github.com/7thAce/SC2CCM).
+- **Cloud bank sync** — planned. Provides cloud sync for banks of local native campaigns, local custom campaigns and arcade maps that have joined the Project Arcade Cloud Bank Service.
 
 ## Questions and Community
 
-[GEECG] SCNexus Chinese User Community：857601125
+[GEECG] SCNexus Chinese User Community: 857601125
 
 [GEECG] SCNexus Discord Server: https://discord.gg/U6EbQKdkH2
 
-## Localized Translation
+## Localization
 
-Welcome to take part in the translation of SCNexus Application, to translate the application into more languages, please read [Contributing Guide](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.english.md) for more details.
+Welcome to take part in the translation of SCNexus Application, to translate the application into more languages. Please read the [Contributing Guide](./CONTRIBUTING.english.md) first.
 
 | Key | Language | Status              |
 | --- | :------- | :------------------ |
@@ -74,8 +85,16 @@ Welcome to take part in the translation of SCNexus Application, to translate the
 
 ## Contributing
 
-Thank you for your will to contribute, please read [Contributing Guide](https://github.com/MengLuoRJ/scnexus/blob/main/CONTRIBUTING.english.md) for more details.
+Thank you for your will to contribute. Please read the [Contributing Guide](./CONTRIBUTING.english.md) for more details. Before working on the codebase, please also review the [development conventions](./AGENTS.md) and the [architecture notes](./docs/architecture.md).
+
+## Development Documentation
+
+The `docs/` directory of this repository holds the application's development documentation, covering architecture, build instructions, package format and server integration. User-facing documentation is maintained in the [scnexus-docs](https://github.com/MengLuoRJ/scnexus-docs) repository and the [User Guide](https://scnexus.net/guide/).
 
 ## License
 
-SCNexus is licensed under the [BSD 3-Clause License](https://github.com/MengLuoRJ/scnexus/blob/main/LICENSE).
+SCNexus is licensed under the [BSD 3-Clause License](./LICENSE).
+
+Third-party components, binaries and assets redistributed with the application remain under their own licenses; see [Third-Party Notices](./THIRD-PARTY-NOTICES.md).
+
+StarCraft II, Blizzard Entertainment and related names, logos and artwork are trademarks or registered trademarks of Blizzard Entertainment, Inc. SCNexus is an unofficial community project and is not affiliated with, endorsed by, or sponsored by Blizzard Entertainment, Inc.

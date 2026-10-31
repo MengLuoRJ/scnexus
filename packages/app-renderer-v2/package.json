@@ -2,6 +2,7 @@
   "name": "@scnexus/app-renderer-v2",
   "version": "0.1.0-snapshot.7",
   "private": true,
+  "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {
     "dev": "vite",

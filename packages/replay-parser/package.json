@@ -2,6 +2,7 @@
   "name": "@scnexus/replay-parser",
   "version": "0.1.0-snapshot.7",
   "description": "SC2 replay file detection, archive component inspection and metadata extraction",
+  "license": "MIT",
   "type": "module",
   "typesVersions": {
     "*": {

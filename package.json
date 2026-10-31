@@ -2,6 +2,7 @@
   "name": "scnexus",
   "version": "0.1.0-snapshot.7",
   "description": "SCNexus Client",
+  "license": "BSD-3-Clause",
   "keywords": [
     "SCNexus"
   ],

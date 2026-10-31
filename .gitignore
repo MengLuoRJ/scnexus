@@ -7,7 +7,11 @@
 dist
 
 # Analyze File
-packages/app-renderer-v2/stats.html
+stats.html
+
+# Generated Type Declarations
+packages/app-renderer-v2/auto-imports.d.ts
+packages/app-renderer-v2/components.d.ts
 
 # Logs
 logs
@@ -31,6 +35,9 @@ release
 *.njsproj
 *.sln
 *.sw?
+
+# Agent workspace
+.workbuddy
 
 # lockfile
 package-lock.json

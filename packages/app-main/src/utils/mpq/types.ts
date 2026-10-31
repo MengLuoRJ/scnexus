@@ -7,6 +7,8 @@ export type MpqOpenOptions = {
   listfile?: string[]
   tempDirectory?: string
   maxHeaderSearchBytes?: number
+  /** Maximum compressed or expanded member bytes; defaults to 512 MiB. */
+  maxMemberBytes?: number
 }
 
 export type MpqCreateOptions = {

@@ -44,6 +44,7 @@ export class MpqReader {
     header: MpqHeader,
     hashTable: MpqHashEntry[],
     blockTable: MpqBlockEntry[],
+    private readonly maxMemberBytes = 512 * 1024 * 1024,
   ) {
     this.source = source
     this.header = header
@@ -65,7 +66,12 @@ export class MpqReader {
   static async open(source: MpqSource, options: MpqOpenOptions = {}): Promise<MpqReader> {
     const header = await readMpqHeader(source, options.maxHeaderSearchBytes)
     const { hashTable, blockTable } = await readClassicTables(source, header)
-    const reader = new MpqReader(source, header, hashTable, blockTable)
+    if (
+      options.maxMemberBytes !== undefined &&
+      (!Number.isSafeInteger(options.maxMemberBytes) || options.maxMemberBytes < 1)
+    )
+      throw new RangeError('Invalid MPQ member read limit')
+    const reader = new MpqReader(source, header, hashTable, blockTable, options.maxMemberBytes)
     await reader.loadNames(options.listfile)
     return reader
   }
@@ -184,7 +190,11 @@ export class MpqReader {
     if (!listfile) return
     try {
       const content = (
-        await this.readBlock(this.blockTable[listfile.hash.blockIndex], '(listfile)')
+        await this.readBlock(
+          this.blockTable[listfile.hash.blockIndex],
+          '(listfile)',
+          4 * 1024 * 1024,
+        )
       ).toString('utf8')
       for (const name of content.split(/\r?\n/)) {
         if (name.trim()) this.rememberName(name.trim())
@@ -240,7 +250,26 @@ export class MpqReader {
     }
   }
 
-  private async readBlock(block: MpqBlockEntry, path?: string): Promise<Buffer> {
+  private async readBlock(
+    block: MpqBlockEntry,
+    path?: string,
+    limit = this.maxMemberBytes,
+  ): Promise<Buffer> {
+    if (
+      !block ||
+      !Number.isSafeInteger(block.size) ||
+      !Number.isSafeInteger(block.compressedSize) ||
+      block.size < 0 ||
+      block.compressedSize < 0 ||
+      block.size > limit ||
+      block.compressedSize > limit
+    ) {
+      throw new MpqFormatError('MPQ member exceeds read limit')
+    }
+    const offset = this.header.offset + block.offset
+    if (offset < 0n || offset + BigInt(block.compressedSize) > (await this.source.size())) {
+      throw new MpqFormatError('MPQ member exceeds source bounds')
+    }
     if (!(block.flags & MPQ_FILE_FLAGS.EXISTS)) {
       throw new MpqFileNotFoundError(path ?? '<unknown>')
     }

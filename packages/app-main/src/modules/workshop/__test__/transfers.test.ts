@@ -6,7 +6,11 @@ import { createHash, randomUUID } from 'node:crypto'
 vi.mock('electron', () => ({ app: { isPackaged: false } }))
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
-  return { ...actual, rm: vi.fn<typeof actual.rm>(actual.rm) }
+  return {
+    ...actual,
+    rm: vi.fn<typeof actual.rm>(actual.rm),
+    lstat: vi.fn<typeof actual.lstat>(actual.lstat),
+  }
 })
 import {
   createWorkshopService,
@@ -378,6 +382,77 @@ test.each([false, true])(
     expect(JSON.parse(await readFile(join(f.root, 'tasks.json'), 'utf8')).tasks).toEqual([])
   },
 )
+test.each([
+  ['removed', false],
+  ['removed', true],
+  ['moved', false],
+  ['moved', true],
+] as const)(
+  'completed downloads with %s directories inspect absent and remove with deleteFile=%s',
+  async (operation, deleteFile) => {
+    const f = await setup(
+      vi.fn<typeof fetch>(async (url) =>
+        String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      ),
+    )
+    const parent = join(f.root, 'historical')
+    const directory = join(parent, 'downloads')
+    const moved = join(f.root, 'moved')
+    f.deps.getDownloadDirectory = () => directory
+    const task = await f.service.download(source)
+    await f.service.waitForIdle()
+    expect((await f.service.list())[0].status).toBe('completed')
+    if (operation === 'moved') await fs.rename(parent, moved)
+    else await rm(parent, { recursive: true })
+    f.deps.getDownloadDirectory = () => join(f.root, 'new-setting')
+    expect(await f.service.inspectDownload(task.taskId)).toEqual({ fileExists: false })
+    await f.service.removeDownload(task.taskId, deleteFile)
+    expect(await f.service.list()).toEqual([])
+    expect(JSON.parse(await readFile(join(f.root, 'tasks.json'), 'utf8')).tasks).toEqual([])
+    await expect(fs.lstat(parent)).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(fs.lstat(join(f.root, 'new-setting'))).rejects.toMatchObject({ code: 'ENOENT' })
+    if (operation === 'moved')
+      expect(await readFile(join(moved, 'downloads', task.taskId + '.package'))).toEqual(bytes)
+  },
+)
+test('missing download directories still reject symlink ancestors and permission errors', async () => {
+  const f = await setup(
+    vi.fn<typeof fetch>(async (url) =>
+      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+    ),
+  )
+  const parent = join(f.root, 'historical')
+  const directory = join(parent, 'downloads')
+  f.deps.getDownloadDirectory = () => directory
+  const task = await f.service.download(source)
+  await f.service.waitForIdle()
+  const denied = Object.assign(new Error('denied'), { code: 'EACCES' })
+  const actualFs = await vi.importActual<typeof fs>('node:fs/promises')
+  for (const operation of [
+    () => f.service.inspectDownload(task.taskId),
+    () => f.service.removeDownload(task.taskId, false),
+    () => f.service.removeDownload(task.taskId, true),
+  ]) {
+    vi.mocked(fs.lstat)
+      .mockImplementationOnce(() => actualFs.lstat(f.root))
+      .mockRejectedValueOnce(denied)
+    await expect(operation()).rejects.toThrow('denied')
+    vi.mocked(fs.lstat)
+      .mockImplementationOnce(() => actualFs.lstat(f.root))
+      .mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }))
+      .mockRejectedValueOnce(denied)
+    await expect(operation()).rejects.toThrow('denied')
+  }
+  await rm(parent, { recursive: true })
+  const outside = join(f.root, 'outside')
+  await mkdir(outside)
+  await symlink(outside, parent, process.platform === 'win32' ? 'junction' : 'dir')
+  await expect(f.service.inspectDownload(task.taskId)).rejects.toThrow('UNSAFE_CACHE')
+  await expect(f.service.removeDownload(task.taskId, false)).rejects.toThrow('UNSAFE_CACHE')
+  await expect(f.service.removeDownload(task.taskId, true)).rejects.toThrow('UNSAFE_CACHE')
+  expect(await f.service.list()).toHaveLength(1)
+  expect(await fs.readdir(outside)).toEqual([])
+})
 test('missing caches can remove only their records and unsafe cache entries retain records', async () => {
   const f = await setup(vi.fn<typeof fetch>(async () => new Response(null, { status: 403 })))
   const task = await f.service.download(source)

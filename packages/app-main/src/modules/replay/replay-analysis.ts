@@ -35,7 +35,10 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
     warnings: [],
     analyzedAt: new Date().toISOString(),
   }
-  const archive = await openMpq(record.path)
+  const archive = await openMpq(record.path, {
+    maxHeaderSearchBytes: 1024 * 1024,
+    maxMemberBytes: 32 * 1024 * 1024,
+  })
   let corrupt = false
   let unsupported = false
   try {

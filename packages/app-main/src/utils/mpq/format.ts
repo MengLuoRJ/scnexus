@@ -86,6 +86,20 @@ export async function readClassicTables(
     throw new MpqFormatError('MPQ archive has no hash or block table')
   }
 
+  if (header.hashTableEntries > 1_048_576 || header.blockTableEntries > 1_048_576) {
+    throw new MpqFormatError('MPQ table entry limit exceeded')
+  }
+  const sourceSize = await source.size()
+  for (const [offset, length] of [
+    [header.hashTableOffset, header.hashTableEntries * 16],
+    [header.blockTableOffset, header.blockTableEntries * 16],
+    ...(header.highBlockTableOffset
+      ? [[header.highBlockTableOffset, header.blockTableEntries * 2] as const]
+      : []),
+  ] as const) {
+    if (header.offset + offset < 0n || header.offset + offset + BigInt(length) > sourceSize)
+      throw new MpqFormatError('MPQ table exceeds source bounds')
+  }
   const encryptedHashTable = await readExact(
     source,
     header.offset + header.hashTableOffset,

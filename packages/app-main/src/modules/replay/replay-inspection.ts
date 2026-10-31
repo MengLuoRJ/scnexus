@@ -14,6 +14,8 @@ export async function inspectLocalReplay(path: string): Promise<ReplayInspection
   try {
     archive = await openMpq(path, {
       listfile: REPLAY_COMPONENTS.map((component) => component.name),
+      maxHeaderSearchBytes: 1024 * 1024,
+      maxMemberBytes: 32 * 1024 * 1024,
     })
     if (archive.info.headerOffset > 1024n * 1024n)
       throw new MpqFormatError('Replay header exceeds 1 MiB limit')

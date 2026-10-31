@@ -34,6 +34,13 @@ class FileMpqSource implements MpqSource {
 
   async read(offset: bigint, length: number): Promise<Buffer> {
     const position = safePosition(offset)
+    if (
+      !Number.isSafeInteger(length) ||
+      length < 0 ||
+      offset + BigInt(length) > (await this.size())
+    ) {
+      throw new RangeError('MPQ read exceeds source bounds')
+    }
     const buffer = Buffer.allocUnsafe(length)
     const { bytesRead } = await this.handle.read(buffer, 0, length, position)
     return bytesRead === length ? buffer : buffer.subarray(0, bytesRead)

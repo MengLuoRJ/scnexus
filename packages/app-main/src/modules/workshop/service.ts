@@ -343,7 +343,19 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   async function inspectCache(task: StoredTask) {
     const directory = taskDirectory(task)
     await inspectDirectory(resolve(root))
-    await inspectDirectory(directory)
+    let existingDirectory = directory
+    for (;;) {
+      try {
+        await inspectDirectory(existingDirectory)
+        break
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        const parent = dirname(existingDirectory)
+        assert(parent !== existingDirectory, 'UNSAFE_CACHE')
+        existingDirectory = parent
+      }
+    }
+    if (existingDirectory !== directory) return []
     const files: string[] = []
     for (const suffix of ['.package', '.partial']) {
       const path = filePath(task, suffix)

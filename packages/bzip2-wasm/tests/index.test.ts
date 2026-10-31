@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import vectors from './vectors.json'
-import { decompressBzip2 } from '../src/index.js'
+import { Bzip2Error, decompressBzip2 } from '../src/index.js'
 
 const fromHex = (hex: string) =>
   Uint8Array.from(hex.match(/../g) ?? [], (byte) => Number.parseInt(byte, 16))
@@ -63,10 +63,10 @@ describe('decompressBzip2', () => {
   })
   it('rejects invalid sizes before allocating WASM buffers', () => {
     for (const size of [-1, 0.5, NaN, Infinity, 128 * 1024 * 1024 + 1]) {
-      expect(() => decompressBzip2(compressed, size)).toThrow(RangeError)
+      expect(() => decompressBzip2(compressed, size)).toThrow(Bzip2Error)
     }
-    expect(() => decompressBzip2(new Uint8Array(), 0)).toThrow(RangeError)
-    expect(() => decompressBzip2(new Uint8Array(128 * 1024 * 1024 + 1), 0)).toThrow(RangeError)
+    expect(() => decompressBzip2(new Uint8Array(), 0)).toThrow(Bzip2Error)
+    expect(() => decompressBzip2(new Uint8Array(128 * 1024 * 1024 + 1), 0)).toThrow(Bzip2Error)
   })
   it('decodes at the output bound with memory growth', () => {
     // 128 MiB of zeros, compressed by Python bz2; the fixture is only 112 bytes.

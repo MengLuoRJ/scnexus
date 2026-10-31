@@ -12,7 +12,7 @@ mkdirSync(new URL('../.build', import.meta.url), { recursive: true })
 const command = [
   'set -eu',
   'emcc --version',
-  'emcc native/decoder.c native/bzip2-1.0.8/bzlib.c native/bzip2-1.0.8/decompress.c native/bzip2-1.0.8/huffman.c native/bzip2-1.0.8/crctable.c native/bzip2-1.0.8/randtable.c -Inative/bzip2-1.0.8 -DBZ_NO_STDIO -O3 -flto --no-entry -sSTANDALONE_WASM=1 -sFILESYSTEM=0 -sMALLOC=emmalloc -sABORTING_MALLOC=0 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=536870912 -sSTACK_SIZE=65536 -sEXPORTED_FUNCTIONS=\'["_malloc","_free","_decode_bzip2"]\' -Wl,--strip-all -o .build/bzip2.wasm',
+  'emcc native/decoder.c native/bzip2-1.0.8/bzlib.c native/bzip2-1.0.8/compress.c native/bzip2-1.0.8/blocksort.c native/bzip2-1.0.8/decompress.c native/bzip2-1.0.8/huffman.c native/bzip2-1.0.8/crctable.c native/bzip2-1.0.8/randtable.c -Inative/bzip2-1.0.8 -DBZ_NO_STDIO -O3 -flto --no-entry -sSTANDALONE_WASM=1 -sFILESYSTEM=0 -sMALLOC=emmalloc -sABORTING_MALLOC=0 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=536870912 -sSTACK_SIZE=65536 -sEXPORTED_FUNCTIONS=\'["_malloc","_free","_bzip2_create","_bzip2_step","_bzip2_consumed","_bzip2_produced","_bzip2_destroy"]\' -Wl,--strip-all -o .build/bzip2.wasm',
 ].join(' && ')
 const result = spawnSync(
   'docker',

@@ -7,7 +7,17 @@ export type VersionedValue =
 
 /** Self-describing wire types used by replay.header and replay.details, not bit-packed event streams. */
 export function decodeVersioned(data: Uint8Array): VersionedValue {
-  let offset = 0
+  return decodeVersionedPrefix(data).value
+}
+
+/** Internal stream primitive; offsets are relative to the supplied byte view. */
+export function decodeVersionedPrefix(
+  data: Uint8Array,
+  start = 0,
+): { value: VersionedValue; nextOffset: number } {
+  if (!Number.isSafeInteger(start) || start < 0 || start > data.length)
+    throw new Error('Invalid versioned stream offset')
+  let offset = start
   let nodes = 0
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
 
@@ -94,7 +104,8 @@ export function decodeVersioned(data: Uint8Array): VersionedValue {
     }
   }
 
-  return read(0)
+  const value = read(0)
+  return { value, nextOffset: offset }
 }
 
 export function versionedStruct(value: VersionedValue | undefined): Map<number, VersionedValue> {

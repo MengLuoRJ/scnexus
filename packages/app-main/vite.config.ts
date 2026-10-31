@@ -27,7 +27,10 @@ const config: UserConfig = {
     assetsDir: '.',
     minify: process.env.MODE !== 'development',
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: 'src/index.ts',
+        'replay-analysis-worker': 'src/modules/replay/replay-analysis-worker.ts',
+      },
       formats: ['es'],
     },
     rollupOptions: {

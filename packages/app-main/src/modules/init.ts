@@ -26,6 +26,7 @@ import { initCampaignModule } from './campaign'
 import { initCustomizeModule } from './customize'
 import { initReplayModule } from './replay'
 import { replayDatabase } from './replay/replay-db'
+import { disposeReplayAnalyses } from './replay/replay-analysis-runner'
 import { startWorkshop, stopWorkshop } from './workshop-runtime'
 import { initDependencyIpc } from './dependency/dependency.ipc'
 import { getMainWindow } from './window'
@@ -88,6 +89,7 @@ export async function disposeModules() {
   cleanup.splice(0).forEach((dispose) => dispose())
   await disposeAiAssistant()
   await stopWorkshop()
+  disposeReplayAnalyses()
   replayDatabase.close()
   disposeAuth()
   disposeSetting()

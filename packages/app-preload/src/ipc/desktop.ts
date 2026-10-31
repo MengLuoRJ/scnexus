@@ -18,6 +18,12 @@ function contentApi(
 }
 const api: DesktopApi = {
   replay: {
+    chooseExportPath: () => invoke('replay:choose-export-path'),
+    analyze: (replayId) => invoke('replay:analyze', replayId),
+    getAnalysis: (replayId) => invoke('replay:get-analysis', replayId),
+    discoverDirectories: () => invoke('replay:discover-directories'),
+    listDuplicates: () => invoke('replay:duplicates'),
+    exportArchive: (ids, destination) => invoke('replay:export-archive', ids, destination),
     list: () => invoke('replay:list'),
     scanDirectory: (rootDir) => invoke('replay:scan-directory', rootDir),
     indexFile: (filePath) => invoke('replay:index-file', filePath),

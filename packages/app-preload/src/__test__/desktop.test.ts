@@ -31,13 +31,38 @@ test('replay exposes only controlled business methods and preserves result envel
   await desktopApi.replay.indexFile('D:\\replay.SC2Replay')
   await desktopApi.replay.importArchive('D:\\archive.zip', 'D:\\destination')
   await desktopApi.replay.delete('D:\\replay.SC2Replay')
+  await desktopApi.replay.chooseExportPath()
+  await desktopApi.replay.discoverDirectories()
+  await desktopApi.replay.listDuplicates()
+  await desktopApi.replay.exportArchive(['replay-id'], 'D:\\out.zip')
+  await desktopApi.replay.analyze('replay-id')
+  await desktopApi.replay.getAnalysis('replay-id')
   expect(mocks.invoke.mock.calls).toEqual([
-    ['replay:list'], ['replay:scan-directory', 'D:\\replays'],
+    ['replay:list'],
+    ['replay:scan-directory', 'D:\\replays'],
     ['replay:index-file', 'D:\\replay.SC2Replay'],
     ['replay:import-archive', 'D:\\archive.zip', 'D:\\destination'],
     ['replay:delete', 'D:\\replay.SC2Replay'],
+    ['replay:choose-export-path'],
+    ['replay:discover-directories'],
+    ['replay:duplicates'],
+    ['replay:export-archive', ['replay-id'], 'D:\\out.zip'],
+    ['replay:analyze', 'replay-id'],
+    ['replay:get-analysis', 'replay-id'],
   ])
-  expect(Object.keys(desktopApi.replay).sort()).toEqual(['delete', 'importArchive', 'indexFile', 'list', 'scanDirectory'])
+  expect(Object.keys(desktopApi.replay).sort()).toEqual([
+    'analyze',
+    'chooseExportPath',
+    'delete',
+    'discoverDirectories',
+    'exportArchive',
+    'getAnalysis',
+    'importArchive',
+    'indexFile',
+    'list',
+    'listDuplicates',
+    'scanDirectory',
+  ])
   const failure = { ok: false, error: toErrorDto(new AppError(ERRORS.IPC_INVALID_ARGUMENT)) }
   mocks.invoke.mockResolvedValueOnce(failure)
   expect(await desktopApi.replay.list()).toBe(failure)

@@ -30,6 +30,7 @@ export function parseReplayHeader(data: Uint8Array): ReplayHeader {
 
 export function parseReplayDetails(data: Uint8Array): {
   mapName: string
+  playedAt: string | null
   players: ReplayPlayerSummary[]
 } {
   const details = versionedStruct(decodeVersioned(data))
@@ -52,5 +53,11 @@ export function parseReplayDetails(data: Uint8Array): {
       result: result === 1 ? 'win' : result === 2 ? 'loss' : null,
     })
   }
-  return { mapName, players }
+  const ticks = details.get(5)
+  let playedAt: string | null = null
+  if (typeof ticks === 'bigint' && ticks > 116444736000000000n) {
+    const milliseconds = (ticks - 116444736000000000n) / 10000n
+    if (milliseconds <= 8640000000000000n) playedAt = new Date(Number(milliseconds)).toISOString()
+  }
+  return { mapName, playedAt, players }
 }

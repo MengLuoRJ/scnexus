@@ -66,11 +66,38 @@ console.log(result.status)
 console.log(result.summary.mapName)
 ```
 
+## build-specific 组件 API
+
+```ts
+import {
+  parseReplayAttributes,
+  parseReplayInitData,
+  parseReplayTrackerEvents,
+  UnsupportedReplayBuildError,
+  REPLAY_PROTOCOL_ALGORITHM_VERSION,
+  SUPPORTED_REPLAY_BASE_BUILDS,
+} from '@scnexus/replay-parser'
+
+// host 负责只读 MPQ 解压；baseBuild 必须来自 parseReplayHeader，不是显示版本的 build。
+const attributes = parseReplayAttributes(attributeBytes)
+const initData = parseReplayInitData(initDataBytes, header.baseBuild)
+const tracker = parseReplayTrackerEvents(trackerBytes, header.baseBuild)
+```
+
+- 精确注册 `70154`、`98310`，没有最新版本、相邻版本或未知 build fallback。未注册值抛出 `UnsupportedReplayBuildError`，包含 `code: 'UNSUPPORTED_REPLAY_BUILD'` 与 `baseBuild`；损坏输入和资源超限抛出 Error，由 host 转换为 IPC DTO。
+- `ReplayInitData`：`{ baseBuild, protocolVersion, algorithmVersion, data }`；`data.m_syncLobbyState` 保留原始协议字段名，包含用户、gameDescription（例如 `m_gameSpeed`）及 lobby/slot 信息。
+- `ReplayTrackerEvents`：相同版本戳，加 `events: ReplayTrackerEvent[]`。事件含 `eventId`、完整 `eventType`、累积 `gameLoop`、原始字段 `data`。实现全部十类 tracker 事件（0–9）：PlayerStats、UnitBorn、UnitDied、UnitOwnerChange、UnitTypeChange、Upgrade、UnitInit、UnitDone、UnitPositions、PlayerSetup。tracker 流使用 Versioned 编码，不是 game/message 的 bit-packed 编码；没有 user-id 前缀。
+- `ReplayAttributes`：`{ protocolVersion: 'attributes-v1', algorithmVersion, source, mapNamespace, attributes }`；每项 `ReplayAttribute` 为 `{ namespace, attributeId, scope, value }`，保留重复项。`value` 是反序并去两端零字节后的 FourCC，而非 UI 标签。严格校验头部声明数量。
+- `ReplayProtocolValue` 是 JSON-safe 递归值：安全整数使用 number，超出安全范围的整数使用十进制 string；blob 使用 `ReplayBlob = { kind: 'blob', hex, text }`（非 UTF-8 时 text=null）；bitarray 使用 `{ bitLength, value }`，value 为无损十进制 string；optional 为 null。不会泄露 Map、Uint8Array 或 bigint 至 IPC/JSON。字段名不是翻译后的产品 DTO，host/共享层负责业务映射。
+- `protocolVersion` 为 `s2protocol-${baseBuild}`，`REPLAY_PROTOCOL_ALGORITHM_VERSION` 当前为 `1.0.0`。持久化分析时保存两者，并由 host 绑定录像 contentHash；算法改变需要提升版本，不能仅按文件路径复用结果。
+- 固定预算：initData/attributes 最大 4 MiB，tracker 最大 32 MiB；每个协议解码器最多 1,000,000 节点、64 层；数组与事件最多 100,000 项，bitarray 最多 65,536 位。Versioned 单值另有 100,000 节点预算。失败不返回伪完整结果。initData 拒绝多余完整尾字节，允许协议的末字节对齐 padding。
+
+现有 `inspectReplayFile` 仍只编排 header/details 元数据，不自动运行这些较重的组件 API，也不因精确协议注册而将录像标成 full。游戏速度代码、tracker 原始统计字段和单位事件不等同于已完成 APM、build order、真实时间换算或战术分析。
+
 ## 计划中的后续能力
 
-- `parseInitData`：补充 lobby、游戏速度及槽位信息
-- `parseTrackerTimeline`：生成可聚合的经济/单位序列
-- `calculateReplaySummary`：生成战术性摘要
+- 业务化经济/单位时间线和汇总 DTO
+- game/message 事件与 APM、build order（当前未实现）
 
 ## 当前实现状态
 
@@ -84,12 +111,18 @@ console.log(result.summary.mapName)
 - 组件 `found` 来自调用方实际探测或提供的字节，不从静态清单推断。
 - 解出基础信息返回 `partial` / `metadata-only`；字节结构损坏返回 `corrupt`，仍保留其他成功解析的组件信息；不声称 `full` 或任何 build 的事件兼容性。
 
-`durationSeconds = elapsedGameLoops / 16` 是**游戏时间**，不是 Faster 速度的实际经过秒数。当前未解析 initData 的游戏速度，界面须明确标记游戏时长，不能自行按 22.4 loops/s 推算所有录像的真实时长。
+`durationSeconds = elapsedGameLoops / 16` 是**游戏时间**，不是 Faster 速度的实际经过秒数。
+
+`playedAt` 来自 details tag 5 的 `m_timeUTC`（Windows FILETIME，自 1601-01-01 起的 100 ns tick），用 bigint 减去 Unix epoch 偏移并转换成 UTC ISO。缺失、零值或不可表示的时间返回 null，不用 m_timeLocalOffset 再次偏移，也不从文件名/mtime 推测；renderer 仅在展示时本地化。显式组件解析可获得 initData 游戏速度，但基础列表仍使用游戏时长，尚未做历史版本及速度差异的实际经过时间换算，不能自行按 22.4 loops/s 推算所有录像。
 
 主进程 `replay-inspection` 通过项目现有 TypeScript MPQ 适配器只读打开录像，读取 user-data 与最大 4 MiB 的 details，并关闭句柄。不引入新的 StormLib npm 依赖。未知压缩方法通过 warnings 暴露；文件访问错误向上传递。压缩层与协议层可独立扩展，后续如需 StormLib 可在主进程替换适配器，无需修改 parser。
 
 ## 协议依据与验证边界
 
-字段 tag 和 Versioned 编码依据 Blizzard 官方 [s2protocol decoders](https://github.com/Blizzard/s2protocol/blob/master/s2protocol/decoders.py) 与 [protocol98310](https://github.com/Blizzard/s2protocol/blob/master/s2protocol/versions/protocol98310.py) 对照实现；没有复制整个协议表或引入 Python 运行时。自描述 header/details 与 build-specific bit-packed events 必须分开，不能把当前读取能力推广为所有 build 的完整兼容。
+字段 tag 和 Versioned 编码依据 Blizzard 官方 [s2protocol decoders](https://github.com/Blizzard/s2protocol/blob/master/s2protocol/decoders.py)、[protocol70154](https://github.com/Blizzard/s2protocol/blob/master/s2protocol/versions/protocol70154.py) 与 [protocol98310](https://github.com/Blizzard/s2protocol/blob/master/s2protocol/versions/protocol98310.py) 对照独立实现。只纳入 initData/tracker 可达的最小类型数据与 tracker ID 表，未纳入游戏/消息协议表或上游可执行解码器；这部分 MIT 许可数据保留 `packages/replay-parser/LICENSE.s2protocol`。运行时不引入 Python。自描述 header/details 与 build-specific bit-packed initData 必须分开，不能把当前读取能力推广为所有 build 的完整兼容。
 
 回归测试包括自构建的 Versioned 数据、实际 MPQ 容器的压缩组件读取、SC2 带 padding 的 user-data 布局、损坏文件及截断输入。另以官方仓库公开样本 `2018-11-29_Z_iaguz_VS_P_Luneth.SC2Replay` 手工验证：地图 Lost and Found LE，版本 4.7.1.70326，base build 70154，Zerg 负 / Protoss 胜。样本不纳入仓库，不声称这些样本构成全面版本覆盖。
+
+组件基础实现另对同一官方样本做过完整对拍：initData 4,046 字节，所有字段与官方 `decode_replay_initdata` 深比较一致（gameSpeed=4）；attributes 2,037 字节、156 项全部比较一致；tracker 94,093 字节、1,875 个事件，每个事件类型、gameLoop 和全部 data 字段与官方 decoder 深比较一致，最终 gameLoop=13,216，覆盖全部十类事件。各 ID 数量为 `0:167, 1:653, 2:368, 3:2, 4:365, 5:36, 6:129, 7:125, 8:28, 9:2`。初次对拍在 host 侧用 Python mpyq 提取组件；现已在 MPQ reader 加入有界 BZIP2 解压，并通过打包后的 Electron worker 直接读取同一真实录像验证：156 属性、1,875 tracker 事件，三个组件全部完成，不再需要 Python 提取。运行时未引入 Python，fixture、原始玩家数据及对拍输出不纳入包。98310 已按官方精确协议表注册并通过完整 synthetic initData 和 tracker 测试，**尚无该 build 的真实样本对拍**，不等价于真实样本覆盖。
+
+组件实现验证命令：`pnpm --filter @scnexus/replay-parser test`（24 tests passed）、`pnpm --filter @scnexus/replay-parser typecheck`（passed）、`pnpm --filter @scnexus/replay-parser lint`（oxlint + ESLint passed）。

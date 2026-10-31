@@ -84,6 +84,7 @@ describe('self-describing replay metadata', () => {
   it('reads map, players, race, team and outcome, excluding observers', () => {
     expect(parseReplayDetails(details)).toEqual({
       mapName: '测试地图',
+      playedAt: null,
       players: [
         { slot: 1, name: '玩家', race: 'Terran', team: 1, result: 'win' },
         { slot: 2, name: 'Opponent', race: 'Zerg', team: 2, result: 'loss' },
@@ -111,6 +112,33 @@ describe('self-describing replay metadata', () => {
     expect(result.status).toBe('corrupt')
     expect(result.summary.baseBuild).toBe(98310)
     expect(result.summary.mapName).toBeNull()
+  })
+  it('reads real UTC FILETIME without applying local offset twice', async () => {
+    const timestamp = '2026-10-31T10:33:35.123Z'
+    const ticks = BigInt(Date.parse(timestamp)) * 10000n + 116444736000000000n
+    const bytes = Uint8Array.from(
+      struct({
+        0: [0, 0],
+        1: text('Map'),
+        5: [9, ...vint(ticks)],
+        6: [9, ...vint(8n * 3600n * 10000000n)],
+      }),
+    )
+    expect(parseReplayDetails(bytes).playedAt).toBe(timestamp)
+    expect(
+      (await inspectReplayFile('date.SC2Replay', { components: { 'replay.details': bytes } }))
+        .summary.playedAt,
+    ).toBe(timestamp)
+  })
+  it.each([0n, -1n])('leaves invalid game timestamps unknown (%s)', (ticks) => {
+    const bytes = Uint8Array.from(struct({ 0: [0, 0], 1: text('Map'), 5: [9, ...vint(ticks)] }))
+    expect(parseReplayDetails(bytes).playedAt).toBeNull()
+  })
+  it('rejects timestamp integers exceeding the wire range', () => {
+    const bytes = Uint8Array.from(
+      struct({ 0: [0, 0], 1: text('Map'), 5: [9, ...vint(999999999999999999999n)] }),
+    )
+    expect(() => parseReplayDetails(bytes)).toThrow('64-bit range')
   })
   it('does not infer a draw from an undecided result', () => {
     const undecided = Uint8Array.from(

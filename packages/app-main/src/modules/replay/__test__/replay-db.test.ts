@@ -18,9 +18,11 @@ function record(overrides: Partial<ReplayRecord> = {}): ReplayRecord {
     extension: '.sc2replay',
     sizeBytes: 123,
     mtimeMs: 1000,
+    contentHash: null,
     status: 'unsupported',
     supportLevel: 'unsupported',
     mapName: null,
+    playedAt: null,
     gameVersion: null,
     baseBuild: null,
     durationSeconds: null,
@@ -117,10 +119,62 @@ describe('ReplayDatabase', () => {
     expect(await readFile(dbPath)).toEqual(contents)
   })
 
+  it('migrates version-one indexes without discarding identities or metadata', async () => {
+    database.initialize()
+    await database.upsertReplay(record())
+    database.close()
+    const legacy = new DatabaseSync(dbPath)
+    legacy.exec(
+      'DROP INDEX replay_files_hash_idx; ALTER TABLE replay_files DROP COLUMN content_hash; PRAGMA user_version = 1;',
+    )
+    legacy.close()
+    database.initialize()
+    expect(await database.listReplays()).toEqual([record()])
+  })
+
+  it('migrates version-two records with unknown playedAt and persists real UTC timestamps', async () => {
+    database.initialize()
+    await database.upsertReplay(record())
+    database.close()
+    const legacy = new DatabaseSync(dbPath)
+    legacy.exec('ALTER TABLE replay_files DROP COLUMN played_at; PRAGMA user_version = 2;')
+    legacy.close()
+    database.initialize()
+    expect((await database.listReplays())[0]!.playedAt).toBeNull()
+    const updated = await database.upsertReplay(record({ playedAt: '2026-10-31T10:33:35.000Z' }))
+    database.close()
+    database.initialize()
+    expect(await database.listReplays()).toEqual([updated])
+  })
+
+  it('persists versioned component analysis and hides results for changed content', async () => {
+    database.initialize()
+    await database.upsertReplay(record({ contentHash: 'hash-a' }))
+    const analysis = {
+      replayId: 'replay-1',
+      contentHash: 'hash-a',
+      parserVersion: 'test-1',
+      baseBuild: 70154,
+      status: 'completed' as const,
+      components: { initData: { speed: 4 }, attributes: [], tracker: [] },
+      warnings: [],
+      analyzedAt: '2026-10-31T00:00:00.000Z',
+    }
+    await database.saveAnalysis(analysis)
+    database.close()
+    database.initialize()
+    expect(await database.getAnalysis('replay-1')).toEqual(analysis)
+    await database.upsertReplay(record({ contentHash: 'hash-b' }))
+    expect(await database.getAnalysis('replay-1')).toBeNull()
+    await expect(database.saveAnalysis(analysis)).rejects.toThrow('index changed')
+    await database.deleteReplayByPath(record().path)
+    expect(await database.getAnalysis('replay-1')).toBeNull()
+  })
+
   it('rejects a newer schema without resetting it', () => {
     const future = new DatabaseSync(dbPath)
-    future.exec('PRAGMA user_version = 2')
+    future.exec('PRAGMA user_version = 4')
     future.close()
-    expect(() => database.initialize()).toThrow('Unsupported replay database version: 2')
+    expect(() => database.initialize()).toThrow('Unsupported replay database version: 4')
   })
 })

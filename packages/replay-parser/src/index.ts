@@ -1,6 +1,25 @@
 import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS, type ReplayComponentName } from './registry.js'
 import { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export { decodeVersioned } from './versioned.js'
+export {
+  parseReplayAttributes,
+  parseReplayInitData,
+  parseReplayTrackerEvents,
+} from './components.js'
+export type {
+  ReplayAttributes,
+  ReplayAttribute,
+  ReplayInitData,
+  ReplayTrackerEvent,
+  ReplayTrackerEvents,
+  ReplayProtocolStamp,
+} from './components.js'
+export type { ReplayBlob, ReplayProtocolValue } from './protocol-decoder.js'
+export {
+  REPLAY_PROTOCOL_ALGORITHM_VERSION,
+  SUPPORTED_REPLAY_BASE_BUILDS,
+  UnsupportedReplayBuildError,
+} from './protocol-schema.js'
 export { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export type { ReplayHeader } from './metadata.js'
 
@@ -22,6 +41,7 @@ export type ReplayPlayerSummary = {
 export type ReplaySummary = {
   fileName: string
   mapName: string | null
+  playedAt: string | null
   gameVersion: string | null
   baseBuild: number | null
   durationSeconds: number | null
@@ -70,6 +90,7 @@ export async function inspectReplayFile(
     summary: {
       fileName,
       mapName: null,
+      playedAt: null,
       gameVersion: null,
       baseBuild: null,
       durationSeconds: null,
@@ -123,6 +144,7 @@ export async function inspectReplayFile(
     try {
       const metadata = parseReplayDetails(details)
       result.summary.mapName = metadata.mapName
+      result.summary.playedAt = metadata.playedAt
       result.summary.players = metadata.players
       decoded = true
     } catch (error) {

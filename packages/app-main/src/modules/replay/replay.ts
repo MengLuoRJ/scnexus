@@ -1,11 +1,24 @@
 import { randomUUID } from 'node:crypto'
-import { lstat, mkdir, mkdtemp, readdir, rm, unlink, writeFile } from 'node:fs/promises'
+import {
+  copyFile,
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  rm,
+  unlink,
+  writeFile,
+} from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { looksLikeReplay } from '@scnexus/replay-parser'
 import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
 import { inspectLocalReplay } from './replay-inspection'
+import { hashReplayFile } from './replay-files'
+import { REPLAY_ANALYSIS_VERSION } from './replay-analysis'
+import { runReplayAnalysis } from './replay-analysis-runner'
 import { SevenZipWrapper } from '../../utils/7zip-wrapper'
 
 export class ReplayLibraryService {
@@ -18,6 +31,110 @@ export class ReplayLibraryService {
   async listStoredReplays(): Promise<ReplayRecord[]> {
     await this.ensureReady()
     return replayDatabase.listReplays()
+  }
+
+  private readonly analyses = new Map<
+    string,
+    Promise<import('@scnexus/app-shared/types/replay.type').ReplayAnalysis>
+  >()
+
+  async getAnalysis(replayId: string) {
+    await this.ensureReady()
+    const result = await replayDatabase.getAnalysis(replayId)
+    if (!result || result.parserVersion !== REPLAY_ANALYSIS_VERSION) return null
+    const record = (await this.listStoredReplays()).find((item) => item.id === replayId)
+    if (!record || (await hashReplayFile(record.path)) !== result.contentHash) return null
+    return result
+  }
+
+  async analyzeReplay(replayId: string) {
+    const current = this.analyses.get(replayId)
+    if (current) return current
+    if (this.analyses.size >= 2) throw new Error('At most two replay analyses can run concurrently')
+    const job = this.performAnalysis(replayId)
+    this.analyses.set(replayId, job)
+    try {
+      return await job
+    } finally {
+      this.analyses.delete(replayId)
+    }
+  }
+
+  private async performAnalysis(replayId: string) {
+    const record = (await this.listStoredReplays()).find((item) => item.id === replayId)
+    if (!record) throw new Error('Replay is not indexed')
+    if (!record.contentHash || (await hashReplayFile(record.path)) !== record.contentHash)
+      throw new Error('Replay changed; reindex before analysis')
+    const result = await runReplayAnalysis(record)
+    if ((await hashReplayFile(record.path)) !== record.contentHash)
+      throw new Error('Replay changed during analysis')
+    await replayDatabase.saveAnalysis(result)
+    return result
+  }
+
+  async listDuplicates() {
+    const groups = new Map<string, ReplayRecord[]>()
+    for (const record of await this.listStoredReplays()) {
+      if (!record.contentHash) continue
+      const group = groups.get(record.contentHash) ?? []
+      group.push(record)
+      groups.set(record.contentHash, group)
+    }
+    return [...groups]
+      .filter(([, replays]) => replays.length > 1)
+      .map(([contentHash, replays]) => ({ contentHash, replays }))
+  }
+
+  async exportReplayArchive(
+    replayIds: string[],
+    destination: string,
+  ): Promise<{ path: string; count: number }> {
+    if (
+      !replayIds.length ||
+      replayIds.length > 2000 ||
+      new Set(replayIds).size !== replayIds.length
+    )
+      throw new Error('Select between 1 and 2000 distinct replays')
+    if (extname(destination).toLowerCase() !== '.zip')
+      throw new Error('Replay export requires a .zip destination')
+    const stored = new Map((await this.listStoredReplays()).map((record) => [record.id, record]))
+    const records = replayIds.map((id) => {
+      const record = stored.get(id)
+      if (!record) throw new Error('Replay is not indexed')
+      return record
+    })
+    if (records.reduce((sum, record) => sum + record.sizeBytes, 0) > 1024 * 1024 * 1024)
+      throw new Error('Replay export exceeds 1 GiB limit')
+    const output = resolve(destination)
+    const staging = await mkdtemp(join(dirname(output), '.scnexus-replay-export-'))
+    try {
+      const files = join(staging, 'files')
+      await mkdir(files)
+      const names: string[] = []
+      for (const [index, record] of records.entries()) {
+        const info = await lstat(record.path)
+        if (!info.isFile() || info.size > 128 * 1024 * 1024)
+          throw new Error('Export source must be a regular replay under 128 MiB')
+        const name = `${String(index + 1).padStart(4, '0')}-${record.fileName.replace(/[^\p{L}\p{N}_.-]/gu, '_').slice(-120)}`
+        names.push(name)
+        const target = join(files, name)
+        await copyFile(record.path, target)
+        const hash = await hashReplayFile(target)
+        if (!record.contentHash || hash !== record.contentHash)
+          throw new Error('Replay changed or lacks a content hash; reindex before export')
+      }
+      const archive = join(staging, 'replays.zip')
+      await this.archiveReader.add(archive, names, {
+        archiveType: 'zip',
+        cwd: files,
+        recursive: false,
+      })
+      // Same-volume hard link publishes a complete archive without replacing existing files.
+      await link(archive, output)
+      return { path: output, count: records.length }
+    } finally {
+      await rm(staging, { recursive: true, force: true })
+    }
   }
 
   async scanDirectory(rootDir: string): Promise<ReplayRecord[]> {
@@ -47,7 +164,17 @@ export class ReplayLibraryService {
     if (!looksLikeReplay(filePath)) throw new Error('Expected a .SC2Replay file')
     const fileStat = await lstat(filePath)
     if (!fileStat.isFile()) throw new Error('Replay must be a regular file')
+    const contentHash = await hashReplayFile(filePath)
     const inspection = await inspectLocalReplay(filePath)
+    const after = await lstat(filePath)
+    if (
+      fileStat.size !== after.size ||
+      fileStat.mtimeMs !== after.mtimeMs ||
+      fileStat.ctimeMs !== after.ctimeMs ||
+      fileStat.ino !== after.ino
+    ) {
+      throw new Error('Replay changed during indexing; retry')
+    }
     const record: ReplayRecord = {
       id: randomUUID(),
       path: filePath,
@@ -55,9 +182,11 @@ export class ReplayLibraryService {
       extension: extname(filePath).toLowerCase(),
       sizeBytes: fileStat.size,
       mtimeMs: fileStat.mtimeMs,
+      contentHash,
       status: inspection.status,
       supportLevel: inspection.supportLevel,
       mapName: inspection.summary.mapName,
+      playedAt: inspection.summary.playedAt,
       gameVersion: inspection.summary.gameVersion,
       baseBuild: inspection.summary.baseBuild,
       durationSeconds: inspection.summary.durationSeconds,

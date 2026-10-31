@@ -22,6 +22,7 @@ describe('replay parser registry', () => {
     expect(result.summary).toEqual({
       fileName: 'test.SC2Replay',
       mapName: null,
+      playedAt: null,
       gameVersion: null,
       baseBuild: null,
       durationSeconds: null,

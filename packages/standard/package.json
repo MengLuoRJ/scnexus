@@ -1,24 +1,34 @@
 {
   "name": "@scnexus/standard",
   "version": "0.1.1",
-  "description": "SCNexus Standard types, definitions, parsers and so on files.",
+  "description": "SCNexus package standard: types, JSON Schema, validators and parsers.",
   "keywords": [
-    "SCNexus"
+    "package-format",
+    "schema",
+    "scnexus",
+    "standard",
+    "starcraft"
   ],
-  "homepage": "https://github.com/MengLuoRJ/scnexus/packages-standard/README.md",
+  "homepage": "https://github.com/MengLuoRJ/scnexus/blob/main/packages/standard/README.md",
   "bugs": {
     "url": "https://github.com/MengLuoRJ/scnexus/issues"
   },
   "license": "BSD-3-Clause",
-  "author": "MengLuoRJ",
+  "author": {
+    "name": "MengLuoRJ",
+    "email": "mengluorj@aiurcovenant.net",
+    "url": "https://github.com/MengLuoRJ"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MengLuoRJ/scnexus.git"
+    "url": "git+https://github.com/MengLuoRJ/scnexus.git",
+    "directory": "packages/standard"
   },
   "files": [
     "dist"
   ],
   "type": "module",
+  "sideEffects": false,
   "typesVersions": {
     "*": {
       "package": [
@@ -35,11 +45,14 @@
       }
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "build:schema": "node scripts/generate-schema.mjs",
     "watch": "tsdown --watch src",
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard && pnpm -w exec eslint packages/standard",
     "lint:oxlint": "pnpm -w exec oxlint -c .oxlintrc.json packages/standard",
     "lint:eslint": "pnpm -w exec eslint packages/standard",

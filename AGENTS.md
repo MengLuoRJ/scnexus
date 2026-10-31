@@ -33,17 +33,18 @@
 
 ## 架构与技术基线
 
-完整目标架构、IPC 契约及迁移顺序见 [架构文档](./docs/architecture.md)。本文规定开发方式，架构文档规定包职责和运行边界。
+完整架构、IPC 契约及实施记录见 [架构文档](./docs/architecture.md)。本文规定开发方式，架构文档规定包职责和运行边界。
 
-以下为目标基线，不表示当前 manifest、构建脚本和业务已完成升级。本阶段只建设文档，不修改依赖与代码。
+以下为当前工具链基线，已在仓库中落地。升级依赖时同步更新本节，并确认版本可用性与兼容性。
 
-- 开发环境：Node.js 26、pnpm monorepo。
-- 构建与打包：Vite 8（Rolldown）、Electron 45、electron-builder 36。
+- 开发环境：Node.js 26、pnpm 11 monorepo。
+- 构建与打包：Vite 8（Rolldown）、Electron 45、electron-builder 26、tsdown（库构建）。
 - 主进程：electron-store、electron-log。
-- 新界面：Vue 3（组合式 API）、Vue Router 5、Pinia、Axios、Nuxt UI（`@nuxt/ui`）、VueUse。
-- TypeScript 及插件版本在工具链升级时按兼容性确定，不继续将旧版固定为新架构要求。
+- 界面：Vue 3（组合式 API）、Vue Router 5、Pinia、Axios、Nuxt UI（`@nuxt/ui`）、VueUse、Tailwind CSS 4。
+- 质量工具：Vitest（测试）、oxlint 与 ESLint（静态检查）、oxfmt（格式化）。
+- TypeScript 及插件版本在工具链升级时按兼容性确定，不继续将旧版固定为架构要求。
 
-Node 26 是开发工具链基线；主进程和 preload 以 Electron 内嵌运行时为准。目标依赖升级时确认版本可用性及兼容性，不静默更换版本。
+Node 26 是开发工具链基线；主进程和 preload 以 Electron 内嵌运行时为准（Electron 45 内嵌 Node.js 24、Chromium 156），不能用开发机 Node 版本代替运行时验证。依赖升级时确认版本可用性及兼容性，不静默更换版本。
 
 ## 包边界
 
@@ -52,16 +53,26 @@ Node 26 是开发工具链基线；主进程和 preload 以 Electron 内嵌运�
 - `packages/app-renderer-v2`：唯一 renderer 运行与维护入口，负责页面、路由、界面状态和 HTTP 请求。
 - 旧 `packages/app-renderer`（v1）已从当前分支移除；历史实现通过 Git 历史或 `v001` 分支查看，不恢复其依赖和运行入口。
 - `packages/app-shared`：共享类型、DTO、错误码和纯契约逻辑，不依赖 Electron、Node 文件系统或 Vue。
+- `packages/standard`：对外发布的 `@scnexus/standard`，定义作品包标准、JSON Schema、校验器与解析器，可独立发布到 npm，供外部作者与工具消费。
+- `packages/replay-parser`：录像文件识别、归档组件检查与元数据提取，不依赖 Electron。
+- `packages/bzip2-wasm`：libbz2 的 WebAssembly 解码器，供录像解析使用。
+- `packages/node-stormlib`、`packages/node-casclib`：MPQ/CASC 归档读写能力，通过 Git submodule 引入上游 StormLib、CascLib 源码；app-main 当前未声明依赖也未导入它们。
 
 运行包之间不导入彼此源码。跨进程使用 IPC，共享契约通过辅助包公开导出使用。不要复制旧 renderer 的隐式依赖或未经验证的实现。
+
+## 许可
+
+- 应用与运行包（`app-main`、`app-preload`、`app-renderer-v2`、`app-shared`、`standard`）采用 BSD-3-Clause；工具与解析类包（`bzip2-wasm`、`replay-parser`、`node-stormlib`、`node-casclib`）采用 MIT。各包在自身 `package.json` 声明许可，不依赖根字段推断；对外发布的包须在包目录内放置 `LICENSE` 文本，使其随打包产物一并分发。
+- 引入新依赖时确认许可兼容性；随应用分发的第三方组件、二进制与素材须登记在 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md)，安全相关约定见 [SECURITY.md](./SECURITY.md)。
 
 ## 工作区与验证
 
 - 使用 pnpm，在依赖所属包声明依赖；内部依赖使用 `workspace:*`。
 - 保持根目录 pnpm-lock.yaml，不引入新的 npm/yarn 锁文件。
 - 不把依赖提升后偶然可用的包当作已声明依赖。
-- 使用现有包级命令和根目录编排；新目标脚本尚未实现时，不把它们描述为已存在。
-- 构建、类型检查和测试分别验证，Vite 构建不能代替类型检查。
+- 使用现有包级命令和根目录编排；计划中的脚本尚未实现时，不把它们描述为已存在。
+- 构建、类型检查和测试分别验证，Vite 构建不能代替类型检查。提交前运行 `pnpm run typecheck`、`pnpm run lint`、`pnpm run test`；仅改文档或配置时至少运行 `pnpm run format:check`。
+- 生成文件（根目录与 renderer 包内的 `stats.html`、`packages/app-renderer-v2/auto-imports.d.ts` 与 `components.d.ts`）不入库，由开发或构建流程生成，不手工编辑也不再提交。
 - 每次运行检查记录具体命令和结果；无测试文件不等于测试覆盖。
 - 文档修改只检查文档一致性和链接，不安装依赖或运行全量打包。
 
@@ -83,7 +94,7 @@ renderer-v2 各类操作完成后的成功、失败等结果提示优先使用 N
 
 组件编写后，可尝试为其定义名字，使用 `defineOptions({ name: 'XXX' })` 进行处理，组件名应遵守所在路径+文件夹名称的规范；例如：`/src/components/MyComponent/MyComponent.vue` 对应的组件名应为 `MyComponent`，`src/views/my-views/list.vue` 对应的组件名应为 `MyViewsList`，`src/views/my-views/components/AnotherComponent.vue` 对应的组件名应为 `MyViewsAnotherComponent`。
 
-仅在当前包已配置自动导入插件并生成类型声明时使用自动导入，否则显式导入 Vue、Pinia 和 VueUse API。类型使用 `import type`，不假定旧 renderer 的插件在 v2 自动生效。
+renderer-v2 已通过 `@nuxt/ui/vite` 配置自动导入（Vue、Vue Router 及 `composables`、`stores`、`ipcs`、`apis`、`utils` 目录），但业务代码仍显式导入这些 API，不依赖生成声明；Nuxt UI 组件在模板中按组件名直接使用，无需导入。生成的 `auto-imports.d.ts` 与 `components.d.ts` 不入库，未生成时全部 API 显式导入。类型使用 `import type`，不假定旧 renderer 的插件在 v2 自动生效。
 
 ## 状态管理
 
@@ -117,7 +128,7 @@ const appStore = useAppStore()
 appStore.setAppReady(true)
 ```
 
-本文的 `src` 路径均相对于所属包。使用 store 时显式导入；仅在当前包已配置相应自动导入时省略。
+本文的 `src` 路径均相对于所属包。使用 store 时显式导入，与现有写法保持一致。
 
 ## IPC 与本地操作
 
@@ -141,11 +152,11 @@ appStore.setAppReady(true)
 
 ## 国际化
 
-- 保留 Vue I18n 的多语言方向，简体中文为源语言，英文与繁体中文按功能迁移。
+- 保留 Vue I18n 的多语言方向，简体中文为源语言，英文与繁体中文随功能同步维护。
 - 繁体中文采用和简体中文相同的文本，仅将汉字转换为繁体汉字。
 - 语言资源相对于 renderer 包存放于 `src/locales`，按语言和业务模块组织。
 - 文本键使用扁平结构，例如 `campaign.manage.install.title`。
-- v2 的插件接入、语言初始化及资源迁移需明确实现，不能把旧 renderer 配置视为已存在。
+- v2 已完成 vue-i18n 接入、语言初始化与资源迁移，三套语言资源的键需保持一致；新增或修改文案时同步更新 `zh`、`zh-Hant`、`en`。
 - 当前尚无独立国际化流程文档；需要细化时另行建设，不引用不存在的规范文件。
 
 参考 [Vue I18n 文档](https://vue-i18n.intlify.dev/)。

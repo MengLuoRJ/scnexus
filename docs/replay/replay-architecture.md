@@ -129,7 +129,7 @@ export type ReplayAnalysis = {
 
 ## 9. 当前已落地与使用方式
 
-- renderer-v2 侧栏提供「录像管理」页面；先选择星际资料句柄及录像类型，再读取所选目录并更新该范围索引。不进行后台监听或定时扫描。
+- renderer-v2 侧栏提供「录像管理」页面；进入时恢复 renderer localStorage 中最后的资料句柄及类型，仅保存这两项界面偏好。无有效历史选择或对应资料不存在时回退到第一个已识别资料，随后读取其类型目录。无资料时不扫描；存储不可用不影响选择，不进行后台监听或定时扫描。
 - 设置中心保存「星际文档目录」，空值表示系统 Documents 下的 `StarCraft II`（使用系统目录 API，支持重定向的 Documents，不写死用户名）。显式识别其 `Accounts/<accountId>/<profileHandle>` 资料，界面主要展示绝对唯一的资料句柄。
 - 资料句柄作为身份，账号 ID 仅作来源信息；同一文档根出现重复句柄视为歧义并拒绝，不任意选择目录。每个资料支持 `Multiplayer`（多人游戏）、`Campaign`（战役）、`Challenge`（挑战），范围固定在该资料的 `Replays/<category>`。
 - 外部单个录像与压缩包均为导入复制，必须先选择资料及类型，主进程计算目标目录；不允许直接索引任意外部路径或任意安装目标。切换范围清空勾选、重复过滤及详情，防止跨资料误操作。
@@ -149,6 +149,8 @@ export type ReplayAnalysis = {
 - 新底层能力通过明确的 ReplayApi（discoverDirectories/listDuplicates/exportArchive/analyze/getAnalysis）及 renderer IPC 封装提供。
 
 ### renderer 管理与解析入口
+
+- 对局曲线将所有已分析玩家叠加在同一图表，共享时间轴及数值刻度；玩家颜色稳定、指标线型区分，图例和点提示包含玩家身份。不同采样时间各自保留，缺失值断线、不补零；生产时间线仍按玩家切换，不影响对比曲线。
 
 - 列表、重复组、导入、导出、删除及解析 API 必须带 `ReplayScope { profileHandle, category }`；文件/录像 ID 也由主进程验证归属与当前目录边界，不仅是 renderer 筛选。
 - 「只看重复录像」按已索引 hash 查询重复组并标记各文件，不合并、不自动删除。提示用户：变更文件需重新索引后更新分组。

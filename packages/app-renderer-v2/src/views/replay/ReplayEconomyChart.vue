@@ -1,29 +1,44 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ReplayEconomySample } from '@scnexus/app-shared/types/replay-insights.type'
-import { economyChart, replayGameTime } from './insights'
-import type { EconomyMetric } from './insights'
+import { comparisonEconomyChart, replayGameTime } from './insights'
+import type { EconomyChartPlayer, EconomyMetric } from './insights'
 
 defineOptions({ name: 'ReplayEconomyChart' })
 const props = defineProps<{
   title: string
-  samples: ReplayEconomySample[]
+  players: EconomyChartPlayer[]
   metrics: EconomyMetric[]
 }>()
 const { t } = useI18n()
-const chart = computed(() => economyChart(props.samples, props.metrics))
+const chart = computed(() => comparisonEconomyChart(props.players, props.metrics))
 const hasData = computed(() => chart.value.series.some((series) => series.segments.length))
-const colors = ['text-primary', 'text-success', 'text-warning']
 </script>
 
 <template>
   <section class="min-w-0 space-y-1">
     <h4 class="font-medium">{{ props.title }}</h4>
     <template v-if="hasData">
-      <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs" :aria-label="t('replay.legend')">
-        <li v-for="(series, index) in chart.series" :key="series.metric" :class="colors[index]">
-          {{ t(`replay.metric.${series.metric}`) }} · {{ index + 1 }}
+      <ul
+        class="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs [&>li]:min-w-0 [&>li]:break-all"
+        :aria-label="t('replay.legend')">
+        <li
+          v-for="series in chart.series"
+          :key="`${series.playerId}-${series.metric}`"
+          :style="{ color: series.color }">
+          <svg
+            width="24"
+            height="10"
+            viewBox="0 0 24 10"
+            aria-hidden="true"
+            class="inline-block shrink-0">
+            <path
+              d="M0 5 H24"
+              stroke="currentColor"
+              stroke-width="2"
+              :stroke-dasharray="series.dash" />
+          </svg>
+          {{ series.label }} · {{ t(`replay.metric.${series.metric}`) }}
         </li>
       </ul>
       <svg
@@ -41,14 +56,17 @@ const colors = ['text-primary', 'text-success', 'text-warning']
           <text x="300" y="169" text-anchor="middle">{{ replayGameTime(chart.end / 2) }}</text>
           <text x="552" y="169" text-anchor="end">{{ replayGameTime(chart.end) }}</text>
         </g>
-        <g v-for="(series, index) in chart.series" :key="series.metric" :class="colors[index]">
+        <g
+          v-for="series in chart.series"
+          :key="`${series.playerId}-${series.metric}`"
+          :style="{ color: series.color }">
           <g v-for="(segment, segmentIndex) in series.segments" :key="segmentIndex">
             <polyline
               :points="segment.map((point) => `${point.x},${point.y}`).join(' ')"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
-              :stroke-dasharray="index === 1 ? '6 3' : index === 2 ? '2 3' : undefined" />
+              :stroke-dasharray="series.dash" />
             <circle
               v-for="(point, pointIndex) in segment"
               :key="pointIndex"
@@ -57,7 +75,8 @@ const colors = ['text-primary', 'text-success', 'text-warning']
               r="2.5"
               fill="currentColor">
               <title>
-                {{ t(`replay.metric.${series.metric}`) }} · {{ replayGameTime(point.gameLoop) }}:
+                {{ series.label }} · {{ t(`replay.metric.${series.metric}`) }} ·
+                {{ replayGameTime(point.gameLoop) }}:
                 {{ point.value }}
               </title>
             </circle>

@@ -34,13 +34,20 @@ const participant = computed(() =>
 const playerItems = computed(() =>
   players.value.map((player) => ({
     value: player.playerId,
-    label: replayPlayerName(
+    label: `${replayPlayerName(
       player.name ??
         props.record.players.find((item) => player.slot !== null && item.slot === player.slot)
           ?.name ??
         null,
       t('replay.participantUnknown', { id: player.playerId }),
-    ),
+    )} (#${player.playerId})`,
+  })),
+)
+const chartPlayers = computed(() =>
+  players.value.map((player, index) => ({
+    playerId: player.playerId,
+    label: playerItems.value[index]!.label,
+    samples: player.economy,
   })),
 )
 const page = ref(0)
@@ -166,6 +173,20 @@ watch([selectedId, () => props.analysis], () => {
           {{ t('replay.partialInsights') }}
         </p>
         <template v-if="players.length">
+          <p class="text-xs text-muted">{{ t('replay.chartNotice') }}</p>
+          <ReplayEconomyChart
+            :title="t('replay.resources')"
+            :players="chartPlayers"
+            :metrics="['minerals', 'vespene']" />
+          <ReplayEconomyChart
+            :title="t('replay.income')"
+            :players="chartPlayers"
+            :metrics="['mineralIncome', 'vespeneIncome']" />
+          <ReplayEconomyChart
+            :title="t('replay.workersSupply')"
+            :players="chartPlayers"
+            :metrics="['workers', 'supplyUsed', 'supplyCap']" />
+
           <label class="block space-y-1">
             <span class="text-xs text-muted">{{ t('replay.participant') }}</span>
             <USelect
@@ -177,19 +198,6 @@ watch([selectedId, () => props.analysis], () => {
               @update:model-value="selectedId = Number($event)" />
           </label>
           <template v-if="participant">
-            <p class="text-xs text-muted">{{ t('replay.chartNotice') }}</p>
-            <ReplayEconomyChart
-              :title="t('replay.resources')"
-              :samples="participant.economy"
-              :metrics="['minerals', 'vespene']" />
-            <ReplayEconomyChart
-              :title="t('replay.income')"
-              :samples="participant.economy"
-              :metrics="['mineralIncome', 'vespeneIncome']" />
-            <ReplayEconomyChart
-              :title="t('replay.workersSupply')"
-              :samples="participant.economy"
-              :metrics="['workers', 'supplyUsed', 'supplyCap']" />
             <section :aria-label="t('replay.productionTitle')" class="space-y-2">
               <h4 class="font-medium">{{ t('replay.productionTitle') }}</h4>
               <p class="text-xs text-muted">{{ t('replay.productionNotice') }}</p>

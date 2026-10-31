@@ -10,6 +10,7 @@ import type {
   ReplayAnalysis,
 } from '@scnexus/app-shared/types/replay.type'
 import ReplayAnalysisDialog from './ReplayAnalysisDialog.vue'
+import { readReplaySelection, saveReplaySelection } from './selection'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
 import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
 import {
@@ -149,22 +150,41 @@ async function loadProfiles() {
   if (token !== generation) return
   profiles.value = result
   profilesLoaded.value = true
-  if (!result.some((profile) => profile.handle === profileHandle.value)) {
+  const remembered = readReplaySelection()
+  const next =
+    result.find(
+      (profile) => profile.handle === (profileHandle.value || remembered?.profileHandle),
+    ) ?? result[0]
+  if (!next) {
     profileHandle.value = ''
     clearScope()
+    return
   }
+  if (profileHandle.value !== next.handle) {
+    clearScope()
+    profileHandle.value = next.handle
+    category.value = remembered?.category ?? 'Multiplayer'
+  }
+  saveReplaySelection(requireScope())
+  await refresh()
 }
 function changeProfile(value: string) {
   if (busy.value) return
   clearScope()
   profileHandle.value = value
-  if (value) return run(refresh)
+  if (value) {
+    saveReplaySelection(requireScope())
+    return run(refresh)
+  }
 }
 function changeCategory(value: ReplayCategory) {
   if (busy.value) return
   clearScope()
   category.value = value
-  if (scope.value) return run(refresh)
+  if (scope.value) {
+    saveReplaySelection(requireScope())
+    return run(refresh)
+  }
 }
 async function run(action: () => Promise<boolean | void>) {
   if (busy.value) return

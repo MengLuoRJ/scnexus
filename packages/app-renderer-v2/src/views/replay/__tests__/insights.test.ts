@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import type { ReplayEconomySample } from '@scnexus/app-shared/types/replay-insights.type'
-import { economyChart, replayGameTime } from '../insights'
+import { comparisonEconomyChart, economyChart, replayGameTime } from '../insights'
 
 function sample(gameLoop: number, minerals: number | null): ReplayEconomySample {
   return {
@@ -51,4 +51,50 @@ test('large histories have bounded actual display samples, full extent and endpo
       ),
     ),
   ).toBe(true)
+})
+
+test('compares all players on global axes without aligning or filling independent histories', () => {
+  const players = [
+    {
+      playerId: 1,
+      label: 'Same (#1)',
+      samples: [sample(160, 50), sample(320, null), sample(480, 25)],
+    },
+    { playerId: 2, label: 'Same (#2)', samples: [sample(240, 50), sample(960, 200)] },
+  ]
+  const chart = comparisonEconomyChart(players, ['minerals', 'workers'])
+  expect(chart.max).toBe(200)
+  expect(chart.end).toBe(960)
+  const first = chart.series[0]!
+  const second = chart.series[2]!
+  expect(first.segments).toHaveLength(2)
+  expect(first.segments.flat().map((point) => point.gameLoop)).toEqual([160, 480])
+  expect(second.segments.flat().map((point) => point.gameLoop)).toEqual([240, 960])
+  expect(first.segments[0]![0]!.y).toBe(second.segments[0]![0]!.y)
+  expect(first.segments.at(-1)!.at(-1)!.x).toBe(300)
+  expect(second.segments.at(-1)!.at(-1)!.x).toBe(552)
+  expect(first.color).not.toBe(second.color)
+  expect(first.dash).toBe(second.dash)
+  expect(first.dash).not.toBe(chart.series[1]!.dash)
+  expect(chart.series[1]!.segments).toEqual([])
+  expect(comparisonEconomyChart([...players].reverse(), ['minerals']).series[0]!.color).toBe(
+    second.color,
+  )
+})
+
+test('comparison series keep per-player bounds and use full-history maxima', () => {
+  const samples = Array.from({ length: 10_000 }, (_, index) =>
+    sample(index * 16, index === 25 ? 50_000 : index),
+  )
+  const chart = comparisonEconomyChart(
+    [
+      { playerId: 1, label: 'One', samples },
+      { playerId: 2, label: 'Two', samples: [sample(80, 30)] },
+    ],
+    ['minerals'],
+  )
+  expect(chart.max).toBe(50_000)
+  expect(chart.series[0]!.segments.flat().length).toBeLessThanOrEqual(1000)
+  expect(chart.series[1]!.segments.flat()).toHaveLength(1)
+  expect(chart.series[1]!.segments[0]![0]!.gameLoop).toBe(80)
 })

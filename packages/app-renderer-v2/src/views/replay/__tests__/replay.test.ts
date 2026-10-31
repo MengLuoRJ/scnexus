@@ -83,7 +83,7 @@ const modal = defineComponent({
     '<div v-if="open" role="dialog"><h2>{{ title }}</h2><p>{{ description }}</p><slot name="body"/><slot name="footer"/></div>',
 })
 const wrappers: ReturnType<typeof mount>[] = []
-async function render(selectProfile = true, locale = 'en') {
+async function render(_selectProfile = true, locale = 'en') {
   const wrapper = mount(ReplayView, {
     global: {
       plugins: [createI18n({ legacy: false, locale, messages: { en, zh, 'zh-Hant': zhHant } })],
@@ -115,10 +115,6 @@ async function render(selectProfile = true, locale = 'en') {
   })
   wrappers.push(wrapper)
   await flushPromises()
-  if (selectProfile) {
-    await wrapper.findAll('select')[0]!.setValue(scope.profileHandle)
-    await flushPromises()
-  }
   return wrapper
 }
 async function click(wrapper: ReturnType<typeof mount>, label: string) {
@@ -130,6 +126,7 @@ async function click(wrapper: ReturnType<typeof mount>, label: string) {
 }
 beforeEach(() => {
   vi.resetAllMocks()
+  localStorage.clear()
   mocks.scan.mockResolvedValue({ ok: true, data: [record] })
   for (const method of [mocks.index, mocks.archive, mocks.delete])
     method.mockResolvedValue({ ok: true, data: [] })
@@ -467,10 +464,12 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   expect(dialog.text()).not.toContain('tracker-versioned-v1')
   expect(dialog.find('b').exists()).toBe(false)
   expect(dialog.find('img').exists()).toBe(false)
-  expect(dialog.findAll('svg')).toHaveLength(2)
-  expect(dialog.findAll('svg')[0]!.text()).toContain('0:10: 50')
-  expect(dialog.findAll('svg')[1]!.text()).toContain('Minerals / minute · 0:10: 700')
-  expect(dialog.text()).toContain('These samples are not available')
+  expect(dialog.findAll('svg[role="img"]')).toHaveLength(3)
+  expect(dialog.findAll('svg[role="img"]')[0]!.text()).toContain('0:10: 50')
+  expect(dialog.findAll('svg[role="img"]')[1]!.text()).toMatch(
+    /Minerals \/ minute[\s\S]*0:10:[\s\S]*700/,
+  )
+  expect(dialog.text()).toContain('999')
   expect(dialog.text()).toContain('Production started')
   expect(dialog.text()).not.toContain('Construction started')
   expect(dialog.get('ol').findAll('li')).toHaveLength(20)
@@ -480,21 +479,18 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   expect(dialog.get('ol').findAll('li')).toHaveLength(5)
   expect(dialog.text()).toContain('3 / 3')
   await dialog.get('select').setValue('2')
-  expect(dialog.findAll('svg')).toHaveLength(3)
+  expect(dialog.findAll('svg[role="img"]')).toHaveLength(3)
   expect(dialog.text()).toContain('999')
-  expect(dialog.text()).toContain('Workers · 0:10: 24')
+  expect(dialog.text()).toMatch(/Workers[\s\S]*0:10:[\s\S]*24/)
   expect(dialog.text()).toContain('No production records')
   expect(dialog.find('ol').exists()).toBe(false)
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
 
-test('requires a profile and switches categories with immediate scoped reads and cleared selection', async () => {
+test('selects first profile and switches categories with immediate scoped reads and cleared selection', async () => {
   const wrapper = await render(false)
-  expect(mocks.scan).not.toHaveBeenCalled()
-  expect(wrapper.findAll('article')).toHaveLength(0)
-  await wrapper.findAll('select')[0]!.setValue(scope.profileHandle)
-  await flushPromises()
-  expect(mocks.scan).toHaveBeenLastCalledWith(scope)
+  expect(mocks.scan).toHaveBeenCalledExactlyOnceWith(scope)
+  expect(wrapper.findAll('article')).toHaveLength(1)
   await click(wrapper, 'Multi-select export')
   await wrapper.get('input[type="checkbox"]').setValue(true)
   mocks.scan.mockResolvedValueOnce({ ok: true, data: [] })
@@ -620,14 +616,14 @@ test('existing indexed SC2 names display safely in list, results, search and det
 test('header actions are ordered and disabled while loading or without a scope', async () => {
   const wrapper = await render(false)
   const actions = wrapper.findAll('button')
-  expect(actions.map((button) => button.text())).toEqual([
+  expect(actions.slice(0, 3).map((button) => button.text())).toEqual([
     'Refresh',
     'Import',
     'Multi-select export',
   ])
-  expect(actions.every((button) => button.attributes('disabled') !== undefined)).toBe(true)
-  await wrapper.findAll('select')[0]!.setValue(scope.profileHandle)
-  await flushPromises()
+  expect(actions.slice(0, 3).every((button) => button.attributes('disabled') === undefined)).toBe(
+    true,
+  )
   await click(wrapper, 'Multi-select export')
   expect(
     wrapper
@@ -668,4 +664,37 @@ test.each([
   expect(wrapper.get('article p').text()).toBe(player)
   await click(wrapper, toggle)
   expect(wrapper.text()).toContain(select)
+})
+
+test('restores renderer profile and category across page mounts', async () => {
+  mocks.discover.mockResolvedValue({
+    ok: true,
+    data: [profile, { ...profile, handle: '1-S2-1-999' }],
+  })
+  const first = await render()
+  await first.findAll('select')[0]!.setValue('1-S2-1-999')
+  await flushPromises()
+  await first.findAll('select')[1]!.setValue('Challenge')
+  await flushPromises()
+  first.unmount()
+  mocks.scan.mockClear()
+  const second = await render()
+  expect(mocks.scan).toHaveBeenCalledExactlyOnceWith({
+    profileHandle: '1-S2-1-999',
+    category: 'Challenge',
+  })
+  expect((second.findAll('select')[0]!.element as HTMLSelectElement).value).toBe('1-S2-1-999')
+  expect((second.findAll('select')[1]!.element as HTMLSelectElement).value).toBe('Challenge')
+})
+
+test('missing saved profile falls back to first available without leaking prior records', async () => {
+  localStorage.setItem(
+    'scnexus.replay.selection',
+    JSON.stringify({ profileHandle: '1-S2-1-999', category: 'Campaign' }),
+  )
+  await render()
+  expect(mocks.scan).toHaveBeenCalledExactlyOnceWith({ ...scope, category: 'Campaign' })
+  expect(JSON.parse(localStorage.getItem('scnexus.replay.selection')!).profileHandle).toBe(
+    scope.profileHandle,
+  )
 })

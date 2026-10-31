@@ -7,19 +7,59 @@ export function replayGameTime(gameLoop: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-export function economyChart(samples: ReplayEconomySample[], metrics: EconomyMetric[]) {
+export type EconomyChartPlayer = {
+  playerId: number
+  label: string
+  samples: ReplayEconomySample[]
+}
+
+export function comparisonEconomyChart(players: EconomyChartPlayer[], metrics: EconomyMetric[]) {
+  const scale = { end: 16, max: 1 }
+  for (const player of players) {
+    for (const sample of player.samples) {
+      if (!Number.isFinite(sample.gameLoop) || sample.gameLoop < 0) continue
+      scale.end = Math.max(scale.end, sample.gameLoop)
+      for (const metric of metrics) {
+        const value = sample[metric]
+        if (value !== null && Number.isFinite(value)) scale.max = Math.max(scale.max, value)
+      }
+    }
+  }
+  return {
+    ...scale,
+    series: players.flatMap((player) =>
+      economyChart(player.samples, metrics, scale).series.map((series, metricIndex) => ({
+        ...series,
+        playerId: player.playerId,
+        label: player.label,
+        // Derive distinct player hues from the theme's semantic primary color.
+        color: `oklch(from var(--ui-primary) l c ${((player.playerId - 1) * 137.508) % 360})`,
+        dash: ['', '6 3', '2 3'][metricIndex % 3],
+      })),
+    ),
+  }
+}
+
+export function economyChart(
+  samples: ReplayEconomySample[],
+  metrics: EconomyMetric[],
+  scale?: { end: number; max: number },
+) {
   const ordered = samples
     .filter((sample) => Number.isFinite(sample.gameLoop) && sample.gameLoop >= 0)
     .sort((a, b) => a.gameLoop - b.gameLoop)
-  const end = ordered.reduce((maximum, sample) => Math.max(maximum, sample.gameLoop), 16)
-  const max = ordered.reduce(
-    (maximum, sample) =>
-      metrics.reduce((value, metric) => {
-        const current = sample[metric]
-        return current !== null && Number.isFinite(current) ? Math.max(value, current) : value
-      }, maximum),
-    1,
-  )
+  const end =
+    scale?.end ?? ordered.reduce((maximum, sample) => Math.max(maximum, sample.gameLoop), 16)
+  const max =
+    scale?.max ??
+    ordered.reduce(
+      (maximum, sample) =>
+        metrics.reduce((value, metric) => {
+          const current = sample[metric]
+          return current !== null && Number.isFinite(current) ? Math.max(value, current) : value
+        }, maximum),
+      1,
+    )
   const stride = Math.ceil(Math.max(0, ordered.length - 2) / 998)
   const buckets =
     ordered.length <= 1000

@@ -1,4 +1,5 @@
-import type { Bounds, ProtocolSchema } from './protocol-schema.js'
+import { UnsupportedReplayProtocolError } from './protocol-schema.js'
+import type { Bounds, TrackerProtocolSchema } from './protocol-schema.js'
 import type { VersionedValue } from './versioned.js'
 
 export type ReplayBlob = { kind: 'blob'; hex: string; text: string | null }
@@ -74,8 +75,9 @@ export class ReplayBitReader {
 export class ProtocolDecoder {
   private nodes = 0
   constructor(
-    readonly schema: ProtocolSchema,
+    readonly schema: TrackerProtocolSchema,
     readonly reader?: ReplayBitReader,
+    readonly strictFields = false,
   ) {}
 
   decode(typeId: number, raw?: VersionedValue, depth = 0): ReplayProtocolValue {
@@ -148,6 +150,17 @@ export class ProtocolDecoder {
       }
       case '_struct': {
         if (!reader && !(raw instanceof Map)) return invalid()
+        if (this.strictFields && raw instanceof Map) {
+          const tags = new Set(type[1][0].map((field) => field[2]))
+          for (const tag of raw.keys()) {
+            if (!tags.has(tag))
+              throw new UnsupportedReplayProtocolError(`Unverified tracker field tag: ${tag}`)
+          }
+          for (const [name, id, tag] of type[1][0]) {
+            if (!raw.has(tag) && this.schema.types[id]?.[0] !== '_optional')
+              throw new UnsupportedReplayProtocolError(`Missing verified tracker field: ${name}`)
+          }
+        }
         const result: Record<string, ReplayProtocolValue> = {}
         for (const [name, id, tag] of type[1][0]) {
           if (!reader && raw instanceof Map && !raw.has(tag)) continue

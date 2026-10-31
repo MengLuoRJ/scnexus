@@ -18,7 +18,9 @@ export type { ReplayBlob, ReplayProtocolValue } from './protocol-decoder.js'
 export {
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
   SUPPORTED_REPLAY_BASE_BUILDS,
+  COMPATIBLE_TRACKER_BASE_BUILDS,
   UnsupportedReplayBuildError,
+  UnsupportedReplayProtocolError,
 } from './protocol-schema.js'
 export { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export type { ReplayHeader } from './metadata.js'
@@ -32,6 +34,7 @@ export type ReplaySupportLevel = 'full' | 'metadata-only' | 'unsupported'
 
 export type ReplayPlayerSummary = {
   slot: number
+  profileHandle?: string | null
   name: string | null
   race: string | null
   team: number | null

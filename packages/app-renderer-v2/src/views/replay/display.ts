@@ -1,4 +1,10 @@
-import type { ReplayPlayer } from '@scnexus/app-shared/types/replay.type'
+import type { ReplayPlayer, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+
+export function replayProfilePlayer(record: ReplayRecord): ReplayPlayer | null {
+  if (!record.profileHandle) return null
+  const matches = record.players.filter((player) => player.profileHandle === record.profileHandle)
+  return matches.length === 1 ? matches[0]! : null
+}
 
 /** Decode replay text once, without interpreting HTML or removing clan tags. */
 export function replayPlayerName(name: string | null, unknown: string): string {

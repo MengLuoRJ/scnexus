@@ -78,7 +78,7 @@ describe('local replay MPQ inspection', () => {
       durationSeconds: 200,
     })
     expect(result.summary.players).toEqual([
-      { slot: 1, name: 'Player', race: 'Protoss', team: 1, result: 'win' },
+      { slot: 1, profileHandle: null, name: 'Player', race: 'Protoss', team: 1, result: 'win' },
     ])
     const reopened = await openMpq(path)
     try {

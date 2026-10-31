@@ -86,8 +86,8 @@ describe('self-describing replay metadata', () => {
       mapName: '测试地图',
       playedAt: null,
       players: [
-        { slot: 1, name: '玩家', race: 'Terran', team: 1, result: 'win' },
-        { slot: 2, name: 'Opponent', race: 'Zerg', team: 2, result: 'loss' },
+        { slot: 1, profileHandle: null, name: '玩家', race: 'Terran', team: 1, result: 'win' },
+        { slot: 2, profileHandle: null, name: 'Opponent', race: 'Zerg', team: 2, result: 'loss' },
       ],
     })
   })
@@ -139,6 +139,24 @@ describe('self-describing replay metadata', () => {
       struct({ 0: [0, 0], 1: text('Map'), 5: [9, ...vint(999999999999999999999n)] }),
     )
     expect(() => parseReplayDetails(bytes)).toThrow('64-bit range')
+  })
+  it('extracts exact Battle.net profile handle and excludes computer identities', () => {
+    const toon = struct({ 0: integer(5), 1: [7, 0, 0, 83, 50], 2: integer(1), 4: integer(2206060) })
+    const bytes = Uint8Array.from(
+      struct({
+        0: [
+          0,
+          4,
+          ...struct({ 1: toon }),
+          ...struct({ 1: struct({ 0: integer(0), 2: integer(0), 4: integer(0) }) }),
+        ],
+        1: text('Map'),
+      }),
+    )
+    expect(parseReplayDetails(bytes).players.map((player) => player.profileHandle)).toEqual([
+      '5-S2-1-2206060',
+      null,
+    ])
   })
   it('does not infer a draw from an undecided result', () => {
     const undecided = Uint8Array.from(

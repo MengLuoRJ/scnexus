@@ -1,5 +1,32 @@
 import { expect, test } from 'vitest'
-import { replayPlayerName, replayResultClass } from '../display'
+import { replayPlayerName, replayResultClass, replayProfilePlayer } from '../display'
+import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+
+test('matches profile handle exactly, never nickname, account ID or first participant', () => {
+  const players = [
+    {
+      slot: 1,
+      name: 'SameName',
+      profileHandle: '1-S2-1-42',
+      race: 'Zerg',
+      team: 1,
+      result: 'loss' as const,
+    },
+    {
+      slot: 2,
+      name: 'SameName',
+      profileHandle: '5-S2-1-42',
+      race: 'Terran',
+      team: 2,
+      result: 'win' as const,
+    },
+  ]
+  const record = { profileHandle: '5-S2-1-42', players } as ReplayRecord
+  expect(replayProfilePlayer(record)?.slot).toBe(2)
+  expect(replayProfilePlayer({ ...record, profileHandle: '42' })).toBeNull()
+  expect(replayProfilePlayer({ ...record, profileHandle: null })).toBeNull()
+  expect(replayProfilePlayer({ ...record, players: [...players, players[1]!] })).toBeNull()
+})
 
 test.each([
   ['&lt;ACNet&gt;<sp/>MengLuoRJ', '<ACNet> MengLuoRJ'],

@@ -10,7 +10,7 @@ import type {
   ReplayAnalysis,
 } from '@scnexus/app-shared/types/replay.type'
 import ReplayAnalysisDialog from './ReplayAnalysisDialog.vue'
-import { replayPlayerName, replayResultClass } from './display'
+import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
 import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
 import {
   ipcReplayScan,
@@ -418,27 +418,14 @@ onUnmounted(() => {
           <h2 class="min-w-0 truncate font-medium" :title="record.mapName ?? t('replay.unknown')">
             {{ record.mapName ?? t('replay.unknown') }}
           </h2>
-          <div
-            class="min-w-0 truncate text-right text-xs"
-            :title="
-              record.players
-                .map(
-                  (player) =>
-                    `${replayPlayerName(player.name, t('replay.unknown'))}: ${player.result ? t(`replay.result.${player.result}`) : t('replay.unknown')}`,
-                )
-                .join(' / ')
-            "
-            :aria-label="t('replay.result')">
-            <template v-if="record.players.length">
-              <template v-for="(player, index) in record.players" :key="player.slot">
-                <span v-if="index" class="text-muted">/</span>
-                <span :class="replayResultClass(player.result)">
-                  {{ replayPlayerName(player.name, t('replay.unknown')) }}:
-                  {{ player.result ? t(`replay.result.${player.result}`) : t('replay.unknown') }}
-                </span>
-              </template>
-            </template>
-            <span v-else class="text-muted">{{ t('replay.unknown') }}</span>
+          <div class="min-w-0 truncate text-right text-xs" :aria-label="t('replay.result')">
+            <span :class="replayResultClass(replayProfilePlayer(record)?.result ?? null)">
+              {{
+                replayProfilePlayer(record)?.result
+                  ? t(`replay.result.${replayProfilePlayer(record)!.result}`)
+                  : t('replay.unknown')
+              }}
+            </span>
           </div>
           <p class="min-w-0 truncate text-xs text-muted" :title="playersLabel(record)">
             {{ playersLabel(record) }}

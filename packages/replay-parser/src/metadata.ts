@@ -45,7 +45,31 @@ export function parseReplayDetails(data: Uint8Array): {
     if (observer !== null && observer !== 0) continue
     const team = versionedNumber(player.get(5))
     const result = versionedNumber(player.get(8))
+    const toon = player.get(1)
+    let profileHandle: string | null = null
+    if (toon instanceof Map) {
+      const region = versionedNumber(toon.get(0))
+      const realm = versionedNumber(toon.get(2))
+      const id = toon.get(4)
+      const program = toon.get(1)
+      const programName =
+        program instanceof Uint8Array
+          ? new TextDecoder().decode(program).split(String.fromCharCode(0)).join('')
+          : null
+      if (
+        programName === 'S2' &&
+        region !== null &&
+        region > 0 &&
+        realm !== null &&
+        realm > 0 &&
+        typeof id === 'bigint' &&
+        id > 0n
+      ) {
+        profileHandle = `${region}-S2-${realm}-${id}`
+      }
+    }
     players.push({
+      profileHandle,
       slot: index + 1,
       name: versionedText(player.get(0)),
       race: versionedText(player.get(2)),

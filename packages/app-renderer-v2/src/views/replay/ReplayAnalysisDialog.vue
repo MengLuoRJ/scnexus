@@ -1,13 +1,10 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type {
-  ReplayAnalysis,
-  ReplayJson,
-  ReplayRecord,
-} from '@scnexus/app-shared/types/replay.type'
-
-import { replayPlayerName, replayResultClass } from './display'
+import type { ReplayAnalysis, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+import ReplayEconomyChart from './ReplayEconomyChart.vue'
+import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
+import { replayGameTime } from './insights'
 
 defineOptions({ name: 'ReplayAnalysisDialog' })
 const props = defineProps<{
@@ -29,41 +26,39 @@ function raceLabel(race: string | null) {
     ? t(`replay.race.${normalized}`)
     : race
 }
-const component = ref<'initData' | 'attributes' | 'tracker'>('tracker')
+const players = computed(() => props.analysis?.insights?.players ?? [])
+const selectedId = ref<number>()
+const participant = computed(() =>
+  players.value.find((player) => player.playerId === selectedId.value),
+)
+const playerItems = computed(() =>
+  players.value.map((player) => ({
+    value: player.playerId,
+    label: replayPlayerName(
+      player.name ??
+        props.record.players.find((item) => player.slot !== null && item.slot === player.slot)
+          ?.name ??
+        null,
+      t('replay.participantUnknown', { id: player.playerId }),
+    ),
+  })),
+)
 const page = ref(0)
 const size = 20
-function field(value: ReplayJson | undefined, key: string): ReplayJson | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value[key] : undefined
-}
-const value = computed(() => props.analysis?.components[component.value])
-const items = computed(() => {
-  const list = field(value.value, component.value === 'tracker' ? 'events' : 'attributes')
-  return Array.isArray(list) ? list : []
-})
-const visible = computed(() => items.value.slice(page.value * size, (page.value + 1) * size))
-const pageCount = computed(() => Math.max(1, Math.ceil(items.value.length / size)))
-const eventCounts = computed(() => {
-  const events = field(props.analysis?.components.tracker ?? undefined, 'events')
-  const counts = new Map<string, number>()
-  if (Array.isArray(events))
-    for (const event of events) {
-      const type = field(event, 'eventType')
-      if (typeof type === 'string') counts.set(type, (counts.get(type) ?? 0) + 1)
-    }
-  return [...counts].map(([type, count]) => ({ type, count }))
-})
-function preview(data: ReplayJson | undefined): string {
-  const text = JSON.stringify(data ?? null, null, 2)
-  return text.length > 12_000 ? `${text.slice(0, 12_000)}\n… ${t('replay.previewTruncated')}` : text
-}
-function label(item: ReplayJson, index: number): string {
-  const type = field(item, 'eventType')
-  const loop = field(item, 'gameLoop')
-  if (typeof type === 'string')
-    return `${page.value * size + index + 1}. ${type} · ${t('replay.gameLoop')}: ${String(loop ?? '?')}`
-  return `${page.value * size + index + 1}. ${t('replay.attributeId')}: ${String(field(item, 'attributeId') ?? '?')}`
-}
-watch([component, () => props.analysis], () => {
+const production = computed(() =>
+  [...(participant.value?.production ?? [])].sort((a, b) => a.gameLoop - b.gameLoop),
+)
+const visible = computed(() => production.value.slice(page.value * size, (page.value + 1) * size))
+const pageCount = computed(() => Math.max(1, Math.ceil(production.value.length / size)))
+watch(
+  players,
+  (value) => {
+    if (!value.some((player) => player.playerId === selectedId.value))
+      selectedId.value = value[0]?.playerId
+  },
+  { immediate: true },
+)
+watch([selectedId, () => props.analysis], () => {
   page.value = 0
 })
 </script>
@@ -75,7 +70,7 @@ watch([component, () => props.analysis], () => {
     :title="t('replay.details')"
     :description="props.record.fileName"
     :ui="{
-      content: 'max-w-3xl max-h-[85vh]',
+      content: 'max-w-3xl max-h-[85vh] sm:max-h-[85vh]',
       description: 'break-all',
       body: 'min-h-0 overflow-y-auto',
       footer: 'flex-wrap',
@@ -84,10 +79,6 @@ watch([component, () => props.analysis], () => {
     <template #body>
       <div class="min-w-0 space-y-3 text-sm">
         <dl class="grid min-w-0 grid-cols-2 gap-3">
-          <div class="col-span-2 min-w-0">
-            <dt class="text-xs text-muted">{{ t('replay.path') }}</dt>
-            <dd class="break-all">{{ props.record.path }}</dd>
-          </div>
           <div class="min-w-0">
             <dt class="text-xs text-muted">{{ t('replay.map') }}</dt>
             <dd class="break-words">{{ props.record.mapName ?? t('replay.unknown') }}</dd>
@@ -99,9 +90,6 @@ watch([component, () => props.analysis], () => {
           <div class="min-w-0">
             <dt class="text-xs text-muted">{{ t('replay.version') }}</dt>
             <dd class="break-words">{{ props.record.gameVersion ?? t('replay.unknown') }}</dd>
-            <dd>
-              {{ t('replay.baseBuild') }}: {{ props.record.baseBuild ?? t('replay.unknown') }}
-            </dd>
           </div>
           <div>
             <dt class="text-xs text-muted">{{ t('replay.duration') }}</dt>
@@ -113,28 +101,16 @@ watch([component, () => props.analysis], () => {
               }}
             </dd>
           </div>
-          <div>
-            <dt class="text-xs text-muted">{{ t('replay.size') }}</dt>
-            <dd>{{ (props.record.sizeBytes / 1024).toFixed(1) }} KiB</dd>
-          </div>
-          <div>
-            <dt class="text-xs text-muted">{{ t('replay.modifiedAt') }}</dt>
-            <dd>{{ localTime(props.record.mtimeMs) }}</dd>
-          </div>
-          <div>
-            <dt class="text-xs text-muted">{{ t('replay.statusLabel') }}</dt>
-            <dd>
-              {{ t(`replay.status.${props.record.status}`) }} ·
-              {{ t(`replay.support.${props.record.supportLevel}`) }}
-            </dd>
-          </div>
         </dl>
         <section :aria-label="t('replay.players')">
           <h3 class="text-xs text-muted">{{ t('replay.players') }}</h3>
           <p v-if="!props.record.players.length">{{ t('replay.unknown') }}</p>
           <ul v-else class="space-y-1">
             <li v-for="player in props.record.players" :key="player.slot" class="break-all">
-              <span class="font-medium">
+              <span
+                :class="{
+                  'font-semibold': replayProfilePlayer(props.record)?.slot === player.slot,
+                }">
                 {{
                   t('replay.playerRace', {
                     name: replayPlayerName(player.name, t('replay.unknown')),
@@ -144,111 +120,103 @@ watch([component, () => props.analysis], () => {
               </span>
               · {{ t('replay.team') }}: {{ player.team ?? t('replay.unknown') }} ·
               <span :class="replayResultClass(player.result)">
-                {{ t('replay.result') }}:
                 {{ player.result ? t(`replay.result.${player.result}`) : t('replay.unknown') }}
               </span>
             </li>
           </ul>
         </section>
-        <p v-if="props.record.supportLevel !== 'full'" class="text-xs text-warning">
-          {{ t('replay.partialNotice') }}
-        </p>
-        <ul
-          v-if="props.record.warnings.length"
-          class="list-inside list-disc break-words text-xs text-warning">
-          <li v-for="(warning, index) in props.record.warnings" :key="index">{{ warning }}</li>
-        </ul>
-        <h3 class="font-medium">{{ t('replay.analysisDetails') }}</h3>
-        <p class="text-warning">{{ t('replay.analysisNotice') }}</p>
-        <p v-if="props.busy" role="status">{{ t('replay.busy') }}</p>
-        <p v-if="props.error" role="alert" class="break-words text-error">{{ props.error }}</p>
-        <p v-else-if="props.loaded && !props.analysis">{{ t('replay.noAnalysis') }}</p>
-        <template v-if="props.analysis">
-          <dl class="grid grid-cols-2 gap-2">
+        <details class="text-xs">
+          <summary class="cursor-pointer text-muted">{{ t('replay.fileInfo') }}</summary>
+          <dl class="mt-2 space-y-2">
             <div>
-              <dt class="text-xs text-muted">{{ t('replay.analysisStatusLabel') }}</dt>
-              <dd>{{ t(`replay.analysisStatus.${props.analysis.status}`) }}</dd>
+              <dt class="text-muted">{{ t('replay.path') }}</dt>
+              <dd class="break-all">{{ props.record.path }}</dd>
             </div>
             <div>
-              <dt class="text-xs text-muted">{{ t('replay.analyzedAt') }}</dt>
-              <dd>{{ props.analysis.analyzedAt }}</dd>
+              <dt class="text-muted">{{ t('replay.size') }}</dt>
+              <dd>{{ (props.record.sizeBytes / 1024).toFixed(1) }} KiB</dd>
             </div>
             <div>
-              <dt class="text-xs text-muted">{{ t('replay.parserVersion') }}</dt>
-              <dd>{{ props.analysis.parserVersion }}</dd>
-            </div>
-            <div>
-              <dt class="text-xs text-muted">{{ t('replay.baseBuild') }}</dt>
-              <dd>{{ props.analysis.baseBuild ?? t('replay.unknown') }}</dd>
+              <dt class="text-muted">{{ t('replay.modifiedAt') }}</dt>
+              <dd>{{ localTime(props.record.mtimeMs) }}</dd>
             </div>
           </dl>
-          <p class="break-all text-xs text-muted">SHA-256: {{ props.analysis.contentHash }}</p>
-          <ul
-            v-if="props.analysis.warnings.length"
-            class="list-inside list-disc break-words text-warning">
-            <li v-for="(warning, index) in props.analysis.warnings" :key="index">{{ warning }}</li>
-          </ul>
-          <div class="flex items-center gap-2" :aria-label="t('replay.components')">
-            <UButton
-              v-for="key in ['initData', 'attributes', 'tracker'] as const"
-              :key="key"
-              size="xs"
-              :variant="component === key ? 'solid' : 'outline'"
-              :label="t(`replay.component.${key}`)"
-              @click="component = key" />
-          </div>
-          <p v-if="value == null" class="text-muted">{{ t('replay.componentUnavailable') }}</p>
-          <template v-else>
-            <p class="break-all text-xs text-muted">
-              {{ t('replay.protocolVersion') }}:
-              {{ field(value, 'protocolVersion') ?? t('replay.unknown') }} ·
-              {{ t('replay.algorithmVersion') }}:
-              {{ field(value, 'algorithmVersion') ?? t('replay.unknown') }}
-            </p>
-            <template v-if="component === 'initData'">
-              <details>
-                <summary class="cursor-pointer">{{ t('replay.rawPreview') }}</summary>
-                <pre
-                  class="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded bg-elevated p-2 text-xs"
-                  >{{ preview(value) }}</pre>
-              </details>
-            </template>
-            <template v-else>
-              <p>{{ t('replay.itemCount', { count: items.length }) }}</p>
-              <details v-if="component === 'tracker' && eventCounts.length">
-                <summary class="cursor-pointer">{{ t('replay.eventCounts') }}</summary>
-                <ul class="mt-1 space-y-1 text-xs">
-                  <li v-for="entry in eventCounts" :key="entry.type" class="break-all">
-                    {{ entry.type }}: {{ entry.count }}
-                  </li>
-                </ul>
-              </details>
-              <p v-if="!items.length" class="text-muted">{{ t('replay.noItems') }}</p>
-              <details
-                v-for="(item, index) in visible"
-                :key="`${component}-${page}-${index}`"
-                class="min-w-0 rounded border border-default p-2">
-                <summary class="cursor-pointer break-all text-xs">{{ label(item, index) }}</summary>
-                <pre
-                  class="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all bg-elevated p-2 text-xs"
-                  >{{ preview(item) }}</pre>
-              </details>
-              <div v-if="items.length" class="flex items-center gap-2">
+        </details>
+        <h3 class="font-medium">{{ t('replay.analysisDetails') }}</h3>
+        <p v-if="props.busy" role="status">{{ t('replay.busy') }}</p>
+        <p v-if="props.error" role="alert" class="break-words text-error">{{ props.error }}</p>
+        <p
+          v-else-if="props.loaded && props.analysis && !props.analysis.insights"
+          class="text-muted">
+          {{
+            t(
+              props.analysis.status === 'corrupt'
+                ? 'replay.analysisCorrupt'
+                : 'replay.analysisUnavailable',
+            )
+          }}
+        </p>
+        <p v-else-if="props.loaded && !props.analysis?.insights">{{ t('replay.noAnalysis') }}</p>
+        <p v-else-if="props.loaded && !players.length" class="text-muted">
+          {{ t('replay.noInsights') }}
+        </p>
+        <template v-if="players.length">
+          <label class="block space-y-1">
+            <span class="text-xs text-muted">{{ t('replay.participant') }}</span>
+            <USelect
+              :model-value="selectedId"
+              :items="playerItems"
+              :disabled="props.busy"
+              :aria-label="t('replay.participant')"
+              class="w-full min-w-0"
+              @update:model-value="selectedId = Number($event)" />
+          </label>
+          <template v-if="participant">
+            <p class="text-xs text-muted">{{ t('replay.chartNotice') }}</p>
+            <ReplayEconomyChart
+              :title="t('replay.resources')"
+              :samples="participant.economy"
+              :metrics="['minerals', 'vespene']" />
+            <ReplayEconomyChart
+              :title="t('replay.income')"
+              :samples="participant.economy"
+              :metrics="['mineralIncome', 'vespeneIncome']" />
+            <ReplayEconomyChart
+              :title="t('replay.workersSupply')"
+              :samples="participant.economy"
+              :metrics="['workers', 'supplyUsed', 'supplyCap']" />
+            <section :aria-label="t('replay.productionTitle')" class="space-y-2">
+              <h4 class="font-medium">{{ t('replay.productionTitle') }}</h4>
+              <p class="text-xs text-muted">{{ t('replay.productionNotice') }}</p>
+              <p v-if="!production.length" class="text-muted">{{ t('replay.noProduction') }}</p>
+              <ol v-else class="divide-y divide-default">
+                <li
+                  v-for="(event, index) in visible"
+                  :key="page * size + index"
+                  class="grid grid-cols-[3rem_minmax(0,1fr)] gap-2 py-1.5">
+                  <span class="text-muted">{{ replayGameTime(event.gameLoop) }}</span>
+                  <span class="min-w-0 break-words">
+                    {{ t(`replay.production.${event.kind}`) }} · {{ event.name }}
+                    <span v-if="event.count !== null">× {{ event.count }}</span>
+                  </span>
+                </li>
+              </ol>
+              <div v-if="production.length" class="flex items-center gap-2">
                 <UButton
-                  :disabled="page === 0"
+                  :disabled="props.busy || page === 0"
                   size="xs"
                   variant="outline"
                   :label="t('replay.previous')"
                   @click="page--" />
                 <span>{{ page + 1 }} / {{ pageCount }}</span>
                 <UButton
-                  :disabled="page + 1 >= pageCount"
+                  :disabled="props.busy || page + 1 >= pageCount"
                   size="xs"
                   variant="outline"
                   :label="t('replay.next')"
                   @click="page++" />
               </div>
-            </template>
+            </section>
           </template>
         </template>
       </div>

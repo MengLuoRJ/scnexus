@@ -1,6 +1,11 @@
 import { ProtocolDecoder, ReplayBitReader } from './protocol-decoder.js'
 import type { ReplayProtocolValue } from './protocol-decoder.js'
-import { REPLAY_PROTOCOL_ALGORITHM_VERSION, replayProtocol } from './protocol-schema.js'
+import {
+  REPLAY_PROTOCOL_ALGORITHM_VERSION,
+  replayProtocol,
+  replayTrackerProtocol,
+  UnsupportedReplayProtocolError,
+} from './protocol-schema.js'
 import { decodeVersionedPrefix } from './versioned.js'
 
 export type ReplayProtocolStamp = {
@@ -15,7 +20,11 @@ export type ReplayTrackerEvent = {
   gameLoop: number
   data: Record<string, ReplayProtocolValue>
 }
-export type ReplayTrackerEvents = ReplayProtocolStamp & { events: ReplayTrackerEvent[] }
+export type ReplayTrackerEvents = ReplayProtocolStamp & {
+  /** Present only for explicitly verified, self-describing tracker compatibility profiles. */
+  compatibility?: { referenceBaseBuild: number; scope: 'tracker-only'; verifiedFieldTags: true }
+  events: ReplayTrackerEvent[]
+}
 export type ReplayTrackerParseOptions = {
   /** Lower the built-in 100,000-event ceiling; excess events throw rather than truncate. */
   maxEvents?: number
@@ -69,9 +78,10 @@ export function parseReplayTrackerEvents(
   const maxEvents = options.maxEvents ?? 100_000
   if (!Number.isInteger(maxEvents) || maxEvents < 1 || maxEvents > 100_000)
     throw new RangeError('Invalid tracker maxEvents')
-  const schema = replayProtocol(baseBuild)
+  const schema = replayTrackerProtocol(baseBuild)
   bounded(data, 32 * 1024 * 1024)
-  const decoder = new ProtocolDecoder(schema)
+  const compatible = baseBuild === 98370
+  const decoder = new ProtocolDecoder(schema, undefined, compatible)
   const events: ReplayTrackerEvent[] = []
   let offset = 0
   let gameLoop = 0
@@ -91,10 +101,24 @@ export function parseReplayTrackerEvents(
     if (typeof eventId !== 'number' || !Number.isInteger(eventId))
       throw new Error('Invalid tracker event id')
     const definition = schema.events[eventId]
-    if (!definition) throw new Error(`Unknown tracker event id: ${eventId}`)
+    if (!definition)
+      throw new UnsupportedReplayProtocolError(`Unknown tracker event id: ${eventId}`)
     events.push({ eventId, eventType: definition[1], gameLoop, data: record(read(definition[0])) })
   }
-  return { ...stamp(baseBuild), events }
+  return {
+    ...stamp(baseBuild),
+    ...(compatible
+      ? {
+          protocolVersion: 'tracker-98370-compatible-98310-v1',
+          compatibility: {
+            referenceBaseBuild: 98310,
+            scope: 'tracker-only' as const,
+            verifiedFieldTags: true as const,
+          },
+        }
+      : {}),
+    events,
+  }
 }
 
 /** Fixed little-endian records; values are reversed FourCCs, not localized display labels. */

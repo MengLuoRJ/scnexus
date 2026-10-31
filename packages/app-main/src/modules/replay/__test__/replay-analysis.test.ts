@@ -13,6 +13,7 @@ vi.mock('../../../utils/application-data', () => ({
 import { getApplicationDataDirectory } from '../../../utils/application-data'
 import { createMpq } from '../../../utils/mpq'
 import { replayDatabase } from '../replay-db'
+import { REPLAY_ANALYSIS_VERSION } from '../replay-analysis'
 import { ReplayLibraryService } from '../replay'
 
 let directory: string
@@ -51,6 +52,7 @@ it('runs bounded component decoding in a worker, persists and invalidates by con
   ])
   expect(a).toEqual(b)
   expect(a.status).toBe('partial')
+  expect(a.insights).toBeUndefined()
   expect(a.components.attributes).toMatchObject({
     attributes: [],
     protocolVersion: 'attributes-v1',
@@ -58,6 +60,10 @@ it('runs bounded component decoding in a worker, persists and invalidates by con
   expect(a.warnings).toContain('Missing replay.initData')
   replayDatabase.close()
   expect(await service.getAnalysis(scope, record.id)).toEqual(a)
+  expect(a.parserVersion).toBe(REPLAY_ANALYSIS_VERSION)
+  await replayDatabase.saveAnalysis({ ...a, parserVersion: 'components-1.0.0' })
+  expect(await service.getAnalysis(scope, record.id)).toBeNull()
+  await replayDatabase.saveAnalysis(a)
   await writeFile(path, 'changed')
   expect(await service.getAnalysis(scope, record.id)).toBeNull()
   await expect(service.analyzeReplay(scope, record.id)).rejects.toThrow('reindex before analysis')
@@ -94,6 +100,37 @@ it('keeps build-independent attributes but never falls back for unknown protocol
   ).toHaveLength(2)
   expect(await service.getAnalysis(scope, record.id)).toEqual(analysis)
 })
+
+it.each([
+  { event: [3, 0, 9, 0, 9, 30, 5, 0], status: 'partial', warning: 'Unknown tracker event id: 15' },
+  { event: [3, 0, 9, 0, 9, 18, 5], status: 'corrupt', warning: 'Truncated' },
+])(
+  'classifies unsupported tracker schema separately from malformed bytes: $status',
+  async ({ event, status, warning }) => {
+    const path = join(
+      directory,
+      'Accounts',
+      '1',
+      scope.profileHandle,
+      'Replays',
+      scope.category,
+      'schema.SC2Replay',
+    )
+    const archive = await createMpq(path)
+    await archive.add(Buffer.alloc(9), { archivePath: 'replay.attributes.events' })
+    await archive.add(Buffer.from(event), { archivePath: 'replay.tracker.events' })
+    await archive.save()
+    await archive.close()
+    const service = new ReplayLibraryService(() => directory)
+    const record = (await service.scan(scope))[0]!
+    await replayDatabase.upsertReplay({ ...record, baseBuild: 98310 })
+    const analysis = await service.analyzeReplay(scope, record.id)
+    expect(analysis.status).toBe(status)
+    expect(analysis.warnings.some((message) => message.includes(warning))).toBe(true)
+    expect(analysis.components.tracker).toBeNull()
+    expect(analysis.insights).toBeUndefined()
+  },
+)
 
 it('rejects analysis of unindexed files without creating arbitrary tasks', async () => {
   await mkdir(join(directory, 'empty'))

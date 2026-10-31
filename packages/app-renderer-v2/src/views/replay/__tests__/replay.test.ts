@@ -153,9 +153,9 @@ test('loads indexed records, exposes partial metadata honestly and filters searc
   ).toEqual(['Details'])
   expect(wrapper.text()).not.toContain('Missing details')
   await click(wrapper, 'Details')
-  expect(wrapper.text()).toContain('Metadata only')
+  expect(wrapper.text()).not.toContain('Metadata only')
   expect(wrapper.text()).toContain('Unknown')
-  expect(wrapper.text()).toContain('Missing details')
+  expect(wrapper.text()).not.toContain('Missing details')
   expect(wrapper.text()).toContain('1:30')
   await click(wrapper, 'Close')
   await wrapper.get('input').setValue('test MAP')
@@ -165,7 +165,7 @@ test('loads indexed records, exposes partial metadata honestly and filters searc
   expect(wrapper.findAll('article')).toHaveLength(0)
   expect(mocks.scan).toHaveBeenCalledExactlyOnceWith(scope)
 })
-test('shows player metadata and base build as escaped text, preserving unknown values', async () => {
+test('shows escaped player metadata without technical build or result prefixes', async () => {
   mocks.scan.mockResolvedValueOnce({
     ok: true,
     data: [
@@ -189,20 +189,20 @@ test('shows player metadata and base build as escaped text, preserving unknown v
   )
   await click(wrapper, 'Details')
   const dialog = wrapper.get('[role="dialog"]')
-  expect(dialog.text()).toContain('Base build: 97364')
+  expect(dialog.text()).not.toContain('Base build: 97364')
   expect(article.text()).toContain('<b>SC2 player</b>')
   expect(article.find('b').exists()).toBe(false)
   const players = dialog.findAll('li')
   expect(players[0]!.text()).toContain('(Terran)')
   expect(players[0]!.text()).toContain('Team: 1')
-  expect(players[0]!.text()).toContain('Result: Win')
+  expect(players[0]!.text()).toContain('Win')
   expect(players[1]!.text()).toContain('(Zerg)')
-  expect(players[1]!.text()).toContain('Result: Loss')
+  expect(players[1]!.text()).toContain('Loss')
   expect(players[2]!.text()).toContain('(Protoss)')
-  expect(players[2]!.text()).toContain('Result: Draw')
+  expect(players[2]!.text()).toContain('Draw')
   expect(players[3]!.text()).toContain('(Unknown)')
   expect(players[3]!.text()).toContain('Team: Unknown')
-  expect(players[3]!.text()).toContain('Result: Unknown')
+  expect(players[3]!.text()).toContain('Unknown')
 })
 test('compact cards keep long multiplayer summaries on one truncated row and show real local match time', async () => {
   const playedAt = '2025-06-15T14:35:22.000Z'
@@ -244,7 +244,7 @@ test('requires physical deletion confirmation and cancellation does nothing', as
   )
   expect(mocks.delete).not.toHaveBeenCalled()
   expect(wrapper.findAll('[role="dialog"]')).toHaveLength(1)
-  expect(wrapper.find('[role="dialog"]').text()).not.toContain('Analyze components')
+  expect(wrapper.find('[role="dialog"]').text()).not.toContain('Analyze')
   await click(wrapper, 'Cancel')
   expect(mocks.delete).not.toHaveBeenCalled()
   await click(wrapper, 'Details')
@@ -336,7 +336,7 @@ test('viewing saved analysis never starts parsing; null and failure stay distinc
   await click(wrapper, 'Details')
   expect(mocks.getAnalysis).toHaveBeenCalledExactlyOnceWith(scope, '1')
   expect(mocks.analyze).not.toHaveBeenCalled()
-  expect(wrapper.get('[role="dialog"]').text()).toContain('No current saved analysis')
+  expect(wrapper.get('[role="dialog"]').text()).toContain('No match insights are available')
   await click(wrapper, 'Close')
   mocks.getAnalysis.mockResolvedValueOnce({
     ok: false,
@@ -345,8 +345,8 @@ test('viewing saved analysis never starts parsing; null and failure stay distinc
   await click(wrapper, 'Details')
   expect(wrapper.find('[role="alert"]').exists()).toBe(true)
   expect(wrapper.get('[role="dialog"]').text()).toContain(record.path)
-  expect(wrapper.get('[role="dialog"]').text()).toContain('Missing details')
-  expect(wrapper.get('[role="dialog"]').text()).not.toContain('No current saved analysis')
+  expect(wrapper.get('[role="dialog"]').text()).not.toContain('Missing details')
+  expect(wrapper.get('[role="dialog"]').text()).not.toContain('No match insights are available')
 })
 
 test('details show metadata while saved analysis loads without starting analysis', async () => {
@@ -364,7 +364,7 @@ test('details show metadata while saved analysis loads without starting analysis
   expect(dialog.text()).toContain(record.path)
   expect(dialog.text()).toContain('Test map')
   expect(dialog.text()).toContain('2.0 KiB')
-  expect(dialog.text()).toContain('Missing details')
+  expect(dialog.text()).not.toContain('Missing details')
   expect(dialog.find('[role="status"]').exists()).toBe(true)
   expect(
     dialog.findAll('button').every((button) => button.attributes('disabled') !== undefined),
@@ -372,84 +372,115 @@ test('details show metadata while saved analysis loads without starting analysis
   expect(mocks.analyze).not.toHaveBeenCalled()
   finish({ ok: true, data: null })
   await flushPromises()
-  expect(dialog.text()).toContain('No current saved analysis')
+  expect(dialog.text()).toContain('No match insights are available')
 })
 
-test('manual component analysis opens saved result with honest partial status', async () => {
-  const wrapper = await render()
-  mocks.analyze.mockResolvedValueOnce({
-    ok: true,
-    data: {
-      replayId: '1',
-      contentHash: 'abc',
-      parserVersion: 'components-1.0.0',
-      baseBuild: 99999,
-      status: 'partial',
-      warnings: ['Unsupported replay base build: 99999'],
-      analyzedAt: '2026-10-31',
-      components: {
-        initData: null,
-        tracker: null,
-        attributes: { protocolVersion: 'attributes-v1', attributes: [] },
-      },
-    },
-  })
-  await click(wrapper, 'Details')
-  await click(wrapper, 'Analyze components')
-  expect(mocks.analyze).toHaveBeenCalledExactlyOnceWith(scope, '1')
-  expect(wrapper.get('[role="dialog"]').text()).toContain('Partially decoded')
-  expect(wrapper.text()).toContain('Unsupported replay base build: 99999')
-  expect(wrapper.text()).toContain('not APM')
-  await click(wrapper, 'Attributes')
-  expect(wrapper.text()).toContain('no records in this component')
-  await click(wrapper, 'Close')
-  expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-})
-
-test('tracker details paginate raw events and safely escape replay text', async () => {
+test('manual analysis hides technical results and asks to analyze old raw-only caches', async () => {
   mocks.getAnalysis.mockResolvedValueOnce({
     ok: true,
     data: {
-      replayId: '1',
-      contentHash: 'hash',
-      parserVersion: 'v1',
-      baseBuild: 70154,
-      status: 'completed',
-      warnings: [],
-      analyzedAt: 'today',
-      components: {
-        initData: null,
-        attributes: null,
-        tracker: {
-          protocolVersion: 's2protocol-70154',
-          algorithmVersion: '1.0.0',
-          events: Array.from({ length: 45 }, (_, i) => ({
-            eventType: '<b>UnitBorn</b>',
-            gameLoop: i,
-            data: { name: '<img src=x onerror=alert(1)>' },
-          })),
-        },
+      status: 'unsupported',
+      parserVersion: 'private-parser',
+      contentHash: 'private-hash',
+      baseBuild: 99999,
+      warnings: ['raw backend warning'],
+      components: { tracker: { protocolVersion: 'private-protocol', events: [] } },
+    },
+  })
+  const wrapper = await render()
+  await click(wrapper, 'Details')
+  expect(mocks.analyze).not.toHaveBeenCalled()
+  const dialog = wrapper.get('[role="dialog"]')
+  expect(dialog.text()).toContain('Analysis was attempted')
+  for (const text of [
+    'private-parser',
+    'private-hash',
+    '99999',
+    'raw backend warning',
+    'private-protocol',
+    'unsupported',
+    'Result:',
+  ])
+    expect(dialog.text()).not.toContain(text)
+  expect(dialog.find('pre').exists()).toBe(false)
+  mocks.analyze.mockResolvedValueOnce({
+    ok: true,
+    data: { insights: { version: '1', timeBasis: 'game-loops-16', players: [] } },
+  })
+  await click(wrapper, 'Reanalyze')
+  expect(mocks.analyze).toHaveBeenCalledExactlyOnceWith(scope, '1')
+  expect(dialog.text()).toContain('No participant insights')
+})
+
+const sample = (gameLoop: number, minerals: number | null) => ({
+  gameLoop,
+  minerals,
+  vespene: 20,
+  mineralIncome: 700,
+  vespeneIncome: 90,
+  workers: null,
+  supplyUsed: null,
+  supplyCap: null,
+  armyMinerals: null,
+  armyVespene: null,
+})
+
+test('renders actual economy fields, missing snapshots and bounded escaped production by player ID', async () => {
+  mocks.getAnalysis.mockResolvedValueOnce({
+    ok: true,
+    data: {
+      insights: {
+        version: '1',
+        timeBasis: 'game-loops-16',
+        players: [
+          {
+            playerId: 7,
+            slot: 0,
+            name: '&lt;b&gt;Player&lt;/b&gt;',
+            economy: [sample(160, 50), sample(320, null), sample(480, 300)],
+            production: Array.from({ length: 45 }, (_, i) => ({
+              gameLoop: i * 16,
+              kind: i === 0 ? 'construction-started' : 'unit-born',
+              name: '<img src=x>',
+              count: null,
+            })),
+          },
+          {
+            playerId: 2,
+            slot: 1,
+            name: 'Other',
+            economy: [{ ...sample(160, 999), workers: 24, supplyUsed: 42, supplyCap: 60 }],
+            production: [],
+          },
+        ],
       },
     },
   })
   const wrapper = await render()
   await click(wrapper, 'Details')
-  const modal = wrapper.get('[role="dialog"]')
-  expect(modal.text()).toContain('Components decoded')
-  expect(modal.text()).toContain('Records: 45')
-  expect(modal.text()).toContain('1 / 3')
-  expect(modal.findAll('pre')).toHaveLength(20)
-  expect(modal.find('img').exists()).toBe(false)
-  expect(modal.find('b').exists()).toBe(false)
+  const dialog = wrapper.get('[role="dialog"]')
+  expect(dialog.text()).toContain('<b>Player</b>')
+  expect(dialog.find('b').exists()).toBe(false)
+  expect(dialog.find('img').exists()).toBe(false)
+  expect(dialog.findAll('svg')).toHaveLength(2)
+  expect(dialog.findAll('svg')[0]!.text()).toContain('0:10: 50')
+  expect(dialog.findAll('svg')[1]!.text()).toContain('Minerals / minute · 0:10: 700')
+  expect(dialog.text()).toContain('These samples are not available')
+  expect(dialog.text()).toContain('Production started')
+  expect(dialog.text()).not.toContain('Construction started')
+  expect(dialog.get('ol').findAll('li')).toHaveLength(20)
+  expect(dialog.text()).toContain('1 / 3')
   await click(wrapper, 'Next')
-  expect(modal.text()).toContain('2 / 3')
   await click(wrapper, 'Next')
-  expect(modal.findAll('pre')).toHaveLength(5)
-  expect(modal.text()).toContain('3 / 3')
-  await click(wrapper, 'Attributes')
-  expect(modal.text()).toContain('This component was not decoded')
-  await click(wrapper, 'Tracker events')
-  expect(modal.text()).toContain('1 / 3')
+  expect(dialog.get('ol').findAll('li')).toHaveLength(5)
+  expect(dialog.text()).toContain('3 / 3')
+  await dialog.get('select').setValue('2')
+  expect(dialog.findAll('svg')).toHaveLength(3)
+  expect(dialog.text()).toContain('999')
+  expect(dialog.text()).toContain('Workers · 0:10: 24')
+  expect(dialog.text()).toContain('No production records')
+  expect(dialog.find('ol').exists()).toBe(false)
+  expect(mocks.analyze).not.toHaveBeenCalled()
 })
 
 test('requires a profile and switches categories with immediate scoped reads and cleared selection', async () => {
@@ -540,7 +571,14 @@ test('existing indexed SC2 names display safely in list, results, search and det
       {
         ...record,
         players: [
-          { slot: 0, name: '&lt;ACNet&gt;<sp/>MengLuoRJ', race: 'Protoss', team: 1, result: 'win' },
+          {
+            slot: 0,
+            name: '&lt;ACNet&gt;<sp/>MengLuoRJ',
+            profileHandle: scope.profileHandle,
+            race: 'Protoss',
+            team: 1,
+            result: 'win',
+          },
           {
             slot: 1,
             name: '&lt;img src=x onerror=alert(1)&gt;',
@@ -555,18 +593,21 @@ test('existing indexed SC2 names display safely in list, results, search and det
   const wrapper = await render()
   const card = wrapper.get('article')
   expect(card.get('p').text()).toContain('<ACNet> MengLuoRJ (Protoss)')
-  expect(card.get('.text-success').text()).toBe('<ACNet> MengLuoRJ: Win')
-  expect(card.get('.text-error').text()).toContain(': Loss')
+  expect(card.get('.text-success').text()).toBe('Win')
+  expect(card.find('.text-error').exists()).toBe(false)
   expect(card.find('img').exists()).toBe(false)
   expect(card.find('acnet').exists()).toBe(false)
   const grid = card.get('.grid')
   expect(grid.classes()).toContain('grid-rows-2')
-  expect(grid.element.children[1]!.getAttribute('title')).toContain('<ACNet> MengLuoRJ: Win')
+  expect(grid.element.children[1]!.textContent).toBe('Win')
   expect(grid.element.children[3]!.querySelector('time')).not.toBeNull()
   await wrapper.get('input').setValue('<ACNet> MengLuoRJ')
   expect(wrapper.findAll('article')).toHaveLength(1)
   await click(wrapper, 'Details')
   expect(wrapper.get('[role="dialog"]').text()).toContain('<ACNet> MengLuoRJ (Protoss)')
+  const detailPlayers = wrapper.get('[role="dialog"]').findAll('li')
+  expect(detailPlayers[0]!.find('.font-semibold').exists()).toBe(true)
+  expect(detailPlayers[1]!.find('.font-semibold').exists()).toBe(false)
   expect(wrapper.get('[role="dialog"]').find('img').exists()).toBe(false)
   expect(mocks.index).not.toHaveBeenCalled()
 })

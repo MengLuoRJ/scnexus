@@ -5,6 +5,8 @@ import {
   parseReplayTrackerEvents,
   UnsupportedReplayBuildError,
   SUPPORTED_REPLAY_BASE_BUILDS,
+  COMPATIBLE_TRACKER_BASE_BUILDS,
+  UnsupportedReplayProtocolError,
 } from '../src/index.js'
 import { ProtocolDecoder, ReplayBitReader } from '../src/protocol-decoder.js'
 import { replayProtocol } from '../src/protocol-schema.js'
@@ -162,6 +164,42 @@ describe('component protocol foundation', () => {
       ).toThrow('bounds')
     },
   )
+  it('enables explicit tracker-only 98370 compatibility, never initData or nearest builds', () => {
+    expect(COMPATIBLE_TRACKER_BASE_BUILDS).toEqual([98370])
+    expect(() => parseReplayInitData(new Uint8Array(), 98370)).toThrow(UnsupportedReplayBuildError)
+    for (const build of [98369, 98371])
+      expect(() => parseReplayTrackerEvents(new Uint8Array(), build)).toThrow(
+        UnsupportedReplayBuildError,
+      )
+    const setup = struct([integer(1), integer(2), [4, 1, ...integer(0)], [4, 0]])
+    const data = Uint8Array.from([...delta(15), ...integer(9), ...setup])
+    const result = parseReplayTrackerEvents(data, 98370)
+    expect(result).toMatchObject({
+      baseBuild: 98370,
+      protocolVersion: 'tracker-98370-compatible-98310-v1',
+      compatibility: { referenceBaseBuild: 98310, scope: 'tracker-only', verifiedFieldTags: true },
+    })
+    expect(result.events).toEqual(parseReplayTrackerEvents(data, 98310).events)
+  })
+  it('rejects unverified tracker fields and missing required fields, not silently projecting them', () => {
+    const extra = struct([integer(1), integer(2), [4, 0], [4, 0], integer(99)])
+    expect(() =>
+      parseReplayTrackerEvents(Uint8Array.from([...delta(0), ...integer(9), ...extra]), 98370),
+    ).toThrow(UnsupportedReplayProtocolError)
+    const missing = struct([integer(1)])
+    expect(() =>
+      parseReplayTrackerEvents(Uint8Array.from([...delta(0), ...integer(9), ...missing]), 98370),
+    ).toThrow('Missing verified tracker field')
+    expect(() =>
+      parseReplayTrackerEvents(
+        Uint8Array.from([...delta(0), ...integer(10), ...struct([])]),
+        98370,
+      ),
+    ).toThrow(UnsupportedReplayProtocolError)
+    expect(() =>
+      parseReplayTrackerEvents(Uint8Array.from([...delta(0), ...integer(9), 5]), 98370),
+    ).toThrow('Truncated')
+  })
   it('reads little-endian attribute records with exact count and byte-view offsets', () => {
     const bytes = new Uint8Array(22)
     const view = new DataView(bytes.buffer)

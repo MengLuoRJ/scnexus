@@ -11,6 +11,7 @@ export type StarCraftProfile = {
 
 export type ReplayPlayer = {
   slot: number
+  profileHandle?: string | null
   name: string | null
   race: string | null
   team: number | null
@@ -60,6 +61,7 @@ export type ReplayJson =
   | { [key: string]: ReplayJson }
 
 export type ReplayAnalysis = {
+  insights?: import('./replay-insights.type.js').ReplayInsights
   replayId: string
   contentHash: string
   parserVersion: string

@@ -155,6 +155,11 @@ describe('ReplayDatabase', () => {
       replayId: 'replay-1',
       contentHash: 'hash-a',
       parserVersion: 'test-1',
+      insights: {
+        version: '1.0.0',
+        timeBasis: 'game-loops-16' as const,
+        players: [{ playerId: 1, slot: 1, name: 'Player', economy: [], production: [] }],
+      },
       baseBuild: 70154,
       status: 'completed' as const,
       components: { initData: { speed: 4 }, attributes: [], tracker: [] },

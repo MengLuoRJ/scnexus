@@ -51,7 +51,7 @@
   "replay.previous": "Previous",
   "replay.next": "Next",
   "replay.close": "Close",
-  "replay.title": "Replay library",
+  "replay.title": "Replay management",
   "replay.description": "Only manually added replays are listed. No automatic scanning; metadata support depends on the replay version.",
   "replay.refresh": "Refresh",
   "replay.scan": "Scan directory",

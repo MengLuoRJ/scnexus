@@ -154,7 +154,7 @@ export type ReplayAnalysis = {
 - 新 UI 使用 Nuxt UI 与 zh/en/zh-Hant 文本，在 1000×700 基准检查长路径、候选目录及详情弹窗。自动扫描、自动分析和高层统计图表均未启用。
 
 - `analyze(id)` 显式触发 initData / attributes / tracker 原始结构解析，在 worker 中读取和解码；`completed` 仅代表三个组件均已解码，不代表完整录像分析。未知 baseBuild 仍可解析无版本依赖的 attributes，其他组件以 warnings 标记不支持。`getAnalysis(id)` 同时检查算法版本及实际文件 hash；内容变化须先重新索引。源文件访问失败向上传递，不吞为成功。
-- 主进程 MPQ 读取支持原始、ZLIB 和 BZIP2 单一压缩；BZIP2 使用纯 JS `seek-bzip` 并限制输出大小，未支持的压缩组合明确报错。
+- 主进程 MPQ 读取支持原始、ZLIB 和 BZIP2 单一压缩；BZIP2 使用`@scnexus/bzip2-wasm`（内部维护的官方 libbz2 WASM 构建）并严格限制输出大小、校验 CRC、拒绝尾随数据/拼接流，未支持的压缩组合明确报错。
 - 本文前面的统计 schema、任务队列、播放/复盘是目标能力，尚未全部实现。当前字段以 shared `replay.type` 和实际 SQLite 表为准。
 
 真实样本与协议边界见 [解析包文档](./replay-parser-package.md)，持久化方案见 [数据库文档](./replay-database.md)。

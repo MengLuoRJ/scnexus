@@ -1,5 +1,5 @@
 import { deflateSync, inflateSync } from 'node:zlib'
-import bunzip from 'seek-bzip'
+import { decompressBzip2 } from '@scnexus/bzip2-wasm'
 import { MpqCompressionError, MpqFormatError } from './errors'
 import { MPQ_COMPRESSION } from './types'
 
@@ -17,22 +17,13 @@ export function decompressMpqSector(data: Buffer, expectedSize: number): Buffer 
   const payload = data.subarray(1)
   let result = payload
   if (compressionMask & MPQ_COMPRESSION.BZIP2) {
-    const output = Buffer.alloc(expectedSize)
-    let position = 0
     try {
-      bunzip.decode(payload, {
-        writeByte(value) {
-          if (position >= expectedSize) throw new Error('BZIP2 output exceeds sector size')
-          output[position++] = value
-        },
-      })
+      result = Buffer.from(decompressBzip2(payload, expectedSize))
     } catch (error) {
       throw new MpqFormatError(
         `Invalid BZIP2 MPQ sector: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
-    if (position !== expectedSize) throw new MpqFormatError('BZIP2 output size mismatch')
-    result = output
   }
   if (compressionMask & MPQ_COMPRESSION.ZLIB)
     result = inflateSync(result, { maxOutputLength: expectedSize })

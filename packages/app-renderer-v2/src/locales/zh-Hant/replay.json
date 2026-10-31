@@ -51,7 +51,7 @@
   "replay.previous": "上一頁",
   "replay.next": "下一頁",
   "replay.close": "關閉",
-  "replay.title": "錄像庫",
+  "replay.title": "錄像管理",
   "replay.description": "僅顯示手動添加的錄像。不會自動掃描；元數據支持程度取決於錄像版本。",
   "replay.refresh": "刷新",
   "replay.scan": "掃描目錄",

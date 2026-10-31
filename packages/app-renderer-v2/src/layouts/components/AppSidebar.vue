@@ -14,6 +14,7 @@ import downloadIcon from '../../assets/menu/Menu_Download.png'
 import toolboxIcon from '../../assets/menu/Menu_Toolbox.png'
 import settingsIcon from '../../assets/menu/Menu_Setting.png'
 import agentIcon from '../../assets/menu/Menu_Agent.png'
+import replayIcon from '../../assets/menu/Menu_Replay.png'
 
 defineOptions({ name: 'AppSidebar' })
 const { t } = useI18n()
@@ -32,7 +33,7 @@ const items = computed(() => [
   { label: t('customize.title'), image: customizeIcon, to: '/customize' },
   { label: t('weekly.title'), image: mutationIcon, to: '/weekly-mutations' },
   { label: t('toolbox.title'), image: toolboxIcon, to: '/editor-toolbox' },
-  { label: t('replay.title'), image: campaignIcon, to: '/replays' },
+  { label: t('replay.title'), image: replayIcon, to: '/replays' },
   ...(contentCenter.enabled
     ? [{ label: t('contentCenter.workshop'), image: workshopIcon, to: '/workshop' }]
     : []),

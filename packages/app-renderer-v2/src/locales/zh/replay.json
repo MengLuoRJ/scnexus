@@ -51,7 +51,7 @@
   "replay.previous": "上一页",
   "replay.next": "下一页",
   "replay.close": "关闭",
-  "replay.title": "录像库",
+  "replay.title": "录像管理",
   "replay.description": "仅显示手动添加的录像。不会自动扫描；元数据支持程度取决于录像版本。",
   "replay.refresh": "刷新",
   "replay.scan": "扫描目录",

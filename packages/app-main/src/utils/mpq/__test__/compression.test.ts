@@ -11,8 +11,16 @@ describe('bounded replay sector decompression', () => {
     expect(decompressMpqSector(bzip, 300)).toEqual(Buffer.from('abc'.repeat(100)))
   })
   it('rejects expanded output exceeding expected size', () => {
-    expect(() => decompressMpqSector(bzip, 299)).toThrow('exceeds sector size')
-    expect(() => decompressMpqSector(bzip, 301)).toThrow('size mismatch')
+    expect(() => decompressMpqSector(bzip, 299)).toThrow(/BZIP2/)
+    expect(() => decompressMpqSector(bzip, 301)).toThrow(/BZIP2/)
+  })
+  it('rejects trailing bytes, joined streams and CRC failures instead of accepting partial output', () => {
+    expect(() => decompressMpqSector(Buffer.concat([bzip, Buffer.from([0])]), 300)).toThrow('BZIP2')
+    expect(() => decompressMpqSector(Buffer.concat([bzip, bzip.subarray(1)]), 600)).toThrow('BZIP2')
+    const corrupt = Buffer.from(bzip)
+    corrupt[12] = corrupt[12]! ^ 1
+    expect(() => decompressMpqSector(corrupt, 300)).toThrow('BZIP2')
+    expect(decompressMpqSector(bzip, 300)).toEqual(Buffer.from('abc'.repeat(100)))
   })
   it('rejects corrupt BZIP2 and unsupported combinations', () => {
     expect(() => decompressMpqSector(bzip.subarray(0, 12), 300)).toThrow('BZIP2')

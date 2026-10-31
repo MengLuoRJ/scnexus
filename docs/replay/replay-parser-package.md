@@ -115,7 +115,7 @@ const tracker = parseReplayTrackerEvents(trackerBytes, header.baseBuild)
 
 `playedAt` 来自 details tag 5 的 `m_timeUTC`（Windows FILETIME，自 1601-01-01 起的 100 ns tick），用 bigint 减去 Unix epoch 偏移并转换成 UTC ISO。缺失、零值或不可表示的时间返回 null，不用 m_timeLocalOffset 再次偏移，也不从文件名/mtime 推测；renderer 仅在展示时本地化。显式组件解析可获得 initData 游戏速度，但基础列表仍使用游戏时长，尚未做历史版本及速度差异的实际经过时间换算，不能自行按 22.4 loops/s 推算所有录像。
 
-主进程 `replay-inspection` 通过项目现有 TypeScript MPQ 适配器只读打开录像，读取 user-data 与最大 4 MiB 的 details，并关闭句柄。不引入新的 StormLib npm 依赖。未知压缩方法通过 warnings 暴露；文件访问错误向上传递。压缩层与协议层可独立扩展，后续如需 StormLib 可在主进程替换适配器，无需修改 parser。
+主进程 `replay-inspection` 通过项目现有 TypeScript MPQ 适配器只读打开录像，读取 user-data 与最大 4 MiB 的 details，并关闭句柄。不引入新的 StormLib npm 依赖。BZIP2 压缩由内部 `@scnexus/bzip2-wasm` 提供，使用官方 libbz2 编译的 WASM 与独立 TS 封装，不依赖 `seek-bzip` 或第三方 WASM npm 产物。codec 以同步、有界、严格单流解压接口嵌入主进程/worker bundle，常规运行无需 Docker 或 C 工具链；重新编译 WASM 才需构建工具，来源与维护流程见 [bzip2-wasm README](../../packages/bzip2-wasm/README.md)。原始 libbz2 的许可证随应用打包保留。未知压缩方法通过 warnings 暴露；文件访问错误向上传递。压缩层与协议层可独立扩展，后续如需 StormLib 可在主进程替换适配器，无需修改 parser。
 
 ## 协议依据与验证边界
 

@@ -16,6 +16,14 @@
       "filter": ["**/*"]
     },
     {
+      "from": "../bzip2-wasm/LICENSE.libbz2",
+      "to": "licenses/libbz2.txt"
+    },
+    {
+      "from": "../bzip2-wasm/LICENSE.runtime",
+      "to": "licenses/bzip2-wasm-runtime.txt"
+    },
+    {
       "from": "../app-preload/dist/",
       "to": "packages/app-preload/dist/",
       "filter": ["**/*"]

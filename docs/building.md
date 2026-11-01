@@ -120,6 +120,7 @@ Electron 安装器初次下载网络失败，随后仅从官方 Release 下载 Z
 
 - 设置 `updateChannel` 默认 `stable`，可选 `snapshot`，旧设置迁移为 stable。运行时固定更新源为 `https://release.scnexus.net/desktop/stable/` 或 `/desktop/snapshot/`；不暴露任意 URL。
 - 两个目录均使用 `latest.yml`。打包配置关闭按 prerelease 自动推导 channel 和跨渠道元数据生成；稳定版本 `X.Y.Z` 发布到 stable，`X.Y.Z-snapshot.N` 发布到 snapshot，其他 prerelease 拒绝打包配置。
+- 渠道版本过滤与 electron-updater 原有系统兼容性检查组合执行，保留 `minimumSystemVersion` 要求；系统不兼容时即使版本更高也不提供更新。原检查的实例上下文及同步/异步返回均保留。
 - stable 不接受预发布；snapshot 接受正式版与 snapshot 预发布。两个渠道均只接受高于当前 SemVer 的版本，`allowDowngrade=false`；如 `0.1.0-snapshot.7` 切到 `0.1.0` 是升级，不是降级。
 - 检查中、下载中、已下载待安装、安装中禁止切换渠道；可用更新尚未下载时切换清空旧状态，需重新检查。下载及安装仍由用户明确操作，不自动下载或退出安装。当前运行时仅支持已打包 Windows NSIS，其他环境仍显示不可用。
 - 发布包时依据版本自动选择 feed，生成的 `app-update.yml` 与元数据一同对应所选目录。上传 EXE、blockmap 后最后发布 `latest.yml`，其 SHA-512/大小必须来自同一构建，不手写、不复用另一版本元数据。

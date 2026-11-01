@@ -83,7 +83,9 @@ export function initializeUpdater(): void {
   })
   updater.allowPrerelease = channel === 'snapshot'
   updater.allowDowngrade = false
-  updater.isUpdateSupported = (info) => {
+  const isSystemSupported = updater.isUpdateSupported.bind(updater)
+  updater.isUpdateSupported = async (info) => {
+    if (!(await isSystemSupported(info))) return false
     if (!valid(info.version) || !gt(info.version, app.getVersion())) return false
     const pre = prerelease(info.version)
     return channel === 'stable' ? pre === null : pre === null || pre[0] === 'snapshot'

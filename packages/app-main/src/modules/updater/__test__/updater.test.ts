@@ -4,6 +4,9 @@ const mock = vi.hoisted(() => ({
   send: vi.fn<
     (channel: string, error?: import('@scnexus/app-shared/errors/app.error').AppErrorDto) => void
   >(),
+  supported: vi.fn<
+    (info: { version: string; minimumSystemVersion?: string }) => boolean | Promise<boolean>
+  >(() => true),
   feed: vi.fn<import('electron-updater').NsisUpdater['setFeedURL']>(),
   check: vi.fn<import('electron-updater').NsisUpdater['checkForUpdates']>(),
   download: vi.fn<import('electron-updater').NsisUpdater['downloadUpdate']>(),
@@ -19,6 +22,10 @@ vi.mock('electron-updater', () => ({
     constructor() {
       super()
       instances.push(this)
+    }
+    isUpdateSupported(info: { version: string; minimumSystemVersion?: string }) {
+      if (this !== instances[0]) throw new Error('System compatibility check lost updater context')
+      return mock.supported(info)
     }
     setFeedURL = mock.feed
     allowPrerelease = false
@@ -41,17 +48,37 @@ test('Windows updater classifies failures and cleans up before explicit installa
   expect(instance).toMatchObject({ allowPrerelease: true, allowDowngrade: false })
   service.setUpdaterChannel('stable')
   const policy = (
-    instance as EventEmitter & { isUpdateSupported: (info: { version: string }) => boolean }
+    instance as EventEmitter & {
+      isUpdateSupported: (info: {
+        version: string
+        minimumSystemVersion?: string
+      }) => Promise<boolean>
+    }
   ).isUpdateSupported
-  expect(policy({ version: '0.1.1-snapshot.1' })).toBe(false)
-  expect(policy({ version: '0.1.0' })).toBe(true)
-  expect(policy({ version: '0.0.9' })).toBe(false)
+  expect(await policy({ version: '0.1.1-snapshot.1' })).toBe(false)
+  expect(await policy({ version: '0.1.0' })).toBe(true)
+  expect(await policy({ version: '0.0.9' })).toBe(false)
+  const incompatible = { version: '0.2.0', minimumSystemVersion: '999.0.0' }
+  mock.supported.mockReturnValueOnce(false)
+  expect(await policy(incompatible)).toBe(false)
+  expect(mock.supported).toHaveBeenLastCalledWith(incompatible)
+  mock.supported.mockResolvedValueOnce(false)
+  expect(await policy({ version: '0.2.0' })).toBe(false)
+  mock.supported.mockResolvedValueOnce(true)
+  expect(await policy({ version: '0.2.0' })).toBe(true)
+  expect(await policy({ version: 'invalid' })).toBe(false)
   expect(instance).toMatchObject({ allowPrerelease: false, allowDowngrade: false })
   instance.emit('update-available', {})
   service.setUpdaterChannel('snapshot')
   expect(service.getUpdaterStatus().state).toBe('idle')
+  expect(await policy({ version: '0.1.1-snapshot.1' })).toBe(true)
+  expect(await policy({ version: '0.1.1-beta.1' })).toBe(false)
+  mock.supported.mockReturnValueOnce(false)
+  expect(await policy(incompatible)).toBe(false)
   instance.emit('checking-for-update')
-  expect(() => service.setUpdaterChannel('stable')).toThrow(expect.objectContaining({ code: expect.any(String) }))
+  expect(() => service.setUpdaterChannel('stable')).toThrow(
+    expect.objectContaining({ code: expect.any(String) }),
+  )
   instance.emit('update-not-available')
   await expect(service.quitAndInstall()).rejects.toMatchObject({
     code: 'M029',
@@ -72,7 +99,9 @@ test('Windows updater classifies failures and cleans up before explicit installa
   mock.download.mockResolvedValueOnce([])
   await service.downloadUpdate()
   instance.emit('update-downloaded')
-  expect(() => service.setUpdaterChannel('stable')).toThrow(expect.objectContaining({ code: expect.any(String) }))
+  expect(() => service.setUpdaterChannel('stable')).toThrow(
+    expect.objectContaining({ code: expect.any(String) }),
+  )
   expect(service.getUpdaterStatus().channel).toBe('snapshot')
   const cleanup = vi.fn<() => Promise<void>>(async () => {
     expect(mock.install).not.toHaveBeenCalled()

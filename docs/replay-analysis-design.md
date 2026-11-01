@@ -189,9 +189,9 @@
 - [本地 AI 助手与 MCP 设计](./ai-assistant-design.md)：复盘工具作为只读能力扩展接入，沿用授权与审计框架。
 - [战役包与自制作品设计](./campaign-customize-design.md)：内容清单是回放↔作品归属的数据来源。
 
-## 8. 阶段 0 预验证（2026-10-31，本机抽样）
+## 8. 阶段 0 预验证（2026-10-31 抽样）
 
-样本：本机 `Documents\StarCraft II\Accounts\197562485\5-S2-1-2206060\Replays\Multiplayer` 下 6 个回放，均为街机地图。用于确认技术假设，不是功能验收。
+样本：`Documents\StarCraft II\Accounts\<账号目录>\Replays\Multiplayer` 下 6 个回放，均为街机地图。用于确认技术假设，不是功能验收。
 
 已确认：
 
@@ -202,5 +202,5 @@
 未验证，留待阶段 0 正式执行：
 
 - Electron 45 中 `node:sqlite` 是否可直接使用。
-- 跨 build 的 L0 解码与 L1 协议覆盖（本机样本 build 单一）。
-- 天梯 1v1 全量事件解码耗时（本机无天梯回放样本）。
+- 跨 build 的 L0 解码与 L1 协议覆盖（现有样本 build 单一）。
+- 天梯 1v1 全量事件解码耗时（现有样本无天梯回放）。

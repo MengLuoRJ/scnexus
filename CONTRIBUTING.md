@@ -49,4 +49,4 @@ pnpm run test
 相关翻译文件位于 `packages/app-renderer-v2/src/locales` 目录下，按语言（`zh`、`zh-Hant`、`en`）与业务模块组织，文本键使用扁平结构。
 
 - 新增或修改文案时，请同步维护三套语言资源并保持键名一致；繁体中文与简体中文采用相同文本，仅转换汉字。
-- 翻译贡献同样提交至 `main` 分支。
+- 翻译贡献可提交至 `main` 分支，也可在 [Crowdin 项目](https://crowdin.com/project/scnexus)中协作翻译。

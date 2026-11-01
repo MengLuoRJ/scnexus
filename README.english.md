@@ -78,10 +78,13 @@ Packaging commands for Windows output, the isolated Electron smoke test and know
 
 Welcome to take part in the translation of SCNexus Application, to translate the application into more languages. Please read the [Contributing Guide](./CONTRIBUTING.english.md) first.
 
-| Key | Language | Status              |
-| --- | :------- | :------------------ |
-| zh  | Chinese  | ✔️ Native Supported |
-| en  | English  | ⏳ WIP              |
+Interface text is also translated collaboratively through the [Crowdin project](https://crowdin.com/project/scnexus); you may alternatively submit a Pull Request with the language resources to the `main` branch. Translations from either channel follow the three-language synchronization rules in the Contributing Guide and are kept identical before merging.
+
+| Key     | Language            | Status      |
+| ------- | :------------------ | :---------- |
+| zh      | Simplified Chinese  | ✔️ Source   |
+| zh-Hant | Traditional Chinese | ✔️ Complete |
+| en      | English             | ✔️ Complete |
 
 ## Contributing
 

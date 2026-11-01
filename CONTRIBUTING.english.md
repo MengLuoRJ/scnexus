@@ -49,4 +49,4 @@ This project uses [vue-i18n](https://vue-i18n.intlify.dev/) to perform user inte
 Related translation files are located in the `packages/app-renderer-v2/src/locales` directory, organized by language (`zh`, `zh-Hant`, `en`) and business module, with flat text keys.
 
 - When adding or changing text, please update all three language resources and keep the keys identical. Traditional Chinese uses the same text as Simplified Chinese with characters converted only.
-- Translation contributions are also submitted to the `main` branch.
+- Translation contributions may be submitted to the `main` branch, or made collaboratively in the [Crowdin project](https://crowdin.com/project/scnexus).

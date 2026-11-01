@@ -43,17 +43,15 @@ ESLint 默认禁止显式 `any`；异构 IPC 回调及保留兼容性的无类�
 
 ## Windows WER 与打包边界
 
-当前 electron-builder 26.15.3 只重命名 Electron exe，没有同步重命名 Electron 45 分发中的 `electron_wer.dll`。`afterPack` 精准将 Windows Electron 45+ 的 helper 改为 `${productFilename}_wer.dll`（当前为 `SCNexus_wer.dll`），并支持 electronBranding.projectName。旧 Electron、其他平台和未改名 exe 不处理；缺失 DLL 报错，不静默省略。升级 builder 后须重新检查其实现，避免重复重命名。
+当前 electron-builder 26 只重命名 Electron exe，没有同步重命名 Electron 45 分发中的 `electron_wer.dll`。`afterPack` 精准将 Windows Electron 45+ 的 helper 改为 `${productFilename}_wer.dll`（当前为 `SCNexus_wer.dll`），并支持 electronBranding.projectName。旧 Electron、其他平台和未改名 exe 不处理；缺失 DLL 报错，不静默省略。升级 builder 后须重新检查其实现，避免重复重命名。
 
-2026-10-23 验证：`pnpm run build:app` 的类型检查和三个包构建成功，但默认下载/解压路径遇到 Windows EBUSY；独立输出重试遇到 EPERM 目录 rename。以下使用本机已安装分发的精准重试成功（不改变提交配置）：
+打包后检查产物目录中存在 `SCNexus.exe`、`resources/app.asar` 和 `SCNexus_wer.dll`，且不存在 `electron_wer.dll`：
 
 ```powershell
-pnpm --filter @scnexus/app-main exec electron-builder build --config electron-builder.mjs --dir --publish never --config.directories.output=../../release/electron45-validation-local --config.electronDist=../../node_modules/electron/dist
+pnpm --filter @scnexus/app-main exec electron-builder build --config electron-builder.mjs --dir --publish never
 ```
 
-成功目录中已检查 `SCNexus.exe`、`resources/app.asar` 和 `SCNexus_wer.dll` 存在，`electron_wer.dll` 不存在。隔离 smoke/WER 测试目录已自动清理；打包验证输出清理时仍有 Windows 文件锁，残留位于 `release/electron45-validation*` 和 `release/0.1.0-snapshot.2/win-unpacked.tmp`，须在锁释放后删除（这些输出不纳入版本控制）。
-
-本机验证只覆盖 Windows x64 目录打包，不等于安装器、签名可信性、自动更新、macOS/Linux、真实业务启动或用户数据迁移验证。打包器会警告其他平台 OXC 可选依赖不存在；未据此扩大生产依赖。
+该检查只覆盖当前平台的目录打包，不等于安装器、签名可信性、自动更新、其他平台、真实业务启动或用户数据迁移验证。打包器会警告其他平台 OXC 可选依赖不存在，不据此扩大生产依赖。
 
 ## 原生库验证
 
@@ -88,7 +86,7 @@ Windows regedit VBS仅由win.extraResources附带；mac排除该资源。7z保�
 
 ## 2026-10-29 依赖升级验收
 
-本节为当前升级结果，前文带日期的 Electron 45.0.0 / builder 26.15.3 记录保留为历史，不代表最新安装版本。
+本节为当前升级结果，前文带日期的 Electron 45.0.0 与 builder 早期版本记录保留为历史，不代表最新安装版本。
 
 - 所有工作区直接声明的 TypeScript 统一为 `~6.0.3`，不升级 TypeScript 7。第三方工具内部的 TypeScript 依赖仍遵守上游要求，例如 Schema 生成器内部的 5.9，不用 override 强行替换。
 - Electron 三处统一 `^45.1.0`，electron-builder `^26.18.0`、electron-updater `^6.8.11`、electron-store `^12.0.0`；Vite `^8.3.5`、Vitest `^5.0.5`、Vue I18n `^11.4.16`。同步升级常规工具与自动导入插件，保留既有 API 和持久化契约。

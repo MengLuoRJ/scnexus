@@ -2,7 +2,13 @@
 
 本目录记录 SCNexus 的录像管理与分析设计方案，目标是把 `.SC2Replay` 文件当作受管理的本地资产，而不是临时文件。
 
-## 目标
+## 当前状态与本轮范围
+
+已有本地资料库、组件解析、版本化 tracker 经济采样/生产观察及曲线。本轮用户确认实现跨场基础统计与调用游戏观看录像；深度解析后续推进，AI 仅设计，本文不宣称这些本轮目标已通过运行验收。
+
+统计范围为当前档案/当前分类全部已扫描录像，不随文字搜索变化；contentHash 去重；胜率 win/(win+loss)，draw/unknown 单列；对种族仅明确1v1，地图含团队；趋势按真实 playedAt UTC 月份，无日期只计总数。
+
+## 目标（含后续计划，不代表全部已实现）
 
 - 支持识别本地录像目录和压缩包中的录像文件
 - 支持索引、筛选、导入、删除、重命名与归档
@@ -22,6 +28,9 @@
 - [replay-architecture.md](./replay-architecture.md) — 架构与能力拆分
 - [replay-parser-package.md](./replay-parser-package.md) — `@scnexus/replay-parser` 包设计
 - [replay-database.md](./replay-database.md) — 本地 SQLite 数据结构与 replay 持久化设计
+
+- [录像分析分阶段设计](../replay-analysis-design.md) — 已确认统计口径、观看验收与后续指标证据要求
+- [AI 设计](../ai-assistant-design.md#录像复盘-ai-设计本轮不实现) — 数据授权、外部发送与只读证据工具（本轮不实现）
 
 ## 关键原则
 

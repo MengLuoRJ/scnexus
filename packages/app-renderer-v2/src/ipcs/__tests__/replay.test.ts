@@ -8,6 +8,7 @@ import {
   ipcReplayImportArchive,
   ipcReplayDelete,
   ipcReplayAnalyze,
+  ipcReplayWatch,
   ipcReplayGetAnalysis,
   ipcReplayExportArchive,
   ipcReplayProfiles,
@@ -58,6 +59,20 @@ test('foundation wrappers forward explicit IDs and export destination without ex
   expect(replay.analyze).toHaveBeenCalledWith(scope, 'id')
   expect(replay.getAnalysis).toHaveBeenCalledWith(scope, 'id')
   expect(replay.exportArchive).toHaveBeenCalledWith(scope, ['id'], 'D:\\out.zip')
+})
+
+test('watch snapshots scope and forwards only the replay ID, preserving launch failures', async () => {
+  const success = { ok: true, data: undefined }
+  const failure = { ok: false, error: toErrorDto(new AppError(ERRORS.GAME_LAUNCH_FAILED)) }
+  const watch = vi
+    .fn<(...args: unknown[]) => Promise<unknown>>()
+    .mockResolvedValueOnce(success)
+    .mockResolvedValueOnce(failure)
+  vi.stubGlobal('scnexus', { replay: { watch } })
+  expect(await ipcReplayWatch(scope, 'id')).toBe(success)
+  expect(watch).toHaveBeenCalledWith(scope, 'id')
+  expect(watch.mock.calls[0]![0]).not.toBe(scope)
+  expect(await ipcReplayWatch(scope, 'id')).toBe(failure)
 })
 
 test('missing bridge, rejected transport, invalid envelopes, and failures return typed failures', async () => {

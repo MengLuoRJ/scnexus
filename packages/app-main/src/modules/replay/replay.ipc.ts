@@ -39,6 +39,9 @@ export function initReplayModule() {
     }
   }
   ipcHandle('replay:profiles', () => replayLibraryService.profiles())
+  ipcHandle('replay:watch', (scope: unknown, id: unknown) =>
+    replayLibraryService.watchReplay(scopeArgument(scope), replayIdArgument(id)),
+  )
   ipcHandle('replay:analyze', (scope: unknown, id: unknown) =>
     replayLibraryService.analyzeReplay(scopeArgument(scope), replayIdArgument(id)),
   )

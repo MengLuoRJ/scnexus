@@ -87,6 +87,7 @@ export type ReplayAnalysis = {
 }
 
 export interface ReplayApi {
+  watch(scope: ReplayScope, replayId: string): Promise<IpcResult<void>>
   profiles(): Promise<IpcResult<StarCraftProfile[]>>
   analyze(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis>>
   getAnalysis(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis | null>>

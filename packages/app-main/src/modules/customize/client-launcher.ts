@@ -71,6 +71,9 @@ export async function runGameExecutable(parameters?: GameExecutableParameters) {
   }
   await launch((await getGamePaths()).switcher, args)
 }
+export async function runReplayExecutable(path: string) {
+  await launch((await getGamePaths()).switcher, [path])
+}
 export async function runEditorExecutable(path?: string) {
   if (path !== undefined && typeof path !== 'string')
     throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)

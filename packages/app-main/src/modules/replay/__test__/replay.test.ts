@@ -2,9 +2,12 @@ import type { ReplayScope } from '@scnexus/app-shared/types/replay.type'
 const scope: ReplayScope = { profileHandle: '1-S2-1-123', category: 'Multiplayer' }
 vi.mock('../../../stores/setting', () => ({ settingRepository: { getKey: () => '' } }))
 vi.mock('electron', () => ({ app: { isPackaged: false, getPath: () => '' } }))
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const launchReplay = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>())
+vi.mock('../../customize/client-launcher', () => ({ runReplayExecutable: launchReplay }))
 
 const archiveMock = vi.hoisted(() => ({
   list: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
@@ -34,6 +37,8 @@ beforeEach(async () => {
     recursive: true,
   })
   service = new ReplayLibraryService(() => directory)
+  launchReplay.mockReset()
+  launchReplay.mockResolvedValue(undefined)
   archiveMock.list.mockReset()
   archiveMock.readFile.mockReset()
 })
@@ -112,6 +117,81 @@ describe('ReplayLibraryService', () => {
     const path = join(directory, 'folder.SC2Replay')
     await mkdir(path)
     await expect(service.importFile(scope, path)).rejects.toThrow('regular file')
+  })
+
+  it('watches an indexed replay with spaces and non-ASCII without requiring parser support', async () => {
+    const path = join(
+      directory,
+      'Accounts',
+      '1',
+      scope.profileHandle,
+      'Replays',
+      scope.category,
+      '录像 & game.SC2Replay',
+    )
+    await writeFile(path, 'candidate')
+    const record = (await service.scan(scope))[0]!
+    await service.watchReplay(scope, record.id)
+    expect(launchReplay).toHaveBeenCalledExactlyOnceWith(path)
+    launchReplay.mockRejectedValueOnce(new Error('launch failed'))
+    await expect(service.watchReplay(scope, record.id)).rejects.toThrow('launch failed')
+  })
+
+  it('does not launch unknown, cross-scope, missing or directory replay targets', async () => {
+    const path = join(
+      directory,
+      'Accounts',
+      '1',
+      scope.profileHandle,
+      'Replays',
+      scope.category,
+      'game.SC2Replay',
+    )
+    await writeFile(path, 'candidate')
+    const record = (await service.scan(scope))[0]!
+    await expect(service.watchReplay(scope, 'missing')).rejects.toThrow('not indexed')
+    await expect(
+      service.watchReplay({ ...scope, category: 'Campaign' }, record.id),
+    ).rejects.toThrow('not indexed')
+    await rm(path)
+    await expect(service.watchReplay(scope, record.id)).rejects.toMatchObject({ code: 'ENOENT' })
+    await mkdir(path)
+    await expect(service.watchReplay(scope, record.id)).rejects.toThrow('regular')
+    expect(launchReplay).not.toHaveBeenCalled()
+  })
+
+  it('rejects indexed replay paths outside the selected directory and non-replay extensions', async () => {
+    const root = join(directory, 'Accounts', '1', scope.profileHandle, 'Replays', scope.category)
+    const path = join(root, 'game.SC2Replay')
+    await writeFile(path, 'candidate')
+    const record = (await service.scan(scope))[0]!
+    const stored = vi.spyOn(replayDatabase, 'listReplays')
+    try {
+      stored.mockResolvedValue([{ ...record, path: join(directory, 'outside.SC2Replay') }])
+      await expect(service.watchReplay(scope, record.id)).rejects.toThrow('not indexed')
+      const textPath = join(root, 'notes.txt')
+      await writeFile(textPath, 'keep')
+      stored.mockResolvedValue([{ ...record, path: textPath }])
+      await expect(service.watchReplay(scope, record.id)).rejects.toThrow('.SC2Replay')
+      expect(launchReplay).not.toHaveBeenCalled()
+    } finally {
+      stored.mockRestore()
+    }
+  })
+
+  it('rejects a junction substituted for an indexed replay parent', async () => {
+    const root = join(directory, 'Accounts', '1', scope.profileHandle, 'Replays', scope.category)
+    const nested = join(root, 'nested')
+    await mkdir(nested)
+    await writeFile(join(nested, 'game.SC2Replay'), 'candidate')
+    const record = (await service.scan(scope))[0]!
+    const outside = join(directory, 'outside')
+    await mkdir(outside)
+    await writeFile(join(outside, 'game.SC2Replay'), 'candidate')
+    await rm(nested, { recursive: true })
+    await symlink(outside, nested, 'junction')
+    await expect(service.watchReplay(scope, record.id)).rejects.toThrow('link')
+    expect(launchReplay).not.toHaveBeenCalled()
   })
 
   it('only deletes indexed regular files and their stored index', async () => {

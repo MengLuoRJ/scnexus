@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   export: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   analyze: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   getAnalysis: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  watch: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 vi.mock('../../../ipcs', () => ({
@@ -38,6 +39,7 @@ vi.mock('../../../ipcs', () => ({
   ipcReplayExportArchive: mocks.export,
   ipcReplayAnalyze: mocks.analyze,
   ipcReplayGetAnalysis: mocks.getAnalysis,
+  ipcReplayWatch: mocks.watch,
 }))
 const scope = { profileHandle: '5-S2-1-2206060', category: 'Multiplayer' as const }
 const profile = {
@@ -135,8 +137,74 @@ beforeEach(() => {
   mocks.duplicates.mockResolvedValue({ ok: true, data: [] })
   mocks.chooseExport.mockResolvedValue({ ok: true, data: null })
   mocks.getAnalysis.mockResolvedValue({ ok: true, data: null })
+  mocks.watch.mockResolvedValue({ ok: true, data: undefined })
 })
 afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
+
+test('watching from details launches the selected replay without parsing and blocks duplicate actions', async () => {
+  let finish!: (value: unknown) => void
+  mocks.watch.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve
+    }),
+  )
+  const wrapper = await render()
+  await click(wrapper, 'Details')
+  await click(wrapper, 'Watch replay')
+  expect(mocks.watch).toHaveBeenCalledExactlyOnceWith(scope, record.id)
+  expect(mocks.analyze).not.toHaveBeenCalled()
+  expect(
+    wrapper
+      .get('[role="dialog"]')
+      .findAll('button')
+      .every((button) => button.attributes('disabled') !== undefined),
+  ).toBe(true)
+  finish({ ok: true, data: undefined })
+  await flushPromises()
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ title: en['replay.watchStarted'], color: 'success' }),
+  )
+  expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+})
+
+test('watch launch failures produce a toast and leave details open for retry', async () => {
+  mocks.watch.mockResolvedValueOnce({
+    ok: false,
+    error: toErrorDto(new AppError(ERRORS.GAME_LAUNCH_FAILED)),
+  })
+  const wrapper = await render()
+  await click(wrapper, 'Details')
+  await click(wrapper, 'Watch replay')
+  expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
+  expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  await click(wrapper, 'Watch replay')
+  expect(mocks.watch).toHaveBeenCalledTimes(2)
+})
+
+test('statistics include all current profile records while returning preserves list search', async () => {
+  mocks.scan.mockResolvedValue({
+    ok: true,
+    data: [
+      record,
+      {
+        ...record,
+        id: '2',
+        fileName: 'other.SC2Replay',
+        mapName: 'Other map',
+        contentHash: 'another',
+      },
+    ],
+  })
+  const wrapper = await render()
+  await wrapper.get('input:not([type="checkbox"])').setValue('Test map')
+  expect(wrapper.findAll('article')).toHaveLength(1)
+  await click(wrapper, 'Match statistics')
+  expect(wrapper.text()).toContain('Other map')
+  await click(wrapper, 'Back to replays')
+  expect(wrapper.get('input:not([type="checkbox"])').element).toHaveProperty('value', 'Test map')
+  expect(wrapper.findAll('article')).toHaveLength(1)
+  expect(wrapper.get('article').text()).toContain('Test map')
+})
 
 test('loads indexed records, exposes partial metadata honestly and filters search', async () => {
   const wrapper = await render()

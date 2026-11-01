@@ -28,6 +28,7 @@ test('replay exposes only scoped business methods and preserves result envelopes
   const success = { ok: true, data: [] }
   mocks.invoke.mockResolvedValue(success)
   expect(await desktopApi.replay.list(scope)).toBe(success)
+  await desktopApi.replay.watch(scope, 'id')
   await desktopApi.replay.scan(scope)
   await desktopApi.replay.importFile(scope, 'D:\\replay.SC2Replay')
   await desktopApi.replay.importArchive(scope, 'D:\\archive.zip')
@@ -40,6 +41,7 @@ test('replay exposes only scoped business methods and preserves result envelopes
   await desktopApi.replay.getAnalysis(scope, 'id')
   expect(mocks.invoke.mock.calls).toEqual([
     ['replay:list', scope],
+    ['replay:watch', scope, 'id'],
     ['replay:scan', scope],
     ['replay:import-file', scope, 'D:\\replay.SC2Replay'],
     ['replay:import-archive', scope, 'D:\\archive.zip'],
@@ -63,6 +65,7 @@ test('replay exposes only scoped business methods and preserves result envelopes
     'listDuplicates',
     'profiles',
     'scan',
+    'watch',
   ])
   const failure = { ok: false, error: toErrorDto(new AppError(ERRORS.IPC_INVALID_ARGUMENT)) }
   mocks.invoke.mockResolvedValueOnce(failure)

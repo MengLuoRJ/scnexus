@@ -38,13 +38,13 @@
 
 ### 4. analysis-entry
 
-负责生成高层分析对象的入口；理论上，事件流和统计层都可以从这里接入。
+当前组件 API 提供原始协议结果；高层 `buildReplayInsights` 位于主进程，不是 parser 的已导出聚合计算器。game/message 与完整深度复盘仍为后续能力。
 
 ## 设计原则
 
 - 解析器对不同目标分离：metadata 与 analysis 分开
 - 对未知协议做 `unsupported` 而不是伪装成已支持
-- 所有输出保存 `protocolVersion` 与 `algorithmVersion`
+- 组件解码输出保存 `protocolVersion` 与 `algorithmVersion`；基础识别/metadata 契约不因此承诺这些字段
 - 不在 parser 中硬编码违背用户隐私的上线数据上传逻辑
 
 ## 公开 API
@@ -118,6 +118,8 @@ const tracker = parseReplayTrackerEvents(trackerBytes, header.baseBuild)
 - 升级来自 Upgrade 的 `m_upgradeTypeName/m_count`（记录的升级次数，不是推导等级）。名称取 parser blob 的 UTF-8 `text` 原始 ID，不伪装为本地化游戏数据；无法解码或缺失名称的事件不展示。
 
 字段与 tag 依据下文官方协议；food 定点及 UnitInit/Done 的折跃语义交叉参考 [sc2reader tracker events](https://github.com/ggtracker/sc2reader/blob/master/sc2reader/events/tracker.py)。
+
+跨场基础统计和游戏观看是本轮应用层目标，不依赖新增 game/message 解码；AI 仅设计。指标所需事件、缺失状态与分阶段验收见 [录像分析设计](../replay-analysis-design.md)。本包已有经济采样/生产观察的 host 投影不能充当 APM、损失、交战或指令型完整建造顺序。
 
 ## 计划中的后续能力
 

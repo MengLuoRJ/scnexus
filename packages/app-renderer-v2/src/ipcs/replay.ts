@@ -2,6 +2,8 @@ import { ipcDesktop, ipcRequest, ipcSnapshot } from './internal/ipc-common'
 import type { ReplayScope } from '@scnexus/app-shared/types/replay.type'
 
 const replay = () => ipcDesktop().replay
+export const ipcReplayWatch = (scope: ReplayScope, id: string) =>
+  ipcRequest(() => replay().watch(ipcSnapshot(scope), id))
 export const ipcReplayProfiles = () => ipcRequest(() => replay().profiles())
 export const ipcReplayChooseExportPath = () => ipcRequest(() => replay().chooseExportPath())
 export const ipcReplayAnalyze = (scope: ReplayScope, id: string) =>

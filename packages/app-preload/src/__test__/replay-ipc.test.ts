@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   saveDialog: vi.fn<(...args: unknown[]) => Promise<{ canceled: boolean; filePath?: string }>>(),
   service: {
     listStoredReplays: vi.fn(),
+    watchReplay: vi.fn<(...args: unknown[]) => Promise<void>>(),
     analyzeReplay: vi.fn(),
     getAnalysis: vi.fn(),
     listDuplicates: vi.fn(),
@@ -41,6 +42,7 @@ test('registers scoped replay operations without unscoped path operations', () =
   expect([...mocks.handlers.keys()]).toEqual([
     'replay:choose-export-path',
     'replay:profiles',
+    'replay:watch',
     'replay:analyze',
     'replay:get-analysis',
     'replay:duplicates',
@@ -51,6 +53,8 @@ test('registers scoped replay operations without unscoped path operations', () =
     'replay:import-archive',
     'replay:delete',
   ])
+  mocks.handlers.get('replay:watch')!(scope, 'id')
+  expect(mocks.service.watchReplay).toHaveBeenCalledWith(scope, 'id')
   mocks.handlers.get('replay:scan')!(scope)
   mocks.handlers.get('replay:import-file')!(scope, 'D:\\a.SC2Replay')
   mocks.handlers.get('replay:import-archive')!(scope, 'D:\\pack.zip')
@@ -85,7 +89,12 @@ test.each([undefined, null, 42, {}, '', ' ', 'relative.SC2Replay', 'D:\\bad\0.SC
 )
 test('validates identifiers and export selections', () => {
   for (const id of [undefined, null, 42, '', 'a'.repeat(101)])
-    for (const channel of ['replay:delete', 'replay:analyze', 'replay:get-analysis'])
+    for (const channel of [
+      'replay:watch',
+      'replay:delete',
+      'replay:analyze',
+      'replay:get-analysis',
+    ])
       expect(() => mocks.handlers.get(channel)!(scope, id)).toThrow()
   for (const ids of [
     [],

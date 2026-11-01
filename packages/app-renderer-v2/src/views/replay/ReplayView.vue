@@ -10,6 +10,7 @@ import type {
   ReplayAnalysis,
 } from '@scnexus/app-shared/types/replay.type'
 import ReplayAnalysisDialog from './ReplayAnalysisDialog.vue'
+import ReplayStatistics from './ReplayStatistics.vue'
 import { readReplaySelection, saveReplaySelection } from './selection'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
 import type { IpcResult } from '@scnexus/app-shared/errors/app.error'
@@ -25,6 +26,7 @@ import {
   ipcReplayExportArchive,
   ipcReplayAnalyze,
   ipcReplayGetAnalysis,
+  ipcReplayWatch,
 } from '../../ipcs'
 
 defineOptions({ name: 'ReplayView' })
@@ -91,6 +93,7 @@ function requireScope(): ReplayScope {
   return { ...scope.value }
 }
 const exportMode = ref(false)
+const statisticsVisible = ref(false)
 const selected = ref<string[]>([])
 const importItems = computed(() => [
   { label: t('replay.index'), disabled: busy.value || !scope.value, onSelect: () => indexFile() },
@@ -102,6 +105,7 @@ const importItems = computed(() => [
 ])
 function toggleExportMode() {
   if (busy.value || !scope.value) return
+  statisticsVisible.value = false
   exportMode.value = !exportMode.value
   selected.value = []
 }
@@ -300,6 +304,12 @@ function showAnalysis(record: ReplayRecord) {
     }
   })
 }
+function watchReplay(record: ReplayRecord) {
+  return run(async () => {
+    unwrap(await ipcReplayWatch(requireScope(), record.id))
+    toast.add({ title: t('replay.watchStarted'), color: 'success' })
+  })
+}
 function analyze(record: ReplayRecord) {
   return run(async () => {
     const current = requireScope()
@@ -386,8 +396,14 @@ onUnmounted(() => {
         :model-value="category"
         :aria-label="t('replay.categoryLabel')"
         @update:model-value="changeCategory($event as ReplayCategory)" />
+      <UButton
+        :disabled="busy || !scope || !loaded"
+        :aria-pressed="statisticsVisible"
+        variant="outline"
+        :label="t(statisticsVisible ? 'replay.statistics.back' : 'replay.statistics.title')"
+        @click="statisticsVisible = !statisticsVisible" />
     </div>
-    <div v-if="exportMode" class="flex shrink-0 items-center gap-2">
+    <div v-if="exportMode && !statisticsVisible" class="flex shrink-0 items-center gap-2">
       <span class="text-xs text-muted">{{ t('replay.selected', { count: selected.length }) }}</span>
       <UButton
         :disabled="busy || !scope || !filtered.length"
@@ -406,6 +422,7 @@ onUnmounted(() => {
         @click="exportSelected" />
     </div>
     <UInput
+      v-if="!statisticsVisible"
       v-model="search"
       class="w-full shrink-0"
       icon="i-tabler-search"
@@ -420,11 +437,14 @@ onUnmounted(() => {
         </RouterLink>
       </p>
       <p v-else-if="!scope" class="text-sm text-muted">{{ t('replay.chooseProfile') }}</p>
-      <p v-if="loaded && !filtered.length" class="py-12 text-center text-muted">
+      <ReplayStatistics v-if="statisticsVisible && loaded && scope" :records="records" />
+      <p
+        v-if="!statisticsVisible && loaded && !filtered.length"
+        class="py-12 text-center text-muted">
         {{ t(records.length ? 'replay.noMatches' : 'replay.empty') }}
       </p>
       <article
-        v-for="record in filtered"
+        v-for="record in statisticsVisible ? [] : filtered"
         :key="record.id"
         class="flex min-w-0 items-center gap-3 rounded-lg border border-default px-3 py-2">
         <UCheckbox
@@ -477,6 +497,7 @@ onUnmounted(() => {
       :busy="busy"
       @close="analysisTarget = null"
       @analyze="analyze(analysisTarget)"
+      @watch="watchReplay(analysisTarget)"
       @delete="requestDelete(analysisTarget)" />
     <UModal
       v-model:open="deleteOpen"

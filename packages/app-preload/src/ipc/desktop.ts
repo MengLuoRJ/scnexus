@@ -18,6 +18,7 @@ function contentApi(
 }
 const api: DesktopApi = {
   replay: {
+    watch: (scope, replayId) => invoke('replay:watch', scope, replayId),
     chooseExportPath: () => invoke('replay:choose-export-path'),
     profiles: () => invoke('replay:profiles'),
     analyze: (scope, replayId) => invoke('replay:analyze', scope, replayId),

@@ -27,6 +27,7 @@ import {
   launchCommand,
   runGameClient,
   runGameExecutable,
+  runReplayExecutable,
   runEditorExecutable,
 } from '../client-launcher'
 test('macOS bundles launch through LaunchServices with fresh instance and exact argument boundaries', () => {
@@ -66,6 +67,22 @@ test('game launch uses argument arrays and resolves on spawn instead of waiting 
   )
   await runEditorExecutable('Map.SC2Map')
   expect(calls.spawn).toHaveBeenCalledWith('editor.exe', ['Map.SC2Map'], expect.anything())
+})
+test('replays are passed as a single positional switcher argument, not a map -run flag', async () => {
+  const path = 'D:\\录像 with spaces\\game & match.SC2Replay'
+  await runReplayExecutable(path)
+  expect(calls.spawn).toHaveBeenCalledExactlyOnceWith('switcher.exe', [path], {
+    windowsHide: false,
+    stdio: 'ignore',
+  })
+})
+test('replay launch preserves spawn errors as registered launch failures', async () => {
+  calls.spawn.mockImplementation(() => {
+    const child = Object.assign(new EventEmitter(), { unref: vi.fn<() => void>() })
+    queueMicrotask(() => child.emit('error', new Error('launch denied')))
+    return child
+  })
+  await expect(runReplayExecutable('game.SC2Replay')).rejects.toMatchObject({ code: 'M044' })
 })
 test('missing executable reports the registered launch error', async () => {
   calls.stat.mockRejectedValue(Error('missing'))

@@ -28,6 +28,7 @@ import { hashReplayFile } from './replay-files'
 import { REPLAY_ANALYSIS_VERSION } from './replay-analysis'
 import { runReplayAnalysis } from './replay-analysis-runner'
 import { SevenZipWrapper } from '../../utils/7zip-wrapper'
+import { runReplayExecutable } from '../customize/client-launcher'
 
 export class ReplayLibraryService {
   private readonly archiveReader = new SevenZipWrapper()
@@ -59,6 +60,13 @@ export class ReplayLibraryService {
     string,
     Promise<import('@scnexus/app-shared/types/replay.type').ReplayAnalysis>
   >()
+
+  async watchReplay(scope: ReplayScope, replayId: string): Promise<void> {
+    const record = await this.requireRecord(scope, replayId)
+    if (!looksLikeReplay(record.path) || !(await lstat(record.path)).isFile())
+      throw new Error('Replay must be a regular .SC2Replay file')
+    await runReplayExecutable(record.path)
+  }
 
   async getAnalysis(scope: ReplayScope, replayId: string) {
     await this.ensureReady()

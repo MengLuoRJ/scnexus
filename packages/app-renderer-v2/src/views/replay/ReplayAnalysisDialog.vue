@@ -14,7 +14,7 @@ const props = defineProps<{
   busy: boolean
   error: string
 }>()
-const emit = defineEmits<{ close: []; analyze: []; delete: [] }>()
+const emit = defineEmits<{ close: []; analyze: []; delete: []; watch: [] }>()
 const { t, locale } = useI18n()
 function localTime(value: string | number | null) {
   return value === null ? t('replay.unknown') : new Date(value).toLocaleString(locale.value)
@@ -235,6 +235,11 @@ watch([selectedId, () => props.analysis], () => {
       </div>
     </template>
     <template #footer>
+      <UButton
+        :disabled="props.busy"
+        icon="i-lucide-play"
+        :label="t('replay.watch')"
+        @click="emit('watch')" />
       <UButton
         :disabled="props.busy"
         color="error"

@@ -90,7 +90,7 @@ test.each([
 test('default main and slash branches resolve only to fixed commit URLs without credentials', async () => {
   expect(githubSource({ kind: 'github', repository: source.repository }).revision).toBe('main')
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) =>
-    String(url).includes('api.github.com') ? json({ sha: commit }) : json(manifest),
+    new URL(String(url)).hostname === 'api.github.com' ? json({ sha: commit }) : json(manifest),
   )
   expect(await resolveGithub(source, fetch, new AbortController().signal)).toMatchObject({
     commit,
@@ -104,7 +104,7 @@ test('default main and slash branches resolve only to fixed commit URLs without 
 })
 test('invalid manifest fails before task creation and ZIP request', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) =>
-    String(url).includes('api.github.com')
+    new URL(String(url)).hostname === 'api.github.com'
       ? json({ sha: commit })
       : json({ ...manifest, version: '1.004', bank_enable: 'offcial' }),
   )
@@ -130,9 +130,9 @@ test('bounded bodies reject advertised and streaming excess', async () => {
 test('anonymous disabled downloads verify wrapped ZIP and cache, survive account changes and restart', async () => {
   let zip = Buffer.from('')
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) =>
-    String(url).includes('api.github.com')
+    new URL(String(url)).hostname === 'api.github.com'
       ? json({ sha: commit })
-      : String(url).includes('raw.githubusercontent.com')
+      : new URL(String(url)).hostname === 'raw.githubusercontent.com'
         ? json(manifest)
         : new Response(zip),
   )
@@ -189,8 +189,8 @@ test('pause, account changes, restart and cancellation preserve isolation and re
     requested = resolve
   })
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
-    if (String(url).includes('api.github.com')) return json({ sha: commit })
-    if (String(url).includes('raw.githubusercontent.com')) return json(manifest)
+    if (new URL(String(url)).hostname === 'api.github.com') return json({ sha: commit })
+    if (new URL(String(url)).hostname === 'raw.githubusercontent.com') return json(manifest)
     requested()
     return new Promise<Response>((_resolve, reject) =>
       init!.signal!.addEventListener('abort', () => reject(new Error('aborted')), { once: true }),
@@ -224,8 +224,8 @@ test('pause, account changes, restart and cancellation preserve isolation and re
 
 test('GitHub downloads do not apply upload archive prechecks', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
-    if (String(url).includes('api.github.com')) return json({ sha: commit })
-    if (String(url).includes('raw.githubusercontent.com')) return json(manifest)
+    if (new URL(String(url)).hostname === 'api.github.com') return json({ sha: commit })
+    if (new URL(String(url)).hostname === 'raw.githubusercontent.com') return json(manifest)
     return new Response('not a ZIP')
   })
   const f = await setup(fetch)
@@ -239,8 +239,8 @@ test.each(['oversized'])(
   'failed %s download removes partial data and never exposes cache',
   async (kind) => {
     const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
-      if (String(url).includes('api.github.com')) return json({ sha: commit })
-      if (String(url).includes('raw.githubusercontent.com')) return json(manifest)
+      if (new URL(String(url)).hostname === 'api.github.com') return json({ sha: commit })
+      if (new URL(String(url)).hostname === 'raw.githubusercontent.com') return json(manifest)
       return new Response(
         'not a ZIP',
         kind === 'oversized' ? { headers: { 'content-length': '300000001' } } : {},
@@ -263,9 +263,9 @@ test('dependency ZIP downloads, exposes a verified source and enters the existin
   }
   let zip = Buffer.from('')
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) =>
-    String(url).includes('api.github.com')
+    new URL(String(url)).hostname === 'api.github.com'
       ? json({ sha: commit })
-      : String(url).includes('raw.githubusercontent.com')
+      : new URL(String(url)).hostname === 'raw.githubusercontent.com'
         ? json(dependencyManifest)
         : new Response(zip),
   )
@@ -326,9 +326,9 @@ test('dependency ZIP downloads, exposes a verified source and enters the existin
 test('preview reads only fixed-commit manifest, creates no tasks and confirmation never follows the branch again', async () => {
   let currentCommit = commit
   const transport = vi.fn<typeof fetch>(async (url) =>
-    String(url).includes('api.github.com')
+    new URL(String(url)).hostname === 'api.github.com'
       ? json({ sha: currentCommit })
-      : String(url).includes('raw.githubusercontent.com')
+      : new URL(String(url)).hostname === 'raw.githubusercontent.com'
         ? json(manifest)
         : new Response(null, { status: 404 }),
   )
@@ -343,7 +343,7 @@ test('preview reads only fixed-commit manifest, creates no tasks and confirmatio
   await f.service.confirmGithub(preview.previewId)
   await f.service.waitForIdle()
   expect(
-    transport.mock.calls.filter(([url]) => String(url).includes('api.github.com')),
+    transport.mock.calls.filter(([url]) => new URL(String(url)).hostname === 'api.github.com'),
   ).toHaveLength(1)
   expect(
     transport.mock.calls.some(
@@ -356,7 +356,7 @@ test('preview reads only fixed-commit manifest, creates no tasks and confirmatio
 test('expired Github preview cannot create a download', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).includes('api.github.com') ? json({ sha: commit }) : json(manifest),
+      new URL(String(url)).hostname === 'api.github.com' ? json({ sha: commit }) : json(manifest),
     ),
   )
   const preview = await f.service.previewGithub(source)

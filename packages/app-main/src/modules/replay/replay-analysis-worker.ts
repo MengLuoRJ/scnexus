@@ -3,7 +3,7 @@ import { analyzeLocalReplay } from './replay-analysis'
 import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 
 try {
-  const result = await analyzeLocalReplay(workerData as ReplayRecord)
+  const result = await analyzeLocalReplay(workerData.record as ReplayRecord)
   if (Buffer.byteLength(JSON.stringify(result)) > 32 * 1024 * 1024)
     throw new Error('Replay analysis result exceeds 32 MiB limit')
   parentPort!.postMessage({ ok: true, result })

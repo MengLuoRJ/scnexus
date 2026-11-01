@@ -15,7 +15,7 @@ test.each(['campaign', 'customize', 'dependency'])('strict preflight supports %s
     async (url) =>
       new Response(
         JSON.stringify(
-          String(url).includes('api.github.com') ? { sha: 'a'.repeat(40) } : candidate,
+          new URL(String(url)).hostname === 'api.github.com' ? { sha: 'a'.repeat(40) } : candidate,
         ),
       ),
   )

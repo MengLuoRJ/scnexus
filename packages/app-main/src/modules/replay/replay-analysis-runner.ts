@@ -15,7 +15,7 @@ export function runReplayAnalysis(record: ReplayRecord): Promise<ReplayAnalysis>
   let worker: Worker
   if (existsSync(built)) {
     worker = new Worker(built, {
-      workerData: record,
+      workerData: { record },
       execArgv: [],
       resourceLimits: { maxOldGenerationSizeMb: 256 },
     })
@@ -23,10 +23,11 @@ export function runReplayAnalysis(record: ReplayRecord): Promise<ReplayAnalysis>
     const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm/api')).href
     const source = new URL('./replay-analysis-worker.ts', import.meta.url).href
     worker = new Worker(
-      `import(${JSON.stringify(loader)}).then(({ tsImport }) => tsImport(${JSON.stringify(source)}, ${JSON.stringify(import.meta.url)}))`,
+      `const { workerData } = require('node:worker_threads')
+import(workerData.loader).then(({ tsImport }) => tsImport(workerData.source, workerData.parentURL))`,
       {
         eval: true,
-        workerData: record,
+        workerData: { record, loader, source, parentURL: import.meta.url },
         execArgv: [],
         resourceLimits: { maxOldGenerationSizeMb: 256 },
       },

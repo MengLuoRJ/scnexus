@@ -93,16 +93,16 @@ async function setup(fetch: typeof globalThis.fetch) {
 }
 test('workshop authorization above the former 300 MB limit reaches streaming transfer validation', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) =>
-    String(url).startsWith('https://api.example')
+    new URL(String(url)).origin === 'https://api.example'
       ? json({ ...authorization, size: 300000001 })
       : new Response(null, { status: 500 }),
   )
   const { service } = await setup(fetch)
   await service.download(source)
   await service.waitForIdle()
-  expect(fetch.mock.calls.some(([url]) => String(url).startsWith('https://packages.example'))).toBe(
-    true,
-  )
+  expect(
+    fetch.mock.calls.some(([url]) => new URL(String(url)).origin === 'https://packages.example'),
+  ).toBe(true)
   expect((await service.list())[0]!.error).not.toBe('INVALID_DOWNLOAD_AUTHORIZATION')
 })
 
@@ -166,7 +166,7 @@ test('fixed worker origins reject credentials, paths, HTTP and arbitrary URL sou
 })
 test('verified download commits atomically, keeps worker credentials out of persistence and rejects changed cache', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async (url: string | URL | Request) =>
-    String(url).startsWith('https://api.example') ? json(authorization) : range(),
+    new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
   )
   const { service, root } = await setup(fetch)
   const task = await service.download(source)
@@ -194,7 +194,7 @@ test.each([
 ])('rejects %s without publishing a cache source', async (_label, headers, status) => {
   const { service } = await setup(
     vi.fn<typeof globalThis.fetch>(async (url) =>
-      String(url).startsWith('https://api.example')
+      new URL(String(url)).origin === 'https://api.example'
         ? json(authorization)
         : range(bytes, headers as Record<string, string>, status),
     ),
@@ -207,7 +207,7 @@ test.each([
 test('SHA256 mismatch never exposes cache; malicious worker origins never receive a token', async () => {
   const { service } = await setup(
     vi.fn<typeof globalThis.fetch>(async (url) =>
-      String(url).startsWith('https://api.example')
+      new URL(String(url)).origin === 'https://api.example'
         ? json({ ...authorization, sha256: 'a'.repeat(64) })
         : range(),
     ),
@@ -227,7 +227,7 @@ test('SHA256 mismatch never exposes cache; malicious worker origins never receiv
 test('worker expiry renews authorization once, not user access blindly on 403', async () => {
   let reads = 0
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
-    if (String(url).startsWith('https://api.example')) return json(authorization)
+    if (new URL(String(url)).origin === 'https://api.example') return json(authorization)
     return ++reads === 1 ? new Response(null, { status: 403 }) : range()
   })
   const { service, deps } = await setup(fetch)
@@ -240,7 +240,7 @@ test('worker expiry renews authorization once, not user access blindly on 403', 
 })
 test('disable aborts active streams, persists paused state and enabling never automatically resumes', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
-    if (String(url).startsWith('https://api.example')) return json(authorization)
+    if (new URL(String(url)).origin === 'https://api.example') return json(authorization)
     return new Promise<Response>((_resolve, reject) =>
       init!.signal!.addEventListener('abort', () => reject(new Error('aborted')), { once: true }),
     )
@@ -470,7 +470,7 @@ test('MD5 native/WASM utility remains standard base64 and fixed 16MiB chunks has
 test('download timestamps and measured speed are public, completion belongs only to success', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   const task = await f.service.download(source)
@@ -487,7 +487,7 @@ test.each([false, true])(
   async (deleteFile) => {
     const f = await setup(
       vi.fn<typeof fetch>(async (url) =>
-        String(url).startsWith('https://api.example') ? json(authorization) : range(),
+        new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
       ),
     )
     const task = await f.service.download(source)
@@ -511,7 +511,7 @@ test.each([
   async (operation, deleteFile) => {
     const f = await setup(
       vi.fn<typeof fetch>(async (url) =>
-        String(url).startsWith('https://api.example') ? json(authorization) : range(),
+        new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
       ),
     )
     const parent = join(f.root, 'historical')
@@ -537,7 +537,7 @@ test.each([
 test('missing download directories still reject symlink ancestors and permission errors', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   const parent = join(f.root, 'historical')
@@ -589,7 +589,7 @@ test('missing caches can remove only their records and unsafe cache entries reta
 test('file deletion errors retain download history and symlinks never delete their target', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   const task = await f.service.download(source)
@@ -612,7 +612,7 @@ test('same account sees previous sessions and resume obtains fresh authorization
   const headers: unknown[] = []
   const f = await setup(
     vi.fn<typeof fetch>(async (url, init) => {
-      if (String(url).startsWith('https://api.example')) {
+      if (new URL(String(url)).origin === 'https://api.example') {
         headers.push(init?.headers)
         return json(authorization)
       }
@@ -707,7 +707,7 @@ test('legacy records without account ownership remain hidden, Github records rem
 test('account download history survives service restart while upload and image remain session-scoped', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   const task = await f.service.download(source)
@@ -791,7 +791,7 @@ test('download location refuses a replaced symbolic-link cache', async () => {
 test('new downloads use settings directly, persist their directory and retain it across settings changes and restart', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   const firstDirectory = join(f.root, 'downloads', 'first')
@@ -834,7 +834,7 @@ test('paused downloads resume in their recorded directory after settings change 
   let blocked = true
   const f = await setup(
     vi.fn<typeof fetch>(async (url, init) => {
-      if (String(url).startsWith('https://api.example')) return json(authorization)
+      if (new URL(String(url)).origin === 'https://api.example') return json(authorization)
       if (!blocked) return range()
       return new Promise<Response>((_resolve, reject) =>
         init!.signal!.addEventListener('abort', () => reject(new Error('aborted')), { once: true }),
@@ -863,7 +863,7 @@ test('paused downloads resume in their recorded directory after settings change 
 test('legacy tasks without a directory retain the old cache for install, opening and deletion', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   const task = await f.service.download(source)
@@ -888,7 +888,7 @@ test('legacy tasks without a directory retain the old cache for install, opening
 test('task location enforces task identity and account ownership', async () => {
   const f = await setup(
     vi.fn<typeof fetch>(async (url) =>
-      String(url).startsWith('https://api.example') ? json(authorization) : range(),
+      new URL(String(url)).origin === 'https://api.example' ? json(authorization) : range(),
     ),
   )
   f.deps.openDirectory = vi.fn<(path: string) => Promise<string>>(async () => '')
@@ -943,7 +943,7 @@ test('legacy paused downloads resume in the old cache despite a new download set
   let blocked = true
   const f = await setup(
     vi.fn<typeof fetch>(async (url, init) => {
-      if (String(url).startsWith('https://api.example')) return json(authorization)
+      if (new URL(String(url)).origin === 'https://api.example') return json(authorization)
       if (!blocked) return range()
       return new Promise<Response>((_resolve, reject) =>
         init!.signal!.addEventListener('abort', () => reject(new Error('aborted')), { once: true }),

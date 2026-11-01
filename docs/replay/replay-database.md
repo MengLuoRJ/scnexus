@@ -36,6 +36,8 @@ replay-db
 - 按 path upsert 保留已有 UUID，并返回数据库中实际保存的记录。查询按修改时间倒序排列。
 - 同步 SQL 用于索引与解析结果提交；MPQ 组件读取、BZIP2 解压和组件解码在独立 worker，最多两个不同录像并行，同一 UUID 合并并发请求。每任务 60 秒超时、worker V8 old-space 上限 256 MiB、序列化结果上限 32 MiB，应用退出时终止任务。initData/attributes 各限 4 MiB、tracker 限 16 MiB/100,000 事件。SQLite 不逐事件写入，当前保存有界 JSON 结果；后续高层时间线/聚合再设计专用表及查询。
 
+- 生产环境直接加载构建后的 worker；开发环境通过固定引导代码加载 `tsx` 和 TypeScript worker。录像记录统一通过 `workerData.record` 传递，开发模块地址也通过 `workerData` 传递，不拼接到可执行代码中。
+
 `capabilities` 保存 initData/attributes/tracker 各自的 available/partial/missing/unsupported/corrupt 状态、decoder 策略名称及 sourceBuild。协议 build 仅用于适用组件的表选择，不作为整体分析总开关；通用 tracker 解码方案也有独立版本戳。`replay_runs` 当前保存显式触发的组件解析结果（`kind = components`）。每个录像仅保留最近一次结果，不逐事件展开成统计表。结果包含源文件 SHA-256、parserVersion、baseBuild、状态、warnings、解析时间与 initData/attributes/tracker 的 JSON-safe 数据。重新索引内容发生变化后，旧 hash 对应结果不再返回；写入时也核对当前索引 hash，防止并发任务覆盖新内容结果。解析结果现同时保存版本化 `insights`：按 tracker PlayerSetup 映射的玩家经济采样及生产/升级事件时间线。`parserVersion` 包含业务投影算法版本，旧原始组件缓存会失效，需要玩家显式重新分析；打开详情不自动计算。尚不生成 APM、官方结算总分或精确下令建造时间。
 
 - `replay_files` 保存 `profile_handle`、`category`；同一 SQLite 文件按这两个字段分区查询，不按账号 ID 划分、不为每个资料复制数据库。解析 run 仍外键关联唯一录像 ID，访问 run 前检查该录像资料/类型和当前物理目录。旧记录缺归属为 null，不出现在资料库；重新扫描实际目录后补齐，不默认归到当前选择。

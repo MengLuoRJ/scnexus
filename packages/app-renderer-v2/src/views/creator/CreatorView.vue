@@ -112,7 +112,32 @@ async function load() {
   }
 }
 watch(allowed, load, { immediate: true })
-watch(() => auth.snapshot.epoch, load)
+watch(() => [auth.snapshot.epoch, auth.snapshot.sessionId], load)
+watch(
+  allowed,
+  (value) => {
+    if (value) void creator.loadQuota().catch(fail)
+  },
+  { immediate: true },
+)
+function operationCurrent() {
+  const version = generation
+  const epoch = auth.snapshot.epoch
+  const sessionId = auth.snapshot.sessionId
+  return () =>
+    version === generation &&
+    epoch === auth.snapshot.epoch &&
+    sessionId === auth.snapshot.sessionId &&
+    allowed.value
+}
+async function refreshQuotaConflict() {
+  const current = operationCurrent()
+  try {
+    await creator.loadQuota()
+  } finally {
+    if (current()) toast.add({ color: 'warning', title: t('workshop.quotaConflict') })
+  }
+}
 watch(
   () => transfers.tasks,
   (tasks) => {
@@ -169,11 +194,26 @@ async function refreshSelected() {
   }
 }
 async function save() {
-  if (!allowed.value || conflict.value) return
+  if (!allowed.value || conflict.value || saving.value) return
   saving.value = true
-  const epoch = auth.snapshot.epoch
+  const current = operationCurrent()
+  const creating = !selected.value
   const accountAuth = auth.httpAuth
   try {
+    if (creating) {
+      const quota = await creator.loadQuota()
+      if (!current()) return
+      const list = await apiWorkshopMine(accountAuth)
+      if (!current()) return
+      projects.value = list
+      if (list.length >= quota.maxProjects) {
+        toast.add({
+          color: 'warning',
+          title: t('workshop.projectQuotaReached', { max: quota.maxProjects }),
+        })
+        return
+      }
+    }
     const input = {
       ...schema.parse(state),
       detail: validateDocument(detail.value),
@@ -187,28 +227,42 @@ async function save() {
           input,
         )
       : await apiWorkshopCreate(accountAuth, input)
-    if (epoch !== auth.snapshot.epoch) return
+    if (!current()) return
     const list = await apiWorkshopMine(accountAuth)
-    if (epoch !== auth.snapshot.epoch) return
+    if (!current()) return
     projects.value = list
-    const current = list.find((item) => item.scnid === result.scnid)
-    if (current) await edit(current)
+    const saved = list.find((item) => item.scnid === result.scnid)
+    if (saved) await edit(saved)
     toast.add({ color: 'success', title: t('workshop.saved') })
   } catch (value) {
-    if (value instanceof AccountError && value.kind === 'conflict') conflict.value = true
-    else fail(value)
+    if (!current()) return
+    if (value instanceof AccountError && value.kind === 'conflict') {
+      if (creating) await refreshQuotaConflict().catch(fail)
+      else conflict.value = true
+    } else fail(value)
   } finally {
     saving.value = false
   }
 }
 async function choosePackage() {
-  if (!allowed.value) return
-  const current = generation
+  if (!allowed.value || saving.value) return
+  const current = operationCurrent()
   try {
+    const quota = await creator.loadQuota()
+    if (!current()) return
     const value = unwrapWorkshop(await ipcWorkshopSelectPackage())
-    if (current === generation && allowed.value) selection.value = value
+    if (!current()) return
+    if (value && value.size > quota.maxPackageBytes) {
+      toast.add({
+        color: 'warning',
+        title: t('workshop.packageQuotaExceeded', { max: quota.maxPackageBytes }),
+      })
+      selection.value = null
+      return
+    }
+    selection.value = value
   } catch (value) {
-    fail(value)
+    if (current()) fail(value)
   }
 }
 function prefill() {
@@ -252,14 +306,24 @@ async function upload() {
     !packageValid.value ||
     !allowed.value ||
     conflict.value ||
+    saving.value ||
     selected.value.candidateVersionId
   )
     return
   saving.value = true
-  const current = generation
+  const current = operationCurrent()
   const project = selected.value
   const packageSelection = selection.value
   try {
+    const quota = await creator.loadQuota()
+    if (!current()) return
+    if (packageSelection.size > quota.maxPackageBytes) {
+      toast.add({
+        color: 'warning',
+        title: t('workshop.packageQuotaExceeded', { max: quota.maxPackageBytes }),
+      })
+      return
+    }
     const log = validateDocument(changelog.value)
     if (documentFileIds(log).some((id) => !selected.value!.fileIds.includes(id))) {
       toast.add({ color: 'warning', title: t('workshop.saveImagesFirst') })
@@ -271,22 +335,24 @@ async function upload() {
       selection.value.manifest,
       log,
     )
-    if (current !== generation || !allowed.value || selected.value?.scnid !== project.scnid) return
+    if (!current() || selected.value?.scnid !== project.scnid) return
     // A failed byte transfer must retain its created candidate, never create another implicitly.
     versions.value = [version, ...versions.value]
     selected.value = { ...selected.value, candidateVersionId: version.id }
-    transfers.accept(
-      unwrapWorkshop(
-        await ipcWorkshopUpload({
-          selectionId: packageSelection.selectionId,
-          versionId: version.id,
-        }),
-      ),
+    const task = unwrapWorkshop(
+      await ipcWorkshopUpload({
+        selectionId: packageSelection.selectionId,
+        versionId: version.id,
+      }),
     )
+    if (!current()) return
+    transfers.accept(task)
     selection.value = null
     toast.add({ color: 'success', title: t('workshop.uploadStarted') })
   } catch (value) {
-    if (value instanceof AccountError && value.kind === 'conflict') conflict.value = true
+    if (!current()) return
+    if (value instanceof AccountError && value.kind === 'conflict')
+      await refreshQuotaConflict().catch(fail)
     else fail(value)
   } finally {
     saving.value = false
@@ -327,7 +393,7 @@ async function cancelCandidate() {
           <UButton @click="load">{{ t('workshop.reload') }}</UButton>
         </template>
       </UAlert>
-      <div class="flex gap-2 items-center">
+      <div class="flex flex-wrap gap-2 items-center">
         <UButton
           v-for="project in projects"
           :key="project.scnid"
@@ -337,11 +403,26 @@ async function cancelCandidate() {
           @click="edit(project)">
           <span class="truncate">{{ project.title }}</span>
         </UButton>
-        <UButton :disabled="saving || projects.length >= 5" variant="soft" @click="edit(null)">
+        <UButton :disabled="saving" variant="soft" @click="edit(null)">
           {{ t('workshop.create') }}
         </UButton>
       </div>
       <p v-if="!editing" class="text-sm text-muted">{{ t('workshop.creatorHint') }}</p>
+      <p v-if="creator.quota" class="text-sm text-muted">
+        {{
+          t('workshop.quota', {
+            projects: creator.quota.maxProjects,
+            bytes: creator.quota.maxPackageBytes,
+          })
+        }}
+      </p>
+      <UAlert v-if="creator.quotaError" :title="t('workshop.quotaError')" color="warning">
+        <template #actions>
+          <UButton :loading="creator.quotaLoading" @click="creator.loadQuota().catch(fail)">
+            {{ t('workshop.reload') }}
+          </UButton>
+        </template>
+      </UAlert>
       <template v-else>
         <UAlert
           v-if="conflict"

@@ -91,6 +91,61 @@ async function setup(fetch: typeof globalThis.fetch) {
   services.push(service)
   return { root, service, deps, emit }
 }
+test('workshop authorization above the former 300 MB limit reaches streaming transfer validation', async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>(async (url) =>
+    String(url).startsWith('https://api.example')
+      ? json({ ...authorization, size: 300000001 })
+      : new Response(null, { status: 500 }),
+  )
+  const { service } = await setup(fetch)
+  await service.download(source)
+  await service.waitForIdle()
+  expect(fetch.mock.calls.some(([url]) => String(url).startsWith('https://packages.example'))).toBe(
+    true,
+  )
+  expect((await service.list())[0]!.error).not.toBe('INVALID_DOWNLOAD_AUTHORIZATION')
+})
+
+test('full-file fingerprinting does not enforce a creator upload ceiling', async () => {
+  const { root } = await setup(vi.fn<typeof globalThis.fetch>())
+  const path = join(root, 'download.package')
+  const file = await fs.open(path, 'w')
+  try {
+    await file.truncate(300000001)
+  } finally {
+    await file.close()
+  }
+  expect((await fingerprint(path)).size).toBe(300000001)
+})
+
+test('selected packages use current creator size quota before archive parsing', async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+    json({ userId: snapshot.userId, maxProjects: 9, maxPackageBytes: 2 }),
+  )
+  const { deps, service, root } = await setup(fetch)
+  const path = join(root, 'large.zip')
+  await writeFile(path, 'more than two bytes')
+  deps.selectFile = async () => path
+  await expect(service.selectPackage()).rejects.toThrow('PACKAGE_QUOTA_EXCEEDED')
+  expect(fetch).toHaveBeenCalledWith(
+    'https://api.example/workshop/creator/quota',
+    expect.objectContaining({ method: 'GET' }),
+  )
+})
+
+test('quota read rejects stale account responses and invalid backend limits', async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+    json({ userId: 'other-user', maxProjects: 1, maxPackageBytes: 1000 }),
+  )
+  const { deps, service, root } = await setup(fetch)
+  const path = join(root, 'package.zip')
+  await writeFile(path, 'bytes')
+  deps.selectFile = async () => path
+  await expect(service.selectPackage()).rejects.toThrow('AUTH_SESSION_CHANGED')
+  fetch.mockResolvedValueOnce(json({ userId: snapshot.userId, maxProjects: 1, maxPackageBytes: 0 }))
+  await expect(service.selectPackage()).rejects.toThrow('INVALID_CREATOR_QUOTA')
+})
+
 test('fixed worker origins reject credentials, paths, HTTP and arbitrary URL sources', async () => {
   for (const origin of [
     'http://files.example',
@@ -229,6 +284,7 @@ test('complete response loss uses GET/reconcile and never repeats Complete', asy
   await writeFile(join(root, 'tasks.json'), JSON.stringify({ version: 1, tasks: [record] }))
   const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
     expect(String(url)).not.toContain('/complete')
+    expect(String(url)).not.toContain('/creator/quota')
     return json(
       String(url).endsWith('/reconcile')
         ? { status: 'COMPLETED' }
@@ -259,6 +315,69 @@ test('complete response loss uses GET/reconcile and never repeats Complete', asy
   expect((await service.list())[0].status).toBe('completed')
   expect(fetch).toHaveBeenCalledTimes(3)
 })
+test('lost upload-session responses resume the same idempotency key without applying a newly lowered quota', async () => {
+  const root = await mkdtemp(join(process.cwd(), '.workshop-test-'))
+  roots.push(root)
+  const path = join(root, 'selected.zip')
+  await writeFile(path, bytes)
+  const hashes = await fingerprint(path)
+  const id = randomUUID()
+  const key = randomUUID()
+  await writeFile(
+    join(root, 'tasks.json'),
+    JSON.stringify({
+      version: 1,
+      tasks: [
+        {
+          taskId: id,
+          kind: 'upload',
+          name: 'x',
+          status: 'paused',
+          transferred: 0,
+          ownerSession: sessionId,
+          epoch: 1,
+          path,
+          ...hashes,
+          versionId,
+          idempotencyKey: key,
+          uploadAttempted: true,
+        },
+      ],
+    }),
+  )
+  const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
+    expect(String(url)).not.toContain('/creator/quota')
+    if (String(url).endsWith('/uploads')) {
+      return json({
+        sessionId: fileId,
+        partSize: PART_SIZE,
+        partCount: hashes.partMd5.length,
+        status: 'UPLOADING',
+      })
+    }
+    return json({ status: 'COMPLETED', fileId })
+  })
+  const service = await createWorkshopService({
+    apiOrigin: 'https://api.example',
+    workshopOrigin: 'https://packages.example',
+    filesOrigin: 'https://images.example',
+    getSnapshot: () => snapshot,
+    getDownloadDirectory: () => join(root, 'cache'),
+    refresh: async () => snapshot,
+    enabled: () => true,
+    emit: () => {},
+    selectFile: async () => null,
+    root,
+    fetch,
+  })
+  services.push(service)
+  await service.resume(id)
+  await service.waitForIdle()
+  expect((await service.list())[0]!.status).toBe('completed')
+  const creation = fetch.mock.calls.find(([url]) => String(url).endsWith('/uploads'))!
+  expect(JSON.parse(String(creation[1]?.body)).idempotencyKey).toBe(key)
+})
+
 test('unknown/previously attempted parts must be cancelled, not PUT again', async () => {
   const root = await mkdtemp(join(process.cwd(), '.workshop-test-'))
   roots.push(root)

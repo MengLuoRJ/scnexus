@@ -1,7 +1,13 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { AccountError } from '../apis/internal/client'
-import { apiCreatorState, apiCreatorRedeem, type CreatorState } from '../apis/creator'
+import {
+  apiCreatorState,
+  apiCreatorRedeem,
+  apiCreatorQuota,
+  type CreatorState,
+  type CreatorQuota,
+} from '../apis/creator'
 import { useAuthStore } from './auth'
 import { useContentCenterStore } from './content-center'
 export const useCreatorStore = defineStore('creator', () => {
@@ -10,6 +16,10 @@ export const useCreatorStore = defineStore('creator', () => {
   const state = ref<CreatorState | null>(null)
   const loading = ref(false)
   const error = ref<unknown>(null)
+  const quota = ref<CreatorQuota | null>(null)
+  const quotaLoading = ref(false)
+  const quotaError = ref<unknown>(null)
+  let quotaGeneration = 0
   let generation = 0
   const active = computed(
     () =>
@@ -22,8 +32,44 @@ export const useCreatorStore = defineStore('creator', () => {
         'workshop.uploads.manage-self',
       ].every((permission) => auth.authorization?.permissions.includes(permission)),
   )
+  function resetQuota() {
+    quotaGeneration++
+    quota.value = null
+    quotaLoading.value = false
+    quotaError.value = null
+  }
+  async function loadQuota() {
+    if (!active.value) {
+      resetQuota()
+      throw new AccountError('forbidden')
+    }
+    const version = ++quotaGeneration
+    const epoch = auth.snapshot.epoch
+    const sessionId = auth.snapshot.sessionId
+    const current = () =>
+      version === quotaGeneration &&
+      epoch === auth.snapshot.epoch &&
+      sessionId === auth.snapshot.sessionId &&
+      active.value
+    quotaLoading.value = true
+    quotaError.value = null
+    quota.value = null
+    try {
+      const value = await apiCreatorQuota(auth.httpAuth)
+      if (!current()) throw new AccountError('stale')
+      if (value.userId !== state.value?.userId) throw new AccountError('invalidResponse')
+      quota.value = value
+      return value
+    } catch (value) {
+      if (current()) quotaError.value = value
+      throw value
+    } finally {
+      if (current()) quotaLoading.value = false
+    }
+  }
   function reset() {
     generation++
+    resetQuota()
     state.value = null
     loading.value = false
     error.value = null
@@ -68,5 +114,24 @@ export const useCreatorStore = defineStore('creator', () => {
       if (auth.signedIn && content.enabled) void load()
     },
   )
-  return { state, active, loading, error, load, redeem, reset }
+  watch(
+    active,
+    (value) => {
+      if (!value) resetQuota()
+    },
+    { flush: 'sync' },
+  )
+  return {
+    state,
+    active,
+    loading,
+    error,
+    quota,
+    quotaLoading,
+    quotaError,
+    loadQuota,
+    load,
+    redeem,
+    reset,
+  }
 })

@@ -9,10 +9,19 @@ const mocks = vi.hoisted(() => ({
   mine: vi.fn<() => Promise<unknown>>(),
   create: vi.fn<(auth: unknown, input: unknown) => Promise<unknown>>(),
   select: vi.fn<() => Promise<unknown>>(),
+  quota: vi.fn<() => Promise<unknown>>(),
+  version: vi.fn<() => Promise<unknown>>(),
+  upload: vi.fn<() => Promise<unknown>>(),
+  toast: vi.fn<(value: unknown) => void>(),
 }))
-const gate = reactive({ active: true, enabled: true })
+const gate = reactive({ active: true, enabled: true, loadQuota: mocks.quota })
+const auth = reactive({
+  signedIn: true,
+  snapshot: { epoch: 1, sessionId: 'session' },
+  httpAuth: {},
+})
 vi.mock('../../../stores/auth', () => ({
-  useAuthStore: () => ({ signedIn: true, snapshot: { epoch: 1 }, httpAuth: {} }),
+  useAuthStore: () => auth,
 }))
 vi.mock('../../../stores/creator', () => ({ useCreatorStore: () => gate }))
 vi.mock('../../../stores/content-center', () => ({ useContentCenterStore: () => gate }))
@@ -25,7 +34,7 @@ vi.mock('../../../apis/workshop', () => ({
   apiWorkshopCreate: mocks.create,
   apiWorkshopUpdate: async () => {},
   apiWorkshopVersions: async () => [],
-  apiWorkshopCreateVersion: async () => {},
+  apiWorkshopCreateVersion: mocks.version,
   apiWorkshopCancelCandidate: async () => {},
   socialKeys: ['discord'],
   sponsorKeys: ['afdian'],
@@ -34,7 +43,7 @@ vi.mock('../../../apis/workshop', () => ({
 vi.mock('../../../ipcs/workshop', () => ({
   ipcWorkshopSelectPackage: mocks.select,
   ipcWorkshopSelectImage: async () => null,
-  ipcWorkshopUpload: async () => {},
+  ipcWorkshopUpload: mocks.upload,
 }))
 vi.mock('../../../components/workshop/WorkshopEditor.vue', () => ({
   default: { template: '<div>Rich text editor</div>' },
@@ -42,7 +51,7 @@ vi.mock('../../../components/workshop/WorkshopEditor.vue', () => ({
 vi.mock('../../../components/workshop/WorkshopRichText.vue', () => ({
   default: { template: '<div />' },
 }))
-vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: () => {} }) }))
+vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: mocks.toast }) }))
 const button = defineComponent({
   props: ['disabled', 'type'],
   emits: ['click'],
@@ -68,6 +77,7 @@ afterEach(() => {
   gate.enabled = true
 })
 function render() {
+  mocks.quota.mockResolvedValue({ userId: 'user', maxProjects: 9, maxPackageBytes: 700000000 })
   const wrapper = mount(View, {
     global: {
       plugins: [
@@ -100,6 +110,7 @@ test('manifest name prefills project title only after explicit action and creati
   mocks.select.mockResolvedValue({
     data: {
       selectionId: 'selection',
+      size: 600000000,
       manifest: {
         name: 'Manifest title',
         description: 'Manifest description',
@@ -140,4 +151,131 @@ test('inactive creators never load owner projects', async () => {
   render()
   await flushPromises()
   expect(mocks.mine).not.toHaveBeenCalled()
+})
+
+async function click(wrapper: ReturnType<typeof render>, label: string) {
+  await wrapper
+    .findAll('button')
+    .find((button) => button.text() === label)!
+    .trigger('click')
+  await flushPromises()
+}
+test('checks fresh project quota before create and permits more than five projects', async () => {
+  mocks.mine.mockResolvedValue(
+    Array.from({ length: 6 }, (_, i) => ({ scnid: i + 1, title: 'Project' })),
+  )
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  await wrapper.findAll('input')[0]!.setValue('New project')
+  mocks.quota.mockResolvedValueOnce({ userId: 'user', maxProjects: 6, maxPackageBytes: 700000000 })
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.create).not.toHaveBeenCalled()
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ title: expect.stringContaining('6') }),
+  )
+})
+test('create conflict refreshes quota and never automatically resubmits', async () => {
+  const { AccountError } = await import('../../../apis/internal/client')
+  mocks.mine.mockResolvedValue([])
+  mocks.create.mockRejectedValue(new AccountError('conflict'))
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  await wrapper.findAll('input')[0]!.setValue('New project')
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.create).toHaveBeenCalledTimes(1)
+  expect(mocks.quota).toHaveBeenCalledTimes(3)
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ title: expect.stringContaining('手动重试') }),
+  )
+})
+test('failed quota blocks package selection and create instead of using defaults', async () => {
+  mocks.mine.mockResolvedValue([])
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  mocks.quota.mockRejectedValue(new Error('offline'))
+  await click(wrapper, '选择并验证压缩包')
+  expect(mocks.select).not.toHaveBeenCalled()
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.create).not.toHaveBeenCalled()
+})
+test('upload rechecks lowered per-version quota before creating a version', async () => {
+  mocks.mine.mockResolvedValue([{ scnid: 10, title: 'Project', fileIds: [], contentRevision: 1 }])
+  mocks.select.mockResolvedValue({
+    data: { selectionId: 'selection', size: 600000000, manifest: { version: '1.0.0' } },
+  })
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, 'Project')
+  await click(wrapper, '选择并验证压缩包')
+  mocks.quota.mockResolvedValueOnce({ userId: 'user', maxProjects: 1, maxPackageBytes: 100000000 })
+  await click(wrapper, '创建版本并上传')
+  expect(mocks.version).not.toHaveBeenCalled()
+  expect(mocks.upload).not.toHaveBeenCalled()
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ title: expect.stringContaining('100000000') }),
+  )
+})
+test('session changes while quota is pending block package picker', async () => {
+  mocks.mine.mockResolvedValue([])
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  let resolve!: (value: unknown) => void
+  mocks.quota.mockImplementationOnce(
+    () =>
+      new Promise((yes) => {
+        resolve = yes
+      }),
+  )
+  await wrapper
+    .findAll('button')
+    .find((button) => button.text() === '选择并验证压缩包')!
+    .trigger('click')
+  auth.snapshot.sessionId = 'other'
+  resolve({ userId: 'user', maxProjects: 9, maxPackageBytes: 700000000 })
+  await flushPromises()
+  expect(mocks.select).not.toHaveBeenCalled()
+  auth.snapshot.sessionId = 'session'
+})
+
+test('new upload supports raised quota and refreshes a 409 without creating another version', async () => {
+  const { AccountError } = await import('../../../apis/internal/client')
+  mocks.mine.mockResolvedValue([{ scnid: 10, title: 'Project', fileIds: [], contentRevision: 1 }])
+  mocks.select.mockResolvedValue({
+    data: { selectionId: 'selection', size: 600000000, manifest: { version: '1.0.0' } },
+  })
+  mocks.version.mockRejectedValueOnce(new AccountError('conflict'))
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, 'Project')
+  await click(wrapper, '选择并验证压缩包')
+  await click(wrapper, '创建版本并上传')
+  expect(mocks.version).toHaveBeenCalledTimes(1)
+  expect(mocks.upload).not.toHaveBeenCalled()
+  expect(mocks.quota).toHaveBeenCalledTimes(4)
+  mocks.version.mockResolvedValueOnce({ id: 'version', version: '1.0.0', status: 'DRAFT' })
+  mocks.upload.mockResolvedValueOnce({ data: { taskId: 'task', status: 'running' } })
+  await click(wrapper, '创建版本并上传')
+  expect(mocks.version).toHaveBeenCalledTimes(2)
+  expect(mocks.upload).toHaveBeenCalledWith({ selectionId: 'selection', versionId: 'version' })
+})
+test('package selection rejects an oversized archive using the current limit', async () => {
+  mocks.mine.mockResolvedValue([])
+  mocks.select.mockResolvedValue({
+    data: { selectionId: 'selection', size: 800000000, manifest: { version: '1.0.0' } },
+  })
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  await click(wrapper, '选择并验证压缩包')
+  expect(mocks.toast).toHaveBeenCalledWith(
+    expect.objectContaining({ title: expect.stringContaining('700000000') }),
+  )
+  expect(wrapper.text()).not.toContain('从安装包填写资料')
 })

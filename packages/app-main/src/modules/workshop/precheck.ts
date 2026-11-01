@@ -10,7 +10,6 @@ import { openSource } from '../content-package/source'
 
 const validateSchema = new Ajv({ strict: true }).compile(schema)
 export const PART_SIZE = 16 * 1024 * 1024
-export const MAX_PACKAGE_SIZE = 300000000
 export function assert(condition: unknown, code = 'INVALID_INPUT'): asserts condition {
   if (!condition) throw new Error(code)
 }
@@ -19,8 +18,8 @@ export async function fingerprint(path: string) {
   assert(
     before.isFile() &&
       !before.isSymbolicLink() &&
-      before.size > 0 &&
-      before.size <= MAX_PACKAGE_SIZE,
+      Number.isSafeInteger(before.size) &&
+      before.size > 0,
   )
   const sha = createHash('sha256')
   const partMd5: string[] = []
@@ -126,9 +125,14 @@ export function parseManifest(text: string): Record<string, unknown> {
   )
   return manifest
 }
-export async function precheckPackage(path: string, githubManifest?: Record<string, unknown>) {
+export async function precheckPackage(path: string, maxPackageBytes: number) {
   const info = await lstat(path)
-  assert(info.isFile() && !info.isSymbolicLink() && info.size <= MAX_PACKAGE_SIZE && info.size > 0)
+  assert(
+    Number.isSafeInteger(maxPackageBytes) && maxPackageBytes >= 1 && maxPackageBytes <= 2147483647,
+    'INVALID_CREATOR_QUOTA',
+  )
+  assert(info.isFile() && !info.isSymbolicLink() && info.size > 0)
+  assert(info.size <= maxPackageBytes, 'PACKAGE_QUOTA_EXCEEDED')
   const listing = await sevenZip.list(path)
   listing.entries = listing.entries.map((entry) => ({
     ...entry,
@@ -159,23 +163,7 @@ export async function precheckPackage(path: string, githubManifest?: Record<stri
     expanded += entry.size ?? 0
     assert(Number.isSafeInteger(expanded) && expanded <= 4 * 1024 ** 3, 'ARCHIVE_LIMIT')
   }
-  const wrapper = githubManifest
-    ? listing.entries
-        .find((entry) => /^[^/\\]+\/package\.json$/.test(entry.path))
-        ?.path.split('/')[0]
-    : ''
-  assert(
-    !githubManifest ||
-      (wrapper &&
-        listing.entries.every(
-          (entry) =>
-            entry.path === wrapper ||
-            entry.path === wrapper + '/' ||
-            entry.path.startsWith(wrapper + '/'),
-        )),
-    'ROOT_MANIFEST_REQUIRED',
-  )
-  const descriptor = wrapper ? wrapper + '/package.json' : 'package.json'
+  const descriptor = 'package.json'
   const roots = listing.entries.filter(
     (entry) => entry.path.toLowerCase() === descriptor.toLowerCase(),
   )
@@ -187,17 +175,13 @@ export async function precheckPackage(path: string, githubManifest?: Record<stri
   const bytes = await source.read(descriptor)
   assert(bytes.length <= 128 * 1024, 'ROOT_MANIFEST_REQUIRED')
   const manifest = parseManifest(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
-  assert(
-    !githubManifest || JSON.stringify(manifest) === JSON.stringify(githubManifest),
-    'GITHUB_MANIFEST_CHANGED',
-  )
   for (const category of ['maps', 'mods']) {
     for (const item of (manifest[category] ?? []) as { source_path: string }[]) {
       assert(
         typeof item.source_path === 'string' && /^\/(Maps|Mods)\//.test(item.source_path),
         'INVALID_RESOURCE_PATH',
       )
-      const resource = (wrapper ? wrapper + '/' : '') + item.source_path.slice(1)
+      const resource = item.source_path.slice(1)
       assert(
         source.entries.some(
           (entry) => entry.path === resource || entry.path.startsWith(resource + '/'),

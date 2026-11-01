@@ -8,7 +8,7 @@ import {
   apiWorkshopCreateVersion,
   isStrictSemver,
 } from '../workshop'
-import { apiCreatorRedeem, apiCreatorState } from '../creator'
+import { apiCreatorRedeem, apiCreatorState, apiCreatorQuota } from '../creator'
 import { emptyDocument } from '../../components/workshop/document'
 const mocks = vi.hoisted(() => ({
   request: vi.fn<(config: AxiosRequestConfig) => Promise<{ data: unknown }>>(),
@@ -112,4 +112,23 @@ test.each([404, 409, 403, 429, 503])('preserves workflow errors for status %s', 
     } as Record<number, string>
   )[status]
   await expect(apiWorkshopDetail(1)).rejects.toMatchObject({ kind })
+})
+
+test('reads authenticated per-version creator quota without treating it as storage', async () => {
+  const quota = { userId: id, maxProjects: 12, maxPackageBytes: 900000000 }
+  mocks.request.mockResolvedValueOnce({ data: quota })
+  expect(await apiCreatorQuota(auth)).toEqual(quota)
+  expect(mocks.request).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      url: '/workshop/creator/quota',
+      method: 'GET',
+      headers: { Authorization: 'Bearer test-only' },
+    }),
+  )
+})
+test.each([0, -1, 1.5, '5', null, 2147483648])('rejects invalid quota limit %s', async (limit) => {
+  mocks.request.mockResolvedValue({
+    data: { userId: id, maxProjects: limit, maxPackageBytes: 300000000 },
+  })
+  await expect(apiCreatorQuota(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
 })

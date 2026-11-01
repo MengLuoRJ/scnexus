@@ -21,6 +21,30 @@ function creator(value: unknown): CreatorState {
     source: data.source as CreatorState['source'],
   }
 }
+export type CreatorQuota = {
+  userId: string
+  maxProjects: number
+  maxPackageBytes: number
+}
+function quota(value: unknown): CreatorQuota {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Invalid creator quota')
+  const data = value as Record<string, unknown>
+  if (
+    typeof data.userId !== 'string' ||
+    !data.userId ||
+    ![data.maxProjects, data.maxPackageBytes].every(
+      (limit) => Number.isInteger(limit) && Number(limit) >= 1 && Number(limit) <= 2147483647,
+    )
+  )
+    throw new Error('Invalid creator quota')
+  return {
+    userId: data.userId,
+    maxProjects: data.maxProjects as number,
+    maxPackageBytes: data.maxPackageBytes as number,
+  }
+}
+export const apiCreatorQuota = (auth: ApiAuth) => apiRequest('/workshop/creator/quota', quota, auth)
 export const apiCreatorState = (auth: ApiAuth) => apiRequest('/workshop/creator', creator, auth)
 export const apiCreatorRedeem = (auth: ApiAuth, code: string) =>
   apiRequest('/workshop/creator/redeem', creator, auth, 'POST', { code })

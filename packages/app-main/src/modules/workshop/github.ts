@@ -1,4 +1,4 @@
-import { assert, parseManifest, MAX_PACKAGE_SIZE } from './precheck'
+import { assert, parseManifest } from './precheck'
 import type { WorkshopSource } from '@scnexus/app-shared/types/workshop.type'
 
 export type GithubSource = Extract<WorkshopSource, { kind: 'github' }>
@@ -41,7 +41,7 @@ export function githubSource(input: GithubSource): GithubSource {
 }
 export async function readGithubBody(
   response: Response,
-  limit: number,
+  limit: number | null,
   signal: AbortSignal,
   consume: (bytes: Uint8Array) => Promise<void>,
 ) {
@@ -54,7 +54,10 @@ export async function readGithubBody(
   let size = 0
   try {
     assert(
-      length === null || (/^\d+$/.test(length) && Number(length) <= limit),
+      length === null ||
+        (/^\d+$/.test(length) &&
+          Number.isSafeInteger(Number(length)) &&
+          (limit === null || Number(length) <= limit)),
       'GITHUB_SIZE_LIMIT',
     )
     while (true) {
@@ -62,7 +65,7 @@ export async function readGithubBody(
       const { value, done } = await reader.read()
       if (done) break
       size += value.length
-      assert(size <= limit, 'GITHUB_SIZE_LIMIT')
+      assert(Number.isSafeInteger(size) && (limit === null || size <= limit), 'GITHUB_SIZE_LIMIT')
       await consume(value)
     }
     signal.throwIfAborted()
@@ -126,6 +129,5 @@ export async function resolveGithub(
     commit,
     manifest,
     url: `https://codeload.github.com/${slug}/zip/${commit}`,
-    limit: MAX_PACKAGE_SIZE,
   }
 }

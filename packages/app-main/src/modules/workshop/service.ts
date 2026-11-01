@@ -47,6 +47,7 @@ type StoredTask = WorkshopTask & {
   attempted?: number[]
   completing?: boolean
   imageAttempted?: boolean
+  uploadAttempted?: boolean
 }
 type Authorization = {
   url: string
@@ -281,10 +282,21 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       allowed(task, signal)
       response = await send()
     }
+    if (response.status === 409 && method === 'POST' && /^\/workshop\/versions\/[^/]+\/uploads$/.test(path)) {
+      await creatorQuota(task, signal)
+    }
     assert(response.ok, `CONTROL_HTTP_${response.status}`)
     const result = (await response.json()) as T
     allowed(task, signal)
     return result
+  }
+  async function creatorQuota(task?: StoredTask, signal?: AbortSignal) {
+    const before = workshopAllowed(task, signal)
+    const quota = await control<{userId: string; maxProjects: number; maxPackageBytes: number}>('/workshop/creator/quota', 'GET', undefined, task, signal)
+    const after = workshopAllowed(task, signal)
+    assert(before.sessionId === after.sessionId && before.epoch === after.epoch && quota.userId === after.userId, 'AUTH_SESSION_CHANGED')
+    assert([quota.maxProjects, quota.maxPackageBytes].every((value) => Number.isInteger(value) && value >= 1 && value <= 2147483647), 'INVALID_CREATOR_QUOTA')
+    return quota
   }
   function workerUrl(url: string, origin: string, route: string) {
     const parsed = new URL(url)
@@ -383,7 +395,6 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
     assert(
       Number.isSafeInteger(auth.size) &&
       auth.size > 0 &&
-      auth.size <= 300000000 &&
       auth.chunkSize === PART_SIZE &&
       /^[a-f0-9]{64}$/.test(auth.sha256) &&
       typeof auth.etag === 'string' &&
@@ -428,13 +439,14 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       const stat = await handle.stat()
       assert(!stat.isSymbolicLink() && stat.isFile(), 'UNSAFE_CACHE')
       const completed = new Set(task.chunks ?? [])
-      const pending = Array.from({ length: Math.ceil(auth.size / PART_SIZE) }, (_, i) => i).filter(
-        (i) => !completed.has(i),
-      )
+      const partCount = Math.ceil(auth.size / PART_SIZE)
+      assert([...completed].every((index) => Number.isInteger(index) && index >= 0 && index < partCount), 'INVALID_TASK_STORE')
+      let nextIndex = 0
       let renewal: Promise<Authorization> | undefined
       const worker = async () => {
-        while (pending.length) {
-          const index = pending.shift()!
+        while (nextIndex < partCount) {
+          const index = nextIndex++
+          if (completed.has(index)) continue
           allowed(task, signal)
           const start = index * PART_SIZE
           const end = Math.min(auth.size - 1, start + PART_SIZE - 1)
@@ -500,7 +512,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         }
       }
       const results = await Promise.allSettled(
-        Array.from({ length: Math.min(4, pending.length) }, worker),
+        Array.from({ length: Math.min(4, partCount) }, worker),
       )
       const failed = results.find((result) => result.status === 'rejected')
       if (failed?.status === 'rejected') throw failed.reason
@@ -539,7 +551,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
         })
         const length = response.headers.get('content-length')
         task.size = length ? Number(length) : 0
-        await readGithubBody(response, resolved.limit, signal, async (bytes) => {
+        await readGithubBody(response, null, signal, async (bytes) => {
           let offset = 0
           while (offset < bytes.length)
             offset += (await handle.write(bytes, offset, bytes.length - offset)).bytesWritten
@@ -550,7 +562,7 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       } finally {
         await handle.close()
       }
-      const checked = await precheckPackage(partial, task.manifest)
+      const checked = await fingerprint(partial)
       signal.throwIfAborted()
       task.sha256 = checked.sha256
       task.size = checked.size
@@ -613,6 +625,12 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   async function upload(task: StoredTask, signal: AbortSignal) {
     await verifyLocal(task)
     if (!task.sessionId) {
+      if (!task.uploadAttempted) {
+        const quota = await creatorQuota(task, signal)
+        assert(task.size <= quota.maxPackageBytes, 'PACKAGE_QUOTA_EXCEEDED')
+        task.uploadAttempted = true
+        await save(task)
+      }
       const created = await control<{
         sessionId: string
         status: string
@@ -913,7 +931,11 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       assert(workshopAllowed().accessToken, 'AUTH_REQUIRED')
       const path = await deps.selectFile('package')
       if (!path) return null
-      const checked = await precheckPackage(path)
+      const snapshot = workshopAllowed()
+      const quota = await creatorQuota()
+      const checked = await precheckPackage(path, quota.maxPackageBytes)
+      const current = workshopAllowed()
+      assert(current.sessionId === snapshot.sessionId && current.epoch === snapshot.epoch, 'AUTH_SESSION_CHANGED')
       allowed()
       const selection = { selectionId: randomUUID(), name: basename(path), path, ...checked }
       selections.set(selection.selectionId, selection)

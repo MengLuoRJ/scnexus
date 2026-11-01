@@ -222,7 +222,20 @@ test('pause, account changes, restart and cancellation preserve isolation and re
   await expect(restarted.resume(task.taskId)).rejects.toThrow('TASK_CONFLICT')
 })
 
-test.each(['invalid-zip', 'oversized'])(
+test('GitHub downloads do not apply upload archive prechecks', async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
+    if (String(url).includes('api.github.com')) return json({ sha: commit })
+    if (String(url).includes('raw.githubusercontent.com')) return json(manifest)
+    return new Response('not a ZIP')
+  })
+  const f = await setup(fetch)
+  const task = await f.service.download(source)
+  await f.service.waitForIdle()
+  expect((await f.service.list())[0].status).toBe('completed')
+  expect(await f.service.installSource(task.taskId)).toMatchObject({ kind: 'archive' })
+})
+
+test.each(['oversized'])(
   'failed %s download removes partial data and never exposes cache',
   async (kind) => {
     const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {

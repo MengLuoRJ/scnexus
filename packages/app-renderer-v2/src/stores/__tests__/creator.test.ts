@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { reactive, nextTick } from 'vue'
 const mocks = vi.hoisted(() => ({
   get: vi.fn<() => Promise<unknown>>(),
+  quota: vi.fn<() => Promise<unknown>>(),
   redeem: vi.fn<(auth: unknown, code: string) => Promise<unknown>>(),
 }))
 const auth = reactive({
@@ -23,6 +24,7 @@ vi.mock('../auth', () => ({ useAuthStore: () => auth }))
 vi.mock('../content-center', () => ({ useContentCenterStore: () => content }))
 vi.mock('../../apis/creator', () => ({
   apiCreatorState: mocks.get,
+  apiCreatorQuota: mocks.quota,
   apiCreatorRedeem: mocks.redeem,
 }))
 import { useCreatorStore } from '../creator'
@@ -77,4 +79,49 @@ test('redeeming reloads authorization and does not grant access while permission
   await store.redeem('creator_code')
   expect(auth.loadAccount).toHaveBeenCalledOnce()
   expect(store.active).toBe(false)
+})
+
+test('quota is refreshed rather than reused, and revoked access clears it', async () => {
+  mocks.get.mockResolvedValue({ userId: 'user', state: 'ACTIVE', source: 'ADMIN' })
+  const store = useCreatorStore()
+  await store.load()
+  mocks.quota.mockResolvedValueOnce({ userId: 'user', maxProjects: 10, maxPackageBytes: 900000000 })
+  expect((await store.loadQuota()).maxProjects).toBe(10)
+  mocks.quota.mockResolvedValueOnce({ userId: 'user', maxProjects: 2, maxPackageBytes: 100 })
+  expect((await store.loadQuota()).maxProjects).toBe(2)
+  expect(mocks.quota).toHaveBeenCalledTimes(2)
+  auth.authorization.permissions = []
+  expect(store.quota).toBeNull()
+})
+test('quota failure discards cache and rejects wrong-user responses', async () => {
+  mocks.get.mockResolvedValue({ userId: 'user', state: 'ACTIVE', source: 'ADMIN' })
+  const store = useCreatorStore()
+  await store.load()
+  mocks.quota.mockResolvedValueOnce({
+    userId: 'other',
+    maxProjects: 10,
+    maxPackageBytes: 900000000,
+  })
+  await expect(store.loadQuota()).rejects.toMatchObject({ kind: 'invalidResponse' })
+  expect(store.quota).toBeNull()
+  expect(store.quotaError).toBeTruthy()
+})
+test.each(['epoch', 'sessionId'] as const)('late quota cannot cross a changed %s', async (key) => {
+  mocks.get.mockResolvedValue({ userId: 'user', state: 'ACTIVE', source: 'ADMIN' })
+  const store = useCreatorStore()
+  await store.load()
+  let resolve!: (value: unknown) => void
+  mocks.quota.mockImplementationOnce(
+    () =>
+      new Promise((yes) => {
+        resolve = yes
+      }),
+  )
+  const pending = store.loadQuota()
+  const check = pending.catch((error: unknown) => error)
+  if (key === 'epoch') auth.snapshot.epoch++
+  else auth.snapshot.sessionId = 'new-session'
+  resolve({ userId: 'user', maxProjects: 10, maxPackageBytes: 900000000 })
+  expect(await check).toMatchObject({ kind: 'stale' })
+  expect(store.quota).toBeNull()
 })

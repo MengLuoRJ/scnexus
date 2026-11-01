@@ -67,6 +67,7 @@ const snapshot = {
   downloadDirectory: 'D:\\Downloads',
   starCraftDocumentsDirectory: '',
   effectiveStarCraftDocumentsDirectory: 'D:\\Real Documents\\StarCraft II',
+  updateChannel: 'stable',
   displayLanguage: 'zh',
   logLevel: 'info',
   telemetryEnabled: false,
@@ -100,10 +101,10 @@ const button = defineComponent({
   template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot/></button>',
 })
 const select = defineComponent({
-  props: ['modelValue', 'disabled'],
+  props: ['modelValue', 'disabled', 'items'],
   emits: ['update:modelValue'],
   template:
-    '<select :disabled="disabled" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option>{{ modelValue }}</option></select>',
+    '<select :disabled="disabled" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :value="item.value ?? item">{{ item.label ?? item }}</option></select>',
 })
 const wrappers: { unmount: () => void }[] = []
 beforeEach(() => {
@@ -166,6 +167,36 @@ async function render() {
 function namedButton(wrapper: Awaited<ReturnType<typeof render>>, name: string) {
   return wrapper.findAll('button').find((item) => item.text() === name)!
 }
+
+test('update channel defaults to stable and persists snapshot and stable immediately', async () => {
+  const wrapper = await render()
+  const channel = wrapper.findAll('select').find((item) => item.element.value === 'stable')!
+  expect(channel.text()).toContain('Stable 稳定')
+  expect(channel.text()).toContain('Snapshot 快照（预发布）')
+  const formField = wrapper
+    .findAllComponents(field)
+    .find((item) => item.props('label') === '更新通道')!
+  expect(formField.attributes('description')).toContain('切回稳定通道不会降级当前版本')
+  await channel.setValue('snapshot')
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ updateChannel: 'snapshot' })
+  expect(channel.element.value).toBe('snapshot')
+  await channel.setValue('stable')
+  await flushPromises()
+  expect(mocks.update).toHaveBeenLastCalledWith({ updateChannel: 'stable' })
+  expect(channel.element.value).toBe('stable')
+})
+
+test('failed channel change restores the persisted selection and shows an error toast', async () => {
+  const failure = toErrorDto(new AppError(ERRORS.SETTING_INVALID_VALUE))
+  mocks.update.mockResolvedValueOnce({ ok: false, error: failure })
+  const wrapper = await render()
+  const channel = wrapper.findAll('select').find((item) => item.element.value === 'stable')!
+  await channel.setValue('snapshot')
+  await flushPromises()
+  expect(channel.element.value).toBe('stable')
+  expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' }))
+})
 
 test('directory change persists immediately, shows a toast and has no editable path or save button', async () => {
   mocks.dialog.mockResolvedValue({
@@ -343,7 +374,9 @@ test('game directory change and log-level changes also notify success via toast'
   expect(mocks.configure).toHaveBeenCalledWith('D:\\Game')
   expect(mocks.toast).toHaveBeenCalledWith({ color: 'success', title: '设置已保存' })
   mocks.toast.mockClear()
-  const levels = wrapper.findAllComponents(select)[1]!
+  const levels = wrapper
+    .findAllComponents(select)
+    .find((item) => item.props('modelValue') === 'info')!
   levels.vm.$emit('update:modelValue', 'debug')
   await flushPromises()
   expect(mocks.update).toHaveBeenCalledWith({ logLevel: 'debug' })

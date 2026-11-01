@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { sevenZipFileFilters, verifySevenZipTarget } from './scripts/sevenzip-platform.mjs'
+import { desktopPublish } from './scripts/update-publish.mjs'
 import { renameElectronWer } from './scripts/electron-wer.mjs'
 
 const require = createRequire(import.meta.url)
@@ -11,6 +12,9 @@ const sevenZipRoot = dirname(dirname(require.resolve('7z-bin')))
 
 export default {
   ...config,
+  publish: desktopPublish(require('./package.json').version, process.env.SCNEXUS_LEGACY_BASELINE === '1'),
+  generateUpdatesFilesForAllChannels: false,
+  detectUpdateChannel: false,
   electronVersion: require('electron/package.json').version,
   win: {
     ...config.win,

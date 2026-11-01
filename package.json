@@ -1,6 +1,6 @@
 {
   "name": "scnexus",
-  "version": "0.1.0-snapshot.7",
+  "version": "0.1.0",
   "description": "SCNexus Client",
   "license": "BSD-3-Clause",
   "keywords": [
@@ -48,7 +48,7 @@
     "build:prepare": "pnpm run script:electron:targets && pnpm run build:standard",
     "script:electron:targets": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.js",
     "typecheck:shared": "tsc --noEmit -p packages/app-shared/tsconfig.json",
-    "test:build": "node --test scripts/__tests__/bzip2-workflow.test.mjs scripts/__tests__/build-workflow.test.mjs scripts/__tests__/sevenzip-platform.test.mjs scripts/__tests__/standard-distribution.test.mjs scripts/__tests__/electron-wer.test.mjs",
+    "test:build": "node --test scripts/__tests__/update-channels.test.mjs scripts/__tests__/bzip2-workflow.test.mjs scripts/__tests__/build-workflow.test.mjs scripts/__tests__/sevenzip-platform.test.mjs scripts/__tests__/standard-distribution.test.mjs scripts/__tests__/electron-wer.test.mjs",
     "test:electron": "node scripts/test-electron-smoke.mjs",
     "test:native:electron": "node scripts/test-electron-smoke.mjs --native-tests",
     "test:native:node": "node scripts/test-electron-smoke.mjs --native-tests --node",

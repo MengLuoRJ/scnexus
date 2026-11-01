@@ -16,6 +16,7 @@ import { setWorkshopEnabled } from '../workshop-lifecycle'
 import { setOfficialServicesEnabled } from '../auth'
 import { setAnalyticsEnabled } from '../analytics-lifecycle'
 import { setAiAssistantEnabled } from '../ai-assistant'
+import { setUpdaterChannel } from '../updater/updater'
 import { resolveDisplayLanguage, validatePreferencePatch } from './setting-validation'
 
 let pending: Promise<unknown> = Promise.resolve()
@@ -131,6 +132,7 @@ async function applyUpdate(
   const previous = getSettingStore()
   await confirmAutoApproval(patch, previous, source)
   const next = { ...previous, ...patch } as SettingData
+  if ('updateChannel' in patch) setUpdaterChannel(next.updateChannel)
   let disableError: unknown
   if (next.telemetryEnabled === false && 'telemetryEnabled' in patch) {
     try {
@@ -139,13 +141,20 @@ async function applyUpdate(
       disableError = error
     }
   }
-  const saved = updateSettingStore(next)
+  let saved: SettingData
+  try {
+    saved = updateSettingStore(next)
+  } catch (error) {
+    if ('updateChannel' in patch) setUpdaterChannel(previous.updateChannel)
+    throw error
+  }
   setSavedTelemetryEnabled(saved.telemetryEnabled)
   if (next.logLevel !== previous.logLevel) {
     try {
       applyLogLevel(next.logLevel)
     } catch (cause) {
       applyLogLevel(previous.logLevel)
+      if ('updateChannel' in patch) setUpdaterChannel(previous.updateChannel)
       updateSettingStore({
         ...previous,
         ...(next.telemetryEnabled === false ? { telemetryEnabled: false } : {}),

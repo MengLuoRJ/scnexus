@@ -1,8 +1,18 @@
 import { app } from 'electron'
+import { gt, prerelease, valid } from 'semver'
 import { NsisUpdater } from 'electron-updater'
 import { Logger } from '@/modules/logging'
 import { sendWhenReady } from '@/modules/window'
 import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
+
+import { getSettingStore } from '../../stores/setting'
+
+export type UpdateChannel = 'stable' | 'snapshot'
+export const UPDATE_FEEDS = {
+  stable: 'https://release.scnexus.net/desktop/stable/',
+  snapshot: 'https://release.scnexus.net/desktop/snapshot/',
+} as const
+let channel: UpdateChannel = 'stable'
 
 let updater: NsisUpdater | undefined
 let state:
@@ -23,7 +33,26 @@ export function isInstallingUpdate() {
   return state === 'installing'
 }
 export function getUpdaterStatus() {
-  return { state }
+  return { state, channel }
+}
+export function setUpdaterChannel(next: UpdateChannel): void {
+  if (next !== 'stable' && next !== 'snapshot') throw new AppError(ERRORS.SETTING_INVALID_VALUE)
+  if (next === channel) return
+  if (['checking', 'downloading', 'downloaded', 'installing'].includes(state))
+    throw new AppError(ERRORS.TASK_CONFLICT)
+  channel = next
+  if (updater) {
+    updater.setFeedURL({
+      provider: 'generic',
+      url: UPDATE_FEEDS[channel],
+      channel: 'latest',
+      useMultipleRangeRequest: false,
+    })
+    updater.allowPrerelease = channel === 'snapshot'
+    updater.allowDowngrade = false
+    state = 'idle'
+    sendWhenReady('updater:update-not-available')
+  }
 }
 function updateError(error: unknown) {
   const definition =
@@ -44,11 +73,21 @@ export function initializeUpdater(): void {
     Logger.info('Updater unavailable (not packaged, development mode, or non-Windows platform)')
     return
   }
+  channel = getSettingStore().updateChannel ?? 'stable'
+  // Both isolated directories publish latest.yml, including snapshot builds.
   updater = new NsisUpdater({
     provider: 'generic',
-    url: 'https://release.scnexus.net/release/',
+    url: UPDATE_FEEDS[channel],
+    channel: 'latest',
     useMultipleRangeRequest: false,
   })
+  updater.allowPrerelease = channel === 'snapshot'
+  updater.allowDowngrade = false
+  updater.isUpdateSupported = (info) => {
+    if (!valid(info.version) || !gt(info.version, app.getVersion())) return false
+    const pre = prerelease(info.version)
+    return channel === 'stable' ? pre === null : pre === null || pre[0] === 'snapshot'
+  }
   updater.logger = Logger
   updater.autoDownload = false
   updater.autoInstallOnAppQuit = false

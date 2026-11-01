@@ -82,7 +82,7 @@
   "publish": [
     {
       "provider": "generic",
-      "url": "https://release.scnexus.net/release/",
+      "url": "https://release.scnexus.net/desktop/stable/",
       "useMultipleRangeRequest": false
     }
   ],

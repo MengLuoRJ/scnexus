@@ -9,6 +9,7 @@ export type SettingData = {
   _lastConfirmedVersion: string | null
   downloadDirectory: string
   starCraftDocumentsDirectory: string
+  updateChannel: 'stable' | 'snapshot'
   displayLanguage: DisplayLanguage
   logLevel: LogLevel
   telemetryEnabled: boolean

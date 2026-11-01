@@ -114,3 +114,15 @@ Electron 安装器初次下载网络失败，随后仅从官方 Release 下载 Z
 `7z-bin` 升为固定 26.4.0，实际为 7-Zip 26.04。运行代码改用 `path7z` 命名导出；打包通过公开入口定位包目录，不再访问受 exports 限制的 package.json 子路径。许可证位于各架构目录，macOS 二进制位于 `bin/mac/{x64,arm64}/7zz`（当前各自文件均含双架构）；macOS 保留两份架构目录，校验目标 CPU 和执行权限，Windows/Linux 只保留目标架构。新版产物包含 ESM/CJS 入口，不再假定旧 `dist/index.js`。
 
 验证：`test:build` 26 项、main 577 项、preload 19 项、renderer 427 项通过；`pnpm run lint`、`pnpm run build`（含全运行包 typecheck）、冻结锁安装、peer 检查通过。Windows 实际启动新版 7-Zip、归档/内容测试已执行；跨平台资源布局和 macOS Mach-O 校验在 Windows 上检查，不等于真实 macOS/Linux 执行或安装包发布验收。本轮不发布包、不提交代码。
+
+
+## Windows 自动更新渠道与 0.1.0 迁移基线
+
+- 设置 `updateChannel` 默认 `stable`，可选 `snapshot`，旧设置迁移为 stable。运行时固定更新源为 `https://release.scnexus.net/desktop/stable/` 或 `/desktop/snapshot/`；不暴露任意 URL。
+- 两个目录均使用 `latest.yml`。打包配置关闭按 prerelease 自动推导 channel 和跨渠道元数据生成；稳定版本 `X.Y.Z` 发布到 stable，`X.Y.Z-snapshot.N` 发布到 snapshot，其他 prerelease 拒绝打包配置。
+- stable 不接受预发布；snapshot 接受正式版与 snapshot 预发布。两个渠道均只接受高于当前 SemVer 的版本，`allowDowngrade=false`；如 `0.1.0-snapshot.7` 切到 `0.1.0` 是升级，不是降级。
+- 检查中、下载中、已下载待安装、安装中禁止切换渠道；可用更新尚未下载时切换清空旧状态，需重新检查。下载及安装仍由用户明确操作，不自动下载或退出安装。当前运行时仅支持已打包 Windows NSIS，其他环境仍显示不可用。
+- 发布包时依据版本自动选择 feed，生成的 `app-update.yml` 与元数据一同对应所选目录。上传 EXE、blockmap 后最后发布 `latest.yml`，其 SHA-512/大小必须来自同一构建，不手写、不复用另一版本元数据。
+- 历史 `/release/` 保留 **0.1.0 迁移基线**：根与 app 版本均设为 0.1.0，PowerShell 使用 `$env:SCNEXUS_LEGACY_BASELINE='1'; pnpm build:app:release`，构建完成后删除该环境变量。此模式只允许版本恰为0.1.0，生成的 legacy feed 用于旧客户端获取基线。基线程序运行后仍按用户选择访问新 desktop feed，不继续检查 legacy。
+- 将基线安装包、blockmap、latest.yml 部署到 `/release/`；后续正常构建不启用基线变量，分别部署到 `/desktop/stable/` 与 `/desktop/snapshot/`。本地 `release/<version>/` 是构建输出，不是线上 URL，也不要因目录被 gitignore 就认为线上已经部署。
+- 本轮验证代码、版本策略和构建，不执行远端发布；尚未生成/部署0.1.0安装程序，真实签名、CDN缓存刷新及旧客户端跨版本升级须在发布环境验收。

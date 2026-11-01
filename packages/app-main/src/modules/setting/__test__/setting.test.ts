@@ -48,6 +48,12 @@ test('settings accept only editable flat fields and valid values', () => {
   }
   assert.throws(() => validatePreferencePatch({ logLevel: 'error' }, true), AppError)
 })
+test('update channels accept only stable and snapshot', () => {
+  for (const updateChannel of ['stable', 'snapshot'])
+    assert.deepEqual(validatePreferencePatch({ updateChannel }), { updateChannel })
+  for (const updateChannel of ['latest', 'beta', '', 'STABLE', true, null, undefined, {}])
+    assert.throws(() => validatePreferencePatch({ updateChannel }), AppError)
+})
 test('system display language uses supported preference then Chinese fallback', () => {
   assert.equal(resolveDisplayLanguage('system', ['de-DE', 'en-GB']), 'en')
   assert.equal(resolveDisplayLanguage('system', ['zh-Hant-HK']), 'zh-Hant')

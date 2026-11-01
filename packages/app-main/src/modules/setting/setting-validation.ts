@@ -9,6 +9,7 @@ import {
 export const PREFERENCE_KEYS = [
   'downloadDirectory',
   'starCraftDocumentsDirectory',
+  'updateChannel',
   'displayLanguage',
   'logLevel',
   'telemetryEnabled',
@@ -38,6 +39,8 @@ export function validatePreferencePatch(raw: unknown, complete = false): Record<
       key === 'starCraftDocumentsDirectory' &&
       (typeof value !== 'string' || value.includes('\0') || (value !== '' && !isAbsolute(value)))
     )
+      throw new AppError(ERRORS.SETTING_INVALID_VALUE)
+    if (key === 'updateChannel' && value !== 'stable' && value !== 'snapshot')
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)
     if (key === 'logLevel' && !LOG_LEVELS.includes(value as never))
       throw new AppError(ERRORS.SETTING_INVALID_VALUE)

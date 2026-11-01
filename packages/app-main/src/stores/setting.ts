@@ -10,6 +10,8 @@ export function createSettingRepository(downloadDirectory: () => string) {
     if (typeof data.clientId !== 'string' || !data.clientId.trim()) invalidData('Missing client ID')
     directory(data.downloadDirectory)
     if (data.starCraftDocumentsDirectory !== '') directory(data.starCraftDocumentsDirectory)
+    if (data.updateChannel !== 'stable' && data.updateChannel !== 'snapshot')
+      invalidData('Invalid update channel')
     bool(data.officialServicesEnabled)
     bool(data.weeklyMutationCalibrationEnabled)
     bool(data.aiAssistantEnabled)
@@ -25,13 +27,14 @@ export function createSettingRepository(downloadDirectory: () => string) {
   }
   return createRepository<SettingData>({
     defaults: () => ({
-      _schemaVersion: 8,
+      _schemaVersion: 9,
       _revision: 0,
       clientId: randomUUID(),
       lastUpdatedAt: null,
       _lastConfirmedVersion: null,
       downloadDirectory: downloadDirectory(),
       starCraftDocumentsDirectory: '',
+      updateChannel: 'stable',
       displayLanguage: 'system',
       logLevel: 'error',
       telemetryEnabled: false,
@@ -47,7 +50,8 @@ export function createSettingRepository(downloadDirectory: () => string) {
     }),
     schema: {
       ...versionSchema,
-      _schemaVersion: { const: 8 },
+      _schemaVersion: { const: 9 },
+      updateChannel: { type: 'string', enum: ['stable', 'snapshot'] },
       clientId: { ...stringSchema, minLength: 1 },
       lastUpdatedAt: { type: ['number', 'null'], minimum: 0 },
       _lastConfirmedVersion: {
@@ -78,6 +82,10 @@ export function createSettingRepository(downloadDirectory: () => string) {
     validate,
     migrate(legacy, defaults) {
       const data = record(legacy)
+      if ([1, 2, 3, 4, 5, 6, 7, 8].includes(data._schemaVersion as number))
+        data.updateChannel = defaults.updateChannel
+      if (data._schemaVersion === 8)
+        return { ...data, _schemaVersion: defaults._schemaVersion } as SettingData
       if ([1, 2, 3, 4, 5, 6, 7].includes(data._schemaVersion as number))
         data.starCraftDocumentsDirectory = defaults.starCraftDocumentsDirectory
       if (data._schemaVersion === 7)

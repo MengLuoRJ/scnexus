@@ -53,6 +53,10 @@ const languages = computed(() => [
   { label: 'English', value: 'en' },
   { label: '繁體中文', value: 'zh-Hant' },
 ])
+const updateChannels = computed(() => [
+  { label: t('ui.updateChannelStable'), value: 'stable' },
+  { label: t('ui.updateChannelSnapshot'), value: 'snapshot' },
+])
 const tabs = computed(() => [
   { label: t('ui.preferences'), value: 'basic', slot: 'basic' },
   { label: t('ui.game'), value: 'game', slot: 'game' },
@@ -294,6 +298,20 @@ onMounted(async () => {
                 SCNexus {{ version }} ·
                 {{ t(`ui.${updater === 'unavailable' ? 'unavailable' : updater}`) }}
               </p>
+              <UFormField
+                name="updateChannel"
+                :label="t('ui.updateChannel')"
+                :description="t('ui.updateChannelDescription')">
+                <USelect
+                  :model-value="settings?.updateChannel ?? 'stable'"
+                  :items="updateChannels"
+                  class="w-full sm:w-64"
+                  :disabled="!settings || busy"
+                  @update:model-value="
+                    (value: string) =>
+                      save({ updateChannel: value as SettingPreferences['updateChannel'] })
+                  " />
+              </UFormField>
               <UProgress v-if="updater === 'downloading'" :model-value="progress" :max="100" />
               <div class="flex flex-wrap gap-2">
                 <UButton

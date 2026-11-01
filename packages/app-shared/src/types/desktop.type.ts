@@ -8,6 +8,7 @@ export type SettingPreferences = Pick<
   SettingData,
   | 'downloadDirectory'
   | 'starCraftDocumentsDirectory'
+  | 'updateChannel'
   | 'displayLanguage'
   | 'logLevel'
   | 'telemetryEnabled'

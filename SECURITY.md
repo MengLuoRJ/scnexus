@@ -13,7 +13,7 @@ Security fixes are applied to the current release line and to the `main` branch 
 
 Please do not report security vulnerabilities through public GitHub issues, discussions or community channels.
 
-Use **GitHub Private Vulnerability Reporting** for this repository (`Security` → `Report a vulnerability`). If that channel is unavailable, send a report to **mengluorj@aiurcovenant.net** with the subject prefix `[SCNexus Security]`.
+Use **GitHub Private Vulnerability Reporting** for this repository (`Security` → `Report a vulnerability`). If that channel is unavailable, send a report to **support@scnexus.net** with the subject prefix `[SCNexus Security]`.
 
 A useful report includes:
 

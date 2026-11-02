@@ -78,7 +78,8 @@ export function economyChart(
     end,
     max,
     series: metrics.map((metric) => {
-      const segments: { x: number; y: number; gameLoop: number; value: number }[][] = []
+      const data: { gameLoop: number; value: number | null }[] = []
+      const segments: { gameLoop: number; value: number }[][] = []
       let segment: (typeof segments)[number] = []
       for (const bucket of buckets) {
         const sample = bucket[bucket.length - 1]!
@@ -88,19 +89,17 @@ export function economyChart(
           value === null ||
           bucket.some((item) => item[metric] === null || !Number.isFinite(item[metric]))
         ) {
+          data.push({ gameLoop: sample.gameLoop, value: null })
           if (segment.length) segments.push(segment)
           segment = []
         } else {
-          segment.push({
-            x: 48 + (sample.gameLoop / end) * 504,
-            y: 150 - (value / max) * 128,
-            gameLoop: sample.gameLoop,
-            value,
-          })
+          const point = { gameLoop: sample.gameLoop, value }
+          data.push(point)
+          segment.push(point)
         }
       }
       if (segment.length) segments.push(segment)
-      return { metric, segments }
+      return { metric, segments, data }
     }),
   }
 }

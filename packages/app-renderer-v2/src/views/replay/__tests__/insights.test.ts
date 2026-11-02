@@ -26,7 +26,15 @@ test('charts actual fields, ordered duplicates and null gaps without zero substi
     [50, 75],
     [25],
   ])
-  expect(chart.series[0]!.segments[0]![0]!.x).toBe(chart.series[0]!.segments[0]![1]!.x)
+  expect(chart.series[0]!.segments[0]![0]!.gameLoop).toBe(
+    chart.series[0]!.segments[0]![1]!.gameLoop,
+  )
+  expect(chart.series[0]!.data).toEqual([
+    { gameLoop: 160, value: 50 },
+    { gameLoop: 160, value: 75 },
+    { gameLoop: 320, value: null },
+    { gameLoop: 480, value: 25 },
+  ])
   expect(chart.series[1]!.segments).toEqual([])
   expect(replayGameTime(16 * 125 + 15)).toBe('2:05')
   expect(economyChart([], ['minerals']).series[0]!.segments).toEqual([])
@@ -70,9 +78,16 @@ test('compares all players on global axes without aligning or filling independen
   expect(first.segments).toHaveLength(2)
   expect(first.segments.flat().map((point) => point.gameLoop)).toEqual([160, 480])
   expect(second.segments.flat().map((point) => point.gameLoop)).toEqual([240, 960])
-  expect(first.segments[0]![0]!.y).toBe(second.segments[0]![0]!.y)
-  expect(first.segments.at(-1)!.at(-1)!.x).toBe(300)
-  expect(second.segments.at(-1)!.at(-1)!.x).toBe(552)
+  expect(first.segments[0]![0]!.value).toBe(second.segments[0]![0]!.value)
+  expect(first.data).toEqual([
+    { gameLoop: 160, value: 50 },
+    { gameLoop: 320, value: null },
+    { gameLoop: 480, value: 25 },
+  ])
+  expect(second.data).toEqual([
+    { gameLoop: 240, value: 50 },
+    { gameLoop: 960, value: 200 },
+  ])
   expect(first.color).not.toBe(second.color)
   expect(first.dash).toBe(second.dash)
   expect(first.dash).not.toBe(chart.series[1]!.dash)

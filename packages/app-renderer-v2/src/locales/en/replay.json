@@ -134,6 +134,7 @@
   "replay.income": "Resource income / minute",
   "replay.workersSupply": "Worker and supply snapshots",
   "replay.legend": "Legend",
+  "replay.chartHint": "Click a legend entry to toggle a curve; hover to see actual samples at that game time.",
   "replay.chartNotice": "All players share the same axes. Player colors and metric line styles match the legend. The horizontal axis is game time (16 game loops per second), not elapsed wall time. Only actual samples are connected; missing values are gaps, with no smoothing or estimates. Long replays display up to 1,000 actual samples per player and metric. Display buckets containing missing values remain gaps; valid first and last samples are retained.",
   "replay.noSamples": "These samples are not available in this replay.",
   "replay.productionTitle": "Production timeline",

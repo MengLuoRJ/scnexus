@@ -3,6 +3,8 @@ allowBuilds:
   electron-winstaller: true
   esbuild: true
   vue-demi: true
+minimumReleaseAgeExclude:
+  - vccs@1.1.0
 packages:
   - 'packages/*'
   - '!**/test/**'

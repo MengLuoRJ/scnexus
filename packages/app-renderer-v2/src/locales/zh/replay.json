@@ -134,6 +134,7 @@
   "replay.income": "资源收入 / 分钟",
   "replay.workersSupply": "工人及人口快照",
   "replay.legend": "图例",
+  "replay.chartHint": "点击图例显示或隐藏曲线；悬停查看该游戏时间的实际采样值。",
   "replay.chartNotice": "所有玩家共用坐标轴，玩家颜色和指标线型对应图例。横轴为游戏时间（每秒 16 个游戏循环），并非现实经过时间。仅连接实际采样点，缺失数据留空，不作平滑或推算。长录像为保持流畅每位玩家每项指标最多显示 1000 个实际采样点，含缺失值的显示区间留空，首尾有效采样保留。",
   "replay.noSamples": "此录像未提供这些采样数据。",
   "replay.productionTitle": "生产时间线",

@@ -11,6 +11,7 @@ import ui from '@nuxt/ui/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 import { localIconNames } from './scripts/local-icons.ts'
+import { thirdPartyLicenses } from './scripts/third-party-licenses.ts'
 import electronVendorsCache from '../app-main/.electron-vendors.cache.json' with { type: 'json' }
 
 const PACKAGE_ROOT = fileURLToPath(new URL('.', import.meta.url))
@@ -86,6 +87,7 @@ export default defineConfig({
     reportCompressedSize: true,
   },
   plugins: [
+    thirdPartyLicenses(PROJECT_ROOT),
     vue(),
     vueJsx(),
     vueDevTools(),

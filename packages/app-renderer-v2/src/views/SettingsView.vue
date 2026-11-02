@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@nuxt/ui/composables/useToast'
+import thirdPartyLicenses from 'virtual:third-party-licenses'
 import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-shared/errors/app.error'
 import * as desktopIpc from '../ipcs'
 import { useContentCenterStore } from '../stores/content-center'
@@ -62,6 +63,7 @@ const tabs = computed(() => [
   { label: t('ui.game'), value: 'game', slot: 'game' },
   { label: t('contentCenter.featureManagement'), value: 'content', slot: 'content' },
   { label: t('ui.logging'), value: 'logging', slot: 'logging' },
+  { label: t('ui.agreements'), value: 'agreements', slot: 'agreements' },
 ])
 const levels: LogLevel[] = ['error', 'warn', 'info', 'verbose', 'debug', 'silly']
 function accept<T>(result: IpcResult<T>): T | undefined {
@@ -190,10 +192,13 @@ function openLink(url: string) {
     accept(await desktopIpc.ipcShellOpenExternalWebsite(url))
   })
 }
-const links = [
-  { key: 'website', url: 'https://scnexus.net/' },
+const agreementLinks = [
   { key: 'terms', url: 'https://scnexus.net/terms' },
   { key: 'privacy', url: 'https://scnexus.net/privacy' },
+]
+const links = [
+  { key: 'website', url: 'https://scnexus.net/' },
+  ...agreementLinks,
   {
     key: 'community',
     url: 'https://scnexus.net/docs/overview#%E4%BA%A4%E6%B5%81%E7%A4%BE%E5%8C%BA',
@@ -496,6 +501,55 @@ onMounted(async () => {
             </div>
           </div>
         </UCard>
+      </template>
+      <template #agreements>
+        <div class="min-w-0 space-y-3">
+          <UCard :ui="{ header: 'p-3 sm:p-3', body: 'p-3 sm:p-3' }">
+            <template #header>
+              <h2 class="font-semibold">{{ t('ui.agreements') }}</h2>
+            </template>
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                v-for="link in agreementLinks"
+                :key="link.key"
+                color="neutral"
+                variant="outline"
+                trailing-icon="i-tabler-external-link"
+                :disabled="!available || busy"
+                @click="openLink(link.url)">
+                {{ t(`ui.${link.key}`) }}
+              </UButton>
+            </div>
+          </UCard>
+          <UCard class="min-w-0" :ui="{ header: 'p-3 sm:p-3', body: 'min-w-0 p-3 sm:p-3' }">
+            <template #header>
+              <h2 class="font-semibold">{{ t('ui.thirdPartyNotices') }}</h2>
+              <p class="mt-1 text-xs text-muted">{{ t('ui.thirdPartyNoticesHelp') }}</p>
+            </template>
+            <div class="min-w-0 divide-y divide-default">
+              <details
+                v-for="entry in thirdPartyLicenses"
+                :key="`${entry.name}@${entry.version}`"
+                class="min-w-0"
+                data-testid="third-party-license">
+                <summary
+                  class="cursor-pointer rounded-md py-3 text-sm font-semibold break-words hover:text-primary focus-visible:outline-2 focus-visible:outline-primary">
+                  {{ entry.name }}
+                </summary>
+                <div class="min-w-0 pb-4">
+                  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span class="text-xs text-muted">{{ entry.version }}</span>
+                    <UBadge color="neutral" variant="subtle" size="sm">{{ entry.license }}</UBadge>
+                  </div>
+                  <p class="mt-1 text-xs break-all text-muted">{{ entry.source }}</p>
+                  <pre
+                    class="mt-3 whitespace-pre-wrap font-mono text-xs leading-relaxed break-words text-muted [overflow-wrap:anywhere]"
+                    >{{ entry.text }}</pre>
+                </div>
+              </details>
+            </div>
+          </UCard>
+        </div>
       </template>
       <template #logging>
         <div class="space-y-2">

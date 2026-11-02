@@ -12,6 +12,7 @@ import type {
 } from '@scnexus/app-shared/types/desktop.type'
 import type { StarCraftProfile } from '@scnexus/app-shared/types/replay.type'
 import type { GameSnapshot } from '@scnexus/app-shared/types/content-api.type'
+import thirdPartyLicenses from 'virtual:third-party-licenses'
 import SettingsView from '../SettingsView.vue'
 import zh from '../../locales/zh'
 
@@ -30,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   detect: vi.fn<() => Promise<IpcResult<GameSnapshot>>>(),
   path: vi.fn<(name: string) => Promise<IpcResult<string>>>(),
   open: vi.fn<(path: string) => Promise<IpcResult<string | undefined>>>(),
+  website: vi.fn<(url: string) => Promise<IpcResult<void>>>(),
   telemetry: vi.fn<() => Promise<IpcResult<TelemetryStatus>>>(),
   stopTelemetry: vi.fn<() => void>(),
   onTelemetry: undefined as ((status: TelemetryStatus) => void) | undefined,
@@ -45,6 +47,7 @@ vi.mock('../../ipcs', () => ({
   ipcGameSettingInitialize: mocks.detect,
   ipcAppGetPath: mocks.path,
   ipcShellOpenPath: mocks.open,
+  ipcShellOpenExternalWebsite: mocks.website,
   ipcAppGetVersion: async () => ({ ok: true, data: '1.0' }),
   ipcUpdaterGetStatus: async () => ({ ok: true, data: { state: 'idle' } }),
   ipcSettingOnChanged: () => () => {},
@@ -87,7 +90,7 @@ const game = {
 const tabs = defineComponent({
   props: ['items'],
   template:
-    '<div><slot name="basic"/><slot name="game"/><slot name="content"/><slot name="logging"/></div>',
+    '<div><slot name="basic"/><slot name="game"/><slot name="content"/><slot name="logging"/><slot name="agreements"/></div>',
 })
 const card = defineComponent({ template: '<div><slot name="header"/><slot/></div>' })
 const field = defineComponent({ props: ['label'], template: '<label>{{ label }}<slot/></label>' })
@@ -120,6 +123,7 @@ beforeEach(() => {
   }))
   mocks.profiles.mockResolvedValue({ ok: true, data: [] })
   mocks.open.mockResolvedValue({ ok: true, data: '' })
+  mocks.website.mockResolvedValue({ ok: true, data: undefined })
   mocks.update.mockImplementation(async (patch) => ({
     ok: true,
     data: {
@@ -167,6 +171,62 @@ async function render() {
 function namedButton(wrapper: Awaited<ReturnType<typeof render>>, name: string) {
   return wrapper.findAll('button').find((item) => item.text() === name)!
 }
+
+test('agreements tab opens existing policy links through desktop IPC', async () => {
+  const wrapper = await render()
+  expect(wrapper.findComponent(tabs).props('items')).toContainEqual({
+    label: '协议与声明',
+    value: 'agreements',
+    slot: 'agreements',
+  })
+  await namedButton(wrapper, '用户协议').trigger('click')
+  await flushPromises()
+  expect(mocks.website).toHaveBeenLastCalledWith('https://scnexus.net/terms')
+  await namedButton(wrapper, '隐私政策').trigger('click')
+  await flushPromises()
+  expect(mocks.website).toHaveBeenLastCalledWith('https://scnexus.net/privacy')
+})
+
+test('basic help links and agreements tab both retain terms and privacy', async () => {
+  const wrapper = await render()
+  for (const label of ['用户协议', '隐私政策']) {
+    const buttons = wrapper.findAll('button').filter((button) => button.text() === label)
+    expect(buttons).toHaveLength(2)
+    for (const button of buttons) {
+      await button.trigger('click')
+      await flushPromises()
+      expect(mocks.website).toHaveBeenLastCalledWith(
+        label === '用户协议' ? 'https://scnexus.net/terms' : 'https://scnexus.net/privacy',
+      )
+    }
+  }
+})
+
+test('licenses show every direct component with its full plain text offline, without markdown', async () => {
+  vi.stubGlobal('scnexus', undefined)
+  const wrapper = await render()
+  const entries = wrapper.findAll('[data-testid="third-party-license"]')
+  expect(entries).toHaveLength(thirdPartyLicenses.length)
+  for (const [index, entry] of entries.entries()) {
+    const license = thirdPartyLicenses[index]!
+    expect(entry.get('summary').text()).toBe(license.name)
+    expect((entry.element as HTMLDetailsElement).open).toBe(false)
+    expect(entry.text()).toContain(license.version)
+    expect(entry.get('pre').text()).toBe(license.text)
+  }
+  expect(wrapper.text()).toContain('Copyright (c) Electron contributors')
+  expect(wrapper.text()).toContain('vccs')
+  expect(namedButton(wrapper, '用户协议').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('details a').exists()).toBe(false)
+  expect(wrapper.find('details table').exists()).toBe(false)
+  const first = entries[0]!
+  await first.get('summary').trigger('click')
+  expect((first.element as HTMLDetailsElement).open).toBe(true)
+  expect((entries[1]!.element as HTMLDetailsElement).open).toBe(false)
+  expect(first.get('pre').text()).toBe(thirdPartyLicenses[0]!.text)
+  await first.get('summary').trigger('click')
+  expect((first.element as HTMLDetailsElement).open).toBe(false)
+})
 
 test('update channel defaults to stable and persists snapshot and stable immediately', async () => {
   const wrapper = await render()

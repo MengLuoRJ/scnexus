@@ -1,0 +1,188 @@
+{
+  "processedEvents": 108,
+  "skippedEvents": 99,
+  "events": [
+    {
+      "eventId": 27,
+      "eventType": "NNet.Game.SCmdEvent",
+      "gameLoop": 0,
+      "userId": 0,
+      "data": {
+        "m_cmdFlags": 0,
+        "m_abil": null,
+        "m_data": {
+          "None": null
+        },
+        "m_sequence": 1,
+        "m_otherUnit": null,
+        "m_unitGroup": null
+      }
+    },
+    {
+      "eventId": 28,
+      "eventType": "NNet.Game.SSelectionDeltaEvent",
+      "gameLoop": 0,
+      "userId": 0,
+      "data": {
+        "m_controlGroupId": 0,
+        "m_delta": {
+          "m_subgroupIndex": 0,
+          "m_removeMask": {
+            "None": null
+          },
+          "m_addSubgroups": [],
+          "m_addUnitTags": []
+        }
+      }
+    },
+    {
+      "eventId": 29,
+      "eventType": "NNet.Game.SControlGroupUpdateEvent",
+      "gameLoop": 0,
+      "userId": 0,
+      "data": {
+        "m_controlGroupIndex": 0,
+        "m_controlGroupUpdate": 0,
+        "m_mask": {
+          "None": null
+        }
+      }
+    },
+    {
+      "eventId": 27,
+      "eventType": "NNet.Game.SCmdEvent",
+      "gameLoop": 15,
+      "userId": 1,
+      "data": {
+        "m_cmdFlags": 1193046,
+        "m_abil": {
+          "m_abilLink": 345,
+          "m_abilCmdIndex": 7,
+          "m_abilCmdData": 128
+        },
+        "m_data": {
+          "None": null
+        },
+        "m_sequence": 123,
+        "m_otherUnit": 4045620583,
+        "m_unitGroup": 42
+      }
+    },
+    {
+      "eventId": 27,
+      "eventType": "NNet.Game.SCmdEvent",
+      "gameLoop": 215,
+      "userId": 2,
+      "data": {
+        "m_cmdFlags": 1193046,
+        "m_abil": {
+          "m_abilLink": 345,
+          "m_abilCmdIndex": 7,
+          "m_abilCmdData": 128
+        },
+        "m_data": {
+          "TargetPoint": {
+            "x": 1234,
+            "y": 5678,
+            "z": -4096
+          }
+        },
+        "m_sequence": 123,
+        "m_otherUnit": 4045620583,
+        "m_unitGroup": 42
+      }
+    },
+    {
+      "eventId": 27,
+      "eventType": "NNet.Game.SCmdEvent",
+      "gameLoop": 65751,
+      "userId": 3,
+      "data": {
+        "m_cmdFlags": 1193046,
+        "m_abil": {
+          "m_abilLink": 345,
+          "m_abilCmdIndex": 7,
+          "m_abilCmdData": 128
+        },
+        "m_data": {
+          "TargetUnit": {
+            "m_targetUnitFlags": 0,
+            "m_timer": 0,
+            "m_tag": 2882400018,
+            "m_snapshotUnitLink": 17,
+            "m_snapshotControlPlayerId": null,
+            "m_snapshotUpkeepPlayerId": null,
+            "m_snapshotPoint": {
+              "x": 12,
+              "y": 34,
+              "z": -56
+            }
+          }
+        },
+        "m_sequence": 123,
+        "m_otherUnit": 4045620583,
+        "m_unitGroup": 42
+      }
+    },
+    {
+      "eventId": 27,
+      "eventType": "NNet.Game.SCmdEvent",
+      "gameLoop": 305485647,
+      "userId": 4,
+      "data": {
+        "m_cmdFlags": 1193046,
+        "m_abil": {
+          "m_abilLink": 345,
+          "m_abilCmdIndex": 7,
+          "m_abilCmdData": 128
+        },
+        "m_data": {
+          "Data": 4294967295
+        },
+        "m_sequence": 123,
+        "m_otherUnit": 4045620583,
+        "m_unitGroup": 42
+      }
+    },
+    {
+      "eventId": 28,
+      "eventType": "NNet.Game.SSelectionDeltaEvent",
+      "gameLoop": 305485648,
+      "userId": 31,
+      "data": {
+        "m_controlGroupId": 3,
+        "m_delta": {
+          "m_subgroupIndex": 2,
+          "m_removeMask": {
+            "Mask": {
+              "bitLength": 9,
+              "value": "341"
+            }
+          },
+          "m_addSubgroups": [
+            {
+              "m_unitLink": 77,
+              "m_subgroupPriority": 0,
+              "m_intraSubgroupPriority": 0,
+              "m_count": 2
+            }
+          ],
+          "m_addUnitTags": [4045620583, 4294967295]
+        }
+      }
+    },
+    {
+      "eventId": 29,
+      "eventType": "NNet.Game.SControlGroupUpdateEvent",
+      "gameLoop": 305485648,
+      "userId": 31,
+      "data": {
+        "m_controlGroupIndex": 9,
+        "m_controlGroupUpdate": 4,
+        "m_mask": {
+          "OneIndices": [0, 8, 511]
+        }
+      }
+    }
+  ]
+}

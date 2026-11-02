@@ -1,6 +1,8 @@
 import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS, type ReplayComponentName } from './registry.js'
 import { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export { decodeVersioned } from './versioned.js'
+export { parseReplayGameEvents } from './game-events.js'
+export type { ReplayGameEvent, ReplayGameEvents, ReplayGameParseOptions } from './game-events.js'
 export {
   parseReplayAttributes,
   parseReplayInitData,
@@ -19,6 +21,7 @@ export type { ReplayBlob, ReplayProtocolValue } from './protocol-decoder.js'
 export {
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
   SUPPORTED_REPLAY_BASE_BUILDS,
+  SUPPORTED_REPLAY_GAME_BASE_BUILDS,
   REPLAY_TRACKER_PROTOCOL_VERSION,
   REPLAY_TRACKER_DECODER_STRATEGY,
   UnsupportedReplayBuildError,

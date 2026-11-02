@@ -1,11 +1,12 @@
 import build70154 from './protocols/build70154.js'
 import build98310 from './protocols/build98310.js'
+import { GAME_PROTOCOL_GROUPS, findReplayGameProtocol } from './protocols/game-registry.js'
 import trackerVersionedV1 from './protocols/tracker-versioned-v1.js'
 
 export type Bounds = [number, number]
 export type ProtocolType =
   | ['_int' | '_blob' | '_bitarray', [Bounds]]
-  | ['_bool', []]
+  | ['_bool' | '_null' | '_fourcc', []]
   | ['_optional', [number]]
   | ['_array', [Bounds, number]]
   | ['_struct', [[string, number, number][]]]
@@ -20,8 +21,19 @@ export type ProtocolSchema = {
 }
 
 export type TrackerProtocolSchema = Omit<ProtocolSchema, 'initData'>
+export type GameProtocolSchema = TrackerProtocolSchema & { userId: number }
+export const SUPPORTED_REPLAY_GAME_BASE_BUILDS = GAME_PROTOCOL_GROUPS.flatMap((group) => [
+  ...group.builds,
+]).sort((a, b) => a - b)
 
-export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '1.2.0'
+/** Dispatch official builds by proven structural equivalence, not numeric proximity. */
+export function replayGameProtocol(baseBuild: number): GameProtocolSchema {
+  const group = findReplayGameProtocol(baseBuild)
+  if (!group) throw new UnsupportedReplayBuildError(baseBuild)
+  return group.schema
+}
+
+export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '1.3.0'
 /** Builds with complete initData and tracker schemas, not tracker-only compatibility. */
 export const SUPPORTED_REPLAY_BASE_BUILDS = [70154, 98310] as const
 export const REPLAY_TRACKER_PROTOCOL_VERSION = 'tracker-versioned-v1' as const

@@ -58,6 +58,8 @@ it('runs bounded component decoding in a worker, persists and invalidates by con
     protocolVersion: 'attributes-v1',
   })
   expect(a.warnings).toContain('Missing replay.initData')
+  expect(a.capabilities?.game?.state).toBe('missing')
+  expect(a.commands).toBeUndefined()
   replayDatabase.close()
   expect(await service.getAnalysis(scope, record.id)).toEqual(a)
   expect(a.parserVersion).toBe(REPLAY_ANALYSIS_VERSION)
@@ -143,6 +145,47 @@ it.each([
     expect(analysis.warnings.some((message) => message.includes(warning))).toBe(true)
     expect(analysis.components.tracker !== null).toBe(trackerAvailable)
     expect(analysis.insights !== undefined).toBe(trackerAvailable)
+  },
+)
+
+it.each([
+  { build: 98310, bytes: '00200b0000000000000000', state: 'available' },
+  { build: 1000000, bytes: '00200b0000000000000000', state: 'partial' },
+  { build: 1000000, bytes: '00200b', state: 'unsupported' },
+  { build: 98310, bytes: '00200b', state: 'corrupt' },
+])(
+  'decodes commands in the analysis worker with strict build boundaries: $state',
+  async ({ build, bytes, state }) => {
+    const path = join(
+      directory,
+      'Accounts',
+      '1',
+      scope.profileHandle,
+      'Replays',
+      scope.category,
+      'commands.SC2Replay',
+    )
+    const archive = await createMpq(path)
+    await archive.add(Buffer.alloc(9), { archivePath: 'replay.attributes.events' })
+    await archive.add(Buffer.from(bytes, 'hex'), { archivePath: 'replay.game.events' })
+    await archive.save()
+    await archive.close()
+    const service = new ReplayLibraryService(() => directory)
+    const record = (await service.scan(scope))[0]!
+    await replayDatabase.upsertReplay({ ...record, baseBuild: build })
+    const analysis = await service.analyzeReplay(scope, record.id)
+    expect(analysis.capabilities?.game?.state).toBe(state)
+    expect(analysis.insights).toBeUndefined()
+    expect(analysis.commands).toEqual(
+      state === 'available' || state === 'partial'
+        ? [{ gameLoop: 0, userId: 0, abilityLink: null, abilityIndex: null, flags: 0 }]
+        : undefined,
+    )
+    expect(analysis.components.game !== null).toBe(state === 'available' || state === 'partial')
+    expect(analysis.capabilities?.game?.compatibility?.state).toBe(
+      state === 'partial' ? 'unverified' : state === 'available' ? 'verified' : undefined,
+    )
+    expect(await service.getAnalysis(scope, record.id)).toEqual(analysis)
   },
 )
 

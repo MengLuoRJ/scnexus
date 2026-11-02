@@ -508,7 +508,9 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
             economy: [sample(160, 50), sample(320, null), sample(480, 300)],
             production: Array.from({ length: 45 }, (_, i) => ({
               gameLoop: i * 16,
-              kind: i === 0 ? 'construction-started' : 'unit-born',
+              kind:
+                ['construction-started', 'construction-completed', 'upgrade-completed'][i] ??
+                'unit-born',
               name: '<img src=x>',
               count: null,
             })),
@@ -532,12 +534,13 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   expect(dialog.text()).not.toContain('tracker-versioned-v1')
   expect(dialog.find('b').exists()).toBe(false)
   expect(dialog.find('img').exists()).toBe(false)
-  expect(dialog.findAll('svg[role="img"]')).toHaveLength(3)
-  expect(dialog.findAll('svg[role="img"]')[0]!.text()).toContain('0:10: 50')
-  expect(dialog.findAll('svg[role="img"]')[1]!.text()).toMatch(
-    /Minerals \/ minute[\s\S]*0:10:[\s\S]*700/,
-  )
+  expect(dialog.findAll('svg[role="img"]')).toHaveLength(1)
+  expect(dialog.get('svg[role="img"]').text()).toContain('0:10: 50')
   expect(dialog.text()).toContain('999')
+  await click(wrapper, 'Resource income / minute')
+  expect(dialog.findAll('svg[role="img"]')).toHaveLength(1)
+  expect(dialog.get('svg[role="img"]').text()).toMatch(/Minerals \/ minute[\s\S]*0:10:[\s\S]*700/)
+  await click(wrapper, 'Resources on hand')
   expect(dialog.text()).toContain('Production started')
   expect(dialog.text()).not.toContain('Construction started')
   expect(dialog.get('ol').findAll('li')).toHaveLength(20)
@@ -546,12 +549,65 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   await click(wrapper, 'Next')
   expect(dialog.get('ol').findAll('li')).toHaveLength(5)
   expect(dialog.text()).toContain('3 / 3')
+  await click(wrapper, 'Starts only')
+  expect(dialog.get('ol').findAll('li')).toHaveLength(1)
+  expect(dialog.get('ol').text()).toContain('Production started')
+  expect(dialog.get('ol').text()).not.toContain('Entity appeared')
+  expect(dialog.text()).toContain('Actual training start times for ordinary units are unknown')
+  expect(dialog.text()).toContain('1 / 1')
+  expect(
+    dialog
+      .findAll('button')
+      .find((button) => button.text() === 'Starts only')!
+      .attributes('aria-pressed'),
+  ).toBe('true')
+  await click(wrapper, 'Starts + completions')
+  expect(dialog.get('ol').findAll('li')).toHaveLength(20)
+  expect(dialog.get('ol').text()).toContain('Production completed')
+  expect(dialog.get('ol').text()).toContain('Upgrade completed')
+  expect(dialog.text()).toContain('1 / 3')
+  await click(wrapper, 'Starts only')
   await dialog.get('select').setValue('2')
-  expect(dialog.findAll('svg[role="img"]')).toHaveLength(3)
+  expect(dialog.text()).toContain('No verified production starts')
+  expect(dialog.find('ol').exists()).toBe(false)
+  await click(wrapper, 'Starts + completions')
+  expect(dialog.findAll('svg[role="img"]')).toHaveLength(1)
   expect(dialog.text()).toContain('999')
-  expect(dialog.text()).toMatch(/Workers[\s\S]*0:10:[\s\S]*24/)
+  await click(wrapper, 'Worker and supply snapshots')
+  expect(dialog.get('svg[role="img"]').text()).toMatch(/Workers[\s\S]*0:10:[\s\S]*24/)
+  expect(
+    dialog
+      .findAll('button')
+      .find((button) => button.text() === 'Worker and supply snapshots')!
+      .attributes('aria-pressed'),
+  ).toBe('true')
+  await click(wrapper, 'Command timeline')
+  expect(dialog.text()).toContain('No command analysis available')
+  expect(dialog.find('ol').exists()).toBe(false)
+  await click(wrapper, 'Starts + completions')
   expect(dialog.text()).toContain('No production records')
   expect(dialog.find('ol').exists()).toBe(false)
+  expect(mocks.analyze).not.toHaveBeenCalled()
+})
+
+test('exposes decoded commands even when tracker insights are unavailable', async () => {
+  mocks.getAnalysis.mockResolvedValueOnce({
+    ok: true,
+    data: {
+      status: 'partial',
+      capabilities: {
+        game: { state: 'available', decoder: 's2protocol-98310', sourceBuild: 98310 },
+      },
+      commands: [{ gameLoop: 160, userId: 0, abilityLink: 321, abilityIndex: 1, flags: 256 }],
+    },
+  })
+  const wrapper = await render()
+  await click(wrapper, 'Details')
+  await click(wrapper, 'Command timeline')
+  const dialog = wrapper.get('[role="dialog"]')
+  expect(dialog.text()).toContain('Ability 321 · command 1')
+  expect(dialog.text()).toContain('Command user #0')
+  expect(dialog.get('ol').findAll('li')).toHaveLength(1)
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
 

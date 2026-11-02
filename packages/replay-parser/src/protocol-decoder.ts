@@ -95,6 +95,8 @@ export class ProtocolDecoder {
     if (wire) {
       const expected = {
         _int: 9,
+        _null: 255,
+        _fourcc: 7,
         _bool: 6,
         _blob: 2,
         _bitarray: 1,
@@ -110,6 +112,11 @@ export class ProtocolDecoder {
       throw new Error(`Invalid versioned value for ${type[0]}`)
     }
     switch (type[0]) {
+      case '_null':
+        return null
+      case '_fourcc':
+        if (!reader) return invalid()
+        return String.fromCharCode(...Array.from({ length: 4 }, () => Number(reader.bits(8))))
       case '_int': {
         const value = reader
           ? reader.integer(type[1][0])

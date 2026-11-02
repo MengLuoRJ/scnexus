@@ -49,6 +49,12 @@ test('overlays players with labeled accessible samples, distinct colors, and met
   expect(titles).toContain('Same (#1) · Minerals · 0:10: 50')
   expect(titles).toContain('Same (#2) · Minerals · 0:15: 50')
   expect(chart.findAll('polyline')).toHaveLength(5)
+  expect(chart.get('rect').attributes('fill')).toBe('var(--ui-bg-elevated)')
+  expect(chart.findAll('text')).toHaveLength(10)
+  expect(chart.text()).toContain('0:45')
+  const points = chart.findAll('circle')
+  expect(points.some((point) => point.classes().includes('opacity-0'))).toBe(true)
+  expect(points.some((point) => !point.classes().includes('opacity-0'))).toBe(true)
   wrapper.unmount()
 })
 

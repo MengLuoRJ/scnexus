@@ -27,6 +27,7 @@
 
 - [replay-architecture.md](./replay-architecture.md) — 架构与能力拆分
 - [replay-parser-package.md](./replay-parser-package.md) — `@scnexus/replay-parser` 包设计
+- [training-start-research.md](./training-start-research.md) — 实际训练开始时间的源码证据、限定还原方案与实验矩阵
 - [replay-database.md](./replay-database.md) — 本地 SQLite 数据结构与 replay 持久化设计
 
 - [录像分析分阶段设计](../replay-analysis-design.md) — 已确认统计口径、观看验收与后续指标证据要求

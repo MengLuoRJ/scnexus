@@ -64,13 +64,26 @@ export type ReplayComponentCapability = {
   state: 'available' | 'partial' | 'missing' | 'unsupported' | 'corrupt'
   decoder: string | null
   sourceBuild: number | null
+  compatibility?: {
+    state: 'verified' | 'unverified'
+    protocolBuild: number
+    candidateBuilds: number[]
+  }
 }
 export type ReplayAnalysis = {
   capabilities?: {
     initData: ReplayComponentCapability
     attributes: ReplayComponentCapability
     tracker: ReplayComponentCapability
+    game?: ReplayComponentCapability
   }
+  commands?: {
+    gameLoop: number
+    userId: number
+    abilityLink: number | null
+    abilityIndex: number | null
+    flags: number
+  }[]
   insights?: import('./replay-insights.type.js').ReplayInsights
   replayId: string
   contentHash: string
@@ -81,6 +94,7 @@ export type ReplayAnalysis = {
     initData: ReplayJson | null
     attributes: ReplayJson | null
     tracker: ReplayJson | null
+    game?: ReplayJson | null
   }
   warnings: string[]
   analyzedAt: string

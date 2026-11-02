@@ -3,10 +3,12 @@ import {
   parseReplayAttributes,
   parseReplayInitData,
   parseReplayTrackerEvents,
+  parseReplayGameEvents,
   UnsupportedReplayBuildError,
   UnsupportedReplayProtocolError,
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
   type ReplayTrackerEvents,
+  type ReplayGameEvents,
 } from '@scnexus/replay-parser'
 import type {
   ReplayAnalysis,
@@ -15,7 +17,8 @@ import type {
 } from '@scnexus/app-shared/types/replay.type'
 
 import { buildReplayInsights, REPLAY_INSIGHTS_VERSION } from './replay-insights'
-export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}`
+import { buildReplayCommands } from './replay-commands'
+export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v1`
 
 export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAnalysis> {
   if (!record.contentHash) throw new Error('Reindex replay before analysis')
@@ -25,9 +28,9 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
     parserVersion: REPLAY_ANALYSIS_VERSION,
     baseBuild: record.baseBuild,
     status: 'unsupported',
-    components: { initData: null, attributes: null, tracker: null },
+    components: { initData: null, attributes: null, tracker: null, game: null },
     capabilities: Object.fromEntries(
-      ['initData', 'attributes', 'tracker'].map((key) => [
+      ['initData', 'attributes', 'tracker', 'game'].map((key) => [
         key,
         { state: 'missing', decoder: null, sourceBuild: record.baseBuild },
       ]),
@@ -64,6 +67,16 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
           return parseReplayTrackerEvents(bytes, record.baseBuild)
         },
       ],
+      [
+        'game',
+        'replay.game.events',
+        32 * 1024 * 1024,
+        (bytes: Uint8Array) => {
+          if (record.baseBuild === null)
+            throw new Error('Replay has no baseBuild; reindex a valid replay')
+          return parseReplayGameEvents(bytes, record.baseBuild)
+        },
+      ],
     ] as const
     for (const [key, name, maxBytes, parse] of definitions) {
       if (!(await archive.hasFile(name))) {
@@ -78,6 +91,17 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
           decoder: data.protocolVersion,
           sourceBuild: record.baseBuild,
         }
+        if (key === 'game') {
+          const game = data as ReplayGameEvents
+          result.commands = buildReplayCommands(game)
+          result.capabilities!.game!.compatibility = game.compatibility
+          if (game.compatibility.state === 'unverified') {
+            result.capabilities!.game!.state = 'partial'
+            result.warnings.push(
+              `Unverified game protocol compatibility: source ${record.baseBuild}, decoder ${game.compatibility.protocolBuild}`,
+            )
+          }
+        }
         if (key === 'tracker') {
           const tracker = data as ReplayTrackerEvents
           result.insights = buildReplayInsights(tracker, record.players)
@@ -89,7 +113,7 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
           error instanceof UnsupportedReplayBuildError ||
           error instanceof UnsupportedReplayProtocolError
         if ((error as NodeJS.ErrnoException).code && !protocolUnsupported) throw error
-        result.capabilities![key].state =
+        result.capabilities![key]!.state =
           protocolUnsupported || error instanceof MpqCompressionError ? 'unsupported' : 'corrupt'
         unsupported ||= protocolUnsupported || error instanceof MpqCompressionError
         corrupt ||= !(protocolUnsupported || error instanceof MpqCompressionError)
@@ -107,7 +131,7 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
   const count = Object.values(result.components).filter((value) => value !== null).length
   result.status = corrupt
     ? 'corrupt'
-    : count === 3 &&
+    : count === 4 &&
         Object.values(result.capabilities!).every((capability) => capability.state === 'available')
       ? 'completed'
       : count > 0

@@ -23,7 +23,7 @@ import { looksLikeReplay } from '@scnexus/replay-parser'
 import type { ReplayRecord, ReplayScope } from '@scnexus/app-shared/types/replay.type'
 export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
-import { inspectLocalReplay } from './replay-inspection'
+import { inspectLocalReplay, REPLAY_INSPECTION_VERSION } from './replay-inspection'
 import { hashReplayFile } from './replay-files'
 import { REPLAY_ANALYSIS_VERSION } from './replay-analysis'
 import { runReplayAnalysis } from './replay-analysis-runner'
@@ -95,6 +95,13 @@ export class ReplayLibraryService {
     const record = await this.requireRecord(scope, replayId)
     if (!record.contentHash || (await hashReplayFile(record.path)) !== record.contentHash)
       throw new Error('Replay changed; reindex before analysis')
+    const cached = await replayDatabase.getAnalysis(replayId)
+    if (
+      cached &&
+      cached.parserVersion === REPLAY_ANALYSIS_VERSION &&
+      cached.contentHash === record.contentHash
+    )
+      return cached
     const result = await runReplayAnalysis(record)
     await this.requireRecord(scope, replayId)
     if ((await hashReplayFile(record.path)) !== record.contentHash)
@@ -183,8 +190,10 @@ export class ReplayLibraryService {
         if (entry.name.startsWith('.') || entry.isSymbolicLink()) continue
         const path = join(directory, entry.name)
         if (entry.isDirectory()) await visit(path)
-        else if (entry.isFile() && looksLikeReplay(path))
-          results.push(await this.indexReplayFile(scope, path))
+        else if (entry.isFile() && looksLikeReplay(path)) {
+          const record = await this.indexReplayFile(scope, path)
+          if (record.category === scope.category) results.push(record)
+        }
       }
     }
     await visit(root)
@@ -210,10 +219,20 @@ export class ReplayLibraryService {
     await safeReplayPath(root, root)
     const target = join(root, `${randomUUID()}-${basename(filePath)}`)
     await copyFile(filePath, target, constants.COPYFILE_EXCL)
-    return this.indexReplayFile(scope, target)
+    try {
+      return await this.indexReplayFile(scope, target, true)
+    } catch (error) {
+      await unlink(target)
+      throw error
+    }
   }
 
-  private async indexReplayFile(scope: ReplayScope, filePath: string): Promise<ReplayRecord> {
+  private async indexReplayFile(
+    scope: ReplayScope,
+    filePath: string,
+    requireMatch = false,
+    persist = true,
+  ): Promise<ReplayRecord> {
     await this.ensureReady()
     filePath = resolve(filePath)
     await safeReplayPath(await resolveReplayScope(this.rootDirectory(), scope), filePath)
@@ -221,7 +240,8 @@ export class ReplayLibraryService {
     const fileStat = await lstat(filePath)
     if (!fileStat.isFile()) throw new Error('Replay must be a regular file')
     const contentHash = await hashReplayFile(filePath)
-    const inspection = await inspectLocalReplay(filePath)
+    const cached = await replayDatabase.getInspection(contentHash, REPLAY_INSPECTION_VERSION)
+    const inspection = cached ?? (await inspectLocalReplay(filePath))
     const after = await lstat(filePath)
     if (
       fileStat.size !== after.size ||
@@ -231,10 +251,23 @@ export class ReplayLibraryService {
     ) {
       throw new Error('Replay changed during indexing; retry')
     }
+    if (!cached)
+      await replayDatabase.saveInspection(contentHash, REPLAY_INSPECTION_VERSION, inspection)
+    const category =
+      scope.category === 'Coop' || scope.category === 'Multiplayer'
+        ? inspection.coop.identification === 'confirmed'
+          ? 'Coop'
+          : 'Multiplayer'
+        : scope.category
+    if (requireMatch && category !== scope.category)
+      throw new Error(
+        'Replay does not match selected category; only confirmed co-op replays belong to Coop',
+      )
     const record: ReplayRecord = {
       id: randomUUID(),
       profileHandle: scope.profileHandle,
-      category: scope.category,
+      category,
+      coop: inspection.coop,
       path: filePath,
       fileName: basename(filePath),
       extension: extname(filePath).toLowerCase(),
@@ -252,7 +285,7 @@ export class ReplayLibraryService {
       warnings: inspection.warnings,
     }
 
-    return replayDatabase.upsertReplay(record)
+    return persist ? replayDatabase.upsertReplay(record) : record
   }
 
   async importReplayArchive(scope: ReplayScope, archivePath: string): Promise<ReplayRecord[]> {
@@ -318,9 +351,25 @@ export class ReplayLibraryService {
       throw error
     }
     const records: ReplayRecord[] = []
-    for (const entry of entries)
-      records.push(await this.indexReplayFile(scope, join(outputDir, ...entry.path.split(/[\\/]/))))
-    return records
+    try {
+      // Validate the whole batch before writing records, so a mismatch cannot leave partial imports.
+      for (const entry of entries)
+        records.push(
+          await this.indexReplayFile(
+            scope,
+            join(outputDir, ...entry.path.split(/[\\/]/)),
+            true,
+            false,
+          ),
+        )
+      for (const [index, record] of records.entries())
+        records[index] = await replayDatabase.upsertReplay(record)
+      return records
+    } catch (error) {
+      for (const record of records) await replayDatabase.deleteReplayByPath(record.path)
+      await rm(outputDir, { recursive: true, force: true })
+      throw error
+    }
   }
 
   async deleteReplay(scope: ReplayScope, replayId: string): Promise<void> {

@@ -18,7 +18,7 @@ export function validateReplayScope(value: unknown): ReplayScope {
     typeof scope !== 'object' ||
     typeof scope.profileHandle !== 'string' ||
     !/^\d+-S2-\d+-\d+$/.test(scope.profileHandle) ||
-    !['Multiplayer', 'Campaign', 'Challenge'].includes(scope.category)
+    !['Multiplayer', 'Coop', 'Campaign', 'Challenge'].includes(scope.category)
   )
     throw new Error('Invalid replay scope')
   return { profileHandle: scope.profileHandle, category: scope.category }
@@ -94,7 +94,10 @@ export async function resolveReplayScope(root: string, input: ReplayScope): Prom
     (profile) => profile.handle === scope.profileHandle,
   )
   if (!profile) throw new Error('StarCraft profile does not exist')
-  const category = join(profile.replayPath, scope.category)
+  const category = join(
+    profile.replayPath,
+    scope.category === 'Coop' ? 'Multiplayer' : scope.category,
+  )
   await safeReplayPath(root, category, true)
   return category
 }

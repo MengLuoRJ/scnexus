@@ -1,6 +1,6 @@
 import type { IpcResult } from '../errors/app.error.js'
 
-export type ReplayCategory = 'Multiplayer' | 'Campaign' | 'Challenge'
+export type ReplayCategory = 'Multiplayer' | 'Coop' | 'Campaign' | 'Challenge'
 export type ReplayScope = { profileHandle: string; category: ReplayCategory }
 export type StarCraftProfile = {
   accountId: string
@@ -38,6 +38,7 @@ export type ReplayRecord = {
   baseBuild: number | null
   durationSeconds: number | null
   players: ReplayPlayer[]
+  coop?: import('./replay-coop.type.js').ReplayCoopSummary
   warnings: string[]
 }
 
@@ -85,6 +86,7 @@ export type ReplayAnalysis = {
     flags: number
   }[]
   insights?: import('./replay-insights.type.js').ReplayInsights
+  coop?: import('./replay-coop.type.js').ReplayCoopAnalysis
   replayId: string
   contentHash: string
   parserVersion: string

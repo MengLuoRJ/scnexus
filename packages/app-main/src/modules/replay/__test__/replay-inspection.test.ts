@@ -69,6 +69,7 @@ describe('local replay MPQ inspection', () => {
     prefix.writeUInt32LE(header.length, 12)
     await writeFile(path, Buffer.concat([prefix, original.subarray(16 + header.length)]))
     const result = await inspectLocalReplay(path)
+    expect(result.coop.identification).toBe('unknown')
     expect(result.status).toBe('partial')
     expect(result.supportLevel).toBe('metadata-only')
     expect(result.summary).toMatchObject({
@@ -86,6 +87,20 @@ describe('local replay MPQ inspection', () => {
     } finally {
       await reopened.close()
     }
+  })
+  it('keeps malformed initData unknown without losing valid metadata', async () => {
+    const path = join(directory, 'coop.SC2Replay')
+    const archive = await createMpq(path, { userData: header })
+    await archive.add(details, { archivePath: 'replay.details' })
+    await archive.add(Buffer.from('invalid initData'), { archivePath: 'replay.initData' })
+    await archive.save()
+    await archive.close()
+    const result = await inspectLocalReplay(path)
+    expect(result.coop.identification).toBe('unknown')
+    expect(result.summary.mapName).toBe('Synthetic map')
+    expect(
+      result.warnings.some((warning) => warning.includes('Co-op identification unavailable')),
+    ).toBe(true)
   })
   it('marks arbitrary renamed files corrupt instead of inventing metadata', async () => {
     const path = join(directory, 'invalid.SC2Replay')

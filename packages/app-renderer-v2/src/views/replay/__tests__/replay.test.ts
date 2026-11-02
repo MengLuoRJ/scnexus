@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { defineComponent } from 'vue'
+import { Line, LineChart } from 'vccs'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { AppError, ERRORS, toErrorDto } from '@scnexus/app-shared/errors/app.error'
@@ -204,6 +205,53 @@ test('statistics include all current profile records while returning preserves l
   expect(wrapper.get('input:not([type="checkbox"])').element).toHaveProperty('value', 'Test map')
   expect(wrapper.findAll('article')).toHaveLength(1)
   expect(wrapper.get('article').text()).toContain('Test map')
+})
+
+test('restores virtual co-op selection and integrates summary, search, details and history', async () => {
+  localStorage.setItem('scnexus.replay.selection', JSON.stringify({ ...scope, category: 'Coop' }))
+  mocks.scan.mockResolvedValue({
+    ok: true,
+    data: [
+      {
+        ...record,
+        category: 'Coop',
+        coop: {
+          identification: 'confirmed',
+          difficulty: 4,
+          mutators: { state: 'unknown', ids: null },
+          players: [
+            {
+              slotId: 0,
+              userId: 0,
+              playerId: null,
+              profileHandle: scope.profileHandle,
+              commander: 'Raynor',
+              level: null,
+              prestige: null,
+              masteryLevel: null,
+              masteryTalents: null,
+              difficulty: 4,
+              brutalPlus: null,
+              retryMutationIndexes: null,
+            },
+          ],
+        },
+      },
+    ],
+  })
+  const wrapper = await render()
+  expect(mocks.scan).toHaveBeenCalledExactlyOnceWith({ ...scope, category: 'Coop' })
+  expect(wrapper.findAll('select')[1]!.element).toHaveProperty('value', 'Coop')
+  expect(wrapper.get('article').text()).toContain('Raynor')
+  await wrapper.get('input:not([type="checkbox"])').setValue('Raynor')
+  expect(wrapper.findAll('article')).toHaveLength(1)
+  await click(wrapper, 'Details')
+  expect(wrapper.get('[role="dialog"]').text()).toContain('Confirmed co-op')
+  expect(wrapper.get('[role="dialog"]').text()).toContain('Unit statistics unknown')
+  await click(wrapper, 'Close')
+  await click(wrapper, 'Match statistics')
+  expect(wrapper.text()).toContain('My co-op commanders')
+  expect(wrapper.text()).toContain('Raynor')
 })
 
 test('loads indexed records, exposes partial metadata honestly and filters search', async () => {
@@ -534,12 +582,17 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   expect(dialog.text()).not.toContain('tracker-versioned-v1')
   expect(dialog.find('b').exists()).toBe(false)
   expect(dialog.find('img').exists()).toBe(false)
-  expect(dialog.findAll('svg[role="img"]')).toHaveLength(1)
-  expect(dialog.get('svg[role="img"]').text()).toContain('0:10: 50')
-  expect(dialog.text()).toContain('999')
+  expect(dialog.findAllComponents(LineChart)).toHaveLength(1)
+  expect(dialog.findAllComponents(Line)[0]!.props('data')).toEqual([
+    { gameLoop: 160, value: 50 },
+    { gameLoop: 320, value: null },
+    { gameLoop: 480, value: 300 },
+  ])
+  expect(dialog.findAllComponents(Line)[2]!.props('data')).toEqual([{ gameLoop: 160, value: 999 }])
   await click(wrapper, 'Resource income / minute')
-  expect(dialog.findAll('svg[role="img"]')).toHaveLength(1)
-  expect(dialog.get('svg[role="img"]').text()).toMatch(/Minerals \/ minute[\s\S]*0:10:[\s\S]*700/)
+  expect(dialog.findAllComponents(LineChart)).toHaveLength(1)
+  expect(dialog.findAllComponents(Line)[0]!.props('name')).toContain('Minerals / minute')
+  expect(dialog.findAllComponents(Line)[0]!.props('data')[0]).toEqual({ gameLoop: 160, value: 700 })
   await click(wrapper, 'Resources on hand')
   expect(dialog.text()).toContain('Production started')
   expect(dialog.text()).not.toContain('Construction started')
@@ -571,10 +624,12 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   expect(dialog.text()).toContain('No verified production starts')
   expect(dialog.find('ol').exists()).toBe(false)
   await click(wrapper, 'Starts + completions')
-  expect(dialog.findAll('svg[role="img"]')).toHaveLength(1)
-  expect(dialog.text()).toContain('999')
+  expect(dialog.findAllComponents(LineChart)).toHaveLength(1)
+  expect(dialog.findAllComponents(Line)[2]!.props('data')).toEqual([{ gameLoop: 160, value: 999 }])
   await click(wrapper, 'Worker and supply snapshots')
-  expect(dialog.get('svg[role="img"]').text()).toMatch(/Workers[\s\S]*0:10:[\s\S]*24/)
+  const workersLine = dialog.findAllComponents(Line)[3]!
+  expect(workersLine.props('name')).toContain('Other (#2) · Workers')
+  expect(workersLine.props('data')).toEqual([{ gameLoop: 160, value: 24 }])
   expect(
     dialog
       .findAll('button')

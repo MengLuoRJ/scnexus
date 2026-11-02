@@ -70,6 +70,34 @@ describe('ReplayDatabase', () => {
     expect(await database.listReplays()).toEqual([updated])
   })
 
+  it('migrates version four without losing identity and stores Coop summaries', async () => {
+    database.initialize()
+    await database.upsertReplay(record())
+    database.close()
+    const legacy = new DatabaseSync(dbPath)
+    legacy.exec(
+      'ALTER TABLE replay_files DROP COLUMN coop_json; DROP TABLE replay_inspections; PRAGMA user_version = 4;',
+    )
+    legacy.close()
+    database.initialize()
+    const updated = await database.upsertReplay(
+      record({
+        id: 'new-id',
+        category: 'Coop',
+        coop: {
+          identification: 'confirmed',
+          players: [],
+          difficulty: null,
+          mutators: { state: 'unknown', ids: null },
+        },
+      }),
+    )
+    expect(updated.id).toBe('replay-1')
+    database.close()
+    database.initialize()
+    expect(await database.listReplays()).toEqual([updated])
+  })
+
   it('handles concurrent callers without reopening or losing writes', async () => {
     await Promise.all(
       Array.from({ length: 8 }, async (_, i) => {
@@ -179,8 +207,8 @@ describe('ReplayDatabase', () => {
 
   it('rejects a newer schema without resetting it', () => {
     const future = new DatabaseSync(dbPath)
-    future.exec('PRAGMA user_version = 5')
+    future.exec('PRAGMA user_version = 6')
     future.close()
-    expect(() => database.initialize()).toThrow('Unsupported replay database version: 5')
+    expect(() => database.initialize()).toThrow('Unsupported replay database version: 6')
   })
 })

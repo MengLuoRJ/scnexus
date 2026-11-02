@@ -16,6 +16,15 @@ function rate(results: ReplayResults): string {
       )
 }
 const sections = computed(() => [
+  ...(['commanders', 'difficulties'] as const)
+    .filter((key) => statistics.value[key].length)
+    .map((key) => ({
+      title: t(`replay.statistics.${key}`),
+      rows: statistics.value[key].map((row) => ({
+        label: row.key ?? t('replay.unknown'),
+        results: row.results,
+      })),
+    })),
   {
     title: t('replay.statistics.maps'),
     rows: statistics.value.maps.map((row) => ({
@@ -41,6 +50,9 @@ const sections = computed(() => [
   <section class="min-w-0 space-y-4" :aria-label="t('replay.statistics.title')">
     <h2 class="font-semibold">{{ t('replay.statistics.title') }}</h2>
     <p class="text-xs text-muted">{{ t('replay.statistics.notice') }}</p>
+    <p v-if="statistics.commanders.length" class="text-xs text-muted">
+      {{ t('replay.statistics.coopNotice') }}
+    </p>
     <p class="text-xs text-muted">
       {{
         t('replay.statistics.coverage', {

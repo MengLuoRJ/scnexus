@@ -9,7 +9,7 @@ export function readReplaySelection(): ReplayScope | null {
     const scope = value as ReplayScope
     return typeof scope.profileHandle === 'string' &&
       /^\d+-S2-\d+-\d+$/.test(scope.profileHandle) &&
-      ['Multiplayer', 'Campaign', 'Challenge'].includes(scope.category)
+      ['Multiplayer', 'Coop', 'Campaign', 'Challenge'].includes(scope.category)
       ? { profileHandle: scope.profileHandle, category: scope.category }
       : null
   } catch {

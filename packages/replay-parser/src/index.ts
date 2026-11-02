@@ -1,6 +1,13 @@
 import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS, type ReplayComponentName } from './registry.js'
 import { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export { decodeVersioned } from './versioned.js'
+export { identifyReplayCoop, parseReplayCoop, REPLAY_COOP_ANALYSIS_VERSION } from './coop.js'
+export type {
+  ReplayCoopPlayer,
+  ReplayCoopSummary,
+  ReplayCoopAnalysis,
+  ReplayCoopUnitCount,
+} from './coop.js'
 export { parseReplayGameEvents } from './game-events.js'
 export type { ReplayGameEvent, ReplayGameEvents, ReplayGameParseOptions } from './game-events.js'
 export {

@@ -24,6 +24,9 @@ vi.mock('../../../utils/application-data', () => ({
 }))
 
 import { getApplicationDataDirectory } from '../../../utils/application-data'
+import * as inspection from '../replay-inspection'
+import * as runner from '../replay-analysis-runner'
+import { REPLAY_ANALYSIS_VERSION } from '../replay-analysis'
 import { replayDatabase } from '../replay-db'
 import { ReplayLibraryService } from '../replay'
 
@@ -108,6 +111,91 @@ describe('ReplayLibraryService', () => {
     const second = await service.scan(scope)
     expect(second.map((item) => item.id)).toEqual(first.map((item) => item.id))
     expect(await service.listStoredReplays(scope)).toHaveLength(2)
+  })
+
+  it('rejects mixed Coop archives atomically rather than relabeling ordinary files', async () => {
+    const coop = { ...scope, category: 'Coop' as const }
+    archiveMock.list.mockResolvedValue({
+      entries: [entry('coop.SC2Replay'), entry('ordinary.SC2Replay', { size: 8 })],
+    })
+    archiveMock.readFile
+      .mockResolvedValueOnce(Buffer.from('candidate'))
+      .mockResolvedValueOnce(Buffer.from('ordinary'))
+    const source = join(directory, 'sample.SC2Replay')
+    await writeFile(source, 'candidate')
+    const result = await inspection.inspectLocalReplay(source)
+    const inspect = vi.spyOn(inspection, 'inspectLocalReplay')
+    inspect.mockResolvedValueOnce({
+      ...result,
+      coop: { ...result.coop, identification: 'confirmed' },
+    })
+    inspect.mockResolvedValueOnce(result)
+    try {
+      await expect(service.importReplayArchive(coop, 'mixed.zip')).rejects.toThrow('does not match')
+      expect(await replayDatabase.listReplays()).toEqual([])
+      expect(await service.scan(scope)).toEqual([])
+    } finally {
+      inspect.mockRestore()
+    }
+  })
+
+  it('imports confirmed Coop archives into Multiplayer storage without exposing them as Multiplayer', async () => {
+    const coop = { ...scope, category: 'Coop' as const }
+    archiveMock.list.mockResolvedValue({ entries: [entry()] })
+    archiveMock.readFile.mockResolvedValue(Buffer.from('candidate'))
+    const source = join(directory, 'sample.SC2Replay')
+    await writeFile(source, 'candidate')
+    const result = await inspection.inspectLocalReplay(source)
+    const inspect = vi.spyOn(inspection, 'inspectLocalReplay').mockResolvedValue({
+      ...result,
+      coop: { ...result.coop, identification: 'confirmed' },
+    })
+    try {
+      const [record] = await service.importReplayArchive(coop, 'coop.zip')
+      expect(record!.category).toBe('Coop')
+      expect(record!.path).toContain(join('Replays', 'Multiplayer'))
+      expect(await service.listStoredReplays(scope)).toEqual([])
+      await service.watchReplay(coop, record!.id)
+      expect(launchReplay).toHaveBeenCalledExactlyOnceWith(record!.path)
+      await expect(service.importReplayArchive(scope, 'coop.zip')).rejects.toThrow('does not match')
+      expect(await service.listStoredReplays(coop)).toEqual([record])
+      await service.deleteReplay(coop, record!.id)
+      expect(await service.listStoredReplays(coop)).toEqual([])
+    } finally {
+      inspect.mockRestore()
+    }
+  })
+
+  it('analyzeReplay reuses only current hash and version caches without rerunning decoding', async () => {
+    const source = join(directory, 'source.SC2Replay')
+    await writeFile(source, 'candidate')
+    const record = await service.importFile(scope, source)
+    const run = vi.spyOn(runner, 'runReplayAnalysis').mockImplementation(async (item) => ({
+      replayId: item.id,
+      contentHash: item.contentHash!,
+      parserVersion: REPLAY_ANALYSIS_VERSION,
+      baseBuild: item.baseBuild,
+      status: 'unsupported',
+      components: { initData: null, attributes: null, tracker: null },
+      warnings: [],
+      analyzedAt: new Date().toISOString(),
+    }))
+    try {
+      const first = await service.analyzeReplay(scope, record.id)
+      expect(await service.analyzeReplay(scope, record.id)).toEqual(first)
+      expect(run).toHaveBeenCalledTimes(1)
+      await replayDatabase.saveAnalysis({ ...first, parserVersion: 'outdated' })
+      await service.analyzeReplay(scope, record.id)
+      expect(run).toHaveBeenCalledTimes(2)
+      await writeFile(record.path, 'different')
+      await expect(service.analyzeReplay(scope, record.id)).rejects.toThrow('changed')
+      expect(run).toHaveBeenCalledTimes(2)
+      await service.scan(scope)
+      await service.analyzeReplay(scope, record.id)
+      expect(run).toHaveBeenCalledTimes(3)
+    } finally {
+      run.mockRestore()
+    }
   })
 
   it('rejects non-replays and directories during indexing', async () => {

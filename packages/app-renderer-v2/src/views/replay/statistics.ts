@@ -1,5 +1,6 @@
 import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayProfilePlayer } from './display'
+import { replayCoopProfilePlayer } from './coop'
 
 export type ReplayResults = {
   total: number
@@ -16,6 +17,8 @@ export type ReplayStatistics = {
   maps: { key: string | null; results: ReplayResults }[]
   matchups: { key: string; results: ReplayResults }[]
   months: { key: string; results: ReplayResults }[]
+  commanders: { key: string | null; results: ReplayResults }[]
+  difficulties: { key: string | null; results: ReplayResults }[]
 }
 function emptyResults(): ReplayResults {
   return { total: 0, wins: 0, losses: 0, draws: 0, unknown: 0, winRate: null }
@@ -46,6 +49,8 @@ export function buildReplayStatistics(records: ReplayRecord[]): ReplayStatistics
   const maps = new Map<string | null, ReplayResults>()
   const matchups = new Map<string, ReplayResults>()
   const months = new Map<string, ReplayResults>()
+  const commanders = new Map<string | null, ReplayResults>()
+  const difficulties = new Map<string | null, ReplayResults>()
   let duplicates = 0
   let missingDates = 0
   for (const record of records) {
@@ -67,6 +72,20 @@ export function buildReplayStatistics(records: ReplayRecord[]): ReplayStatistics
       if (!months.has(month)) months.set(month, emptyResults())
       add(months.get(month)!, player)
     } else missingDates++
+    if (record.coop?.identification === 'confirmed') {
+      const coopPlayer = record.status === 'corrupt' ? null : replayCoopProfilePlayer(record)
+      const commander = coopPlayer?.commander ?? null
+      const difficulty =
+        record.status === 'corrupt' ? null : (coopPlayer?.difficulty ?? record.coop.difficulty)
+      for (const [groups, key] of [
+        [commanders, commander],
+        [difficulties, difficulty == null ? null : String(difficulty)],
+      ] as const) {
+        if (!groups.has(key)) groups.set(key, emptyResults())
+        add(groups.get(key)!, player)
+      }
+      continue
+    }
     if (!player || record.players.length !== 2 || player.team === null) continue
     const opponent = record.players.find((item) => item !== player)
     if (!opponent || opponent.team === null || opponent.team === player.team) continue
@@ -79,6 +98,12 @@ export function buildReplayStatistics(records: ReplayRecord[]): ReplayStatistics
     overall,
     duplicates,
     missingDates,
+    commanders: [...commanders]
+      .map(([key, results]) => ({ key, results }))
+      .sort((a, b) => b.results.total - a.results.total),
+    difficulties: [...difficulties]
+      .map(([key, results]) => ({ key, results }))
+      .sort((a, b) => (a.key ?? '').localeCompare(b.key ?? '', undefined, { numeric: true })),
     maps: [...maps]
       .map(([key, results]) => ({ key, results }))
       .sort(

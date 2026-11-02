@@ -64,6 +64,15 @@ test('registers scoped replay operations without unscoped path operations', () =
   expect(mocks.service.importReplayArchive).toHaveBeenCalledWith(scope, 'D:\\pack.zip')
   expect(mocks.service.deleteReplay).toHaveBeenCalledWith(scope, 'id')
 })
+test('forwards the virtual cooperative scope without exposing directory selection', () => {
+  const coop = { ...scope, category: 'Coop' }
+  mocks.handlers.get('replay:scan')!(coop)
+  mocks.handlers.get('replay:watch')!(coop, 'coop-replay')
+  mocks.handlers.get('replay:analyze')!(coop, 'coop-replay')
+  expect(mocks.service.scan).toHaveBeenCalledWith(coop)
+  expect(mocks.service.watchReplay).toHaveBeenCalledWith(coop, 'coop-replay')
+  expect(mocks.service.analyzeReplay).toHaveBeenCalledWith(coop, 'coop-replay')
+})
 test.each([
   undefined,
   null,

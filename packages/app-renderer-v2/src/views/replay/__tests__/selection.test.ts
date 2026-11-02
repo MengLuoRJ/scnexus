@@ -11,6 +11,12 @@ test('remembers only profile handle and category across reads', () => {
   expect(JSON.parse(localStorage.getItem('scnexus.replay.selection')!)).toEqual(scope)
 })
 
+test('remembers the virtual co-op category', () => {
+  const scope = { profileHandle: '5-S2-1-123', category: 'Coop' as const }
+  saveReplaySelection(scope)
+  expect(readReplaySelection()).toEqual(scope)
+})
+
 test.each([
   'not-json',
   'null',

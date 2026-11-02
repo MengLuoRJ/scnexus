@@ -7,6 +7,7 @@ import {
   UnsupportedReplayBuildError,
   UnsupportedReplayProtocolError,
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
+  type ReplayInitData,
   type ReplayTrackerEvents,
   type ReplayGameEvents,
 } from '@scnexus/replay-parser'
@@ -18,7 +19,8 @@ import type {
 
 import { buildReplayInsights, REPLAY_INSIGHTS_VERSION } from './replay-insights'
 import { buildReplayCommands } from './replay-commands'
-export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v1`
+import { buildReplayCoop, REPLAY_COOP_ANALYSIS_VERSION } from './replay-coop'
+export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v1-${REPLAY_COOP_ANALYSIS_VERSION}`
 
 export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAnalysis> {
   if (!record.contentHash) throw new Error('Reindex replay before analysis')
@@ -44,6 +46,8 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
   })
   let corrupt = false
   let unsupported = false
+  let coopInitData: ReplayInitData | null = null
+  let coopTracker: ReplayTrackerEvents | null = null
   try {
     const definitions = [
       [
@@ -86,6 +90,8 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
       try {
         const data = parse(await archive.readFile(name, { maxBytes }))
         result.components[key] = data as ReplayJson
+        if (key === 'initData') coopInitData = data as ReplayInitData
+        if (key === 'tracker') coopTracker = data as ReplayTrackerEvents
         result.capabilities![key] = {
           state: 'available',
           decoder: data.protocolVersion,
@@ -128,6 +134,7 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
   } finally {
     await archive.close()
   }
+  result.coop = buildReplayCoop(coopInitData, coopTracker)
   const count = Object.values(result.components).filter((value) => value !== null).length
   result.status = corrupt
     ? 'corrupt'

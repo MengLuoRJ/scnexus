@@ -13,6 +13,7 @@ vi.mock('../../../utils/application-data', () => ({
 import { getApplicationDataDirectory } from '../../../utils/application-data'
 import { replayDatabase } from '../replay-db'
 import { ReplayLibraryService } from '../replay'
+import * as inspection from '../replay-inspection'
 import { configuredReplayRoot, validateReplayScope } from '../replay-scope'
 
 const scope: ReplayScope = { profileHandle: '1-S2-1-123', category: 'Multiplayer' }
@@ -140,4 +141,80 @@ it('does not trust an indexed ID whose stored path lies outside its category', a
   expect((await service.listStoredReplays(scope)).map((item) => item.id)).toEqual([record.id])
   await expect(service.deleteReplay(scope, 'outside')).rejects.toThrow('not indexed')
   await expect(service.getAnalysis(scope, 'outside')).rejects.toThrow('not indexed')
+})
+
+it('shares Multiplayer storage but reclassifies legacy records and isolates virtual operations', async () => {
+  const coop: ReplayScope = { ...scope, category: 'Coop' }
+  const source = join(directory, 'coop.SC2Replay')
+  await writeFile(source, 'candidate coop')
+  const original = await inspection.inspectLocalReplay(source)
+  const inspect = vi.spyOn(inspection, 'inspectLocalReplay').mockResolvedValue({
+    ...original,
+    coop: { ...original.coop, identification: 'confirmed' },
+  })
+  try {
+    const imported = await service.importFile(coop, source)
+    expect(imported.path.startsWith(category())).toBe(true)
+    expect(imported.category).toBe('Coop')
+    expect(await service.listStoredReplays(scope)).toEqual([])
+    expect(await service.listStoredReplays(coop)).toEqual([imported])
+    for (const action of [
+      () => service.deleteReplay(scope, imported.id),
+      () => service.watchReplay(scope, imported.id),
+      () => service.getAnalysis(scope, imported.id),
+      () => service.analyzeReplay(scope, imported.id),
+      () => service.exportReplayArchive(scope, [imported.id], join(directory, 'out.zip')),
+    ])
+      await expect(action()).rejects.toThrow('not indexed')
+    await expect(service.importFile(scope, source)).rejects.toThrow('does not match')
+    expect((await service.scan(coop)).map((item) => item.id)).toEqual([imported.id])
+    expect(await service.scan(scope)).toEqual([])
+    expect(inspect).toHaveBeenCalledTimes(1)
+    await replayDatabase.upsertReplay({ ...imported, category: 'Multiplayer', coop: undefined })
+    const reclassified = (await service.scan(coop))[0]!
+    expect(reclassified.id).toBe(imported.id)
+    expect(reclassified.category).toBe('Coop')
+    await service.deleteReplay(coop, imported.id)
+    expect(await service.listStoredReplays(coop)).toEqual([])
+    expect(await readFile(source, 'utf8')).toBe('candidate coop')
+  } finally {
+    inspect.mockRestore()
+  }
+})
+
+it('leaves unknown replays in Multiplayer and rejects Coop import without leaving files', async () => {
+  const coop: ReplayScope = { ...scope, category: 'Coop' }
+  const source = join(directory, 'unknown.SC2Replay')
+  await writeFile(source, 'candidate unknown')
+  await expect(service.importFile(coop, source)).rejects.toThrow('does not match')
+  expect(await service.scan(coop)).toEqual([])
+  expect(await replayDatabase.listReplays()).toEqual([])
+  const record = await service.importFile(scope, source)
+  expect(record.coop?.identification).toBe('unknown')
+  expect(await service.scan(coop)).toEqual([])
+  expect((await service.scan(scope)).map((item) => item.id)).toEqual([record.id])
+})
+
+it('invalidates inspection cache on content hash and parser version, even with unchanged size', async () => {
+  await mkdir(category(), { recursive: true })
+  const path = join(category(), 'cached.SC2Replay')
+  await writeFile(path, 'first')
+  const inspect = vi.spyOn(inspection, 'inspectLocalReplay')
+  try {
+    const first = (await service.scan(scope))[0]!
+    await service.scan(scope)
+    expect(inspect).toHaveBeenCalledTimes(1)
+    await writeFile(path, 'other')
+    const second = (await service.scan(scope))[0]!
+    expect(second.id).toBe(first.id)
+    expect(second.contentHash).not.toBe(first.contentHash)
+    expect(inspect).toHaveBeenCalledTimes(2)
+    const db = new DatabaseSync(join(directory, 'SCNexusStorage', 'replay.db'))
+    db.exec("UPDATE replay_inspections SET parser_version = 'outdated'")
+    db.close()
+    await service.scan(scope)
+    expect(inspect).toHaveBeenCalledTimes(3)
+  } finally {
+    inspect.mockRestore()
+  }
 })

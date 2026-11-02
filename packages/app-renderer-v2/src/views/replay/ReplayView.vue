@@ -37,6 +37,16 @@ function playedAtLabel(record: ReplayRecord) {
     : t('replay.unknown')
 }
 function playersLabel(record: ReplayRecord) {
+  if (record.coop?.identification === 'confirmed') {
+    return (
+      record.coop.players
+        .map(
+          (player) =>
+            `${player.commander ?? t('replay.unknown')} · ${t('replay.coop.difficulty')}: ${player.difficulty ?? t('replay.unknown')}`,
+        )
+        .join(' / ') || t('replay.unknown')
+    )
+  }
   return record.players.length
     ? record.players
         .map((player) =>
@@ -72,7 +82,7 @@ const profileItems = computed(() =>
   profiles.value.map((profile) => ({ label: profile.handle, value: profile.handle })),
 )
 const categoryItems = computed(() =>
-  ['Multiplayer', 'Campaign', 'Challenge'].map((value) => ({
+  ['Multiplayer', 'Coop', 'Campaign', 'Challenge'].map((value) => ({
     label: t(`replay.category.${value}`),
     value,
   })),
@@ -132,6 +142,7 @@ const filtered = computed(() => {
       record.path,
       record.mapName,
       ...record.players.map((player) => replayPlayerName(player.name, t('replay.unknown'))),
+      ...(record.coop?.players.map((player) => player.commander) ?? []),
     ].some((value) => value?.toLocaleLowerCase().includes(query)),
   )
 })

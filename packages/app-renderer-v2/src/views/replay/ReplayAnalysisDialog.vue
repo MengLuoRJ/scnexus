@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ReplayAnalysis, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import ReplayEconomyChart from './ReplayEconomyChart.vue'
+import ReplayCoopDetails from './ReplayCoopDetails.vue'
 import ReplayCommandTimeline from './ReplayCommandTimeline.vue'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
 import { replayGameTime } from './insights'
@@ -173,6 +174,14 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
             </div>
           </dl>
         </details>
+        <ReplayCoopDetails
+          v-if="
+            props.record.category === 'Coop' ||
+            props.record.coop?.identification === 'confirmed' ||
+            props.analysis?.coop?.identification === 'confirmed'
+          "
+          :summary="props.record.coop"
+          :analysis="props.analysis?.coop" />
         <h3 class="font-medium">{{ t('replay.analysisDetails') }}</h3>
         <p v-if="props.busy" role="status">{{ t('replay.busy') }}</p>
         <p v-if="props.error" role="alert" class="break-words text-error">{{ props.error }}</p>

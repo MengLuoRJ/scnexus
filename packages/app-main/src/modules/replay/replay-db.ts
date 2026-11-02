@@ -1,3 +1,4 @@
+import type { LocalReplayInspection } from './replay-inspection'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -26,6 +27,7 @@ type ReplayDatabaseRow = {
   base_build: number | null
   duration_seconds: number | null
   players_json: string
+  coop_json: string | null
   warnings_json: string
   created_at: string
   updated_at: string
@@ -44,7 +46,7 @@ export class ReplayDatabase {
     const db = new DatabaseSync(dbPath)
     try {
       const version = db.prepare('PRAGMA user_version').get()!.user_version as number
-      if (version > 4) throw new Error(`Unsupported replay database version: ${version}`)
+      if (version > 5) throw new Error(`Unsupported replay database version: ${version}`)
       db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;')
       db.exec('BEGIN IMMEDIATE')
       db.exec(`
@@ -94,7 +96,15 @@ export class ReplayDatabase {
       db.exec(
         'CREATE INDEX IF NOT EXISTS replay_files_scope_idx ON replay_files(profile_handle, category)',
       )
-      db.exec('PRAGMA user_version = 4; COMMIT;')
+      if (!columns.some((column) => column.name === 'coop_json'))
+        db.exec('ALTER TABLE replay_files ADD COLUMN coop_json TEXT')
+      db.exec(`CREATE TABLE IF NOT EXISTS replay_inspections (
+        content_hash TEXT NOT NULL,
+        parser_version TEXT NOT NULL,
+        details_json TEXT NOT NULL,
+        PRIMARY KEY (content_hash, parser_version)
+      )`)
+      db.exec('PRAGMA user_version = 5; COMMIT;')
       this.db = db
     } catch (error) {
       db.close()
@@ -136,6 +146,7 @@ export class ReplayDatabase {
       record.playedAt,
       record.profileHandle,
       record.category,
+      record.coop ? JSON.stringify(record.coop) : null,
     ]
 
     const row = db
@@ -144,8 +155,8 @@ export class ReplayDatabase {
         INSERT INTO replay_files (
           id, path, file_name, extension, size_bytes, mtime_ms, status, support_level,
           map_name, game_version, base_build, duration_seconds, players_json, warnings_json,
-          created_at, updated_at, content_hash, played_at, profile_handle, category
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          created_at, updated_at, content_hash, played_at, profile_handle, category, coop_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(path) DO UPDATE SET
           file_name = excluded.file_name,
           extension = excluded.extension,
@@ -163,13 +174,38 @@ export class ReplayDatabase {
           content_hash = excluded.content_hash,
           played_at = excluded.played_at,
           profile_handle = excluded.profile_handle,
-          category = excluded.category
+          category = excluded.category,
+          coop_json = excluded.coop_json
         RETURNING *
       `,
       )
       .get(...params) as ReplayDatabaseRow | undefined
     if (!row) throw new Error('Replay upsert did not return a record')
     return this.toRecord(row)
+  }
+
+  async getInspection(
+    contentHash: string,
+    parserVersion: string,
+  ): Promise<LocalReplayInspection | null> {
+    const row = this.ensureReady()
+      .prepare(
+        'SELECT details_json FROM replay_inspections WHERE content_hash = ? AND parser_version = ?',
+      )
+      .get(contentHash, parserVersion)
+    return row ? (JSON.parse(row.details_json as string) as LocalReplayInspection) : null
+  }
+
+  async saveInspection(
+    contentHash: string,
+    parserVersion: string,
+    inspection: LocalReplayInspection,
+  ): Promise<void> {
+    this.ensureReady()
+      .prepare(
+        'INSERT OR REPLACE INTO replay_inspections (content_hash, parser_version, details_json) VALUES (?, ?, ?)',
+      )
+      .run(contentHash, parserVersion, JSON.stringify(inspection))
   }
 
   async listReplays(scope?: ReplayScope): Promise<ReplayRecord[]> {
@@ -200,6 +236,7 @@ export class ReplayDatabase {
       baseBuild: row.base_build,
       durationSeconds: row.duration_seconds,
       players: JSON.parse(row.players_json ?? '[]') as ReplayRecord['players'],
+      ...(row.coop_json ? { coop: JSON.parse(row.coop_json) as ReplayRecord['coop'] } : {}),
       warnings: JSON.parse(row.warnings_json ?? '[]') as ReplayRecord['warnings'],
     }
   }

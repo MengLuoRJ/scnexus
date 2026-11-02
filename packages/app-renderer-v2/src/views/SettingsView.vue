@@ -192,10 +192,13 @@ function openLink(url: string) {
 }
 const links = [
   { key: 'website', url: 'https://scnexus.net/' },
-  { key: 'terms', url: 'https://scnexus.net/terms.html' },
-  { key: 'privacy', url: 'https://scnexus.net/privacy-policy.html' },
-  { key: 'community', url: 'https://scnexus.net/guide/#交流社区' },
-  { key: 'sponsor', url: 'https://scnexus.net/sponsor.html' },
+  { key: 'terms', url: 'https://scnexus.net/terms' },
+  { key: 'privacy', url: 'https://scnexus.net/privacy' },
+  {
+    key: 'community',
+    url: 'https://scnexus.net/docs/overview#%E4%BA%A4%E6%B5%81%E7%A4%BE%E5%8C%BA',
+  },
+  { key: 'sponsor', url: 'https://scnexus.net/sponsor' },
 ]
 if (available) {
   stopTelemetry = desktopIpc.ipcTelemetryOnStatus((value) => {

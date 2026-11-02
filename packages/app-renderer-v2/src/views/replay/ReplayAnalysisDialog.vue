@@ -319,7 +319,7 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
     <template #footer>
       <UButton
         :disabled="props.busy"
-        icon="i-lucide-play"
+        icon="i-tabler-player-play"
         :label="t('replay.watch')"
         @click="emit('watch')" />
       <UButton

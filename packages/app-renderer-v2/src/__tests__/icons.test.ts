@@ -62,6 +62,28 @@ test('every application icon and loading default is registered in the offline ru
   }
 })
 
+test('watch replay button uses an offline icon that renders an SVG path', () => {
+  const source = readFileSync(
+    resolve(import.meta.dirname, '../views/replay/ReplayAnalysisDialog.vue'),
+    'utf8',
+  )
+  const icon = source.match(/icon="([^"]+)"\s+:label="t\('replay.watch'\)"/)?.[1]
+  expect(icon).toBe('i-tabler-player-play')
+  init((name, data) => {
+    addIcon(name, data)
+    addIcon(name.replace(':', '-'), data)
+  })
+  const button = mount(Button, {
+    props: { icon, label: 'Watch replay' },
+    global: { plugins: [ui] },
+  })
+  try {
+    expect(button.find('svg path').exists()).toBe(true)
+  } finally {
+    button.unmount()
+  }
+})
+
 test('real Nuxt loading buttons and dynamic file tree icons render offline SVG paths', async () => {
   const network = vi.spyOn(globalThis, 'fetch')
   disableIconRequests()

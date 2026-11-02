@@ -176,6 +176,17 @@ it.each([
     const analysis = await service.analyzeReplay(scope, record.id)
     expect(analysis.capabilities?.game?.state).toBe(state)
     expect(analysis.insights).toBeUndefined()
+    const gameOnlyMetrics = expect.objectContaining({
+      playerId: null,
+      userId: 0,
+      slot: null,
+      kills: null,
+      unitsState: 'unavailable',
+      apm: expect.objectContaining({ actions: 1, commands: 1, value: null, state: 'partial' }),
+    })
+    expect(analysis.metrics?.players).toEqual(
+      state === 'available' || state === 'partial' ? [gameOnlyMetrics] : [],
+    )
     expect(analysis.commands).toEqual(
       state === 'available' || state === 'partial'
         ? [{ gameLoop: 0, userId: 0, abilityLink: null, abilityIndex: null, flags: 0 }]

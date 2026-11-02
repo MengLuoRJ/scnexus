@@ -86,6 +86,7 @@ export type ReplayAnalysis = {
     flags: number
   }[]
   insights?: import('./replay-insights.type.js').ReplayInsights
+  metrics?: import('./replay-insights.type.js').ReplayMetrics
   coop?: import('./replay-coop.type.js').ReplayCoopAnalysis
   replayId: string
   contentHash: string

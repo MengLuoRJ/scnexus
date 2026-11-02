@@ -6,7 +6,7 @@ import type {
   ReplayProductionEvent,
 } from '@scnexus/app-shared/types/replay-insights.type'
 
-export const REPLAY_INSIGHTS_VERSION = 'tracker-insights-v1'
+export const REPLAY_INSIGHTS_VERSION = 'tracker-insights-v2'
 
 function nonnegative(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
@@ -37,6 +37,7 @@ type PendingUnit = {
   owner: number | null
   name: string | null
   startedAfterZero: boolean
+  completed: boolean
 }
 
 /** Tracker observations, not commands, spending totals, or a localized game-data build order. */
@@ -131,9 +132,17 @@ export function buildReplayInsights(
         const owner = playerId(data.m_upkeepPlayerId)
         const name = label(data.m_unitTypeName)
         if (index !== null) {
+          const existing = pending.get(index)
+          if (existing && recycle !== null && existing.recycle === recycle) break
           pending.delete(index)
-          if (eventType === 'NNet.Replay.Tracker.SUnitInitEvent' && recycle !== null)
-            pending.set(index, { recycle, owner, name, startedAfterZero: gameLoop > 0 })
+          if (recycle !== null)
+            pending.set(index, {
+              recycle,
+              owner,
+              name,
+              startedAfterZero: gameLoop > 0,
+              completed: eventType === 'NNet.Replay.Tracker.SUnitBornEvent',
+            })
         }
         // Init/Done also covers warp-ins, not only buildings. Keep raw type IDs honest.
         production(
@@ -156,9 +165,11 @@ export function buildReplayInsights(
         } else if (eventType === 'NNet.Replay.Tracker.SUnitTypeChangeEvent') {
           unit.name = label(data.m_unitTypeName)
         } else {
-          if (eventType === 'NNet.Replay.Tracker.SUnitDoneEvent' && unit.startedAfterZero)
-            production(unit.owner, gameLoop, 'construction-completed', unit.name)
-          pending.delete(index!)
+          if (eventType === 'NNet.Replay.Tracker.SUnitDoneEvent') {
+            if (unit.startedAfterZero && !unit.completed)
+              production(unit.owner, gameLoop, 'construction-completed', unit.name)
+            unit.completed = true
+          } else pending.delete(index!)
         }
         break
       }

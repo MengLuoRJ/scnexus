@@ -40,6 +40,8 @@
 
 当前组件 API 提供原始协议结果；高层 `buildReplayInsights` 位于主进程。game 组件已支持部分 build 的指令／选择／控制组解码；message 与完整深度复盘仍为后续能力。
 
+通用战斗指标面向合作和对战共同提供，统计口径见 [录像架构中的通用指标](./replay-architecture.md#通用战斗指标)。`ReplayGameEvents.elapsedGameLoops` 保留最后已解码事件的 loop（包括未保留的非操作事件），用于避免以最后一次操作作为 APM 时长分母。它不是任务完成时间或实际墙钟时长。
+
 合作任务由 parser 导出的 `identifyReplayCoop` 与 `parseReplayCoop` 提供显式模式识别、原始合作元数据及有界单位生命周期分析，主进程负责 MPQ 读取、任务调度与版本化缓存。具体证据来源、修正范围和测试样本限制见 [合作任务解析说明](../../packages/replay-parser/COOP.md)。不能将原始生命周期计数当作经全部指挥官规则修正后的训练或有效击杀统计。
 
 ## 设计原则

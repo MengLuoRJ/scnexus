@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ReplayAnalysis, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import ReplayEconomyChart from './ReplayEconomyChart.vue'
+import ReplayMetrics from './ReplayMetrics.vue'
 import ReplayCoopDetails from './ReplayCoopDetails.vue'
 import ReplayCommandTimeline from './ReplayCommandTimeline.vue'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
@@ -53,10 +54,40 @@ const chartPlayers = computed(() =>
     samples: player.economy,
   })),
 )
+const armyPlayers = computed(() => {
+  const metrics = props.analysis?.metrics?.players ?? []
+  return metrics.length
+    ? metrics.map((player, index) => ({
+        playerId: player.playerId ?? -(index + 1),
+        label: replayPlayerName(
+          player.name ??
+            props.record.players.find((item) => player.slot !== null && item.slot === player.slot)
+              ?.name ??
+            null,
+          player.playerId !== null
+            ? t('replay.participantUnknown', { id: player.playerId })
+            : t('replay.metrics.user', { id: player.userId ?? t('replay.unknown') }),
+        ),
+        samples: player.armyValue.map((sample) => ({
+          gameLoop: sample.gameLoop,
+          armyMinerals: sample.minerals,
+          armyVespene: sample.vespene,
+          minerals: null,
+          vespene: null,
+          mineralIncome: null,
+          vespeneIncome: null,
+          workers: null,
+          supplyUsed: null,
+          supplyCap: null,
+        })),
+      }))
+    : chartPlayers.value
+})
 const chartGroups: { key: string; metrics: EconomyMetric[] }[] = [
   { key: 'resources', metrics: ['minerals', 'vespene'] },
   { key: 'income', metrics: ['mineralIncome', 'vespeneIncome'] },
   { key: 'workersSupply', metrics: ['workers', 'supplyUsed', 'supplyCap'] },
+  { key: 'armyValue', metrics: ['armyMinerals', 'armyVespene'] },
 ]
 const activeChart = ref('resources')
 const timelineMode = ref<'starts' | 'all' | 'commands'>('all')
@@ -181,12 +212,19 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
             props.analysis?.coop?.identification === 'confirmed'
           "
           :summary="props.record.coop"
-          :analysis="props.analysis?.coop" />
+          :analysis="props.analysis?.coop"
+          :hide-units="!!props.analysis?.metrics" />
+        <ReplayMetrics :metrics="props.analysis?.metrics" :record="props.record" />
         <h3 class="font-medium">{{ t('replay.analysisDetails') }}</h3>
         <p v-if="props.busy" role="status">{{ t('replay.busy') }}</p>
         <p v-if="props.error" role="alert" class="break-words text-error">{{ props.error }}</p>
         <p
-          v-else-if="props.loaded && props.analysis && !props.analysis.insights"
+          v-else-if="
+            props.loaded &&
+            props.analysis &&
+            !props.analysis.insights &&
+            !props.analysis.metrics?.players.length
+          "
           class="text-muted">
           {{
             t(
@@ -196,8 +234,15 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
             )
           }}
         </p>
-        <p v-else-if="props.loaded && !props.analysis?.insights">{{ t('replay.noAnalysis') }}</p>
-        <p v-else-if="props.loaded && !players.length" class="text-muted">
+        <p
+          v-else-if="
+            props.loaded && !props.analysis?.insights && !props.analysis?.metrics?.players.length
+          ">
+          {{ t('replay.noAnalysis') }}
+        </p>
+        <p
+          v-else-if="props.loaded && !players.length && !props.analysis?.metrics?.players.length"
+          class="text-muted">
           {{ t('replay.noInsights') }}
         </p>
         <p
@@ -205,7 +250,7 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
           class="text-warning">
           {{ t('replay.partialInsights') }}
         </p>
-        <template v-if="players.length">
+        <template v-if="players.length || props.analysis?.metrics?.players.length">
           <div class="space-y-3">
             <div
               class="flex flex-wrap gap-1 rounded-lg bg-elevated/70 p-1"
@@ -226,7 +271,7 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
               <ReplayEconomyChart
                 v-if="activeChart === group.key"
                 :title="t(`replay.${group.key}`)"
-                :players="chartPlayers"
+                :players="group.key === 'armyValue' ? armyPlayers : chartPlayers"
                 :metrics="group.metrics" />
             </template>
             <p class="text-xs leading-relaxed text-muted">{{ t('replay.chartNotice') }}</p>

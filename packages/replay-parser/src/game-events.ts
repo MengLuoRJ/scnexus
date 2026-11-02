@@ -24,6 +24,8 @@ export type ReplayGameEvents = ReplayProtocolStamp & {
     candidateBuilds: number[]
   }
   processedEvents: number
+  /** Last decoded loop, including non-action events; never inferred from the last retained action. */
+  elapsedGameLoops?: number
   skippedEvents: number
   events: ReplayGameEvent[]
 }
@@ -96,6 +98,7 @@ function* decodeGameStream(
     compatibility: { state: 'verified', protocolBuild, candidateBuilds: [protocolBuild] },
     algorithmVersion: REPLAY_PROTOCOL_ALGORITHM_VERSION,
     processedEvents,
+    elapsedGameLoops: gameLoop,
     skippedEvents,
     events,
   }

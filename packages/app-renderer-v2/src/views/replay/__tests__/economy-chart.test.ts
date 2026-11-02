@@ -169,3 +169,35 @@ test('renders an empty state when all metrics are missing', async () => {
   expect(wrapper.text()).toContain(en['replay.noSamples'])
   wrapper.unmount()
 })
+
+test('army value curves use separate actual mineral and vespene samples, retaining null gaps', async () => {
+  const wrapper = render([])
+  await wrapper.setProps({
+    title: 'Army value (sampled)',
+    metrics: ['armyMinerals', 'armyVespene'],
+    players: [
+      {
+        playerId: 3,
+        label: 'Army (#3)',
+        samples: [
+          { ...sample(160, null), armyMinerals: 200, armyVespene: 50 },
+          { ...sample(320, null), armyMinerals: null, armyVespene: 0 },
+        ],
+      },
+    ],
+  })
+  await flushPromises()
+  const lines = wrapper.findAllComponents(Line)
+  expect(lines).toHaveLength(2)
+  expect(lines[0]!.props('data')).toEqual([
+    { gameLoop: 160, value: 200 },
+    { gameLoop: 320, value: null },
+  ])
+  expect(lines[1]!.props('data')).toEqual([
+    { gameLoop: 160, value: 50 },
+    { gameLoop: 320, value: 0 },
+  ])
+  expect(wrapper.text()).toContain('Army minerals')
+  expect(wrapper.text()).toContain('Army vespene')
+  wrapper.unmount()
+})

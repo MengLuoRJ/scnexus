@@ -7,7 +7,11 @@ import type {
 } from '@scnexus/app-shared/types/replay-coop.type'
 
 defineOptions({ name: 'ReplayCoopDetails' })
-const props = defineProps<{ summary?: ReplayCoopSummary; analysis?: ReplayCoopAnalysis }>()
+const props = defineProps<{
+  summary?: ReplayCoopSummary
+  analysis?: ReplayCoopAnalysis
+  hideUnits?: boolean
+}>()
 const { t } = useI18n()
 const coop = computed(() => props.analysis ?? props.summary)
 const metrics = ['level', 'prestige', 'masteryLevel', 'difficulty', 'brutalPlus'] as const
@@ -117,7 +121,12 @@ function value(input: string | number | null | undefined) {
         </div>
       </dl>
     </details>
-    <section class="min-w-0 space-y-2">
+    <p v-if="props.hideUnits && props.analysis" class="text-xs text-muted">
+      {{ t('replay.coop.units') }}:
+      {{ t(`replay.coop.unitsState.${props.analysis.units.state}`) }}
+      {{ t('replay.coop.unresolved', { count: props.analysis.units.unresolvedEvents }) }}
+    </p>
+    <section v-if="!props.hideUnits" class="min-w-0 space-y-2">
       <h4 class="text-sm font-medium">{{ t('replay.coop.units') }}</h4>
       <p class="text-xs text-muted">{{ t('replay.coop.unitsNotice') }}</p>
       <p

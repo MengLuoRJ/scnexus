@@ -42,6 +42,8 @@ pnpm --filter @scnexus/replay-parser run lint
 
 Runtime uses the TypeScript `ReplayBitReader`/`ProtocolDecoder`. Generated protocol data is retained as source code; no generation step is needed for normal builds.
 
+Decoded results also expose `elapsedGameLoops`, the loop of the last decoded event **including non-retained events**. An empty stream reports zero. This is an observed stream duration, not an inferred mission completion time. Consumers calculating action rates must not use the last retained action as the denominator: idle time after the last action would otherwise inflate the result. The optional TypeScript field keeps older in-memory fixtures compatible; the current decoder always populates it.
+
 Binary fixtures are **synthetic**, not real player replays. Each contains every known event followed by four rich commands (all target choice arms, all delta widths), selection and control-group data. The pinned **official Python decoder** decodes each 108-event stream before expected JSON is emitted; Vitest compares every retained payload and metadata with that result. This is a cross-implementation wire-format check, not evidence of real-world replay coverage. Upstream sources are never sent local project data.
 
 ## Generated official game compatibility groups

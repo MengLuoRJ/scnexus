@@ -35,6 +35,15 @@ describe('bounded bit-packed game events', () => {
       ],
     })
   })
+  it('preserves elapsed loops after the final action for APM denominators', () => {
+    // Command at loop 0 followed by a non-retained loading event at loop 16.
+    const result = parseReplayGameEvents(Buffer.from('00200b0000000000000000400005', 'hex'), 98310)
+    expect(result.events).toHaveLength(1)
+    expect(result.events[0]!.gameLoop).toBe(0)
+    expect(result.elapsedGameLoops).toBe(16)
+    expect(result.skippedEvents).toBe(1)
+    expect(parseReplayGameEvents(new Uint8Array(), 98310).elapsedGameLoops).toBe(0)
+  })
   it.each([70154, 98310])(
     'matches pinned official Python decoder for every known event and rich commands, build %i',
     (build) => {

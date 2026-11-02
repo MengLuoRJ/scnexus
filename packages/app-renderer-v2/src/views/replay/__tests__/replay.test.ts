@@ -602,28 +602,18 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   await click(wrapper, 'Next')
   expect(dialog.get('ol').findAll('li')).toHaveLength(5)
   expect(dialog.text()).toContain('3 / 3')
-  await click(wrapper, 'Starts only')
-  expect(dialog.get('ol').findAll('li')).toHaveLength(1)
-  expect(dialog.get('ol').text()).toContain('Production started')
-  expect(dialog.get('ol').text()).not.toContain('Entity appeared')
-  expect(dialog.text()).toContain('Actual training start times for ordinary units are unknown')
-  expect(dialog.text()).toContain('1 / 1')
-  expect(
-    dialog
-      .findAll('button')
-      .find((button) => button.text() === 'Starts only')!
-      .attributes('aria-pressed'),
-  ).toBe('true')
-  await click(wrapper, 'Starts + completions')
+  expect(dialog.text()).toContain('Starts + completions')
+  expect(dialog.findAll('button').map((button) => button.text())).not.toContain('Starts only')
+  expect(dialog.findAll('button').map((button) => button.text())).not.toContain('Command timeline')
+  await click(wrapper, 'Previous')
+  await click(wrapper, 'Previous')
   expect(dialog.get('ol').findAll('li')).toHaveLength(20)
   expect(dialog.get('ol').text()).toContain('Production completed')
   expect(dialog.get('ol').text()).toContain('Upgrade completed')
   expect(dialog.text()).toContain('1 / 3')
-  await click(wrapper, 'Starts only')
   await dialog.get('select').setValue('2')
-  expect(dialog.text()).toContain('No verified production starts')
+  expect(dialog.text()).toContain('No production records')
   expect(dialog.find('ol').exists()).toBe(false)
-  await click(wrapper, 'Starts + completions')
   expect(dialog.findAllComponents(LineChart)).toHaveLength(1)
   expect(dialog.findAllComponents(Line)[2]!.props('data')).toEqual([{ gameLoop: 160, value: 999 }])
   await click(wrapper, 'Worker and supply snapshots')
@@ -636,16 +626,12 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
       .find((button) => button.text() === 'Worker and supply snapshots')!
       .attributes('aria-pressed'),
   ).toBe('true')
-  await click(wrapper, 'Command timeline')
-  expect(dialog.text()).toContain('No command analysis available')
-  expect(dialog.find('ol').exists()).toBe(false)
-  await click(wrapper, 'Starts + completions')
   expect(dialog.text()).toContain('No production records')
   expect(dialog.find('ol').exists()).toBe(false)
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
 
-test('exposes decoded commands even when tracker insights are unavailable', async () => {
+test('keeps decoded commands out of the production timeline when tracker insights are unavailable', async () => {
   mocks.getAnalysis.mockResolvedValueOnce({
     ok: true,
     data: {
@@ -658,11 +644,12 @@ test('exposes decoded commands even when tracker insights are unavailable', asyn
   })
   const wrapper = await render()
   await click(wrapper, 'Details')
-  await click(wrapper, 'Command timeline')
   const dialog = wrapper.get('[role="dialog"]')
-  expect(dialog.text()).toContain('Ability 321 · command 1')
-  expect(dialog.text()).toContain('Command user #0')
-  expect(dialog.get('ol').findAll('li')).toHaveLength(1)
+  expect(dialog.text()).toContain('Starts + completions')
+  expect(dialog.text()).not.toContain('Ability 321 · command 1')
+  expect(dialog.text()).not.toContain('Command user #0')
+  expect(dialog.findAll('button').map((button) => button.text())).not.toContain('Command timeline')
+  expect(dialog.find('ol').exists()).toBe(false)
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
 

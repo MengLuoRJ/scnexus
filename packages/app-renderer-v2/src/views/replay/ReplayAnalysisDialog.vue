@@ -5,7 +5,6 @@ import type { ReplayAnalysis, ReplayRecord } from '@scnexus/app-shared/types/rep
 import ReplayEconomyChart from './ReplayEconomyChart.vue'
 import ReplayMetrics from './ReplayMetrics.vue'
 import ReplayCoopDetails from './ReplayCoopDetails.vue'
-import ReplayCommandTimeline from './ReplayCommandTimeline.vue'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
 import { replayGameTime } from './insights'
 import type { EconomyMetric } from './insights'
@@ -90,13 +89,10 @@ const chartGroups: { key: string; metrics: EconomyMetric[] }[] = [
   { key: 'armyValue', metrics: ['armyMinerals', 'armyVespene'] },
 ]
 const activeChart = ref('resources')
-const timelineMode = ref<'starts' | 'all' | 'commands'>('all')
 const page = ref(0)
 const size = 20
 const production = computed(() =>
-  (participant.value?.production ?? [])
-    .filter((event) => timelineMode.value === 'all' || event.kind === 'construction-started')
-    .sort((a, b) => a.gameLoop - b.gameLoop),
+  [...(participant.value?.production ?? [])].sort((a, b) => a.gameLoop - b.gameLoop),
 )
 const visible = computed(() => production.value.slice(page.value * size, (page.value + 1) * size))
 const pageCount = computed(() => Math.max(1, Math.ceil(production.value.length / size)))
@@ -108,7 +104,7 @@ watch(
   },
   { immediate: true },
 )
-watch([selectedId, timelineMode, () => props.analysis], () => {
+watch([selectedId, () => props.analysis], () => {
   page.value = 0
 })
 </script>
@@ -283,90 +279,64 @@ watch([selectedId, timelineMode, () => props.analysis], () => {
           :aria-label="t('replay.productionTitle')">
           <div class="flex items-center justify-between gap-3">
             <h4 class="font-medium">{{ t('replay.productionTitle') }}</h4>
-            <div
-              class="flex shrink-0 gap-1 rounded-lg bg-elevated/70 p-1"
-              role="group"
-              :aria-label="t('replay.timeline.mode')">
-              <UButton
-                v-for="mode in ['starts', 'all', 'commands'] as const"
-                :key="mode"
-                size="xs"
-                :disabled="props.busy"
-                :variant="timelineMode === mode ? 'solid' : 'ghost'"
-                :color="timelineMode === mode ? 'primary' : 'neutral'"
-                :aria-pressed="timelineMode === mode"
-                :label="t(`replay.timeline.${mode}`)"
-                @click="timelineMode = mode" />
-            </div>
+            <span class="text-xs text-muted">{{ t('replay.timeline.all') }}</span>
           </div>
-          <ReplayCommandTimeline
-            v-if="timelineMode === 'commands'"
-            :analysis="props.analysis"
-            :busy="props.busy" />
-          <template v-else>
-            <label v-if="players.length" class="block space-y-1">
-              <span class="text-xs text-muted">{{ t('replay.participant') }}</span>
-              <USelect
-                :model-value="selectedId"
-                :items="playerItems"
-                :disabled="props.busy"
-                :aria-label="t('replay.participant')"
-                class="w-full min-w-0"
-                @update:model-value="selectedId = Number($event)" />
-            </label>
-            <template v-if="participant">
-              <div class="space-y-3">
-                <p class="text-xs leading-relaxed text-muted">{{ t('replay.productionNotice') }}</p>
-                <p class="rounded-lg bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
-                  {{ t('replay.timeline.notice') }}
-                </p>
-                <p v-if="!production.length" class="text-muted">
-                  {{
-                    t(
-                      timelineMode === 'starts'
-                        ? 'replay.timeline.noStarts'
-                        : 'replay.noProduction',
-                    )
-                  }}
-                </p>
-                <ol v-else class="overflow-hidden rounded-lg border border-default">
-                  <li
-                    v-for="(event, index) in visible"
-                    :key="page * size + index"
-                    class="grid grid-cols-[3.25rem_8.5rem_minmax(0,1fr)_2.5rem] items-center gap-3 px-3 py-2.5 odd:bg-muted/40 hover:bg-elevated/70">
-                    <span class="font-mono text-xs tabular-nums text-muted">
-                      {{ replayGameTime(event.gameLoop) }}
-                    </span>
-                    <span class="rounded-md bg-elevated px-2 py-1 text-center text-xs text-muted">
-                      {{ t(`replay.production.${event.kind}`) }}
-                    </span>
-                    <span class="min-w-0 break-words font-medium">{{ event.name }}</span>
-                    <span class="text-right text-xs tabular-nums text-muted">
-                      {{ event.count !== null ? `× ${event.count}` : '—' }}
-                    </span>
-                  </li>
-                </ol>
-                <div
-                  v-if="production.length"
-                  class="flex items-center justify-end gap-3 border-t border-default pt-3 text-xs tabular-nums">
-                  <UButton
-                    :disabled="props.busy || page === 0"
-                    size="xs"
-                    variant="outline"
-                    :label="t('replay.previous')"
-                    @click="page--" />
-                  <span>{{ page + 1 }} / {{ pageCount }}</span>
-                  <UButton
-                    :disabled="props.busy || page + 1 >= pageCount"
-                    size="xs"
-                    variant="outline"
-                    :label="t('replay.next')"
-                    @click="page++" />
-                </div>
+          <label v-if="players.length" class="block space-y-1">
+            <span class="text-xs text-muted">{{ t('replay.participant') }}</span>
+            <USelect
+              :model-value="selectedId"
+              :items="playerItems"
+              :disabled="props.busy"
+              :aria-label="t('replay.participant')"
+              class="w-full min-w-0"
+              @update:model-value="selectedId = Number($event)" />
+          </label>
+          <template v-if="participant">
+            <div class="space-y-3">
+              <p class="text-xs leading-relaxed text-muted">{{ t('replay.productionNotice') }}</p>
+              <p class="rounded-lg bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
+                {{ t('replay.timeline.notice') }}
+              </p>
+              <p v-if="!production.length" class="text-muted">
+                {{ t('replay.noProduction') }}
+              </p>
+              <ol v-else class="overflow-hidden rounded-lg border border-default">
+                <li
+                  v-for="(event, index) in visible"
+                  :key="page * size + index"
+                  class="grid grid-cols-[3.25rem_8.5rem_minmax(0,1fr)_2.5rem] items-center gap-3 px-3 py-2.5 odd:bg-muted/40 hover:bg-elevated/70">
+                  <span class="font-mono text-xs tabular-nums text-muted">
+                    {{ replayGameTime(event.gameLoop) }}
+                  </span>
+                  <span class="rounded-md bg-elevated px-2 py-1 text-center text-xs text-muted">
+                    {{ t(`replay.production.${event.kind}`) }}
+                  </span>
+                  <span class="min-w-0 break-words font-medium">{{ event.name }}</span>
+                  <span class="text-right text-xs tabular-nums text-muted">
+                    {{ event.count !== null ? `× ${event.count}` : '—' }}
+                  </span>
+                </li>
+              </ol>
+              <div
+                v-if="production.length"
+                class="flex items-center justify-end gap-3 border-t border-default pt-3 text-xs tabular-nums">
+                <UButton
+                  :disabled="props.busy || page === 0"
+                  size="xs"
+                  variant="outline"
+                  :label="t('replay.previous')"
+                  @click="page--" />
+                <span>{{ page + 1 }} / {{ pageCount }}</span>
+                <UButton
+                  :disabled="props.busy || page + 1 >= pageCount"
+                  size="xs"
+                  variant="outline"
+                  :label="t('replay.next')"
+                  @click="page++" />
               </div>
-            </template>
-            <p v-else class="text-sm text-muted">{{ t('replay.noInsights') }}</p>
+            </div>
           </template>
+          <p v-else class="text-sm text-muted">{{ t('replay.noInsights') }}</p>
         </section>
       </div>
     </template>

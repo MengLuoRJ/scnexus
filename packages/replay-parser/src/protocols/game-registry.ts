@@ -1,39 +1,56 @@
-// Derived from Blizzard s2protocol 901804e41283269d43d7bfc3b8dc5be2a9dd350a.
-// MIT; see LICENSE.s2protocol. Do not edit.
-import type { GameProtocolSchema } from '../protocol-schema.js'
-import game70154 from './game70154.js'
-import game80669 from './game-group-80669.js'
+// Blizzard s2protocol 3b40c5ef01834096b4305172ef5485ec00133dcc; MIT, see LICENSE.s2protocol.
+import type {
+  ProtocolSchema,
+  GameProtocolSchema,
+  MessageProtocolSchema,
+  TrackerProtocolSchema,
+} from '../protocol-schema.js'
+import {
+  OFFICIAL_TYPES,
+  INIT_GROUP_DATA,
+  GAME_GROUP_DATA,
+  MESSAGE_GROUP_DATA,
+  TRACKER_GROUP_DATA,
+  HEADER_GROUP_DATA,
+  DETAILS_GROUP_DATA,
+} from './official-data.js'
 
-export type GameProtocolGroup = {
+export type ProtocolGroup<T> = {
   sourceBuild: number
   builds: readonly number[]
-  schema: GameProtocolSchema
+  schema: T
   fingerprint: string
 }
-
-export const GAME_PROTOCOL_GROUPS: readonly GameProtocolGroup[] = [
-  {
-    sourceBuild: 70154,
-    builds: [
-      70154, 71061, 71523, 71663, 72282, 73286, 73559, 73620, 74071, 74456, 74741, 75025, 75689,
-      75800, 76052, 76114, 77379, 77535, 77661, 78285,
-    ],
-    schema: game70154,
-    fingerprint: '7e1a63556d241312b6bca7da51633547744e031bedd6233bc273055a03ed6498',
-  },
-  {
-    sourceBuild: 80669,
-    builds: [
-      80669, 80949, 81009, 82457, 82893, 83830, 84643, 86383, 87702, 88500, 89634, 89720, 90136,
-      90779, 90870, 91115, 92028, 92174, 92440, 93272, 93333, 95248, 95299, 97364, 97425, 97563,
-      98310,
-    ],
-    schema: game80669,
-    fingerprint: '00a5c13f1da7ac91a5a4cf750caabc998d961981135509a601f7cd0693e0bc03',
-  },
-]
-
-/** Exact source-verified membership only; unknown builds are not inferred. */
+export type GameProtocolGroup = ProtocolGroup<GameProtocolSchema>
+function groups<T>(
+  data: readonly { sourceBuild: number; builds: number[]; schema: unknown; fingerprint: string }[],
+): ProtocolGroup<T>[] {
+  return data.map((group) => ({
+    ...group,
+    schema: { ...(group.schema as object), types: OFFICIAL_TYPES } as T,
+  }))
+}
+export const INIT_PROTOCOL_GROUPS = groups<ProtocolSchema>(INIT_GROUP_DATA)
+export const GAME_PROTOCOL_GROUPS = groups<GameProtocolSchema>(GAME_GROUP_DATA)
+export const MESSAGE_PROTOCOL_GROUPS = groups<MessageProtocolSchema>(MESSAGE_GROUP_DATA)
+export const TRACKER_PROTOCOL_GROUPS = groups<TrackerProtocolSchema>(TRACKER_GROUP_DATA)
+export const HEADER_PROTOCOL_GROUPS = groups<ProtocolSchema>(HEADER_GROUP_DATA)
+export const DETAILS_PROTOCOL_GROUPS = groups<ProtocolSchema>(DETAILS_GROUP_DATA)
 export function findReplayGameProtocol(baseBuild: number): GameProtocolGroup | undefined {
   return GAME_PROTOCOL_GROUPS.find((group) => group.builds.includes(baseBuild))
+}
+export function findReplayMessageProtocol(
+  baseBuild: number,
+): ProtocolGroup<MessageProtocolSchema> | undefined {
+  return MESSAGE_PROTOCOL_GROUPS.find((group) => group.builds.includes(baseBuild))
+}
+export function findReplayProtocolCandidates<T>(
+  baseBuild: number,
+  candidates: readonly ProtocolGroup<T>[],
+): ProtocolGroup<T>[] {
+  const distance = (group: ProtocolGroup<T>) =>
+    Math.min(...group.builds.map((build) => Math.abs(build - baseBuild)))
+  return [...candidates]
+    .sort((a, b) => distance(a) - distance(b) || a.sourceBuild - b.sourceBuild)
+    .slice(0, 3)
 }

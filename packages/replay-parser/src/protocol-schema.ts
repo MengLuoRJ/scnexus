@@ -1,6 +1,10 @@
-import build70154 from './protocols/build70154.js'
-import build98310 from './protocols/build98310.js'
-import { GAME_PROTOCOL_GROUPS, findReplayGameProtocol } from './protocols/game-registry.js'
+import {
+  INIT_PROTOCOL_GROUPS,
+  GAME_PROTOCOL_GROUPS,
+  TRACKER_PROTOCOL_GROUPS,
+  findReplayGameProtocol,
+  findReplayMessageProtocol,
+} from './protocols/game-registry.js'
 import trackerVersionedV1 from './protocols/tracker-versioned-v1.js'
 
 export type Bounds = [number, number]
@@ -21,21 +25,30 @@ export type ProtocolSchema = {
 }
 
 export type TrackerProtocolSchema = Omit<ProtocolSchema, 'initData'>
-export type GameProtocolSchema = TrackerProtocolSchema & { userId: number }
+export type GameProtocolSchema = TrackerProtocolSchema & { userId?: number }
+export type MessageProtocolSchema = GameProtocolSchema
 export const SUPPORTED_REPLAY_GAME_BASE_BUILDS = GAME_PROTOCOL_GROUPS.flatMap((group) => [
   ...group.builds,
 ]).sort((a, b) => a - b)
-
-/** Dispatch official builds by proven structural equivalence, not numeric proximity. */
+export const SUPPORTED_REPLAY_BASE_BUILDS = INIT_PROTOCOL_GROUPS.flatMap((group) => [
+  ...group.builds,
+]).sort((a, b) => a - b)
+export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '2.0.0'
 export function replayGameProtocol(baseBuild: number): GameProtocolSchema {
   const group = findReplayGameProtocol(baseBuild)
   if (!group) throw new UnsupportedReplayBuildError(baseBuild)
   return group.schema
 }
-
-export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '1.3.0'
-/** Builds with complete initData and tracker schemas, not tracker-only compatibility. */
-export const SUPPORTED_REPLAY_BASE_BUILDS = [70154, 98310] as const
+export function replayMessageProtocol(baseBuild: number): MessageProtocolSchema {
+  const group = findReplayMessageProtocol(baseBuild)
+  if (!group) throw new UnsupportedReplayBuildError(baseBuild)
+  return group.schema
+}
+export function replayInitDataProtocolBuild(baseBuild: number): number {
+  const group = INIT_PROTOCOL_GROUPS.find((group) => group.builds.includes(baseBuild))
+  if (!group) throw new UnsupportedReplayBuildError(baseBuild)
+  return group.sourceBuild
+}
 export const REPLAY_TRACKER_PROTOCOL_VERSION = 'tracker-versioned-v1' as const
 export const REPLAY_TRACKER_DECODER_STRATEGY = 'self-describing-versioned' as const
 
@@ -51,7 +64,10 @@ export class UnsupportedReplayProtocolError extends Error {
 export function replayTrackerProtocol(baseBuild: number): TrackerProtocolSchema {
   if (!Number.isSafeInteger(baseBuild) || baseBuild <= 0)
     throw new UnsupportedReplayBuildError(baseBuild)
-  return trackerVersionedV1
+  return (
+    TRACKER_PROTOCOL_GROUPS.find((group) => group.builds.includes(baseBuild))?.schema ??
+    trackerVersionedV1
+  )
 }
 
 export class UnsupportedReplayBuildError extends Error {
@@ -62,14 +78,9 @@ export class UnsupportedReplayBuildError extends Error {
   }
 }
 
-/** Exact registry only: game version/build is not interchangeable with header baseBuild. */
+/** Exact official membership only; unknown-build trials belong to the component parser. */
 export function replayProtocol(baseBuild: number): ProtocolSchema {
-  switch (baseBuild) {
-    case 70154:
-      return build70154
-    case 98310:
-      return build98310
-    default:
-      throw new UnsupportedReplayBuildError(baseBuild)
-  }
+  const group = INIT_PROTOCOL_GROUPS.find((group) => group.builds.includes(baseBuild))
+  if (!group) throw new UnsupportedReplayBuildError(baseBuild)
+  return group.schema
 }

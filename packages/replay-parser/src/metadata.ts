@@ -1,5 +1,48 @@
-import { decodeVersioned, versionedNumber, versionedStruct, versionedText } from './versioned.js'
+import {
+  decodeVersionedPrefix,
+  versionedNumber,
+  versionedStruct,
+  versionedText,
+} from './versioned.js'
+import { ProtocolDecoder } from './protocol-decoder.js'
+import {
+  HEADER_PROTOCOL_GROUPS,
+  DETAILS_PROTOCOL_GROUPS,
+  findReplayProtocolCandidates,
+} from './protocols/game-registry.js'
+import type { ProtocolGroup } from './protocols/game-registry.js'
+import type { ProtocolSchema } from './protocol-schema.js'
 import type { ReplayPlayerSummary } from './index.js'
+
+function metadataValue(
+  data: Uint8Array,
+  groups: readonly ProtocolGroup<ProtocolSchema>[],
+  sourceBuild?: number | ((value: import('./versioned.js').VersionedValue) => number | null),
+) {
+  if (data.length > 4 * 1024 * 1024) throw new Error('Replay metadata byte limit exceeded')
+  const decoded = decodeVersionedPrefix(data, 0, true)
+  if (decoded.nextOffset !== data.length) throw new Error('Trailing replay metadata bytes')
+  const baseBuild = typeof sourceBuild === 'function' ? sourceBuild(decoded.value) : sourceBuild
+  const known = groups.find((group) => group.builds.includes(baseBuild ?? -1))
+  const candidates = known ? [known] : findReplayProtocolCandidates(baseBuild ?? 98310, groups)
+  let valid = false
+  for (const group of candidates) {
+    try {
+      new ProtocolDecoder(group.schema).decode(
+        group.schema.initData,
+        decoded.value,
+        0,
+        decoded.wire,
+      )
+      valid = true
+      break
+    } catch {
+      /* Older metadata has different field types. */
+    }
+  }
+  if (!valid) throw new Error('Invalid replay metadata schema')
+  return decoded.value
+}
 
 export type ReplayHeader = {
   gameVersion: string
@@ -10,7 +53,13 @@ export type ReplayHeader = {
 }
 
 export function parseReplayHeader(data: Uint8Array): ReplayHeader {
-  const header = versionedStruct(decodeVersioned(data))
+  const header = versionedStruct(
+    metadataValue(data, HEADER_PROTOCOL_GROUPS, (value) => {
+      const header = versionedStruct(value)
+      const version = header.get(1)
+      return version instanceof Map ? versionedNumber(version.get(5)) : null
+    }),
+  )
   if (versionedText(header.get(0)) !== 'StarCraft II replay\x1b11')
     throw new Error('Invalid StarCraft II replay signature')
   const version = versionedStruct(header.get(1))
@@ -28,12 +77,15 @@ export function parseReplayHeader(data: Uint8Array): ReplayHeader {
   }
 }
 
-export function parseReplayDetails(data: Uint8Array): {
+export function parseReplayDetails(
+  data: Uint8Array,
+  baseBuild?: number,
+): {
   mapName: string
   playedAt: string | null
   players: ReplayPlayerSummary[]
 } {
-  const details = versionedStruct(decodeVersioned(data))
+  const details = versionedStruct(metadataValue(data, DETAILS_PROTOCOL_GROUPS, baseBuild))
   const mapName = versionedText(details.get(1))
   const list = details.get(0)
   if (!mapName || !Array.isArray(list) || list.length > 64)

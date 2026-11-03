@@ -4,6 +4,8 @@
   "description": "SC2 replay file detection, archive component inspection and metadata extraction",
   "license": "MIT",
   "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "typesVersions": {
     "*": {
       "*": [
@@ -11,8 +13,6 @@
       ]
     }
   },
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",

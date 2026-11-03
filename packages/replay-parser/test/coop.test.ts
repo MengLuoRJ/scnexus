@@ -305,14 +305,19 @@ it.each([70154, 98310])(
   'proves explicit co-op flag and commander fields exist in exact initData schema %i',
   (build) => {
     const schema = replayProtocol(build)
-    const description = schema.types[59]!
-    expect(description[0]).toBe('_struct')
-    if (description[0] !== '_struct') throw new Error('Expected description struct')
-    expect(description[1][0]).toContainEqual(['m_isCoopMode', 13, -2])
-    expect(schema.types[13]).toEqual(['_bool', []])
-    const slot = schema.types[69]!
+    const field = (id: number, name: string) => {
+      const type = schema.types[id]!
+      if (type[0] !== '_struct') throw new Error('Expected struct')
+      return type[1][0].find(([key]) => key === name)![1]
+    }
+    const lobby = field(schema.initData, 'm_syncLobbyState')
+    const description = field(lobby, 'm_gameDescription')
+    expect(schema.types[field(description, 'm_isCoopMode')]).toEqual(['_bool', []])
+    const slots = schema.types[field(field(lobby, 'm_lobbyState'), 'm_slots')]!
+    if (slots[0] !== '_array') throw new Error('Expected slots array')
+    const slot = schema.types[slots[1][1]]!
     if (slot[0] !== '_struct') throw new Error('Expected slot struct')
-    expect(slot[1][0].some(([name, type]) => name === 'm_commander' && type === 46)).toBe(true)
+    expect(schema.types[field(slots[1][1], 'm_commander')]?.[0]).toBe('_blob')
     expect(slot[1][0].some(([name]) => name === 'm_selectedCommanderPrestige')).toBe(
       build === 98310,
     )

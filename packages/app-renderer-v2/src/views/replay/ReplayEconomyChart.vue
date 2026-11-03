@@ -84,7 +84,7 @@ function tooltipRows(label: string | number | undefined) {
         :data="timeline"
         :height="220"
         :title="props.title"
-        :desc="t('replay.chartNotice')"
+        :desc="props.title"
         :margin="{ top: 12, right: 16, bottom: 0, left: 0 }"
         :transition="{ duration: 0.25 }"
         class="economy-chart w-full min-w-0 text-xs">
@@ -100,7 +100,7 @@ function tooltipRows(label: string | number | undefined) {
           :tick-line="false"
           :min-tick-gap="28" />
         <YAxis
-          :domain="[0, chart.max]"
+          :domain="[chart.min, chart.max]"
           :width="48"
           :tick-count="5"
           :tick-formatter="(value: unknown) => axisFormat.format(Number(value))"
@@ -164,6 +164,6 @@ function tooltipRows(label: string | number | undefined) {
       </LineChart>
       <p class="mt-1 text-xs text-muted">{{ t('replay.chartHint') }}</p>
     </template>
-    <p v-else class="text-xs text-muted">{{ t('replay.noSamples') }}</p>
+    <p v-else class="text-xs text-muted">{{ t('replay.analysisFailed') }}</p>
   </section>
 </template>

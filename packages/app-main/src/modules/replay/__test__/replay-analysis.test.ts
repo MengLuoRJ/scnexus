@@ -73,7 +73,7 @@ it('runs bounded component decoding in a worker, persists and invalidates by con
   expect(await service.getAnalysis(scope, record.id)).toBeNull()
 })
 
-it('keeps build-independent attributes but never falls back for unknown protocol builds', async () => {
+it('keeps build-independent data when bounded initData candidates cannot decode the component', async () => {
   const path = join(
     directory,
     'Accounts',
@@ -107,7 +107,7 @@ it('keeps build-independent attributes but never falls back for unknown protocol
     sourceBuild: 99999,
   })
   expect(
-    analysis.warnings.filter((message) => message.includes('Unsupported replay base build: 99999')),
+    analysis.warnings.filter((message) => message.startsWith('replay.initData:')),
   ).toHaveLength(1)
   expect(await service.getAnalysis(scope, record.id)).toEqual(analysis)
 })
@@ -227,4 +227,57 @@ it('keeps identical replay analyses independent across profiles', async () => {
   expect(analysis.replayId).toBe(first.id)
   await service.deleteReplay(scope, first.id)
   expect(await service.getAnalysis(other, second.id)).toEqual(otherAnalysis)
+})
+
+it('persists a valid empty message stream distinctly from a missing component', async () => {
+  const path = join(
+    directory,
+    'Accounts',
+    '1',
+    scope.profileHandle,
+    'Replays',
+    scope.category,
+    'chat.SC2Replay',
+  )
+  const archive = await createMpq(path)
+  await archive.add(Buffer.alloc(9), { archivePath: 'replay.attributes.events' })
+  await archive.add(Buffer.alloc(0), { archivePath: 'replay.message.events' })
+  await archive.save()
+  await archive.close()
+  const service = new ReplayLibraryService(() => directory)
+  const record = (await service.scan(scope))[0]!
+  await replayDatabase.upsertReplay({ ...record, baseBuild: 98310 })
+  const analysis = await service.analyzeReplay(scope, record.id)
+  expect(analysis.capabilities?.message).toMatchObject({
+    state: 'available',
+    compatibility: { state: 'verified' },
+  })
+  expect(analysis.chat).toEqual({ state: 'available', messages: [], warnings: [] })
+  expect(analysis.components.message).not.toBeNull()
+  expect(await service.getAnalysis(scope, record.id)).toEqual(analysis)
+})
+
+it('decodes UTF-8 chat through the bounded worker and persists unmapped users safely', async () => {
+  const path = join(
+    directory,
+    'Accounts',
+    '1',
+    scope.profileHandle,
+    'Replays',
+    scope.category,
+    'unicode-chat.SC2Replay',
+  )
+  const archive = await createMpq(path)
+  await archive.add(Buffer.alloc(9), { archivePath: 'replay.attributes.events' })
+  // One official SChatMessage at loop 0, user 0, recipient 0, UTF-8 punctuation.
+  await archive.add(Buffer.from('00000003efbc8c', 'hex'), { archivePath: 'replay.message.events' })
+  await archive.save()
+  await archive.close()
+  const service = new ReplayLibraryService(() => directory)
+  const record = (await service.scan(scope))[0]!
+  await replayDatabase.upsertReplay({ ...record, baseBuild: 98310 })
+  const analysis = await service.analyzeReplay(scope, record.id)
+  expect(analysis.chat?.messages[0]).toMatchObject({ userId: 0, name: null, text: '，' })
+  expect(analysis.chat?.state).toBe('partial')
+  expect(await service.getAnalysis(scope, record.id)).toEqual(analysis)
 })

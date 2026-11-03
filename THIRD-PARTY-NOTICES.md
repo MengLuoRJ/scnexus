@@ -28,7 +28,7 @@ The unRAR restriction of 7-Zip states that the unRAR code must not be used to de
 | ------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | libbz2 1.0.8 (bzip2)            | `packages/bzip2-wasm/native/bzip2-1.0.8` | bzip2 license (BSD-style, Julian R Seward) — see `packages/bzip2-wasm/LICENSE.libbz2`                 |
 | Emscripten runtime              | `packages/bzip2-wasm`                    | MIT / University of Illinois-NCSA — see `packages/bzip2-wasm/LICENSE.runtime`                         |
-| Blizzard s2protocol-derived definitions | `packages/replay-parser/src/protocols` (source hashes in `game-protocol-sources.json`; pinned commit `901804e41283269d43d7bfc3b8dc5be2a9dd350a`; Python sources and reference decoder removed after validation) | MIT, Copyright (c) 2015-2017 Blizzard Entertainment — see `packages/replay-parser/LICENSE.s2protocol` |
+| Blizzard s2protocol-derived definitions | `packages/replay-parser/src/protocols` (official definitions pinned to commit `3b40c5ef01834096b4305172ef5485ec00133dcc`; runtime uses generated TypeScript data, not the Python decoder) | MIT, Copyright (c) 2015-2017 Blizzard Entertainment — see `packages/replay-parser/LICENSE.s2protocol` |
 
 ## JavaScript dependencies
 

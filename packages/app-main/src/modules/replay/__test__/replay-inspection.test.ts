@@ -44,6 +44,8 @@ const header = Buffer.from(
 const details = Buffer.from(
   struct({
     0: [
+      4,
+      1,
       0,
       2,
       ...struct({ 0: blob('Player'), 2: blob('Protoss'), 5: int(0), 7: int(0), 8: int(1) }),

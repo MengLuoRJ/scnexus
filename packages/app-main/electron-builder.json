@@ -16,6 +16,10 @@
       "filter": ["**/*"]
     },
     {
+      "from": "../../THIRD-PARTY-NOTICES.md",
+      "to": "THIRD-PARTY-NOTICES.md"
+    },
+    {
       "from": "../bzip2-wasm/LICENSE.libbz2",
       "to": "licenses/libbz2.txt"
     },

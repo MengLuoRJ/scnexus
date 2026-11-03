@@ -78,6 +78,7 @@ export class ProtocolDecoder {
     readonly schema: TrackerProtocolSchema,
     readonly reader?: ReplayBitReader,
     readonly strictFields = false,
+    readonly unwrappedOptionals = false,
   ) {}
 
   decode(
@@ -115,7 +116,10 @@ export class ProtocolDecoder {
       case '_null':
         return null
       case '_fourcc':
-        if (!reader) return invalid()
+        if (!reader)
+          return raw instanceof Uint8Array && raw.length === 4
+            ? String.fromCharCode(...raw)
+            : invalid()
         return String.fromCharCode(...Array.from({ length: 4 }, () => Number(reader.bits(8))))
       case '_int': {
         const value = reader
@@ -194,7 +198,11 @@ export class ProtocolDecoder {
         const result: Record<string, ReplayProtocolValue> = {}
         for (const [name, id, tag] of type[1][0]) {
           if (!reader && raw instanceof Map && !raw.has(tag)) continue
-          result[name] = child(id, raw instanceof Map ? raw.get(tag) : undefined, tag)
+          const value = child(id, raw instanceof Map ? raw.get(tag) : undefined, tag)
+          if (name === '__parent' && value && typeof value === 'object' && !Array.isArray(value))
+            Object.assign(result, value)
+          else if (name === '__parent' && type[1][0].length === 1) return value
+          else result[name] = value
         }
         return result
       }

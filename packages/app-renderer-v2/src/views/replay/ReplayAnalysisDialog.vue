@@ -2,12 +2,13 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ReplayAnalysis, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
-import ReplayEconomyChart from './ReplayEconomyChart.vue'
+import ReplayScoreCharts from './ReplayScoreCharts.vue'
+import ReplayBattleSummary from './ReplayBattleSummary.vue'
+import ReplayProductionTiming from './ReplayProductionTiming.vue'
 import ReplayMetrics from './ReplayMetrics.vue'
 import ReplayCoopDetails from './ReplayCoopDetails.vue'
+import ReplayChat from './ReplayChat.vue'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
-import { replayGameTime } from './insights'
-import type { EconomyMetric } from './insights'
 
 defineOptions({ name: 'ReplayAnalysisDialog' })
 const props = defineProps<{
@@ -43,7 +44,7 @@ const playerItems = computed(() =>
           ?.name ??
         null,
       t('replay.participantUnknown', { id: player.playerId }),
-    )} (#${player.playerId})`,
+    )}`,
   })),
 )
 const chartPlayers = computed(() =>
@@ -82,13 +83,6 @@ const armyPlayers = computed(() => {
       }))
     : chartPlayers.value
 })
-const chartGroups: { key: string; metrics: EconomyMetric[] }[] = [
-  { key: 'resources', metrics: ['minerals', 'vespene'] },
-  { key: 'income', metrics: ['mineralIncome', 'vespeneIncome'] },
-  { key: 'workersSupply', metrics: ['workers', 'supplyUsed', 'supplyCap'] },
-  { key: 'armyValue', metrics: ['armyMinerals', 'armyVespene'] },
-]
-const activeChart = ref('resources')
 const page = ref(0)
 const size = 20
 const production = computed(() =>
@@ -211,67 +205,18 @@ watch([selectedId, () => props.analysis], () => {
           :analysis="props.analysis?.coop"
           :hide-units="!!props.analysis?.metrics" />
         <ReplayMetrics :metrics="props.analysis?.metrics" :record="props.record" />
+        <ReplayChat
+          v-if="props.loaded"
+          :chat="props.analysis?.chat"
+          :capability="props.analysis?.capabilities?.message" />
         <h3 class="font-medium">{{ t('replay.analysisDetails') }}</h3>
         <p v-if="props.busy" role="status">{{ t('replay.busy') }}</p>
-        <p v-if="props.error" role="alert" class="break-words text-error">{{ props.error }}</p>
-        <p
-          v-else-if="
-            props.loaded &&
-            props.analysis &&
-            !props.analysis.insights &&
-            !props.analysis.metrics?.players.length
-          "
-          class="text-muted">
-          {{
-            t(
-              props.analysis.status === 'corrupt'
-                ? 'replay.analysisCorrupt'
-                : 'replay.analysisUnavailable',
-            )
-          }}
+        <p v-if="props.error" role="alert" class="break-words text-error">
+          {{ t('replay.analysisFailed') }}
         </p>
-        <p
-          v-else-if="
-            props.loaded && !props.analysis?.insights && !props.analysis?.metrics?.players.length
-          ">
-          {{ t('replay.noAnalysis') }}
-        </p>
-        <p
-          v-else-if="props.loaded && !players.length && !props.analysis?.metrics?.players.length"
-          class="text-muted">
-          {{ t('replay.noInsights') }}
-        </p>
-        <p
-          v-if="players.length && props.analysis?.capabilities?.tracker.state === 'partial'"
-          class="text-warning">
-          {{ t('replay.partialInsights') }}
-        </p>
-        <template v-if="players.length || props.analysis?.metrics?.players.length">
-          <div class="space-y-3">
-            <div
-              class="flex flex-wrap gap-1 rounded-lg bg-elevated/70 p-1"
-              :aria-label="t('replay.analysisDetails')"
-              role="group">
-              <UButton
-                v-for="group in chartGroups"
-                :key="group.key"
-                class="min-w-0 flex-1 justify-center"
-                size="sm"
-                :variant="activeChart === group.key ? 'solid' : 'ghost'"
-                :color="activeChart === group.key ? 'primary' : 'neutral'"
-                :aria-pressed="activeChart === group.key"
-                :label="t(`replay.${group.key}`)"
-                @click="activeChart = group.key" />
-            </div>
-            <template v-for="group in chartGroups" :key="group.key">
-              <ReplayEconomyChart
-                v-if="activeChart === group.key"
-                :title="t(`replay.${group.key}`)"
-                :players="group.key === 'armyValue' ? armyPlayers : chartPlayers"
-                :metrics="group.metrics" />
-            </template>
-            <p class="text-xs leading-relaxed text-muted">{{ t('replay.chartNotice') }}</p>
-          </div>
+        <template v-if="props.loaded || players.length || props.analysis?.metrics?.players.length">
+          <ReplayBattleSummary :players="chartPlayers" />
+          <ReplayScoreCharts :players="chartPlayers" :army-players="armyPlayers" />
         </template>
         <section
           v-if="props.loaded || players.length"
@@ -281,7 +226,7 @@ watch([selectedId, () => props.analysis], () => {
             <h4 class="font-medium">{{ t('replay.productionTitle') }}</h4>
             <span class="text-xs text-muted">{{ t('replay.timeline.all') }}</span>
           </div>
-          <label v-if="players.length" class="block space-y-1">
+          <label v-if="players.some((player) => player.production.length)" class="block space-y-1">
             <span class="text-xs text-muted">{{ t('replay.participant') }}</span>
             <USelect
               :model-value="selectedId"
@@ -293,25 +238,21 @@ watch([selectedId, () => props.analysis], () => {
           </label>
           <template v-if="participant">
             <div class="space-y-3">
-              <p class="text-xs leading-relaxed text-muted">{{ t('replay.productionNotice') }}</p>
-              <p class="rounded-lg bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
-                {{ t('replay.timeline.notice') }}
-              </p>
               <p v-if="!production.length" class="text-muted">
-                {{ t('replay.noProduction') }}
+                {{ t('replay.analysisFailed') }}
               </p>
               <ol v-else class="overflow-hidden rounded-lg border border-default">
                 <li
                   v-for="(event, index) in visible"
                   :key="page * size + index"
-                  class="grid grid-cols-[3.25rem_8.5rem_minmax(0,1fr)_2.5rem] items-center gap-3 px-3 py-2.5 odd:bg-muted/40 hover:bg-elevated/70">
-                  <span class="font-mono text-xs tabular-nums text-muted">
-                    {{ replayGameTime(event.gameLoop) }}
-                  </span>
+                  class="grid grid-cols-[10rem_7rem_minmax(0,1fr)_2.5rem] items-start gap-2 px-3 py-2.5 odd:bg-muted/40 hover:bg-elevated/70">
+                  <ReplayProductionTiming :event="event" />
                   <span class="rounded-md bg-elevated px-2 py-1 text-center text-xs text-muted">
                     {{ t(`replay.production.${event.kind}`) }}
                   </span>
-                  <span class="min-w-0 break-words font-medium">{{ event.name }}</span>
+                  <span class="min-w-0 break-all font-medium">
+                    {{ event.name }}
+                  </span>
                   <span class="text-right text-xs tabular-nums text-muted">
                     {{ event.count !== null ? `× ${event.count}` : '—' }}
                   </span>
@@ -336,7 +277,7 @@ watch([selectedId, () => props.analysis], () => {
               </div>
             </div>
           </template>
-          <p v-else class="text-sm text-muted">{{ t('replay.noInsights') }}</p>
+          <p v-else class="text-sm text-muted">{{ t('replay.analysisFailed') }}</p>
         </section>
       </div>
     </template>

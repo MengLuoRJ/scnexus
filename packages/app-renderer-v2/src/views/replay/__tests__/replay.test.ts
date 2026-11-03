@@ -246,8 +246,8 @@ test('restores virtual co-op selection and integrates summary, search, details a
   await wrapper.get('input:not([type="checkbox"])').setValue('Raynor')
   expect(wrapper.findAll('article')).toHaveLength(1)
   await click(wrapper, 'Details')
-  expect(wrapper.get('[role="dialog"]').text()).toContain('Confirmed co-op')
-  expect(wrapper.get('[role="dialog"]').text()).toContain('Unit statistics unknown')
+  expect(wrapper.get('[role="dialog"]').text()).toContain('Raynor')
+  expect(wrapper.get('[role="dialog"]').text()).not.toContain('Unit statistics unknown')
   await click(wrapper, 'Close')
   await click(wrapper, 'Match statistics')
   expect(wrapper.text()).toContain('My co-op commanders')
@@ -449,7 +449,7 @@ test('viewing saved analysis never starts parsing; null and failure stay distinc
   await click(wrapper, 'Details')
   expect(mocks.getAnalysis).toHaveBeenCalledExactlyOnceWith(scope, '1')
   expect(mocks.analyze).not.toHaveBeenCalled()
-  expect(wrapper.get('[role="dialog"]').text()).toContain('No match insights are available')
+  expect(wrapper.get('[role="dialog"]').text()).toContain(en['replay.analysisFailed'])
   await click(wrapper, 'Close')
   mocks.getAnalysis.mockResolvedValueOnce({
     ok: false,
@@ -459,7 +459,7 @@ test('viewing saved analysis never starts parsing; null and failure stay distinc
   expect(wrapper.find('[role="alert"]').exists()).toBe(true)
   expect(wrapper.get('[role="dialog"]').text()).toContain(record.path)
   expect(wrapper.get('[role="dialog"]').text()).not.toContain('Missing details')
-  expect(wrapper.get('[role="dialog"]').text()).not.toContain('No match insights are available')
+  expect(wrapper.get('[role="dialog"]').text()).toContain(en['replay.analysisFailed'])
 })
 
 test('details show metadata while saved analysis loads without starting analysis', async () => {
@@ -485,7 +485,7 @@ test('details show metadata while saved analysis loads without starting analysis
   expect(mocks.analyze).not.toHaveBeenCalled()
   finish({ ok: true, data: null })
   await flushPromises()
-  expect(dialog.text()).toContain('No match insights are available')
+  expect(dialog.text()).toContain(en['replay.analysisFailed'])
 })
 
 test('manual analysis hides technical results and asks to analyze old raw-only caches', async () => {
@@ -504,7 +504,7 @@ test('manual analysis hides technical results and asks to analyze old raw-only c
   await click(wrapper, 'Details')
   expect(mocks.analyze).not.toHaveBeenCalled()
   const dialog = wrapper.get('[role="dialog"]')
-  expect(dialog.text()).toContain('Analysis was attempted')
+  expect(dialog.text()).toContain(en['replay.analysisFailed'])
   for (const text of [
     'private-parser',
     'private-hash',
@@ -522,7 +522,7 @@ test('manual analysis hides technical results and asks to analyze old raw-only c
   })
   await click(wrapper, 'Reanalyze')
   expect(mocks.analyze).toHaveBeenCalledExactlyOnceWith(scope, '1')
-  expect(dialog.text()).toContain('No participant insights')
+  expect(dialog.text()).toContain(en['replay.analysisFailed'])
 })
 
 const sample = (gameLoop: number, minerals: number | null) => ({
@@ -578,7 +578,7 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   await click(wrapper, 'Details')
   const dialog = wrapper.get('[role="dialog"]')
   expect(dialog.text()).toContain('<b>Player</b>')
-  expect(dialog.text()).toContain('may be incomplete')
+  expect(dialog.text()).not.toContain('may be incomplete')
   expect(dialog.text()).not.toContain('tracker-versioned-v1')
   expect(dialog.find('b').exists()).toBe(false)
   expect(dialog.find('img').exists()).toBe(false)
@@ -602,7 +602,7 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   await click(wrapper, 'Next')
   expect(dialog.get('ol').findAll('li')).toHaveLength(5)
   expect(dialog.text()).toContain('3 / 3')
-  expect(dialog.text()).toContain('Starts + completions')
+  expect(dialog.text()).toContain(en['replay.timeline.all'])
   expect(dialog.findAll('button').map((button) => button.text())).not.toContain('Starts only')
   expect(dialog.findAll('button').map((button) => button.text())).not.toContain('Command timeline')
   await click(wrapper, 'Previous')
@@ -612,13 +612,13 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
   expect(dialog.get('ol').text()).toContain('Upgrade completed')
   expect(dialog.text()).toContain('1 / 3')
   await dialog.get('select').setValue('2')
-  expect(dialog.text()).toContain('No production records')
+  expect(dialog.text()).toContain(en['replay.analysisFailed'])
   expect(dialog.find('ol').exists()).toBe(false)
   expect(dialog.findAllComponents(LineChart)).toHaveLength(1)
   expect(dialog.findAllComponents(Line)[2]!.props('data')).toEqual([{ gameLoop: 160, value: 999 }])
   await click(wrapper, 'Worker and supply snapshots')
   const workersLine = dialog.findAllComponents(Line)[3]!
-  expect(workersLine.props('name')).toContain('Other (#2) · Workers')
+  expect(workersLine.props('name')).toContain('Other · Workers')
   expect(workersLine.props('data')).toEqual([{ gameLoop: 160, value: 24 }])
   expect(
     dialog
@@ -626,7 +626,7 @@ test('renders actual economy fields, missing snapshots and bounded escaped produ
       .find((button) => button.text() === 'Worker and supply snapshots')!
       .attributes('aria-pressed'),
   ).toBe('true')
-  expect(dialog.text()).toContain('No production records')
+  expect(dialog.text()).toContain(en['replay.analysisFailed'])
   expect(dialog.find('ol').exists()).toBe(false)
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
@@ -645,11 +645,49 @@ test('keeps decoded commands out of the production timeline when tracker insight
   const wrapper = await render()
   await click(wrapper, 'Details')
   const dialog = wrapper.get('[role="dialog"]')
-  expect(dialog.text()).toContain('Starts + completions')
+  expect(dialog.text()).toContain(en['replay.timeline.all'])
   expect(dialog.text()).not.toContain('Ability 321 · command 1')
   expect(dialog.text()).not.toContain('Command user #0')
   expect(dialog.findAll('button').map((button) => button.text())).not.toContain('Command timeline')
   expect(dialog.find('ol').exists()).toBe(false)
+  expect(mocks.analyze).not.toHaveBeenCalled()
+})
+
+test('chat is displayed separately without restoring command timeline tabs', async () => {
+  mocks.getAnalysis.mockResolvedValueOnce({
+    ok: true,
+    data: {
+      status: 'partial',
+      chat: {
+        state: 'partial',
+        messages: [
+          {
+            gameLoop: 160,
+            userId: 8,
+            playerId: 1,
+            slot: 0,
+            name: null,
+            recipient: 2,
+            text: '<b>hello</b>',
+          },
+        ],
+        warnings: ['Unverified message protocol fallback'],
+      },
+      commands: [{ gameLoop: 160, userId: 0, abilityLink: 321, abilityIndex: 1, flags: 256 }],
+    },
+  })
+  const wrapper = await render()
+  await click(wrapper, 'Details')
+  const dialog = wrapper.get('[role="dialog"]')
+  const chat = dialog.get('section[aria-label="Chat messages"]')
+  expect(chat.text()).toContain(en['replay.unknown'])
+  expect(chat.text()).not.toContain('Recipient #2')
+  expect(chat.text()).toContain('<b>hello</b>')
+  expect(chat.find('b').exists()).toBe(false)
+  expect(chat.text()).not.toContain('unverified protocol')
+  expect(dialog.text()).toContain(en['replay.timeline.all'])
+  expect(dialog.text()).not.toContain('Ability 321 · command 1')
+  expect(dialog.find('[role="tab"]').exists()).toBe(false)
   expect(mocks.analyze).not.toHaveBeenCalled()
 })
 

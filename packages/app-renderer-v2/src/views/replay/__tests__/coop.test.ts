@@ -117,7 +117,7 @@ test.each(['en', 'zh', 'zh-Hant'])(
     expect(wrapper.text()).not.toContain('replay.')
     expect(wrapper.text()).toContain('Raynor')
     expect(wrapper.findAll('dd').map((node) => node.text())).toContain('0')
-    expect(wrapper.findAll('dd').map((node) => node.text())).toContain(
+    expect(wrapper.findAll('dd').map((node) => node.text())).not.toContain(
       locale === 'en' ? 'Unknown' : '未知',
     )
     expect(wrapper.find('table').exists()).toBe(false)
@@ -177,11 +177,11 @@ test('shows lifecycle counts and observed time without claiming rewards or compl
     global: { plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })] },
   })
   expect(wrapper.text()).toContain('10 seconds')
-  expect(wrapper.text()).toContain('not completion time')
-  expect(wrapper.text()).toContain('2 unresolved events')
-  expect(wrapper.text()).toContain('No verified objective mapping')
+  expect(wrapper.text()).not.toContain('not completion time')
+  expect(wrapper.text()).not.toContain('2 unresolved events')
+  expect(wrapper.text()).not.toContain('No verified objective mapping')
   expect(wrapper.text()).toContain('<mutatorinfoRaw>')
-  expect(wrapper.text()).toContain('names and completeness unknown')
+  expect(wrapper.text()).not.toContain('names and completeness unknown')
   expect(wrapper.find('mutatorinfoRaw').exists()).toBe(false)
   expect(wrapper.get('tbody').text()).toContain('<Marine>')
   expect(wrapper.find('marine').exists()).toBe(false)
@@ -193,5 +193,24 @@ test('shows lifecycle counts and observed time without claiming rewards or compl
     '1',
     '0',
   ])
+  wrapper.unmount()
+})
+
+test('unknown co-op settings alone do not render unsupported or empty fields', () => {
+  const wrapper = mount(ReplayCoopDetails, {
+    props: {
+      summary: {
+        identification: 'unknown',
+        players: [player({ commander: null })],
+        difficulty: null,
+        mutators: { state: 'unknown', ids: null },
+      },
+    },
+    global: { plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })] },
+  })
+  expect(wrapper.text()).toContain(en['replay.analysisFailed'])
+  expect(wrapper.find('dl').exists()).toBe(false)
+  expect(wrapper.find('table').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain('Unknown:')
   wrapper.unmount()
 })

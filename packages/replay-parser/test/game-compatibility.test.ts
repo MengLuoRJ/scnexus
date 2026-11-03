@@ -1,7 +1,11 @@
 import { expect, it, vi } from 'vitest'
 vi.mock('../src/protocols/game-registry.js', async () => {
-  const { default: schema } = await import('../src/protocols/game98310.js')
+  const actual = await vi.importActual<typeof import('../src/protocols/game-registry.js')>(
+    '../src/protocols/game-registry.js',
+  )
+  const schema = actual.GAME_PROTOCOL_GROUPS.find((group) => group.builds.includes(98310))!.schema
   return {
+    ...actual,
     findReplayGameProtocol: () => undefined,
     GAME_PROTOCOL_GROUPS: [
       { sourceBuild: 98310, builds: [98310], schema, fingerprint: 'a' },

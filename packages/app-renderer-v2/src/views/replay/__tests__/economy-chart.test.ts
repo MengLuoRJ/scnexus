@@ -166,7 +166,7 @@ test('renders an empty state when all metrics are missing', async () => {
   const wrapper = render([])
   await wrapper.setProps({ players: [] })
   expect(wrapper.findComponent(LineChart).exists()).toBe(false)
-  expect(wrapper.text()).toContain(en['replay.noSamples'])
+  expect(wrapper.text()).toContain(en['replay.analysisFailed'])
   wrapper.unmount()
 })
 
@@ -199,5 +199,35 @@ test('army value curves use separate actual mineral and vespene samples, retaini
   ])
   expect(wrapper.text()).toContain('Army minerals')
   expect(wrapper.text()).toContain('Army vespene')
+  wrapper.unmount()
+})
+
+test('signed loss counters retain negative raw samples inside shared chart bounds', async () => {
+  const wrapper = render([])
+  await wrapper.setProps({
+    metrics: ['lostEconomyMinerals'],
+    players: [
+      {
+        playerId: 1,
+        label: 'One',
+        samples: [
+          { ...sample(480, null), lostEconomyMinerals: -69 },
+          { ...sample(960, null), lostEconomyMinerals: null },
+          { ...sample(1440, null), lostEconomyMinerals: 100 },
+        ],
+      },
+      { playerId: 2, label: 'Two', samples: [{ ...sample(480, null), lostEconomyMinerals: -100 }] },
+    ],
+  })
+  await flushPromises()
+  expect(wrapper.getComponent(YAxis).props('domain')).toEqual([-100, 100])
+  expect(wrapper.findAllComponents(Line)[0]!.props('data')).toEqual([
+    { gameLoop: 480, value: -69 },
+    { gameLoop: 960, value: null },
+    { gameLoop: 1440, value: 100 },
+  ])
+  expect(wrapper.findAllComponents(Line)[1]!.props('data')).toEqual([
+    { gameLoop: 480, value: -100 },
+  ])
   wrapper.unmount()
 })

@@ -7,7 +7,11 @@ import {
   UnsupportedReplayProtocolError,
 } from './protocol-schema.js'
 import type { GameProtocolSchema } from './protocol-schema.js'
-import { GAME_PROTOCOL_GROUPS, findReplayGameProtocol } from './protocols/game-registry.js'
+import {
+  GAME_PROTOCOL_GROUPS,
+  findReplayGameProtocol,
+  findReplayProtocolCandidates,
+} from './protocols/game-registry.js'
 
 export type ReplayGameEvent = {
   eventId: number
@@ -58,6 +62,7 @@ function* decodeGameStream(
   protocolBuild: number,
   schema: GameProtocolSchema,
   maxEvents: number,
+  retainEvents = true,
 ): Generator<ReplayGameEvent, ReplayGameEvents> {
   if (!Number.isInteger(maxEvents) || maxEvents < 1 || maxEvents > 100_000)
     throw new RangeError('Invalid game maxEvents')
@@ -76,7 +81,7 @@ function* decodeGameStream(
       throw new Error('Invalid game-loop delta')
     gameLoop += delta
     if (!Number.isSafeInteger(gameLoop)) throw new Error('Game-loop overflow')
-    const userId = record(decoder.decode(schema.userId)).m_userId
+    const userId = schema.userId === undefined ? -1 : record(decoder.decode(schema.userId)).m_userId
     if (typeof userId !== 'number') throw new Error('Invalid game user id')
     const eventId = decoder.decode(schema.eventId)
     if (typeof eventId !== 'number') throw new Error('Invalid game event id')
@@ -87,7 +92,7 @@ function* decodeGameStream(
     const event = { eventId, eventType: definition[1], gameLoop, userId, data: body }
     yield event
     if (RETAINED_EVENTS.has(definition[1])) {
-      events.push(event)
+      if (retainEvents) events.push(event)
     } else {
       skippedEvents++
     }
@@ -128,12 +133,10 @@ export function parseReplayGameEvents(
     throw new UnsupportedReplayProtocolError(
       'Empty game stream cannot establish candidate compatibility',
     )
-  const groups = [...GAME_PROTOCOL_GROUPS]
-    .sort((a, b) => Math.abs(a.sourceBuild - baseBuild) - Math.abs(b.sourceBuild - baseBuild))
-    .slice(0, 3)
+  const groups = findReplayProtocolCandidates(baseBuild, GAME_PROTOCOL_GROUPS)
   const attempts = groups.map((group) => ({
     group,
-    iterator: decodeGameStream(data, baseBuild, group.sourceBuild, group.schema, maxEvents),
+    iterator: decodeGameStream(data, baseBuild, group.sourceBuild, group.schema, maxEvents, false),
     failed: false,
     result: null as ReplayGameEvents | null,
   }))
@@ -181,7 +184,17 @@ export function parseReplayGameEvents(
         )
     }
   }
-  const result = successful[0]!.result!
+  const selected = successful[0]!.group
+  const iterator = decodeGameStream(
+    data,
+    baseBuild,
+    selected.sourceBuild,
+    selected.schema,
+    maxEvents,
+  )
+  let next = iterator.next()
+  while (!next.done) next = iterator.next()
+  const result = next.value
   result.compatibility = {
     state: 'unverified',
     protocolBuild: successful[0]!.group.sourceBuild,

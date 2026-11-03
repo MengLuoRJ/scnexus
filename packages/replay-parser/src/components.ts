@@ -2,17 +2,25 @@ import { ProtocolDecoder, ReplayBitReader } from './protocol-decoder.js'
 import type { ReplayProtocolValue } from './protocol-decoder.js'
 import {
   REPLAY_PROTOCOL_ALGORITHM_VERSION,
-  replayProtocol,
+  UnsupportedReplayBuildError,
+  UnsupportedReplayProtocolError,
   replayTrackerProtocol,
   REPLAY_TRACKER_PROTOCOL_VERSION,
   REPLAY_TRACKER_DECODER_STRATEGY,
 } from './protocol-schema.js'
+import { INIT_PROTOCOL_GROUPS, findReplayProtocolCandidates } from './protocols/game-registry.js'
+import type { ProtocolSchema } from './protocol-schema.js'
 import { decodeVersionedPrefix } from './versioned.js'
 
 export type ReplayProtocolStamp = {
   baseBuild: number
   protocolVersion: string
   algorithmVersion: string
+  compatibility?: {
+    state: 'verified' | 'unverified'
+    protocolBuild: number
+    candidateBuilds: number[]
+  }
 }
 export type ReplayInitData = ReplayProtocolStamp & { data: Record<string, ReplayProtocolValue> }
 export type ReplayTrackerEvent = {
@@ -63,13 +71,79 @@ function record(value: ReplayProtocolValue): Record<string, ReplayProtocolValue>
 }
 
 /** Input is the decompressed replay.initData component, not an MPQ archive. */
-export function parseReplayInitData(data: Uint8Array, baseBuild: number): ReplayInitData {
-  const schema = replayProtocol(baseBuild)
+export function parseReplayInitData(
+  data: Uint8Array,
+  baseBuild: number,
+  options: { allowUnverified?: boolean } = {},
+): ReplayInitData {
+  if (!Number.isSafeInteger(baseBuild) || baseBuild <= 0)
+    throw new UnsupportedReplayBuildError(baseBuild)
   bounded(data, 4 * 1024 * 1024)
-  const reader = new ReplayBitReader(data)
-  const decoded = new ProtocolDecoder(schema, reader).decode(schema.initData)
-  if (Math.ceil(reader.position / 8) !== data.length) throw new Error('Trailing initData bytes')
-  return { ...stamp(baseBuild), data: record(decoded) }
+  const decode = (schema: ProtocolSchema) => {
+    const reader = new ReplayBitReader(data)
+    const decoded = record(new ProtocolDecoder(schema, reader).decode(schema.initData))
+    if (Math.ceil(reader.position / 8) !== data.length) throw new Error('Trailing initData bytes')
+    return decoded
+  }
+  const known = INIT_PROTOCOL_GROUPS.find((group) => group.builds.includes(baseBuild))
+  if (known)
+    return {
+      ...stamp(baseBuild),
+      protocolVersion: `s2protocol-${known.sourceBuild}`,
+      compatibility: {
+        state: 'verified',
+        protocolBuild: known.sourceBuild,
+        candidateBuilds: [known.sourceBuild],
+      },
+      data: decode(known.schema),
+    }
+  if (options.allowUnverified === false) throw new UnsupportedReplayBuildError(baseBuild)
+  const successful: number[] = []
+  let first: ReplayInitData | undefined
+  const equal = (a: ReplayProtocolValue, b: ReplayProtocolValue): boolean => {
+    if (a === b) return true
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false
+    if (Array.isArray(a) !== Array.isArray(b)) return false
+    const left = Object.entries(a)
+    const right = Object.entries(b)
+    return (
+      left.length === right.length &&
+      left.every(
+        ([key, value]) =>
+          Object.hasOwn(b, key) && equal(value, (b as Record<string, ReplayProtocolValue>)[key]!),
+      )
+    )
+  }
+  for (const group of findReplayProtocolCandidates(baseBuild, INIT_PROTOCOL_GROUPS)) {
+    let decoded: Record<string, ReplayProtocolValue>
+    try {
+      decoded = decode(group.schema)
+    } catch {
+      continue
+    }
+    if (first && !equal(first.data, decoded))
+      throw new UnsupportedReplayProtocolError(
+        'Ambiguous candidate initData protocols; decoded fields disagree',
+      )
+    first ??= {
+      ...stamp(baseBuild),
+      protocolVersion: `s2protocol-${group.sourceBuild}`,
+      data: decoded,
+    }
+    successful.push(group.sourceBuild)
+  }
+  if (!first)
+    throw new UnsupportedReplayProtocolError(
+      'No candidate initData protocol decoded the complete component',
+    )
+  return {
+    ...first,
+    compatibility: {
+      state: 'unverified',
+      protocolBuild: successful[0]!,
+      candidateBuilds: successful,
+    },
+  }
 }
 
 /** Tracker streams are Versioned, not bit-packed; deltas and ids have no user-id prefix. */

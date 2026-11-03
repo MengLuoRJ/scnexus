@@ -8,6 +8,12 @@ export type {
   ReplayCoopAnalysis,
   ReplayCoopUnitCount,
 } from './coop.js'
+export { parseReplayMessageEvents } from './message-events.js'
+export type {
+  ReplayMessageEvent,
+  ReplayMessageEvents,
+  ReplayMessageParseOptions,
+} from './message-events.js'
 export { parseReplayGameEvents } from './game-events.js'
 export type { ReplayGameEvent, ReplayGameEvents, ReplayGameParseOptions } from './game-events.js'
 export {
@@ -157,7 +163,7 @@ export async function inspectReplayFile(
   const details = input.components?.['replay.details']
   if (details) {
     try {
-      const metadata = parseReplayDetails(details)
+      const metadata = parseReplayDetails(details, result.summary.baseBuild ?? undefined)
       result.summary.mapName = metadata.mapName
       result.summary.playedAt = metadata.playedAt
       result.summary.players = metadata.players

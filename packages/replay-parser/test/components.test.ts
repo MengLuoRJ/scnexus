@@ -7,7 +7,7 @@ import {
   SUPPORTED_REPLAY_BASE_BUILDS,
 } from '../src/index.js'
 import { ProtocolDecoder, ReplayBitReader } from '../src/protocol-decoder.js'
-import { replayProtocol } from '../src/protocol-schema.js'
+import { replayProtocol, replayInitDataProtocolBuild } from '../src/protocol-schema.js'
 import type { ProtocolSchema } from '../src/protocol-schema.js'
 
 function vint(n: number): number[] {
@@ -83,25 +83,29 @@ class Writer {
 
 describe('component protocol foundation', () => {
   it('has exact build dispatch, never latest/nearest fallback', () => {
-    expect(SUPPORTED_REPLAY_BASE_BUILDS).toEqual([70154, 98310])
+    expect(SUPPORTED_REPLAY_BASE_BUILDS).toHaveLength(93)
+    expect(SUPPORTED_REPLAY_BASE_BUILDS).toContain(62848)
     for (const build of [0, 70153, 70326, 98311, NaN]) {
-      expect(() => parseReplayInitData(new Uint8Array(), build)).toThrow(
-        UnsupportedReplayBuildError,
-      )
+      expect(() =>
+        parseReplayInitData(new Uint8Array(), build, { allowUnverified: false }),
+      ).toThrow(UnsupportedReplayBuildError)
     }
   })
-  it.each([70154, 98310])('decodes complete synthetic initData for %i', (build) => {
-    const schema = replayProtocol(build)
-    const writer = new Writer()
-    writer.minimal(schema, schema.initData)
-    const bytes = writer.data()
-    const result = parseReplayInitData(bytes, build)
-    expect(result.protocolVersion).toBe(`s2protocol-${build}`)
-    expect(result.data).toHaveProperty('m_syncLobbyState.m_gameDescription.m_gameSpeed', 0)
-    expect(() => JSON.stringify(result)).not.toThrow(/Truncated|Invalid/)
-    expect(() => parseReplayInitData(bytes.subarray(0, -1), build)).toThrow(/Truncated|Invalid/)
-    expect(() => parseReplayInitData(Uint8Array.from([...bytes, 0]), build)).toThrow('Trailing')
-  })
+  it.each([...SUPPORTED_REPLAY_BASE_BUILDS])(
+    'decodes complete synthetic initData for %i',
+    (build) => {
+      const schema = replayProtocol(build)
+      const writer = new Writer()
+      writer.minimal(schema, schema.initData)
+      const bytes = writer.data()
+      const result = parseReplayInitData(bytes, build)
+      expect(result.protocolVersion).toBe(`s2protocol-${replayInitDataProtocolBuild(build)}`)
+      expect(result.data).toHaveProperty('m_syncLobbyState.m_gameDescription.m_gameSpeed', 0)
+      expect(() => JSON.stringify(result)).not.toThrow(/Truncated|Invalid/)
+      expect(() => parseReplayInitData(bytes.subarray(0, -1), build)).toThrow(/Truncated|Invalid/)
+      expect(() => parseReplayInitData(Uint8Array.from([...bytes, 0]), build)).toThrow('Trailing')
+    },
+  )
   it('preserves unaligned integers and bitarrays without numeric precision loss', () => {
     const schema: ProtocolSchema = {
       initData: 0,
@@ -162,9 +166,9 @@ describe('component protocol foundation', () => {
   it.each([1, 98369, 98370, 98371, 1000000])(
     'keeps initData unsupported for unregistered build %i',
     (build) => {
-      expect(() => parseReplayInitData(new Uint8Array(), build)).toThrow(
-        UnsupportedReplayBuildError,
-      )
+      expect(() =>
+        parseReplayInitData(new Uint8Array(), build, { allowUnverified: false }),
+      ).toThrow(UnsupportedReplayBuildError)
     },
   )
   it.each([1, 70154, 98310, 98369, 98370, 98371, 1000000])(

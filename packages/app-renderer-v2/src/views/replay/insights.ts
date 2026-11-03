@@ -2,6 +2,86 @@ import type { ReplayEconomySample } from '@scnexus/app-shared/types/replay-insig
 
 export type EconomyMetric = Exclude<keyof ReplayEconomySample, 'gameLoop'>
 
+type ScoreChartGroup = {
+  key: string
+  basis: 'stock' | 'cumulative' | 'rate' | 'population'
+  sections: { key: string; metrics: EconomyMetric[] }[]
+}
+
+export const scoreChartGroups: ScoreChartGroup[] = [
+  {
+    key: 'resources',
+    basis: 'stock',
+    sections: [{ key: 'all', metrics: ['minerals', 'vespene'] }],
+  },
+  {
+    key: 'income',
+    basis: 'rate',
+    sections: [{ key: 'all', metrics: ['mineralIncome', 'vespeneIncome'] }],
+  },
+  {
+    key: 'workersSupply',
+    basis: 'population',
+    sections: [{ key: 'all', metrics: ['workers', 'supplyUsed', 'supplyCap'] }],
+  },
+  {
+    key: 'armyValue',
+    basis: 'stock',
+    sections: [
+      { key: 'army', metrics: ['armyMinerals', 'armyVespene'] },
+      { key: 'economy', metrics: ['economyMinerals', 'economyVespene'] },
+      { key: 'technology', metrics: ['technologyMinerals', 'technologyVespene'] },
+    ],
+  },
+  {
+    key: 'inProgress',
+    basis: 'stock',
+    sections: [
+      { key: 'army', metrics: ['inProgressArmyMinerals', 'inProgressArmyVespene'] },
+      { key: 'economy', metrics: ['inProgressEconomyMinerals', 'inProgressEconomyVespene'] },
+      {
+        key: 'technology',
+        metrics: ['inProgressTechnologyMinerals', 'inProgressTechnologyVespene'],
+      },
+    ],
+  },
+  {
+    key: 'active',
+    basis: 'stock',
+    sections: [{ key: 'army', metrics: ['activeForcesMinerals', 'activeForcesVespene'] }],
+  },
+  {
+    key: 'lost',
+    basis: 'cumulative',
+    sections: [
+      { key: 'army', metrics: ['lostArmyMinerals', 'lostArmyVespene'] },
+      { key: 'economy', metrics: ['lostEconomyMinerals', 'lostEconomyVespene'] },
+      { key: 'technology', metrics: ['lostTechnologyMinerals', 'lostTechnologyVespene'] },
+    ],
+  },
+  {
+    key: 'killed',
+    basis: 'cumulative',
+    sections: [
+      { key: 'army', metrics: ['killedArmyMinerals', 'killedArmyVespene'] },
+      { key: 'economy', metrics: ['killedEconomyMinerals', 'killedEconomyVespene'] },
+      { key: 'technology', metrics: ['killedTechnologyMinerals', 'killedTechnologyVespene'] },
+    ],
+  },
+  {
+    key: 'friendlyFire',
+    basis: 'cumulative',
+    sections: [
+      { key: 'army', metrics: ['friendlyFireArmyMinerals', 'friendlyFireArmyVespene'] },
+      { key: 'economy', metrics: ['friendlyFireEconomyMinerals', 'friendlyFireEconomyVespene'] },
+      {
+        key: 'technology',
+        metrics: ['friendlyFireTechnologyMinerals', 'friendlyFireTechnologyVespene'],
+      },
+    ],
+  },
+]
+
 export function replayGameTime(gameLoop: number): string {
   const seconds = Math.floor(gameLoop / 16)
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
@@ -14,14 +94,17 @@ export type EconomyChartPlayer = {
 }
 
 export function comparisonEconomyChart(players: EconomyChartPlayer[], metrics: EconomyMetric[]) {
-  const scale = { end: 16, max: 1 }
+  const scale = { end: 16, min: 0, max: 1 }
   for (const player of players) {
     for (const sample of player.samples) {
       if (!Number.isFinite(sample.gameLoop) || sample.gameLoop < 0) continue
       scale.end = Math.max(scale.end, sample.gameLoop)
       for (const metric of metrics) {
         const value = sample[metric]
-        if (value !== null && Number.isFinite(value)) scale.max = Math.max(scale.max, value)
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          scale.min = Math.min(scale.min, value)
+          scale.max = Math.max(scale.max, value)
+        }
       }
     }
   }
@@ -43,7 +126,7 @@ export function comparisonEconomyChart(players: EconomyChartPlayer[], metrics: E
 export function economyChart(
   samples: ReplayEconomySample[],
   metrics: EconomyMetric[],
-  scale?: { end: number; max: number },
+  scale?: { end: number; min?: number; max: number },
 ) {
   const ordered = samples
     .filter((sample) => Number.isFinite(sample.gameLoop) && sample.gameLoop >= 0)
@@ -56,9 +139,23 @@ export function economyChart(
       (maximum, sample) =>
         metrics.reduce((value, metric) => {
           const current = sample[metric]
-          return current !== null && Number.isFinite(current) ? Math.max(value, current) : value
+          return typeof current === 'number' && Number.isFinite(current)
+            ? Math.max(value, current)
+            : value
         }, maximum),
       1,
+    )
+  const min =
+    scale?.min ??
+    ordered.reduce(
+      (minimum, sample) =>
+        metrics.reduce((value, metric) => {
+          const current = sample[metric]
+          return typeof current === 'number' && Number.isFinite(current)
+            ? Math.min(value, current)
+            : value
+        }, minimum),
+      0,
     )
   const stride = Math.ceil(Math.max(0, ordered.length - 2) / 998)
   const buckets =
@@ -76,6 +173,7 @@ export function economyChart(
         ]
   return {
     end,
+    min,
     max,
     series: metrics.map((metric) => {
       const data: { gameLoop: number; value: number | null }[] = []
@@ -86,7 +184,7 @@ export function economyChart(
         const value = sample[metric]
         // A missing value anywhere in a display bucket must still break the curve.
         if (
-          value === null ||
+          typeof value !== 'number' ||
           bucket.some((item) => item[metric] === null || !Number.isFinite(item[metric]))
         ) {
           data.push({ gameLoop: sample.gameLoop, value: null })

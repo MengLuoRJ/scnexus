@@ -77,6 +77,20 @@ export type ReplayAnalysis = {
     attributes: ReplayComponentCapability
     tracker: ReplayComponentCapability
     game?: ReplayComponentCapability
+    message?: ReplayComponentCapability
+  }
+  chat?: {
+    state: 'available' | 'partial' | 'unavailable'
+    messages: {
+      gameLoop: number
+      userId: number
+      playerId: number | null
+      slot: number | null
+      name: string | null
+      recipient: number
+      text: string
+    }[]
+    warnings: string[]
   }
   commands?: {
     gameLoop: number
@@ -98,6 +112,7 @@ export type ReplayAnalysis = {
     attributes: ReplayJson | null
     tracker: ReplayJson | null
     game?: ReplayJson | null
+    message?: ReplayJson | null
   }
   warnings: string[]
   analyzedAt: string

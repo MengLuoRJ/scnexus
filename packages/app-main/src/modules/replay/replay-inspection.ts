@@ -10,7 +10,7 @@ import type { ReplayCoopSummary } from '@scnexus/app-shared/types/replay-coop.ty
 import { identifyReplayCoop } from './replay-coop'
 import { openMpq, MpqCompressionError, MpqFormatError, type MpqArchive } from '../../utils/mpq'
 
-export const REPLAY_INSPECTION_VERSION = `inspection-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-coop-v1`
+export const REPLAY_INSPECTION_VERSION = `inspection-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-coop-v2`
 export type LocalReplayInspection = ReplayInspectionResult & { coop: ReplayCoopSummary }
 
 export async function inspectLocalReplay(path: string): Promise<LocalReplayInspection> {
@@ -79,7 +79,12 @@ export async function inspectLocalReplay(path: string): Promise<LocalReplayInspe
   let coop = identifyReplayCoop(null)
   if (!corrupt && initData && result.summary.baseBuild !== null) {
     try {
-      coop = identifyReplayCoop(parseReplayInitData(initData, result.summary.baseBuild))
+      const parsed = parseReplayInitData(initData, result.summary.baseBuild)
+      if (parsed.compatibility?.state === 'unverified')
+        result.warnings.push(
+          'Co-op identification unavailable: initData protocol compatibility is unverified',
+        )
+      else coop = identifyReplayCoop(parsed)
     } catch (error) {
       result.warnings.push(
         `Co-op identification unavailable: ${error instanceof Error ? error.message : String(error)}`,

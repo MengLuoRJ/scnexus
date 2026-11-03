@@ -123,7 +123,10 @@ test('ordinary Multiplayer shows all four metrics without co-op or insights play
   expect(view.text()).toContain('60')
   expect(view.text()).toContain('200')
   expect(view.text()).toContain('Marine')
-  expect(wrapper.getComponent(ReplayEconomyChart).props('metrics')).toEqual(['minerals', 'vespene'])
+  expect(wrapper.getComponent(ReplayEconomyChart).props('metrics')).toEqual([
+    'armyMinerals',
+    'armyVespene',
+  ])
   await wrapper
     .findAll('button')
     .find((button) => button.text() === en['replay.armyValue'])!
@@ -142,7 +145,7 @@ test('ordinary Multiplayer shows all four metrics without co-op or insights play
 
 test('missing data remains unknown rather than zero; game-only and tracker-only rows remain usable', async () => {
   const wrapper = mount(ReplayMetrics, { props: { record }, global: global() })
-  expect(wrapper.text()).toContain(en['replay.unknown'])
+  expect(wrapper.text()).toContain(en['replay.analysisFailed'])
   expect(wrapper.find('table').exists()).toBe(false)
   await wrapper.setProps({
     metrics: metrics([
@@ -168,11 +171,11 @@ test('missing data remains unknown rather than zero; game-only and tracker-only 
       }),
     ]),
   })
-  expect(wrapper.get('select').text()).toContain('Game user 4 (unmapped)')
+  expect(wrapper.get('select').text()).toContain('Unknown')
   expect(wrapper.get('select').text()).not.toContain('img')
   expect(wrapper.text()).toContain('Recorded actions: 120')
-  expect(wrapper.get(`[aria-label="${en['replay.metrics.kills']}"]`).text()).toContain('Unknown')
-  expect(wrapper.text()).toContain('Partial data')
+  expect(wrapper.get(`[aria-label="${en['replay.metrics.kills']}"]`).text()).toContain('—')
+  expect(wrapper.text()).not.toContain('Partial data')
   await wrapper.setProps({
     metrics: metrics([
       player({
@@ -190,7 +193,7 @@ test('missing data remains unknown rather than zero; game-only and tracker-only 
   })
   expect(wrapper.get(`[aria-label="${en['replay.metrics.kills']}"]`).text()).toContain('0')
   expect(wrapper.text()).toContain('Marine')
-  expect(wrapper.get(`[aria-label="${en['replay.metrics.apm']}"]`).text()).toContain('Unknown')
+  expect(wrapper.get(`[aria-label="${en['replay.metrics.apm']}"]`).text()).toContain('—')
   wrapper.unmount()
 })
 
@@ -221,5 +224,36 @@ test('unit identifiers are escaped, titled, searchable and paginated with partic
   expect(wrapper.text()).toContain('1 / 1')
   await wrapper.get('select').setValue(1)
   expect(wrapper.find('table').exists()).toBe(false)
+  wrapper.unmount()
+})
+
+test('wholly missing metrics has no controls; partial zero metrics stay visible without diagnostics', async () => {
+  const wrapper = mount(ReplayMetrics, { props: { record }, global: global() })
+  expect(wrapper.text()).toContain(en['replay.analysisFailed'])
+  expect(wrapper.find('select').exists()).toBe(false)
+  expect(wrapper.find('input').exists()).toBe(false)
+  const partial = metrics([
+    player({
+      kills: 0,
+      enemyKills: 0,
+      unitsState: 'partial',
+      apm: {
+        actions: 0,
+        commands: 0,
+        selections: 0,
+        controlGroups: 0,
+        value: null,
+        state: 'partial',
+      },
+    }),
+  ])
+  partial.warnings = ['private-protocol warning']
+  await wrapper.setProps({ metrics: partial })
+  expect(wrapper.get(`[aria-label="${en['replay.metrics.apm']}"] p`).text()).toBe('—')
+  expect(wrapper.get(`[aria-label="${en['replay.metrics.kills']}"] p`).text()).toBe('0')
+  expect(wrapper.text()).toContain('Marine')
+  expect(wrapper.text()).not.toContain('private-protocol warning')
+  expect(wrapper.text()).not.toContain('Partial data')
+  expect(wrapper.text()).not.toContain(en['replay.analysisFailed'])
   wrapper.unmount()
 })

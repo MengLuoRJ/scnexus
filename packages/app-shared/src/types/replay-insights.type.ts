@@ -51,12 +51,63 @@ export type ReplayEconomySample = {
   supplyCap: number | null
   armyMinerals: number | null
   armyVespene: number | null
+  /** Current and in-progress resource values are stocks, not cumulative spending. */
+  economyMinerals?: number | null
+  economyVespene?: number | null
+  technologyMinerals?: number | null
+  technologyVespene?: number | null
+  inProgressArmyMinerals?: number | null
+  inProgressArmyVespene?: number | null
+  inProgressEconomyMinerals?: number | null
+  inProgressEconomyVespene?: number | null
+  inProgressTechnologyMinerals?: number | null
+  inProgressTechnologyVespene?: number | null
+  activeForcesMinerals?: number | null
+  activeForcesVespene?: number | null
+  /** Recorded cumulative counters; do not derive these from current/in-progress stocks. */
+  lostArmyMinerals?: number | null
+  lostArmyVespene?: number | null
+  lostEconomyMinerals?: number | null
+  lostEconomyVespene?: number | null
+  lostTechnologyMinerals?: number | null
+  lostTechnologyVespene?: number | null
+  killedArmyMinerals?: number | null
+  killedArmyVespene?: number | null
+  killedEconomyMinerals?: number | null
+  killedEconomyVespene?: number | null
+  killedTechnologyMinerals?: number | null
+  killedTechnologyVespene?: number | null
+  friendlyFireArmyMinerals?: number | null
+  friendlyFireArmyVespene?: number | null
+  friendlyFireEconomyMinerals?: number | null
+  friendlyFireEconomyVespene?: number | null
+  friendlyFireTechnologyMinerals?: number | null
+  friendlyFireTechnologyVespene?: number | null
 }
 export type ReplayProductionEvent = {
   gameLoop: number
-  kind: 'unit-born' | 'construction-started' | 'construction-completed' | 'upgrade-completed'
+  kind:
+    | 'unit-born'
+    | 'construction-started'
+    | 'construction-completed'
+    | 'upgrade-completed'
+    | 'morph-completed'
   name: string
   count: number | null
+  /** Present on production-aware projections; absent in legacy fixtures/cache. */
+  startGameLoop?: number | null
+  endGameLoop?: number | null
+  startSource?: 'tracker-init' | 'tracker-egg' | 'versioned-duration' | null
+  endSource?: 'tracker-born' | 'tracker-done' | 'tracker-type-change' | 'tracker-upgrade' | null
+  timingBasis?: 'observed' | 'inferred' | 'unavailable'
+  durationVersion?: string | null
+  /** A cast is observed, successful application and duration remain inferred. */
+  chrono?: {
+    state: 'adjusted' | 'not-observed' | 'unavailable'
+    castGameLoops: number[]
+    abilityLink: number | null
+    producerTag: string | null
+  }
 }
 export type ReplayPlayerInsights = {
   playerId: number

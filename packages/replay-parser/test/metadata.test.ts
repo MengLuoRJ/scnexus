@@ -26,6 +26,9 @@ function text(value: string): number[] {
   const bytes = new TextEncoder().encode(value)
   return [2, ...vint(bytes.length), ...bytes]
 }
+function optional(value: number[]): number[] {
+  return [4, 1, ...value]
+}
 function struct(fields: Record<number, number[]>): number[] {
   return [
     5,
@@ -48,7 +51,7 @@ const header = Uint8Array.from(
 )
 const details = Uint8Array.from(
   struct({
-    0: [
+    0: optional([
       0,
       ...vint(3),
       ...struct({
@@ -66,7 +69,7 @@ const details = Uint8Array.from(
         8: integer(2),
       }),
       ...struct({ 0: text('Observer'), 7: integer(1) }),
-    ],
+    ]),
     1: text('测试地图'),
     99: [4, 0],
   }),
@@ -118,7 +121,7 @@ describe('self-describing replay metadata', () => {
     const ticks = BigInt(Date.parse(timestamp)) * 10000n + 116444736000000000n
     const bytes = Uint8Array.from(
       struct({
-        0: [0, 0],
+        0: optional([0, 0]),
         1: text('Map'),
         5: [9, ...vint(ticks)],
         6: [9, ...vint(8n * 3600n * 10000000n)],
@@ -131,12 +134,14 @@ describe('self-describing replay metadata', () => {
     ).toBe(timestamp)
   })
   it.each([0n, -1n])('leaves invalid game timestamps unknown (%s)', (ticks) => {
-    const bytes = Uint8Array.from(struct({ 0: [0, 0], 1: text('Map'), 5: [9, ...vint(ticks)] }))
+    const bytes = Uint8Array.from(
+      struct({ 0: optional([0, 0]), 1: text('Map'), 5: [9, ...vint(ticks)] }),
+    )
     expect(parseReplayDetails(bytes).playedAt).toBeNull()
   })
   it('rejects timestamp integers exceeding the wire range', () => {
     const bytes = Uint8Array.from(
-      struct({ 0: [0, 0], 1: text('Map'), 5: [9, ...vint(999999999999999999999n)] }),
+      struct({ 0: optional([0, 0]), 1: text('Map'), 5: [9, ...vint(999999999999999999999n)] }),
     )
     expect(() => parseReplayDetails(bytes)).toThrow('64-bit range')
   })
@@ -144,12 +149,12 @@ describe('self-describing replay metadata', () => {
     const toon = struct({ 0: integer(5), 1: [7, 0, 0, 83, 50], 2: integer(1), 4: integer(2206060) })
     const bytes = Uint8Array.from(
       struct({
-        0: [
+        0: optional([
           0,
           4,
           ...struct({ 1: toon }),
           ...struct({ 1: struct({ 0: integer(0), 2: integer(0), 4: integer(0) }) }),
-        ],
+        ]),
         1: text('Map'),
       }),
     )
@@ -160,7 +165,7 @@ describe('self-describing replay metadata', () => {
   })
   it('does not infer a draw from an undecided result', () => {
     const undecided = Uint8Array.from(
-      struct({ 0: [0, 2, ...struct({ 8: integer(0) })], 1: text('Map') }),
+      struct({ 0: optional([0, 2, ...struct({ 8: integer(0) })]), 1: text('Map') }),
     )
     expect(parseReplayDetails(undecided).players[0]?.result).toBeNull()
   })

@@ -13,12 +13,32 @@ export type SourceClassification = {
   descriptors: { 'package-json'?: string; 'metadata-txt'?: string }
 }
 
+export function assertSinglePackageRoot(source: ContentSource) {
+  const roots = new Set<string>()
+  for (const path of source.descriptorPaths ?? source.entries.map((entry) => entry.path)) {
+    const parts = path.split('/')
+    if (
+      !/^(package\.json|metadata\.txt)$/i.test(parts.at(-1) ?? '') ||
+      parts.slice(0, -1).some((part) => /\.sc2(map|mod)$/i.test(part))
+    )
+      continue
+    roots.add(parts.slice(0, -1).join('/').toLowerCase())
+  }
+  if (roots.size > 1)
+    throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID, {
+      message:
+        'Multiple package roots are not supported: ' +
+        [...roots].map((root) => root || '/').join(', '),
+    })
+}
+
 export async function classifySource(
   source: ContentSource,
   choice?: SourceAnalysisChoice,
 ): Promise<SourceClassification> {
   if (choice !== undefined && choice !== 'package-json' && choice !== 'metadata-txt')
     throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+  assertSinglePackageRoot(source)
   const descriptors: SourceClassification['descriptors'] = {}
   const packages: Partial<Record<SourceAnalysisChoice, Package>> = {}
   for (const [kind, name] of [

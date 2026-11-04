@@ -9,13 +9,14 @@ import { buildPreview, parsePackage, parseCcm, decodeCcm } from './parser'
 import { detectCampaign, detectCustomize } from './auto-detector'
 import { isContentDiagnostic } from './diagnostics'
 import type { ContentSource } from './source'
-import type { SourceClassification } from './classification'
+import { assertSinglePackageRoot, type SourceClassification } from './classification'
 
 export async function analyzeSourceModes(
   source: ContentSource,
   type: ContentType,
   classification?: SourceClassification,
 ) {
+  assertSinglePackageRoot(source)
   const result: Pick<AnalysisResult, 'modes' | 'diagnostics'> = {
     modes: { scnexus: null, ccm: null, auto: null },
     diagnostics: [],

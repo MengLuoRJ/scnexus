@@ -168,14 +168,14 @@ test('multiple outermost package roots are a business error', async () => {
   await expect(f.service.analyzeContent(f.input)).rejects.toMatchObject({ code: 'M034' })
 })
 
-test('outermost installable descriptor remains the root', async () => {
+test('nested second package is rejected', async () => {
   const f = await fixture({
     'package.json': pkg('campaign'),
     'Maps/Campaign/Level.SC2Map': 'one',
     'Nested/package.json': pkg('customize'),
     'Nested/Maps/Campaign/Level.SC2Map': 'two',
   })
-  expect((await f.service.analyzeContent(f.input)).contentType).toBe('campaign')
+  await expect(f.service.analyzeContent(f.input)).rejects.toMatchObject({ code: 'M034' })
 })
 
 test.each([

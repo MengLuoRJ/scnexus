@@ -24,17 +24,27 @@ const modes = computed(() => [
         ? 'toolbox.standard.scnexusCompatible'
         : 'toolbox.standard.scnexus',
     ),
-    disabled: !result.value?.modes.scnexus,
+    disabled: !result.value?.modes.scnexus && !hasDescriptor('scnexus'),
   },
-  { value: 'ccm', label: t('toolbox.standard.ccm'), disabled: !result.value?.modes.ccm },
+  {
+    value: 'ccm',
+    label: t('toolbox.standard.ccm'),
+    disabled: !result.value?.modes.ccm && !hasDescriptor('ccm'),
+  },
   { value: 'auto', label: t('toolbox.automaticRecognition'), disabled: !result.value?.modes.auto },
 ])
 const preview = computed(() => result.value?.modes[mode.value] ?? null)
 const descriptors = computed(
   () => result.value?.descriptors.filter((item) => item.standard === mode.value) ?? [],
 )
+function hasDescriptor(standard: 'scnexus' | 'ccm') {
+  return result.value?.descriptors.some((item) => item.standard === standard) ?? false
+}
 function standardValid(standard: 'scnexus' | 'ccm') {
-  return result.value?.descriptors.some((item) => item.standard === standard && item.valid) ?? false
+  return (
+    !result.value?.diagnostic &&
+    (result.value?.descriptors.some((item) => item.standard === standard && item.valid) ?? false)
+  )
 }
 let active = true
 onScopeDispose(() => {
@@ -59,7 +69,7 @@ async function analyze(input: SourceInput) {
         result.value = response.data
         mode.value = response.data.modes.scnexus
           ? 'scnexus'
-          : standardValid('ccm')
+          : hasDescriptor('ccm')
             ? 'ccm'
             : response.data.automatic.preview
               ? 'auto'

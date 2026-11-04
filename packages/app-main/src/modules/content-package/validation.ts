@@ -95,6 +95,10 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
   try {
     const classification = await classifySource(source)
     result.automatic.contentType = classification.type
+    const modes = await analyzeSourceModes(source, classification.type, classification)
+    result.modes = modes.modes
+    result.automatic.preview = modes.modes.auto
+    result.automatic.diagnostic = modes.diagnostics.find((item) => item.mode === 'auto') ?? null
   } catch (error) {
     if (
       !isContentDiagnostic(error) &&
@@ -104,9 +108,5 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
     result.diagnostic = { code: error.code, message: error.message }
     result.automatic.contentType = type
   }
-  const modes = await analyzeSourceModes(source, result.automatic.contentType)
-  result.modes = modes.modes
-  result.automatic.preview = modes.modes.auto
-  result.automatic.diagnostic = modes.diagnostics.find((item) => item.mode === 'auto') ?? null
   return result
 }

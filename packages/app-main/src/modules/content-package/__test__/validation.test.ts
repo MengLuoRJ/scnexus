@@ -218,6 +218,49 @@ test('does not treat descriptors inside SC2 resource components as package heade
   expect(result.automatic.diagnostic?.code).toBe('AUTO_DESCRIPTOR_PRESENT')
 })
 
+test.each([false, true])(
+  'rejects multiple work roots without exposing install modes (nested=%s)',
+  async (nested) => {
+    const other = nested ? 'A/Nested' : 'B'
+    const f = await fixture({
+      'A/package.json': manifest,
+      'A/Maps/Campaign/Level.SC2Map': 'map',
+      [other + '/metadata.txt']: 'title=Other\ncampaign=WOL',
+      [other + '/Other.SC2Map']: 'map',
+    })
+    const validation = await validateArchive(f.input)
+    expect(validation.diagnostic?.code).toBe(ERRORS.ARCHIVE_METADATA_INVALID.code)
+    expect(validation.modes).toEqual({ scnexus: null, ccm: null, auto: null })
+    expect(validation.descriptors).toHaveLength(2)
+    await expect(service(f.root).analyze('campaign', f.input)).rejects.toMatchObject({
+      code: ERRORS.ARCHIVE_METADATA_INVALID.code,
+    })
+    await expect(service(f.root).analyzeContent(f.input)).rejects.toMatchObject({
+      code: ERRORS.ARCHIVE_METADATA_INVALID.code,
+    })
+  },
+)
+
+test('classification failure does not produce a type-filtered partial plan', async () => {
+  const f = await fixture({
+    'A/package.json': manifest,
+    'A/Maps/Campaign/Level.SC2Map': 'map',
+    'B/package.json': JSON.stringify({
+      name: 'Other',
+      type: 'customize',
+      author: '',
+      description: '',
+      version: '',
+      maps: [{ name: 'Other.SC2Map', source_path: '/Maps/Other.SC2Map' }],
+    }),
+    'B/Maps/Other.SC2Map': 'map',
+  })
+  const result = await validateArchive(f.input)
+  expect(result.modes.scnexus).toBeNull()
+  expect(result.descriptors.every((item) => item.valid)).toBe(true)
+  expect(result.diagnostic).not.toBeNull()
+})
+
 test('validates directories with the same results without modifying files', async () => {
   const f = await fixture({ 'package.json': manifest, 'Maps/Campaign/Level.SC2Map': 'map' })
   const path = join(f.root, 'source')

@@ -111,7 +111,6 @@ const decisions = (
 test('independent outermost valid descriptors, nested root, author recommendation and CCM conversion', async () => {
   const f = await fixture()
   const input = await source(f.root, {
-    'package.json': 'invalid',
     'Project/package.json': JSON.stringify(pkg('campaign', { manager: 'CCM' })),
     'Project/Maps/Campaign/Level.SC2Map': 'map',
     'Project/metadata.txt': 'title=CCM\ndesc=x=y\nauthor=A\nversion=1\ncampaign=WOL',
@@ -408,7 +407,7 @@ test('WOL excludes other campaigns, traversal and ambiguous roots are unavailabl
     'A/Maps/Campaign/M.SC2Map': 'a',
     'B/Maps/Campaign/M.SC2Map': 'b',
   })
-  expect((await f.service.analyze('campaign', twin)).modes.scnexus).toBeNull()
+  await expect(f.service.analyze('campaign', twin)).rejects.toMatchObject({ code: 'M034' })
 })
 test('components report one resource conflict and keep the complete local group', async () => {
   const f = await fixture()

@@ -225,6 +225,35 @@ test('shows full recognized preview, internal metadata, source and target trees'
   expect(wrapper.text()).not.toContain('此包通过 CCM 兼容转换')
 })
 
+test('invalid CCM fields remain accessible without enabling an installation plan', async () => {
+  mocks.dialog.mockResolvedValue({
+    ok: true,
+    data: { canceled: false, filePaths: ['D:\\test.zip'] },
+  })
+  mocks.analyze.mockResolvedValue({
+    ok: true,
+    data: {
+      ...result,
+      descriptors: [
+        {
+          ...result.descriptors[0]!,
+          standard: 'ccm',
+          path: 'metadata.txt',
+          fields: [{ name: 'campaign', value: 'INVALID' }],
+        },
+      ],
+    },
+  })
+  const wrapper = render()
+  await wrapper.find('button').trigger('click')
+  await flushPromises()
+  const tabs = wrapper.findAll('[role="tab"]')
+  expect(tabs[1]!.attributes('disabled')).toBeUndefined()
+  expect(wrapper.text()).toContain('INVALID')
+  expect(wrapper.text()).toContain('Invalid descriptor')
+  expect(wrapper.text()).toContain('此模式暂不可用或来源不支持此模式。')
+})
+
 test('rejects multiple sources and accepts a folder on drop', async () => {
   const wrapper = render()
   const zone = wrapper.find('[class*="hover:border-primary"]')

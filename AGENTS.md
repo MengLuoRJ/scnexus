@@ -96,6 +96,8 @@ renderer-v2 各类操作完成后的成功、失败等结果提示优先使用 N
 
 renderer-v2 已通过 `@nuxt/ui/vite` 配置自动导入（Vue、Vue Router 及 `composables`、`stores`、`ipcs`、`apis`、`utils` 目录），但业务代码仍显式导入这些 API，不依赖生成声明；Nuxt UI 组件在模板中按组件名直接使用，无需导入。生成的 `auto-imports.d.ts` 与 `components.d.ts` 不入库，未生成时全部 API 显式导入。类型使用 `import type`，不假定旧 renderer 的插件在 v2 自动生效。
 
+在为 renderer-v2 等用户交互界面或面向用户的信息时，文案应保持简洁明了，避免冗长和复杂的表述，无需使用专业术语或晦涩表达，不要展示内部实现细节，优先直观的功能表达和交互提示。
+
 ## 状态管理
 
 本项目使用 Pinia 作为状态管理方案，所有 store 均放置在 `/src/stores/` 目录下，该目录下的每个文件都对应一个独立的 store 模块。

@@ -88,13 +88,19 @@ export function createReplayProduction(
   const units = new Map<string, Unit>()
   const indexTags = new Map<number, string>()
   const users = new Map<number, number | null>()
+  const playerUsers = new Map<number, Set<number>>()
   for (const event of events) {
     if (!event.eventType.endsWith('.SPlayerSetupEvent')) continue
     const user = productionNumber(event.data.m_userId)
     const id = owner(event.data.m_playerId)
-    if (user !== null && id !== null)
-      users.set(user, users.has(user) && users.get(user) !== id ? null : id)
+    if (user === null || id === null) continue
+    users.set(user, users.has(user) && users.get(user) !== id ? null : id)
+    const identities = playerUsers.get(id) ?? new Set<number>()
+    identities.add(user)
+    playerUsers.set(id, identities)
   }
+  for (const [user, player] of users)
+    if (player !== null && playerUsers.get(player)!.size !== 1) users.set(user, null)
   const resolved = context ? model(context) : null
   const link = resolved ? chronoAbility(resolved.build) : null
   const game = context?.gameEvents

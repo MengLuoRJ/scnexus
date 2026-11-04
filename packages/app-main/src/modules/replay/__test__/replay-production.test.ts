@@ -217,6 +217,22 @@ describe('production evidence', () => {
       startSource: 'versioned-duration',
     })
   })
+  it('does not apply boost casts when several users claim the same tracker player', () => {
+    const events = [
+      event('PlayerSetup', 0, { m_playerId: 1, m_userId: 0 }),
+      event('PlayerSetup', 0, { m_playerId: 1, m_userId: 1 }),
+      unit('UnitBorn', 0, 5, 'Nexus'),
+      unit('UnitBorn', 1000, 6, 'Probe', { m_creatorUnitTagIndex: 5, m_creatorUnitTagRecycle: 1 }),
+    ]
+    const output = project(events, context({ gameEvents: game() }))[0]!
+    expect(output.startGameLoop).toBeCloseTo(731.2)
+    const conflicting = [...events]
+    conflicting.splice(2, 0, event('PlayerSetup', 0, { m_playerId: 2, m_userId: 1 }))
+    expect(project(conflicting, context({ gameEvents: game() }))[0]?.chrono?.castGameLoops).toEqual(
+      [],
+    )
+    expect(output.chrono?.castGameLoops).toEqual([])
+  })
   it('isolates indexed casts by full producer tag and orders only the matching group', () => {
     const events = [
       event('PlayerSetup', 0, { m_playerId: 1, m_userId: 0 }),

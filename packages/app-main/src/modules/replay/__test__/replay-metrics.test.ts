@@ -6,7 +6,7 @@ import type {
   ReplayTrackerEvents,
 } from '@scnexus/replay-parser'
 import type { ReplayPlayer } from '@scnexus/app-shared/types/replay.type'
-import { buildReplayMetrics } from '../replay-metrics'
+import { buildReplayMetrics, REPLAY_METRICS_VERSION } from '../replay-metrics'
 import { buildReplayInsights } from '../replay-insights'
 
 function event(
@@ -74,6 +74,171 @@ const players: ReplayPlayer[] = [
 ]
 
 describe('shared raw replay metrics', () => {
+  it('invalidates cached metrics after lifecycle attribution changes', () => {
+    expect(REPLAY_METRICS_VERSION).toBe('raw-metrics-v2')
+    expect(buildReplayMetrics(null, null, []).version).toBe(REPLAY_METRICS_VERSION)
+  })
+
+  it('keeps full index/recycle identity for production, capture, morph, loss and killer lookup', () => {
+    const result = buildReplayMetrics(
+      tracker([
+        setup(1, 7, 2),
+        setup(2, 0, 4),
+        unit('UnitInit', 1, 1, 1),
+        unit('UnitBorn', 2, 1, 2, 2, 'Zealot'),
+        unit('UnitDone', 3, 1, 1),
+        unit('UnitTypeChange', 4, 1, 1, 1, 'Morphed'),
+        unit('UnitOwnerChange', 5, 1, 1, 2),
+        unit('UnitBorn', 6, 2, 1),
+        unit('UnitDied', 7, 2, 1, 1, 'ignored', {
+          m_killerPlayerId: 2,
+          m_killerUnitTagIndex: 1,
+          m_killerUnitTagRecycle: 1,
+        }),
+        unit('UnitDied', 8, 1, 1, 2, 'ignored', { m_killerPlayerId: 1 }),
+        unit('UnitDied', 9, 1, 2, 2, 'ignored', { m_killerPlayerId: 1 }),
+      ]),
+      null,
+      players,
+    )
+    expect(result.players[0]!.units).toEqual([
+      { name: 'Marine', initial: 0, born: 1, started: 1, completed: 1, lost: 1, kills: 0 },
+    ])
+    expect(result.players[1]!.units).toEqual([
+      { name: 'Zealot', initial: 0, born: 1, started: 0, completed: 0, lost: 1, kills: 0 },
+      { name: 'Morphed', initial: 0, born: 0, started: 0, completed: 0, lost: 1, kills: 1 },
+    ])
+    expect(result.players[0]).toMatchObject({ kills: 2, enemyKills: 2 })
+    expect(result.players[1]).toMatchObject({ kills: 1, enemyKills: 1, unitsState: 'available' })
+  })
+
+  it('does not resurrect a dead identity through repeated Born/Init/Done', () => {
+    const result = buildReplayMetrics(
+      tracker([
+        unit('UnitBorn', 1),
+        unit('UnitDied', 2),
+        unit('UnitBorn', 3),
+        unit('UnitInit', 4),
+        unit('UnitDone', 5),
+        unit('UnitDied', 6, 1, 1, 1, 'ignored', { m_killerPlayerId: 2 }),
+        unit('UnitBorn', 7, 2),
+        unit('UnitDied', 8, 2, 1, 1, 'ignored', {
+          m_killerPlayerId: 1,
+          m_killerUnitTagIndex: 1,
+          m_killerUnitTagRecycle: 2,
+        }),
+      ]),
+      null,
+      [],
+    )
+    expect(result.players).toHaveLength(1)
+    expect(result.players[0]!.units).toEqual([
+      { name: 'Marine', initial: 0, born: 2, started: 0, completed: 0, lost: 2, kills: 0 },
+    ])
+    expect(result.players[0]).toMatchObject({ kills: 1, friendlyKills: 1, unknownKills: 0 })
+  })
+
+  it('attributes an explicit self killer before removing the dead unit', () => {
+    const result = buildReplayMetrics(
+      tracker([
+        unit('UnitBorn', 1),
+        unit('UnitDied', 2, 1, 1, 1, 'ignored', {
+          m_killerPlayerId: 1,
+          m_killerUnitTagIndex: 1,
+          m_killerUnitTagRecycle: 1,
+        }),
+      ]),
+      null,
+      [],
+    )
+    expect(result.players[0]).toMatchObject({ kills: 1, friendlyKills: 1, unknownKills: 0 })
+    expect(result.players[0]!.units[0]).toMatchObject({ lost: 1, kills: 1 })
+  })
+
+  it('retains explicit posthumous killer identity without reviving or mutating a dead unit', () => {
+    const result = buildReplayMetrics(
+      tracker([
+        unit('UnitBorn', 1),
+        unit('UnitBorn', 2, 2, 1, 2),
+        unit('UnitDied', 3),
+        unit('UnitOwnerChange', 4, 1, 1, 2),
+        unit('UnitTypeChange', 5, 1, 1, 2, 'Ignored'),
+        unit('UnitDied', 6, 2, 1, 2, 'ignored', {
+          m_killerPlayerId: 1,
+          m_killerUnitTagIndex: 1,
+          m_killerUnitTagRecycle: 1,
+        }),
+      ]),
+      null,
+      [],
+    )
+    expect(result.players[0]!.units).toEqual([
+      { name: 'Marine', initial: 0, born: 1, started: 0, completed: 0, lost: 1, kills: 1 },
+    ])
+    expect(result.players[0]).toMatchObject({ kills: 1, unknownKills: 1 })
+    expect(result.players[1]!.units[0]).toMatchObject({ lost: 1, kills: 0 })
+  })
+
+  it.each([
+    { baseBuild: 23260, killerTags: {} },
+    { baseBuild: 98310, killerTags: { m_killerUnitTagIndex: 9, m_killerUnitTagRecycle: 1 } },
+  ])(
+    'preserves missing killer evidence for tracker build $baseBuild',
+    ({ baseBuild, killerTags }) => {
+      const input = tracker([
+        setup(1, 7, 2),
+        setup(2, 0, 4),
+        unit('UnitBorn', 1, 9),
+        ...[1, 2, 3].map((index) => unit('UnitBorn', 2, index, 1, 2)),
+        unit('UnitDied', 3, 1, 1, 2, 'ignored', { ...killerTags }),
+        unit('UnitDied', 4, 2, 1, 2, 'ignored', { ...killerTags, m_killerPlayerId: null }),
+        unit('UnitDied', 5, 3, 1, 2, 'ignored', { ...killerTags, m_killerPlayerId: 1 }),
+      ])
+      input.baseBuild = baseBuild
+      const result = buildReplayMetrics(input, null, players)
+      expect(result.players[0]).toMatchObject({ kills: 1, enemyKills: 1, unknownKills: 0 })
+      expect(result.players[0]!.units[0]!.kills).toBe(baseBuild === 98310 ? 1 : 0)
+      expect(result.players[1]!.units[0]!.lost).toBe(3)
+    },
+  )
+
+  it('groups allies by team but retains unknown relations and rejects mismatched killer identities', () => {
+    const result = buildReplayMetrics(
+      tracker([
+        setup(1, 7, 2),
+        setup(2, 0, 4),
+        setup(3, 1, 5),
+        unit('UnitBorn', 1, 9),
+        unit('UnitBorn', 1, 1, 1, 2),
+        unit('UnitBorn', 1, 2, 1, 3),
+        unit('UnitBorn', 1, 3, 1, 4),
+        unit('UnitDied', 2, 1, 1, 2, 'ignored', {
+          m_killerPlayerId: 1,
+          m_killerUnitTagIndex: 9,
+          m_killerUnitTagRecycle: 2,
+        }),
+        unit('UnitDied', 3, 2, 1, 3, 'ignored', {
+          m_killerPlayerId: 1,
+          m_killerUnitTagIndex: 3,
+          m_killerUnitTagRecycle: 1,
+        }),
+        unit('UnitDied', 4, 3, 1, 4, 'ignored', { m_killerPlayerId: 1 }),
+        unit('UnitDied', 5, 99, 1, 0, 'ignored', { m_killerPlayerId: 1 }),
+      ]),
+      null,
+      [...players, { slot: 6, name: 'Ally', team: 1, race: null, result: null }],
+    )
+    expect(result.players[0]).toMatchObject({
+      kills: 4,
+      enemyKills: 1,
+      friendlyKills: 1,
+      unknownKills: 2,
+      unitsState: 'partial',
+    })
+    expect(result.players[0]!.units[0]!.kills).toBe(0)
+    expect(result.players[0]!.killTimeline.map((entry) => entry.kills)).toEqual([1, 2, 3, 4])
+  })
+
   it('also deduplicates the existing insights production timeline across Init, Done and Born', () => {
     const result = buildReplayInsights(
       tracker([

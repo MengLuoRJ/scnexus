@@ -156,4 +156,4 @@ const tracker = parseReplayTrackerEvents(trackerBytes, header.baseBuild)
 
 组件基础实现另对同一官方样本做过完整对拍：initData 4,046 字节，所有字段与官方 `decode_replay_initdata` 深比较一致（gameSpeed=4）；attributes 2,037 字节、156 项全部比较一致；tracker 94,093 字节、1,875 个事件，每个事件类型、gameLoop 和全部 data 字段与官方 decoder 深比较一致，最终 gameLoop=13,216，覆盖全部十类事件。各 ID 数量为 `0:167, 1:653, 2:368, 3:2, 4:365, 5:36, 6:129, 7:125, 8:28, 9:2`。初次对拍在 host 侧用 Python mpyq 提取组件；现已在 MPQ reader 加入有界 BZIP2 解压，并通过打包后的 Electron worker 直接读取同一真实录像验证：156 属性、1,875 tracker 事件，三个组件全部完成，不再需要 Python 提取。运行时未引入 Python，fixture、原始玩家数据及对拍输出不纳入包。98310 已按官方精确协议表注册并通过完整 synthetic initData 和 tracker 测试，**尚无该 build 的真实样本对拍**，不等价于真实样本覆盖。
 
-组件实现验证命令：`pnpm --filter @scnexus/replay-parser test`（24 tests passed）、`pnpm --filter @scnexus/replay-parser typecheck`（passed）、`pnpm --filter @scnexus/replay-parser lint`（oxlint + ESLint passed）。
+当前解析器验证命令：`pnpm --filter @scnexus/replay-parser test`（276 tests passed）、`pnpm --filter @scnexus/replay-parser typecheck`（passed）、`pnpm --filter @scnexus/replay-parser lint`（oxlint + ESLint passed）。

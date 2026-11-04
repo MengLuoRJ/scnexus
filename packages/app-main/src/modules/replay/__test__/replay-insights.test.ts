@@ -175,6 +175,34 @@ describe('replay tracker business projection', () => {
     ])
   })
 
+  it('retains conflicting historical slot claims even after a player changes its claim', () => {
+    const result = buildReplayInsights(
+      tracker([
+        setup(1, 0),
+        setup(1, 1),
+        setup(2, 0),
+        event('PlayerStats', 160, { m_playerId: 2, m_stats: {} }),
+      ]),
+      [player(1, 'Ambiguous')],
+    )
+    expect(result.players[0]).toMatchObject({ playerId: 2, slot: null, name: null })
+  })
+  it('keeps two tracker identities claiming one lobby slot anonymous', () => {
+    const result = buildReplayInsights(
+      tracker([
+        setup(1, 0),
+        setup(2, 0),
+        event('PlayerStats', 160, { m_playerId: 1, m_stats: { m_scoreValueMineralsCurrent: 10 } }),
+        event('PlayerStats', 160, { m_playerId: 2, m_stats: { m_scoreValueMineralsCurrent: 20 } }),
+      ]),
+      [player(1, 'Must not be assigned twice')],
+    )
+    expect(result.players.map(({ playerId, slot, name }) => ({ playerId, slot, name }))).toEqual([
+      { playerId: 1, slot: null, name: null },
+      { playerId: 2, slot: null, name: null },
+    ])
+    expect(result.players.map((entry) => entry.economy[0]!.minerals)).toEqual([10, 20])
+  })
   it('keeps unknown or conflicting metadata anonymous instead of guessing', () => {
     const result = buildReplayInsights(
       tracker([

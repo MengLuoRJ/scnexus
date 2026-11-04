@@ -6,7 +6,7 @@ import type {
   ReplayUnitMetrics,
 } from '@scnexus/app-shared/types/replay-insights.type'
 
-export const REPLAY_METRICS_VERSION = 'raw-metrics-v1'
+export const REPLAY_METRICS_VERSION = 'raw-metrics-v2'
 const PREFIX = 'NNet.Replay.Tracker.S'
 function integer(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null
@@ -30,7 +30,6 @@ function nonnegative(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
 }
 type Unit = {
-  recycle: number
   owner: number | null
   name: string | null
   initial: boolean
@@ -122,7 +121,7 @@ export function buildReplayMetrics(
     }
     return unit
   }
-  const units = new Map<number, Unit>()
+  const units = new Map<string, Unit>()
   let incompleteUnits = false
   const dead = new Set<string>()
   const team = (owner: number | null): number | null => {
@@ -151,12 +150,12 @@ export function buildReplayMetrics(
         incompleteUnits = true
       continue
     }
-    const existing = units.get(index)
-    let unit = existing?.recycle === recycle ? existing : undefined
+    const tag = `${index}:${recycle}`
+    if (dead.has(tag)) continue
+    let unit = units.get(tag)
     if (eventType === `${PREFIX}UnitBornEvent` || eventType === `${PREFIX}UnitInitEvent`) {
       if (!unit) {
         unit = {
-          recycle,
           owner: id(data.m_upkeepPlayerId),
           name: text(data.m_unitTypeName),
           initial: gameLoop === 0,
@@ -165,7 +164,7 @@ export function buildReplayMetrics(
           completed: false,
         }
         if (unit.name === null) incompleteUnits = true
-        units.set(index, unit)
+        units.set(tag, unit)
         if (unit.initial) {
           const counts = count(unit.owner, unit.name)
           if (counts) counts.initial++
@@ -214,14 +213,15 @@ export function buildReplayMetrics(
       continue
     }
     if (eventType !== `${PREFIX}UnitDiedEvent`) continue
-    const tag = `${index}:${recycle}`
-    if (dead.has(tag)) continue
+    const killerIndex = integer(data.m_killerUnitTagIndex)
+    const killerRecycle = integer(data.m_killerUnitTagRecycle)
+    // Retain identities after death for explicit self/posthumous killer tags.
+    const killerUnit = units.get(`${killerIndex}:${killerRecycle}`)
     dead.add(tag)
     if (!unit) incompleteUnits = true
     if (unit) {
       const counts = count(unit.owner, unit.name)
       if (counts) counts.lost++
-      units.delete(index)
     }
     // Old protocols may omit killer-unit tags; only explicit killer player IDs authorize attribution.
     const killer = id(data.m_killerPlayerId)
@@ -231,16 +231,11 @@ export function buildReplayMetrics(
     row.killTimeline.push({ gameLoop, kills: row.kills! })
     const victimTeam = team(unit?.owner ?? null)
     const killerTeam = team(killer)
-    if (victimTeam === null || killerTeam === null) row.unknownKills!++
+    if (unit?.owner === killer) row.friendlyKills!++
+    else if (victimTeam === null || killerTeam === null) row.unknownKills!++
     else if (victimTeam === killerTeam) row.friendlyKills!++
     else row.enemyKills!++
-    const killerIndex = integer(data.m_killerUnitTagIndex)
-    const killerUnit = killerIndex === null ? undefined : units.get(killerIndex)
-    if (
-      killerUnit &&
-      killerUnit.recycle === integer(data.m_killerUnitTagRecycle) &&
-      killerUnit.owner === killer
-    ) {
+    if (killerUnit && killerUnit.owner === killer) {
       const counts = count(killer, killerUnit.name)
       if (counts) counts.kills++
     }

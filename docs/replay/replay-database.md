@@ -84,8 +84,8 @@ replay-db
 - 解析器 package 负责判断文件是否属于 replay；数据库负责存储和查询。
 - `table` 结构允许后续扩展更复杂的 `tracker` / `timeline` / `aggregate` 数据。
 
-## 本轮统计与后续深度结果边界
+## 当前统计与后续深度结果边界
 
-本轮跨场统计基于当前档案/当前分类全部已扫描录像，不随文字搜索变化；非空 contentHash 去重。胜率为 win/(win+loss)，draw/unknown 单列；对种族仅明确1v1，地图战绩含团队；趋势按真实 played_at 的 UTC 月份，无日期只计总数，不用 mtime_ms 补齐。无 hash 的旧记录需明确排除与重索引提示，不能按路径或昵称去重。具体样本分母及验收见 [录像分析设计](../replay-analysis-design.md)。
+当前跨场统计基于当前档案/当前分类全部已扫描录像，不随文字搜索变化；非空 contentHash 去重。胜率为 win/(win+loss)，draw/unknown 单列；对种族仅明确1v1，地图战绩含团队；趋势按真实 played_at 的 UTC 月份，无日期只计总数，不用 mtime_ms 补齐。无 hash 的记录分别计数，不按路径或昵称去重。具体样本分母及验收见 [录像分析设计](../replay-analysis-design.md)。
 
-这些是本轮目标口径，不表示数据库已新增统计表或查询 API。深度事件、损失/交战、完整建造顺序与 AI 授权均不因本轮基础统计而自动落地；现有 JSON/insights 与版本/hash 失效机制继续有效，新增存储结构须另行迁移和验证。
+统计由现有录像记录在 renderer 聚合，未新增专用统计表或查询 API。当前分析 JSON 已保存计分、生命周期、原始动作频率、生产及聊天结果；这些不等于完整交战模型、官方 EAPM 或 AI 复盘。现有版本/hash 失效机制继续有效，新增存储结构须另行迁移和验证。

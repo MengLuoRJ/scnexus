@@ -9,7 +9,7 @@ import type {
   ReplayPlayerInsights,
 } from '@scnexus/app-shared/types/replay-insights.type'
 
-export const REPLAY_INSIGHTS_VERSION = 'tracker-insights-v4-score39-production2'
+export const REPLAY_INSIGHTS_VERSION = 'tracker-insights-v5-identity'
 
 function nonnegative(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
@@ -34,6 +34,7 @@ export function buildReplayInsights(
     .filter((event) => integer(event.gameLoop, Number.MAX_SAFE_INTEGER) !== null)
     .sort((a, b) => a.gameLoop - b.gameLoop)
   const setups = new Map<number, number | null>()
+  const slotPlayers = new Map<number, Set<number>>()
   for (const event of events) {
     if (event.eventType !== 'NNet.Replay.Tracker.SPlayerSetupEvent') continue
     const id = playerId(event.data.m_playerId)
@@ -42,13 +43,21 @@ export function buildReplayInsights(
     const slotId = integer(event.data.m_slotId, 255)
     const slot = slotId === null ? null : slotId + 1
     setups.set(id, setups.has(id) && setups.get(id) !== slot ? null : slot)
+    if (slot !== null) {
+      const identities = slotPlayers.get(slot) ?? new Set<number>()
+      identities.add(id)
+      slotPlayers.set(slot, identities)
+    }
   }
   const projections = new Map<number, ReplayPlayerInsights>()
   const getPlayer = (id: number): ReplayPlayerInsights => {
     let projection = projections.get(id)
     if (!projection) {
       const slot = setups.get(id)
-      const matches = slot == null ? [] : players.filter((player) => player.slot === slot)
+      const matches =
+        slot == null || slotPlayers.get(slot)?.size !== 1
+          ? []
+          : players.filter((player) => player.slot === slot)
       const player = matches.length === 1 ? matches[0] : undefined
       projection = {
         playerId: id,

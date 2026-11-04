@@ -22,6 +22,7 @@ import {
 } from './telemetry'
 import { initSciiGameSettingModule } from './scii-game-setting'
 import { initContentPackageModule } from './content-package'
+import { initArchiveValidationIpc } from './content-package/validation.ipc'
 import { initCampaignModule } from './campaign'
 import { initCustomizeModule } from './customize'
 import { initReplayModule } from './replay'
@@ -60,6 +61,7 @@ export async function initModules() {
     ['app', initAppModule],
     ['auth', initAuthModule],
     ['dialog', initDialogModule],
+    ['archive-validation', initArchiveValidationIpc],
     ['replay', initReplayModule],
     ['shell', initShellModule],
     ['deep-link', initDeepLinkModule],

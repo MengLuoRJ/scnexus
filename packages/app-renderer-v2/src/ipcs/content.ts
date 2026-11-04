@@ -11,5 +11,8 @@ export const ipcContentAssets = (localId: string) =>
 export const ipcContentAsset = (localId: string, path: string) =>
   ipcRequest<ContentAsset | null>(() => ipcDesktop().content.asset(localId, path))
 
+export const ipcContentValidateArchive = (input: SourceInput) =>
+  ipcRequest(() => ipcDesktop().content.validateArchive(ipcSnapshot(input)))
+
 export const ipcContentAnalyze = (input: SourceInput, choice?: SourceAnalysisChoice) =>
   ipcRequest(() => ipcDesktop().content.analyze(ipcSnapshot(input), choice))

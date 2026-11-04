@@ -57,6 +57,7 @@ const api: DesktopApi = {
     onChanged: (listener) => subscribeTyped('auth:changed', listener),
   },
   content: {
+    validateArchive: (input) => invoke('content-package:validate-archive', input),
     assets: (localId) => invoke('content-package:assets', localId),
     asset: (localId, path) => invoke('content-package:asset', localId, path),
     analyze: (input, choice) => invoke('content-package:analyze', input, choice),

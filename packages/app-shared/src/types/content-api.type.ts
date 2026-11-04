@@ -17,6 +17,9 @@ import type {
   GamePaths,
 } from './content.type.js'
 export interface ContentAnalysisApi {
+  validateArchive(
+    input: SourceInput,
+  ): Promise<IpcResult<import('./content.type.js').ArchiveValidation>>
   assets(localId: string): Promise<IpcResult<import('./content.type.js').ContentAssets>>
   asset(
     localId: string,

@@ -69,6 +69,26 @@ export type InstallPreview = {
   fileCount: number
   bytes: number
 }
+export type ArchiveValidation = {
+  source: SourceInput
+  fileCount: number
+  bytes: number
+  descriptors: {
+    path: string
+    standard: 'scnexus' | 'ccm'
+    fields: { name: string; value: string }[]
+    package: Package | null
+    valid: boolean
+    fileCount: number
+    error: { code: string; message: string } | null
+  }[]
+  automatic: {
+    contentType: ContentType
+    preview: InstallPreview | null
+    diagnostic: ModeDiagnostic | null
+  }
+  diagnostic: { code: string; message: string } | null
+}
 export type ExistingInstallation = {
   localId: string | null
   package: Package | null

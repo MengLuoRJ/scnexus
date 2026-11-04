@@ -2,7 +2,7 @@ import { test, expect, vi } from 'vitest'
 const mock = vi.hoisted(() => ({
   data: vi.fn<(home: string, legacy: string) => void>(),
   configured: undefined as undefined | (() => Promise<void>),
-  stores: vi.fn<() => Promise<void>>(async () => { }),
+  stores: vi.fn<() => Promise<void>>(async () => {}),
   content: vi.fn<typeof import('../content-package').initContentPackageModule>(),
   campaign: vi.fn<typeof import('../campaign').initCampaignModule>(),
   customize: vi.fn<typeof import('../customize').initCustomizeModule>(),
@@ -28,6 +28,9 @@ vi.mock('../scii-game-setting', () => ({
 vi.mock('../content-package', () => ({
   initContentPackageModule: mock.content,
 }))
+vi.mock('../content-package/validation.ipc', () => ({
+  initArchiveValidationIpc: vi.fn<() => void>(),
+}))
 vi.mock('../campaign', () => ({ initCampaignModule: mock.campaign }))
 vi.mock('../customize', () => ({ initCustomizeModule: mock.customize }))
 vi.mock('../setting', () => ({
@@ -36,7 +39,7 @@ vi.mock('../setting', () => ({
 }))
 vi.mock('../ai-assistant', () => ({
   initAiAssistantModule: vi.fn<() => void>(),
-  disposeAiAssistant: vi.fn<() => Promise<void>>(async () => { }),
+  disposeAiAssistant: vi.fn<() => Promise<void>>(async () => {}),
 }))
 vi.mock('../auth', () => ({
   initAuthModule: vi.fn<() => void>(),
@@ -60,7 +63,7 @@ vi.mock('../updater', () => ({
 }))
 vi.mock('../telemetry', () => ({
   initTelemetryModule: vi.fn<typeof import('../telemetry').initTelemetryModule>(),
-  disableTelemetry: vi.fn<typeof import('../telemetry').disableTelemetry>(async () => { }),
+  disableTelemetry: vi.fn<typeof import('../telemetry').disableTelemetry>(async () => {}),
   flushTelemetry: vi.fn<typeof import('../telemetry').flushTelemetry>(),
   getTelemetryStatus: vi.fn<typeof import('../telemetry').getTelemetryStatus>(),
 }))
@@ -70,10 +73,10 @@ vi.mock('../window', () => ({
   getMainWindow: () => null,
 }))
 vi.mock('../workshop-runtime', () => ({
-  startWorkshop: async () => { },
-  stopWorkshop: async () => { },
+  startWorkshop: async () => {},
+  stopWorkshop: async () => {},
 }))
-vi.mock('../dependency/dependency.ipc', () => ({ initDependencyIpc: () => { } }))
+vi.mock('../dependency/dependency.ipc', () => ({ initDependencyIpc: () => {} }))
 vi.mock('../workshop', () => ({
   initWorkshopModule: vi.fn<typeof import('../workshop').initWorkshopModule>(),
 }))

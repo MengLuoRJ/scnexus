@@ -147,6 +147,14 @@ test.each(['campaign', 'customize'] as const)(
   },
 )
 
+test('read-only archive validation forwards only its bounded operation', async () => {
+  const input = { kind: 'archive' as const, path: 'D:\\Source.zip' }
+  const response = { ok: true, data: { descriptors: [] } }
+  mocks.invoke.mockResolvedValueOnce(response)
+  expect(await desktopApi.content.validateArchive(input)).toEqual(response)
+  expect(mocks.invoke).toHaveBeenLastCalledWith('content-package:validate-archive', input)
+})
+
 test('unified analysis forwards descriptor choice and preserves conflict failure DTO', async () => {
   const api = desktopApi as DesktopApi
   const input = { kind: 'directory' as const, path: 'D:\\Source' }

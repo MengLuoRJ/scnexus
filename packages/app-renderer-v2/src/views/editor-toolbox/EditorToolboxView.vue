@@ -9,6 +9,17 @@ const { t } = useI18n()
     <p class="text-sm text-muted">{{ t('toolbox.intro') }}</p>
     <div class="grid grid-cols-3 gap-3">
       <UButton
+        to="/editor-toolbox/archive-validation"
+        color="neutral"
+        variant="outline"
+        class="flex flex-col items-center gap-3 p-5 text-center">
+        <UIcon name="i-tabler-file-zip" class="size-14" />
+        <span class="font-semibold">{{ t('toolbox.archiveValidation') }}</span>
+        <span class="whitespace-normal text-xs font-normal text-muted">
+          {{ t('toolbox.archiveValidationHint') }}
+        </span>
+      </UButton>
+      <UButton
         to="/editor-toolbox/encoding"
         color="neutral"
         variant="outline"

@@ -24,6 +24,12 @@ const router = createRouter({
       meta: { titleKey: 'toolbox.title' },
     },
     {
+      path: '/editor-toolbox/archive-validation',
+      name: 'editor-toolbox-archive-validation',
+      component: () => import('../views/editor-toolbox/ArchiveValidationView.vue'),
+      meta: { titleKey: 'toolbox.archiveValidation' },
+    },
+    {
       path: '/editor-toolbox/encoding',
       name: 'editor-toolbox-encoding',
       component: () => import('../views/editor-toolbox/EncodingView.vue'),

@@ -12,7 +12,7 @@
 - manager 仅表示作者推荐安装方式，不强制选择或禁用其他模式；AnalysisResult 返回可为空的 recommendedMode。manager_mode 已从新类型移除，不继续设计 default/strict 分支。
 - AnalysisResult 的 conflicts 按模式分组，files 中的 Map/Mod 项各有 conflictId 并返回新资源与本地资源的名称、路径、修改时间和大小；用户可选择覆盖、保留或取消。
 - SCNexus campaign 的覆盖地图由 campaign 类型和标准布局自动形成清单；maps/mods 仅声明额外地图和模组。customize 的 package.json 模式必须声明所有需安装的地图和模组；auto 模式自动声明标准 Maps/Mods 层级内全部地图与模组。
-- CCM 根部模组安装到 Mods 根目录；Mods 下模组保留相对层级。不按任意父目录猜测模组位置。
+- CCM 根部模组安装到 Mods 根目录；Mods 下模组保留相对层级。不按任意父目录猜测模组位置。CCM 标准格式下 metadata.txt 可位于包根、与 Maps/Mods 同级，或对应战役的标准主地图目录（如 Maps/Campaign/swarm）；三者都按同一包解析并保留标准地图路径与同层 Mods（含外层包装目录）。此规则同样用于 CCM 转换的 SCNexus 预览。
 - **CCM 模式不生成 package.json**：保留 metadata.txt，激活时写入该战役主地图目录；管理、扫描与删除以 metadata.txt 为格式依据。
 - **SCNexus 与自动识别模式采用 SCNexus 管理方式**：在游戏根目录 SCNexusCustomizeData 下每个包一个子目录，保存 package.json、安装文件清单；只有 campaign 保留存在时的 CCM 原文副本，customize 不读取或持久化 metadata.txt 为 ccmOriginal。
 - customize、campaign、campaign-active Store 改为基于新 Package 类型的本地记录；profile Store 已改为 scii-game-setting Store。

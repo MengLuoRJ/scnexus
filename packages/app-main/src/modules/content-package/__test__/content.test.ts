@@ -133,6 +133,77 @@ test('independent outermost valid descriptors, nested root, author recommendatio
   expect(converted.modes.scnexus?.files.map((x) => x.target)).toContain('Mods/Sub/Core.SC2Mod')
   expect(converted.recommendedMode).toBeNull()
 })
+test.each(
+  (['scnexus', 'ccm'] as const).flatMap((mode) =>
+    ['', 'Wrapper/'].flatMap((prefix) =>
+      (['package-root', 'campaign-root'] as const).flatMap((metadataPlacement) =>
+        [
+          ['WOL', 'Maps/Campaign'],
+          ['HOTS', 'Maps/Campaign/swarm'],
+          ['LOTV', 'Maps/Campaign/void'],
+          ['NCO', 'Maps/Campaign/nova'],
+        ].flatMap(([campaign, mapRoot]) =>
+          [false, true].map((lowercase) => ({
+            mode,
+            prefix,
+            metadataPlacement,
+            campaign,
+            mapRoot,
+            lowercase,
+          })),
+        ),
+      ),
+    ),
+  ),
+)(
+  'CCM game layout: $mode $prefix $metadataPlacement $campaign lowercase=$lowercase includes sibling Mods',
+  async (item) => {
+    const f = await fixture()
+    const map = item.mapRoot + '/Mission.SC2Map'
+    const mod = 'Mods/Sub/Core.SC2Mod/Base.SC2Data/GameData.xml'
+    const sourcePath = (path: string) =>
+      item.lowercase
+        ? path.replace(/^Maps\/Campaign/, 'maps/campaign').replace(/^Mods\//, 'mods/')
+        : path
+    const input = await source(f.root, {
+      [item.prefix +
+      (item.metadataPlacement === 'package-root' ? '' : sourcePath(item.mapRoot) + '/') +
+      'metadata.txt']: `title=Game layout\ncampaign=${item.campaign}`,
+      [item.prefix + sourcePath(map)]: 'map',
+      [item.prefix + sourcePath(mod)]: 'mod',
+      [item.prefix + 'Other/Unrelated.SC2Mod']: 'unrelated',
+      [item.prefix + 'Maps/Campaign/Other/metadata-readme.txt']: 'unrelated',
+    })
+    const result = await f.service.analyze('campaign', input)
+    for (const mode of ['ccm', 'scnexus'] as const) {
+      const preview = result.modes[mode]!
+      expect(preview.rootRelativePath).toBe(item.prefix.replace(/\/$/, ''))
+      expect(preview.files.map((file) => [file.source, file.target])).toEqual([
+        [item.prefix + sourcePath(map), map],
+        [item.prefix + sourcePath(mod), mod],
+      ])
+      expect(preview.fileCount).toBe(2)
+    }
+    const record = await f.service.install({
+      analysisId: result.analysisId,
+      mode: item.mode,
+      decisions: [],
+    })
+    const importedMod = await readFile(join(f.paths.gameRoot, mod), 'utf8').catch((error) => {
+      if (error.code === 'ENOENT') return null
+      throw error
+    })
+    expect(importedMod).toBe(item.mode === 'scnexus' ? null : 'mod')
+    const activation = await f.service.prepareActivation(record.localId)
+    await f.service.activate(activation.activationId, [])
+    expect(await readFile(join(f.paths.gameRoot, map), 'utf8')).toBe('map')
+    expect(await readFile(join(f.paths.gameRoot, mod), 'utf8')).toBe('mod')
+    const scanned = await f.service.scan()
+    expect(scanned.records.find((entry) => entry.localId === record.localId)?.files).toEqual(
+      expect.arrayContaining([expect.objectContaining({ target: mod })]),
+    )
+  },
+)
 test('SCNexus campaign imports payload only, activates, scans and deactivates', async () => {
   const f = await fixture()
   const input = await source(f.root, {

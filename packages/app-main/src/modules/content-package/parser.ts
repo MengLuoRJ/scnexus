@@ -97,10 +97,33 @@ export function buildPreview(
   ccm: boolean,
   rootOverride?: string,
 ): InstallPreview {
+  const roots = {
+    WOL: 'Maps/Campaign',
+    HOTS: 'Maps/Campaign/swarm',
+    LOTV: 'Maps/Campaign/void',
+    NCO: 'Maps/Campaign/nova',
+  }
+  const descriptorRoot = descriptor.includes('/')
+    ? descriptor.slice(0, descriptor.lastIndexOf('/'))
+    : ''
+  const campaignRoot = ccm ? roots[pkg.campaign!] : undefined
+  const descriptorInCampaignDirectory =
+    campaignRoot !== undefined &&
+    (descriptorRoot.toLowerCase() === campaignRoot.toLowerCase() ||
+      descriptorRoot.toLowerCase().endsWith('/' + campaignRoot.toLowerCase()))
   const root =
     rootOverride ??
-    (descriptor.includes('/') ? descriptor.slice(0, descriptor.lastIndexOf('/')) : '')
+    (descriptorInCampaignDirectory
+      ? descriptorRoot.slice(0, -campaignRoot!.length).replace(/\/$/, '')
+      : descriptorRoot)
   const prefix = root ? root + '/' : ''
+  // Preserve legacy CCM map layout when maps are stored beside metadata.txt.
+  const hasRootMaps =
+    ccm &&
+    source.entries.some((entry) => {
+      if (!entry.path.startsWith(prefix)) return false
+      return /^[^/]+\.sc2map(?:\/|$)/i.test(entry.path.slice(prefix.length))
+    })
   const files: PlannedFile[] = []
   const entriesByPath = new Map(source.entries.map((entry) => [entry.path, entry]))
   const descendants = new Map<string, typeof source.entries>()
@@ -178,20 +201,16 @@ export function buildPreview(
       const map = /\.sc2map$/i.test(component)
       if (map) {
         let target: string | undefined
-        const roots = {
-          WOL: 'Maps/Campaign',
-          HOTS: 'Maps/Campaign/swarm',
-          LOTV: 'Maps/Campaign/void',
-          NCO: 'Maps/Campaign/nova',
-        }
-        if (!component.includes('/')) target = roots[pkg.campaign!] + '/' + component
+        if (!hasRootMaps && officialMap(component, pkg.campaign))
+          target = 'Maps/Campaign/' + component.split('/').slice(2).join('/')
+        else if (!component.includes('/')) target = roots[pkg.campaign!] + '/' + component
         else if (pkg.campaign === 'HOTS' && component.startsWith('evolution/'))
           target = roots.HOTS + '/' + component
         else if (pkg.campaign === 'LOTV' && component.startsWith('voidprologue/'))
           target = 'Maps/Campaign/' + component
         if (target) add(entry.path, target + tail, 'map')
       } else if (!component.includes('/')) add(entry.path, 'Mods/' + rel, 'mod')
-      else if (component.startsWith('Mods/')) add(entry.path, rel, 'mod')
+      else if (/^mods\//i.test(component)) add(entry.path, 'Mods/' + rel.slice(5), 'mod')
     }
   } else {
     if (pkg.type === 'campaign')

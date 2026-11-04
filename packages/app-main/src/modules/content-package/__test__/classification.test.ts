@@ -101,13 +101,15 @@ test('metadata-only is campaign with converted SCNexus and CCM modes', async () 
 })
 
 test.each([false, true])(
-  'conflict fails, reanalysis chooses only selected descriptor (archive=%s)',
+  'package.json wins by default; explicit legacy descriptor selection remains supported (archive=%s)',
   async (archive) => {
     const f = await fixture(dual('customize'), [], archive)
     const extract = vi.spyOn(sevenZip, 'extractExact')
     const list = vi.spyOn(sevenZip, 'list')
     const descriptorRead = vi.spyOn(sevenZip, 'readFile')
-    await expect(f.service.analyzeContent(f.input)).rejects.toMatchObject({ code: 'M064' })
+    const prioritized = await f.service.analyzeContent(f.input)
+    expect(prioritized.contentType).toBe('customize')
+    expect(prioritized.modes.ccm).toBeNull()
     const work = await f.service.analyzeContent(f.input, 'package-json')
     expect(work.contentType).toBe('customize')
     expect(work.modes.ccm).toBeNull()
@@ -135,12 +137,12 @@ test.each([false, true])(
   },
 )
 
-test('same-type descriptors preserve normal independent multi-mode analysis', async () => {
+test('same-type descriptors prioritize package.json', async () => {
   const f = await fixture(dual('campaign'))
   const result = await f.service.analyzeContent(f.input)
   expect(result.contentType).toBe('campaign')
   expect(result.modes.scnexus?.package.name).toBe('campaign')
-  expect(result.modes.ccm?.package.name).toBe('CCM')
+  expect(result.modes.ccm).toBeNull()
   await expect(f.service.analyzeContent(f.input, 'metadata-txt')).rejects.toMatchObject({
     code: 'M003',
   })

@@ -104,6 +104,7 @@ test('selects only archives and displays fields, missing CCM and automatic statu
   expect(wrapper.text()).not.toContain('Invalid descriptor')
   wrapper.findComponent(UTabs).vm.$emit('update:modelValue', 'auto')
   await flushPromises()
+  expect(wrapper.text()).toContain('将按照星际枢纽标准兼容安装。')
   expect(wrapper.text()).not.toContain('AUTO_DESCRIPTOR_PRESENT')
 })
 test('shows full recognized preview, internal metadata, source and target trees', async () => {
@@ -208,6 +209,15 @@ test('shows full recognized preview, internal metadata, source and target trees'
   await flushPromises()
   expect(wrapper.text()).toContain('此包通过 CCM 兼容转换生成 SCNexus 安装方案')
   expect(wrapper.text()).toContain('ccm-converted')
+  expect(
+    wrapper
+      .findAll('[role="tab"]')
+      .map((tab) => [tab.text(), tab.attributes('disabled') !== undefined]),
+  ).toEqual([
+    ['星际枢纽标准（兼容）', false],
+    ['CCM 标准', false],
+    ['自动识别', true],
+  ])
   expect(wrapper.text()).toContain('不满足标准')
   wrapper.findComponent(UTabs).vm.$emit('update:modelValue', 'ccm')
   await flushPromises()

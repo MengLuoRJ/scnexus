@@ -50,5 +50,7 @@
   "toolbox.recognitionSummary": "标准识别情况",
   "toolbox.standardSatisfied": "满足标准",
   "toolbox.standardUnsatisfied": "不满足标准",
-  "toolbox.ccmConverted": "此包通过 CCM 兼容转换生成 SCNexus 安装方案，并非原生星际枢纽标准包。"
+  "toolbox.ccmConverted": "此包通过 CCM 兼容转换生成 SCNexus 安装方案，并非原生星际枢纽标准包。",
+  "toolbox.standard.scnexusCompatible": "星际枢纽标准（兼容）",
+  "toolbox.autoCompatibleHint": "将按照星际枢纽标准兼容安装。"
 }

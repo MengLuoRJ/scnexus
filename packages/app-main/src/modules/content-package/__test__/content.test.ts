@@ -120,8 +120,8 @@ test('independent outermost valid descriptors, nested root, author recommendatio
   })
   const result = await f.service.analyze('campaign', input)
   expect(result.modes.scnexus?.rootRelativePath).toBe('Project')
-  expect(result.modes.ccm?.package.description).toBe('x=y')
-  expect(result.recommendedMode).toBe('ccm')
+  expect(result.modes.ccm).toBeNull()
+  expect(result.recommendedMode).toBeNull()
   expect(result.modes.auto).toBeNull()
   const justCcm = await source(f.root, {
     'Wrapper/metadata.txt': 'title=C\ndesc=d\nauthor=A\nversion=1\ncampaign=HOTS',

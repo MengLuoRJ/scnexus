@@ -50,5 +50,7 @@
   "toolbox.recognitionSummary": "Standard recognition",
   "toolbox.standardSatisfied": "Meets standard",
   "toolbox.standardUnsatisfied": "Does not meet standard",
-  "toolbox.ccmConverted": "This SCNexus installation plan is converted from CCM metadata; the source is not a native SCNexus package."
+  "toolbox.ccmConverted": "This SCNexus installation plan is converted from CCM metadata; the source is not a native SCNexus package.",
+  "toolbox.standard.scnexusCompatible": "SCNexus standard (compatible)",
+  "toolbox.autoCompatibleHint": "Will install compatibly using the SCNexus standard."
 }

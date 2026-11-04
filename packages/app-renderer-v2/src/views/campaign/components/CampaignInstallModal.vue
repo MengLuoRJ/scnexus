@@ -61,7 +61,16 @@ const decisions = ref<ConflictDecision[]>([])
 const modes = computed(() =>
   (props.contentType === 'campaign' ? ['scnexus', 'ccm', 'auto'] : ['scnexus', 'auto']).map(
     (value) => ({
-      label: value === 'auto' ? t('campaign.auto') : value === 'ccm' ? 'CCM' : 'SCNexus',
+      label:
+        value === 'auto'
+          ? t('campaign.auto')
+          : value === 'ccm'
+            ? t('toolbox.standard.ccm')
+            : t(
+                analysis.value?.modes.scnexus?.origin === 'ccm-converted'
+                  ? 'toolbox.standard.scnexusCompatible'
+                  : 'toolbox.standard.scnexus',
+              ),
       value,
       disabled: !analysis.value?.modes[value as InstallMode],
     }),
@@ -229,17 +238,7 @@ function activate() {
         <p v-if="analysis.recommendedMode" class="text-xs text-muted">
           {{ t('campaign.recommended') }}: {{ analysis.recommendedMode }}
         </p>
-        <UAlert
-          v-if="mode === 'auto' && preview"
-          color="info"
-          :title="t('campaign.autoDetected')"
-          :description="
-            t(
-              props.contentType === 'campaign'
-                ? 'campaign.autoDetectedHint'
-                : 'customize.autoDetectedHint',
-            )
-          " />
+        <UAlert v-if="mode === 'auto'" color="info" :title="t('toolbox.autoCompatibleHint')" />
         <UAlert v-if="mode === 'ccm'" color="warning" :title="t('campaign.ccmWarning')" />
         <UAlert
           v-for="item in existing"

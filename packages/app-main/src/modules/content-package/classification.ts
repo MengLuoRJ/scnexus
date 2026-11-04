@@ -72,7 +72,6 @@ export async function classifySource(
     packages['metadata-txt'] &&
     packages['package-json'].type !== packages['metadata-txt'].type
   if (choice !== undefined && !conflict) throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
-  if (conflict && choice === undefined) throw new AppError(ERRORS.CONTENT_TYPE_CONFLICT)
   const selected = choice
     ? packages[choice]
     : (packages['package-json'] ?? packages['metadata-txt'])

@@ -17,9 +17,17 @@ const busy = ref(false)
 const result = shallowRef<ArchiveValidation | null>(null)
 const mode = ref<'scnexus' | 'ccm' | 'auto'>('scnexus')
 const modes = computed(() => [
-  { value: 'scnexus', label: t('toolbox.standard.scnexus') },
-  { value: 'ccm', label: t('toolbox.standard.ccm') },
-  { value: 'auto', label: t('toolbox.automaticRecognition') },
+  {
+    value: 'scnexus',
+    label: t(
+      result.value?.modes.scnexus?.origin === 'ccm-converted'
+        ? 'toolbox.standard.scnexusCompatible'
+        : 'toolbox.standard.scnexus',
+    ),
+    disabled: !result.value?.modes.scnexus,
+  },
+  { value: 'ccm', label: t('toolbox.standard.ccm'), disabled: !result.value?.modes.ccm },
+  { value: 'auto', label: t('toolbox.automaticRecognition'), disabled: !result.value?.modes.auto },
 ])
 const preview = computed(() => result.value?.modes[mode.value] ?? null)
 const descriptors = computed(
@@ -129,6 +137,7 @@ async function analyze(input: SourceInput) {
       </section>
       <section class="min-w-0 space-y-3">
         <UTabs v-model="mode" :items="modes" :content="false" />
+        <UAlert v-if="mode === 'auto'" color="info" :title="t('toolbox.autoCompatibleHint')" />
         <UAlert
           v-if="result.diagnostic"
           color="warning"

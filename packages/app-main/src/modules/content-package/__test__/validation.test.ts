@@ -67,6 +67,43 @@ const manifest = JSON.stringify({
   campaign: 'WOL',
 })
 
+test.each(['campaign', 'customize'] as const)(
+  'package.json exclusively enables SCNexus for %s',
+  async (type) => {
+    const f = await fixture({
+      'package.json': JSON.stringify({
+        name: 'Example',
+        description: '',
+        author: '',
+        version: '',
+        type,
+        ...(type === 'campaign' ? { campaign: 'WOL' } : {}),
+        maps: [{ name: 'Level.SC2Map', source_path: '/Maps/Campaign/Level.SC2Map' }],
+      }),
+      'metadata.txt': 'title=CCM\ncampaign=WOL',
+      'Level.SC2Map': 'ccm',
+      'Maps/Campaign/Level.SC2Map': 'map',
+    })
+    await mkdir(join(f.root, 'game'))
+    const result = await service(f.root).analyze(type, f.input)
+    expect(result.modes.scnexus?.origin).toBe('package-json')
+    expect(result.modes.ccm).toBeNull()
+    expect(result.modes.auto).toBeNull()
+  },
+)
+
+test('customize ignores metadata.txt for automatic recognition', async () => {
+  const f = await fixture({
+    'metadata.txt': 'title=CCM\ncampaign=WOL',
+    'Maps/Example.SC2Map': 'map',
+  })
+  await mkdir(join(f.root, 'game'))
+  const result = await service(f.root).analyze('customize', f.input)
+  expect(result.modes.scnexus).toBeNull()
+  expect(result.modes.ccm).toBeNull()
+  expect(result.modes.auto?.origin).toBe('auto-detected')
+})
+
 test('CCM compatibility and all mode previews match campaign installation', async () => {
   const f = await fixture({
     'VioletsNCOMod/metadata.txt':
@@ -158,7 +195,7 @@ test('reports missing declared resources while keeping parsed fields', async () 
   expect(result.descriptors[0].fields.some((field) => field.name === 'maps')).toBe(true)
 })
 
-test('reports type conflicts and preserves independent standard results', async () => {
+test('prioritizes package type while preserving independent standard validation', async () => {
   const pkg = { ...JSON.parse(manifest), type: 'customize' }
   delete pkg.campaign
   const f = await fixture({
@@ -167,7 +204,9 @@ test('reports type conflicts and preserves independent standard results', async 
     'Level.SC2Map': 'map',
   })
   const result = await validateArchive(f.input)
-  expect(result.diagnostic?.code).toBe(ERRORS.CONTENT_TYPE_CONFLICT.code)
+  expect(result.diagnostic).toBeNull()
+  expect(result.automatic.contentType).toBe('customize')
+  expect(result.modes.ccm).toBeNull()
   expect(result.descriptors).toHaveLength(2)
   expect(result.descriptors.find((item) => item.standard === 'ccm')?.valid).toBe(true)
 })

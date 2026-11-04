@@ -64,9 +64,24 @@ export async function analyzeSourceModes(
     }
     return outer[0]
   }
-  result.modes.scnexus = await discover('package.json', false)
-  if (type === 'campaign') result.modes.ccm = await discover('metadata.txt', true)
-  if (!result.modes.scnexus && result.modes.ccm) {
+  const hasDescriptor = (name: string) =>
+    source.entries.some((entry) => {
+      const parts = entry.path.split('/')
+      return (
+        parts.at(-1)?.toLowerCase() === name &&
+        !parts.slice(0, -1).some((part) => /\.sc2(map|mod)$/i.test(part))
+      )
+    })
+  const hasPackage = classification
+    ? Boolean(classification.descriptors['package-json'])
+    : hasDescriptor('package.json')
+  const hasMetadata = classification
+    ? Boolean(classification.descriptors['metadata-txt'])
+    : hasDescriptor('metadata.txt')
+  if (hasPackage) result.modes.scnexus = await discover('package.json', false)
+  else if (type === 'campaign' && hasMetadata)
+    result.modes.ccm = await discover('metadata.txt', true)
+  if (!hasPackage && result.modes.ccm) {
     result.modes.scnexus = {
       ...structuredClone(result.modes.ccm),
       origin: 'ccm-converted',

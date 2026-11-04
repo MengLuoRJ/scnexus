@@ -5,6 +5,39 @@ import { join } from 'node:path'
 import { ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { validateArchive } from '../validation'
 import { sevenZip } from '../../../utils/7zip-wrapper'
+import { ContentService } from '../content-package'
+import { gamePaths } from '../../scii-game-setting/scii-game-setting'
+import type { ContentStore, CampaignActiveStoreData } from '@scnexus/app-shared/types/content.type'
+
+function service(root: string) {
+  const store: ContentStore = {
+    _schemaVersion: 2,
+    _revision: 0,
+    records: [],
+    legacyRecords: [],
+    scannedAt: null,
+  }
+  const active: CampaignActiveStoreData = {
+    _schemaVersion: 2,
+    _revision: 0,
+    active: {},
+    legacyRecords: [],
+    scannedAt: null,
+  }
+  const repository = <T>(data: T) => ({
+    getSnapshot: () => structuredClone(data),
+    update: (next: T) => {
+      data = structuredClone(next)
+    },
+  })
+  return new ContentService(
+    async () => gamePaths(join(root, 'game'), join(root, 'documents')),
+    repository(store),
+    repository(store),
+    repository(active),
+    async (run) => run(),
+  )
+}
 
 const roots: string[] = []
 afterEach(async () => {
@@ -32,6 +65,22 @@ const manifest = JSON.stringify({
   author: 'Author',
   type: 'campaign',
   campaign: 'WOL',
+})
+
+test('CCM compatibility and all mode previews match campaign installation', async () => {
+  const f = await fixture({
+    'VioletsNCOMod/metadata.txt':
+      'title=Nova: Violet Ops\ncampaign=NCO\nversion=1.02\nauthor=Violet Rose',
+    'VioletsNCOMod/nova01.SC2Map': 'map',
+  })
+  await mkdir(join(f.root, 'game'))
+  const result = await validateArchive(f.input)
+  const installation = await service(f.root).analyze('campaign', f.input)
+  expect(result.modes).toEqual(installation.modes)
+  expect(result.modes.scnexus?.origin).toBe('ccm-converted')
+  expect(result.descriptors.some((item) => item.standard === 'scnexus')).toBe(false)
+  expect(result.modes.scnexus?.files[0].target).toBe('Maps/Campaign/nova/nova01.SC2Map')
+  expect(result.modes.auto).toBeNull()
 })
 
 test('validates both standards without extraction, game configuration or writes', async () => {
@@ -130,8 +179,20 @@ test('does not treat descriptors inside SC2 resource components as package heade
   expect(result.automatic.diagnostic?.code).toBe('AUTO_DESCRIPTOR_PRESENT')
 })
 
-test('rejects directory inputs', async () => {
-  await expect(validateArchive({ kind: 'directory', path: process.cwd() })).rejects.toMatchObject({
-    code: ERRORS.IPC_INVALID_ARGUMENT.code,
-  })
+test('validates directories with the same results without modifying files', async () => {
+  const f = await fixture({ 'package.json': manifest, 'Maps/Campaign/Level.SC2Map': 'map' })
+  const path = join(f.root, 'source')
+  const before = await readdir(path, { recursive: true })
+  const archive = await validateArchive(f.input)
+  const directory = await validateArchive({ kind: 'directory', path })
+  expect(directory.descriptors.map(({ preview: _preview, ...descriptor }) => descriptor)).toEqual(
+    archive.descriptors.map(({ preview: _preview, ...descriptor }) => descriptor),
+  )
+  expect(directory.sourceTree.children?.length).toBe(2)
+  expect(archive.compressedBytes).toBeGreaterThan(0)
+  expect(directory.compressedBytes).toBeUndefined()
+  expect(directory.descriptors[0].preview?.files[0].source).toBe('Maps/Campaign/Level.SC2Map')
+  expect(directory.fileCount).toBe(archive.fileCount)
+  expect(directory.automatic.diagnostic).toEqual(archive.automatic.diagnostic)
+  expect(await readdir(path, { recursive: true })).toEqual(before)
 })

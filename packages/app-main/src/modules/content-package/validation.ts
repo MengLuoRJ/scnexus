@@ -1,13 +1,15 @@
+import { lstat } from 'node:fs/promises'
 import type { ArchiveValidation, SourceInput } from '@scnexus/app-shared/types/content.type'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { openSource } from './source'
 import { buildPreview, decodeCcm, parseCcm, parsePackage } from './parser'
 import { classifySource, hasOfficialDirectory } from './classification'
-import { detectCampaign, detectCustomize } from './auto-detector'
+import { analyzeSourceModes } from './analysis-modes'
 import { isContentDiagnostic } from './diagnostics'
 
 export async function validateArchive(input: SourceInput): Promise<ArchiveValidation> {
-  if (!input || input.kind !== 'archive') throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+  if (!input || !['archive', 'directory'].includes(input.kind))
+    throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
   const source = await openSource(input)
   const read = source.read
   const cache = new Map<string, Buffer>()
@@ -16,7 +18,10 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
     return cache.get(path)!
   }
   const result: ArchiveValidation = {
+    modes: { scnexus: null, ccm: null, auto: null },
     source: input,
+    sourceTree: source.tree,
+    ...(input.kind === 'archive' ? { compressedBytes: (await lstat(input.path)).size } : {}),
     fileCount: source.entries.length,
     bytes: source.tree.bytes,
     descriptors: [],
@@ -36,6 +41,7 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
       standard: name === 'package.json' ? 'scnexus' : 'ccm',
       fields: [],
       package: null,
+      preview: null,
       valid: false,
       fileCount: 0,
       error: null,
@@ -77,6 +83,7 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
         descriptor.package,
         descriptor.standard === 'ccm',
       )
+      descriptor.preview = preview
       descriptor.fileCount = preview.fileCount
       descriptor.valid = true
     } catch (error) {
@@ -84,7 +91,7 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
       descriptor.error = { code: error.code, message: error.message }
     }
   }
-  let type = hasOfficialDirectory(source) ? ('campaign' as const) : ('customize' as const)
+  const type = hasOfficialDirectory(source) ? ('campaign' as const) : ('customize' as const)
   try {
     const classification = await classifySource(source)
     result.automatic.contentType = classification.type
@@ -97,11 +104,9 @@ export async function validateArchive(input: SourceInput): Promise<ArchiveValida
     result.diagnostic = { code: error.code, message: error.message }
     result.automatic.contentType = type
   }
-  if (result.automatic.contentType !== 'dependency') {
-    type = result.automatic.contentType
-    const automatic = type === 'campaign' ? detectCampaign(source) : detectCustomize(source)
-    result.automatic.preview = automatic.preview
-    result.automatic.diagnostic = automatic.diagnostic ?? null
-  }
+  const modes = await analyzeSourceModes(source, result.automatic.contentType)
+  result.modes = modes.modes
+  result.automatic.preview = modes.modes.auto
+  result.automatic.diagnostic = modes.diagnostics.find((item) => item.mode === 'auto') ?? null
   return result
 }

@@ -70,7 +70,10 @@ export type InstallPreview = {
   bytes: number
 }
 export type ArchiveValidation = {
+  modes: Record<InstallMode, InstallPreview | null>
   source: SourceInput
+  sourceTree: FileTree
+  compressedBytes?: number
   fileCount: number
   bytes: number
   descriptors: {
@@ -78,6 +81,7 @@ export type ArchiveValidation = {
     standard: 'scnexus' | 'ccm'
     fields: { name: string; value: string }[]
     package: Package | null
+    preview: InstallPreview | null
     valid: boolean
     fileCount: number
     error: { code: string; message: string } | null

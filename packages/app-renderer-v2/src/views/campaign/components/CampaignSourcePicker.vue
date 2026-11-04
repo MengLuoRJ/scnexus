@@ -6,7 +6,9 @@ import { AppError, ERRORS, normalizeError, toErrorDto } from '@scnexus/app-share
 import type { AppErrorDto } from '@scnexus/app-shared/errors/app.error'
 import type { SourceInput } from '@scnexus/app-shared/types/content.type'
 defineOptions({ name: 'CampaignSourcePicker' })
-const props = defineProps<{ disabled: boolean }>()
+const props = withDefaults(defineProps<{ disabled: boolean; action?: 'install' | 'validate' }>(), {
+  action: 'install',
+})
 const emit = defineEmits<{ select: [source: SourceInput]; error: [error: AppErrorDto] }>()
 const { t } = useI18n()
 const picking = ref(false)
@@ -60,7 +62,9 @@ function drop(event: DragEvent) {
         :class="{ 'opacity-50': props.disabled || picking }" />
       <div class="text-left" :class="{ 'opacity-50': props.disabled || picking }">
         <I18nT
-          keypath="campaign.dropClick"
+          :keypath="
+            props.action === 'validate' ? 'toolbox.validationDropClick' : 'campaign.dropClick'
+          "
           tag="span"
           scope="global"
           class="block text-sm text-default">

@@ -1,3 +1,4 @@
+import { analyzeSourceModes } from './analysis-modes'
 import {
   attachmentCandidates,
   persistAttachments,
@@ -54,7 +55,7 @@ import {
   stageArchive,
   type ContentSource,
 } from './source'
-import { parsePackage, parseCcm, decodeCcm, buildPreview } from './parser'
+import { parseCcm, decodeCcm } from './parser'
 import { isContentDiagnostic } from './diagnostics'
 import { detectCampaign, detectCustomize } from './auto-detector'
 import { classifySource, type SourceClassification } from './classification'
@@ -438,64 +439,9 @@ export class ContentService {
       conflicts: [],
       diagnostics: [],
     }
-    const discover = async (name: string, ccm: boolean) => {
-      const found: InstallPreview[] = []
-      for (const entry of source.entries
-        .filter((e) =>
-          classification
-            ? e.path === classification.descriptors[ccm ? 'metadata-txt' : 'package-json']
-            : e.path.split('/').at(-1)?.toLowerCase() === name,
-        )
-        .filter(
-          (e) =>
-            !e.path
-              .split('/')
-              .slice(0, -1)
-              .some((p) => /\.sc2(map|mod)$/i.test(p)),
-        )) {
-        try {
-          if (entry.bytes > 1024 * 1024) throw new AppError(ERRORS.ARCHIVE_METADATA_INVALID)
-          const data = await source.read(entry.path)
-          const pkg = ccm
-            ? parseCcm(decodeCcm(data).text)
-            : parsePackage(data.toString('utf8'), type)
-          found.push(buildPreview(source, entry.path, pkg, ccm))
-        } catch (error) {
-          if (!isContentDiagnostic(error)) throw error
-          result.diagnostics.push({
-            mode: ccm ? 'ccm' : 'scnexus',
-            level: 'error',
-            code: error.code,
-            message: `Invalid descriptor: ${entry.path}`,
-          })
-        }
-      }
-      if (!found.length) return null
-      const depth = Math.min(...found.map((p) => p.descriptorPath.split('/').length))
-      const outer = found.filter((p) => p.descriptorPath.split('/').length === depth)
-      if (outer.length > 1) {
-        result.diagnostics.push({
-          mode: ccm ? 'ccm' : 'scnexus',
-          level: 'error',
-          code: ERRORS.ARCHIVE_METADATA_INVALID.code,
-          message: 'Multiple outermost packages: ' + outer.map((p) => p.descriptorPath).join(', '),
-        })
-        return null
-      }
-      return outer[0]
-    }
-    result.modes.scnexus = await discover('package.json', false)
-    if (type === 'campaign') result.modes.ccm = await discover('metadata.txt', true)
-    if (!result.modes.scnexus && result.modes.ccm) {
-      result.modes.scnexus = {
-        ...structuredClone(result.modes.ccm),
-        origin: 'ccm-converted',
-      }
-    }
-    const automatic =
-      type === 'dependency' ? { preview: null, diagnostic: undefined } : detector(type)(source)
-    result.modes.auto = automatic.preview
-    if (automatic.diagnostic) result.diagnostics.push(automatic.diagnostic)
+    const modes = await analyzeSourceModes(source, type, classification)
+    result.modes = modes.modes
+    result.diagnostics.push(...modes.diagnostics)
     for (const name of ['scnexus', 'ccm'] as const) {
       const preview = result.modes[name]
       if (preview?.package.dependencies?.length)

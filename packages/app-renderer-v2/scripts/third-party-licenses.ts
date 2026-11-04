@@ -138,10 +138,15 @@ export function collectThirdPartyLicenses(root: string): {
     'MIT / NCSA',
     [join(wasmPackage, 'LICENSE.runtime')],
   )
-  const protocolSources = JSON.parse(
-    read(join(root, 'packages', 'replay-parser', 'src', 'protocols', 'game-protocol-sources.json')),
-  ) as { commit: string }
-  add('Blizzard s2protocol-derived definitions', protocolSources.commit, 'MIT', [
+  const protocolData = read(
+    join(root, 'packages', 'replay-parser', 'src', 'protocols', 'official-data.ts'),
+  )
+  const protocolCommit =
+    /^\/\/ Blizzard s2protocol ([a-f0-9]{40}); MIT, see LICENSE\.s2protocol\./.exec(
+      protocolData,
+    )?.[1]
+  if (!protocolCommit) throw new Error('Missing s2protocol source commit in official-data.ts')
+  add('Blizzard s2protocol-derived definitions', protocolCommit, 'MIT', [
     join(root, 'packages', 'replay-parser', 'LICENSE.s2protocol'),
   ])
   return {

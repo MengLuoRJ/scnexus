@@ -56,6 +56,30 @@ test('keeps exact upstream copyright and license bodies, including bundled binar
   expect(entries.find((entry) => entry.name === 'Tabler Icons')!.text).toContain('Paweł Kuna')
 })
 
+test('collects the protocol source commit from the current TypeScript data and watches it', () => {
+  const { entries, files } = collectThirdPartyLicenses(root)
+  const protocolData = join(
+    root,
+    'packages',
+    'replay-parser',
+    'src',
+    'protocols',
+    'official-data.ts',
+  )
+  const license = join(root, 'packages', 'replay-parser', 'LICENSE.s2protocol')
+  const protocol = entries.find(
+    (entry) => entry.name === 'Blizzard s2protocol-derived definitions',
+  )!
+  expect(protocol.version).toMatch(/^[a-f0-9]{40}$/)
+  expect(readFileSync(protocolData, 'utf8').split('\n')[0]).toBe(
+    `// Blizzard s2protocol ${protocol.version}; MIT, see LICENSE.s2protocol.`,
+  )
+  expect(protocol.license).toBe('MIT')
+  expect(protocol.text).toBe(readFileSync(license, 'utf8').trim())
+  expect(files).toContain(protocolData)
+  expect(files).toContain(license)
+})
+
 test('fails rather than silently omitting a directly used package with a missing or empty license', () => {
   const directory = mkdtempSync(join(tmpdir(), 'scnexus-licenses-'))
   directories.push(directory)

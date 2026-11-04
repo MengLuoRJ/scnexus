@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/app-renderer-v2",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "BSD-3-Clause",
   "type": "module",
@@ -24,7 +24,7 @@
     "@nuxt/ui": "^4.12.0",
     "@scnexus/app-shared": "workspace:*",
     "@sentry/electron": "8.3.0",
-    "@sentry/vue": "11.10.0",
+    "@sentry/vue": "11.8.0",
     "@tiptap/core": "^3.31.4",
     "@vueuse/core": "^15.0.0",
     "axios": "^1.21.0",

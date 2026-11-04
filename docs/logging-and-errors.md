@@ -285,6 +285,8 @@ telemetry 提供 getStatus，区分 savedEnabled 与实际运行状态（disable
 
 renderer 初始化前、关闭后或重新加载时读取 main 有效授权状态，不根据本地 Pinia/旧 localStorage 自行授权。main 在开启时生成 sessionId，关闭时撤销；renderer 在事件捕获时关联该授权会话，双方发送前再次校验，迟到的旧会话事件不能在重新开启后补发。
 
+`@sentry/vue` 的版本须与 `@sentry/electron` 内部依赖的 `@sentry/core` 版本保持一致（当前 `@sentry/electron@8.3.0` 对应 `@sentry/core@11.8.0`，因此使用 `@sentry/vue@11.8.0`），升级时同步核对，避免重复 core 导致集成类型和运行时不兼容。
+
 renderer 使用官方 `@sentry/electron/renderer` 的 init，并将 `@sentry/vue` 的 init 作为框架初始化函数；启用 Vue、全局异常、cause 链和去重集成，禁用组件 props、breadcrumb 及默认自动集成，不启用追踪或回放。首次有效授权才初始化，后续开关复用同一客户端，每分钟最多发送二十个错误。官方信封经 sandbox preload 内联的 `@sentry/electron/preload` 桥接交 main，main 重新构造脱敏字段白名单并以同一 DSN 发送，不为 renderer 创建第二个 DSN。
 
 原有 Vue/window/rejection 捕获仍经应用日志 IPC 写入本地日志，但 main 日志 IPC 不再调用遥测，因此不会二次远程上报。Vue SDK 保留并调用原本地 errorHandler；本地日志与远程捕获独立限流。卸载撤销 renderer 发送授权、取消状态订阅，并恢复本地 handler。设置页订阅实际状态，迟到查询不能覆盖更新事件；enabled 只表示本地 main 可发送，不证明 renderer 初始化或服务端收件成功。

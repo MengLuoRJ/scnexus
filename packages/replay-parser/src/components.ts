@@ -1,3 +1,4 @@
+import { equalProtocolValues } from './stream-candidates.js'
 import { ProtocolDecoder, ReplayBitReader } from './protocol-decoder.js'
 import type { ReplayProtocolValue } from './protocol-decoder.js'
 import {
@@ -100,20 +101,6 @@ export function parseReplayInitData(
   if (options.allowUnverified === false) throw new UnsupportedReplayBuildError(baseBuild)
   const successful: number[] = []
   let first: ReplayInitData | undefined
-  const equal = (a: ReplayProtocolValue, b: ReplayProtocolValue): boolean => {
-    if (a === b) return true
-    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false
-    if (Array.isArray(a) !== Array.isArray(b)) return false
-    const left = Object.entries(a)
-    const right = Object.entries(b)
-    return (
-      left.length === right.length &&
-      left.every(
-        ([key, value]) =>
-          Object.hasOwn(b, key) && equal(value, (b as Record<string, ReplayProtocolValue>)[key]!),
-      )
-    )
-  }
   for (const group of findReplayProtocolCandidates(baseBuild, INIT_PROTOCOL_GROUPS)) {
     let decoded: Record<string, ReplayProtocolValue>
     try {
@@ -121,7 +108,7 @@ export function parseReplayInitData(
     } catch {
       continue
     }
-    if (first && !equal(first.data, decoded))
+    if (first && !equalProtocolValues(first.data, decoded))
       throw new UnsupportedReplayProtocolError(
         'Ambiguous candidate initData protocols; decoded fields disagree',
       )

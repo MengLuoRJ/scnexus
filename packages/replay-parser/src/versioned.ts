@@ -1,3 +1,5 @@
+const utf8Decoder = new TextDecoder('utf-8', { fatal: true })
+
 export type VersionedValue =
   | bigint
   | Uint8Array
@@ -37,19 +39,27 @@ export function decodeVersionedPrefix(
   }
 
   function byte(): number {
-    return bytes(1)[0]!
+    if (offset >= data.length) throw new Error('Truncated versioned replay data')
+    return data[offset++]!
   }
 
   function integer(): bigint {
     let value = byte()
     const negative = (value & 1) !== 0
-    let result = BigInt((value >>> 1) & 63)
-    let shift = 6n
-    while (value & 128) {
-      if (shift > 69n) throw new Error('Versioned integer exceeds 64-bit range')
+    let small = (value >>> 1) & 63
+    let shift = 6
+    // Accumulate only exact Number-sized chunks before falling back to bigint.
+    while (value & 128 && shift < 48) {
       value = byte()
-      result |= BigInt(value & 127) << shift
-      shift += 7n
+      small += (value & 127) * 2 ** shift
+      shift += 7
+    }
+    let result = BigInt(small)
+    while (value & 128) {
+      if (shift > 69) throw new Error('Versioned integer exceeds 64-bit range')
+      value = byte()
+      result |= BigInt(value & 127) << BigInt(shift)
+      shift += 7
     }
     if (result > 0xffffffffffffffffn) throw new Error('Versioned integer exceeds 64-bit range')
     return negative ? -result : result
@@ -137,7 +147,5 @@ export function versionedNumber(value: VersionedValue | undefined): number | nul
 }
 
 export function versionedText(value: VersionedValue | undefined): string | null {
-  return value instanceof Uint8Array
-    ? new TextDecoder('utf-8', { fatal: true }).decode(value)
-    : null
+  return value instanceof Uint8Array ? utf8Decoder.decode(value) : null
 }

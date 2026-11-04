@@ -1,3 +1,4 @@
+import { agreeingStreamCandidates } from './stream-candidates.js'
 import { ProtocolDecoder, ReplayBitReader } from './protocol-decoder.js'
 import type { ReplayProtocolValue } from './protocol-decoder.js'
 import type { ReplayProtocolStamp } from './components.js'
@@ -133,58 +134,12 @@ export function parseReplayGameEvents(
     throw new UnsupportedReplayProtocolError(
       'Empty game stream cannot establish candidate compatibility',
     )
-  const groups = findReplayProtocolCandidates(baseBuild, GAME_PROTOCOL_GROUPS)
-  const attempts = groups.map((group) => ({
-    group,
-    iterator: decodeGameStream(data, baseBuild, group.sourceBuild, group.schema, maxEvents, false),
-    failed: false,
-    result: null as ReplayGameEvents | null,
-  }))
-  const conflicts = new Set<string>()
-  while (attempts.some((attempt) => !attempt.failed && !attempt.result)) {
-    const round = attempts.map((attempt) => {
-      if (attempt.failed || attempt.result) return null
-      try {
-        const next = attempt.iterator.next()
-        if (next.done) {
-          attempt.result = next.value
-          return 'end'
-        }
-        return JSON.stringify(next.value, (_key, value: unknown) =>
-          value && typeof value === 'object' && !Array.isArray(value)
-            ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)))
-            : value,
-        )
-      } catch {
-        attempt.failed = true
-        return null
-      }
-    })
-    for (let i = 0; i < attempts.length; i++) {
-      for (let j = i + 1; j < attempts.length; j++) {
-        if (attempts[i]!.failed || attempts[j]!.failed) continue
-        const a = round[i] ?? (attempts[i]!.result ? 'end' : null)
-        const b = round[j] ?? (attempts[j]!.result ? 'end' : null)
-        if (a !== b) conflicts.add(`${i}:${j}`)
-      }
-    }
-  }
-  const successful = attempts
-    .map((attempt, index) => ({ ...attempt, index }))
-    .filter((attempt) => attempt.result && !attempt.failed)
-  if (!successful.length)
-    throw new UnsupportedReplayProtocolError(
-      'No candidate game protocol decoded the complete stream',
-    )
-  for (const a of successful) {
-    for (const b of successful) {
-      if (a.index < b.index && conflicts.has(`${a.index}:${b.index}`))
-        throw new UnsupportedReplayProtocolError(
-          'Ambiguous candidate game protocols; decoded events disagree',
-        )
-    }
-  }
-  const selected = successful[0]!.group
+  const successful = agreeingStreamCandidates(
+    findReplayProtocolCandidates(baseBuild, GAME_PROTOCOL_GROUPS),
+    (group) => decodeGameStream(data, baseBuild, group.sourceBuild, group.schema, maxEvents, false),
+    'game',
+  )
+  const selected = successful[0]!
   const iterator = decodeGameStream(
     data,
     baseBuild,
@@ -197,8 +152,8 @@ export function parseReplayGameEvents(
   const result = next.value
   result.compatibility = {
     state: 'unverified',
-    protocolBuild: successful[0]!.group.sourceBuild,
-    candidateBuilds: successful.map((attempt) => attempt.group.sourceBuild),
+    protocolBuild: selected.sourceBuild,
+    candidateBuilds: successful.map((group) => group.sourceBuild),
   }
   return result
 }

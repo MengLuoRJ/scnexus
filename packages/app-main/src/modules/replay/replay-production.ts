@@ -110,6 +110,17 @@ export function createReplayProduction(
         )
       })
     : []
+  const castsByTarget = new Map<string, typeof casts>()
+  for (const cast of casts) {
+    const target = record(record(cast.data.m_data).TargetUnit)
+    const packed = productionNumber(target.m_tag)
+    if (packed === null) continue
+    const key = `${Math.floor(packed / 262144)}/${packed % 262144}`
+    const group = castsByTarget.get(key) ?? []
+    group.push(cast)
+    castsByTarget.set(key, group)
+  }
+  for (const group of castsByTarget.values()) group.sort((a, b) => a.gameLoop - b.gameLoop)
   const push = (
     id: number | null,
     loop: number,
@@ -159,16 +170,12 @@ export function createReplayProduction(
         let start = loop - loops
         const relevant =
           duration.race === 'P'
-            ? casts.filter((cast) => {
+            ? (castsByTarget.get(creator!) ?? []).filter((cast) => {
                 const target = record(record(cast.data.m_data).TargetUnit)
-                const packed = productionNumber(target.m_tag)
-                const targetTag =
-                  packed === null ? null : `${Math.floor(packed / 262144)}/${packed % 262144}`
                 return (
                   users.get(cast.userId) === id &&
                   (target.m_snapshotUpkeepPlayerId === undefined ||
                     target.m_snapshotUpkeepPlayerId === id) &&
-                  targetTag === creator &&
                   cast.gameLoop >= producer.born &&
                   cast.gameLoop < loop
                 )
@@ -176,7 +183,7 @@ export function createReplayProduction(
             : []
         // Integrate work backwards at 1.5x during the union of 20 real-second windows.
         const ranges: [number, number][] = []
-        for (const cast of relevant.sort((a, b) => a.gameLoop - b.gameLoop)) {
+        for (const cast of relevant) {
           const range: [number, number] = [cast.gameLoop, Math.min(loop, cast.gameLoop + 448)]
           const previous = ranges.at(-1)
           if (previous && previous[1] >= range[0]) previous[1] = Math.max(previous[1], range[1])
@@ -184,7 +191,8 @@ export function createReplayProduction(
         }
         let remaining = loops
         let cursor = loop
-        for (const [begin, finish] of ranges.toReversed()) {
+        for (let index = ranges.length - 1; index >= 0; index--) {
+          const [begin, finish] = ranges[index]!
           const normal = cursor - finish
           if (remaining <= normal) break
           remaining -= normal

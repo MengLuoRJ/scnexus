@@ -217,6 +217,18 @@ describe('production evidence', () => {
       startSource: 'versioned-duration',
     })
   })
+  it('isolates indexed casts by full producer tag and orders only the matching group', () => {
+    const events = [
+      event('PlayerSetup', 0, { m_playerId: 1, m_userId: 0 }),
+      unit('UnitBorn', 0, 5, 'Nexus'),
+      unit('UnitBorn', 1000, 6, 'Probe', { m_creatorUnitTagIndex: 5, m_creatorUnitTagRecycle: 1 }),
+    ]
+    const baseline = project(events, context({ gameEvents: game([cast(700), cast(800)]) }))
+    const unrelated = Array.from({ length: 1000 }, (_, i) => cast(i, (i + 10) * 262144 + 1))
+    expect(
+      project(events, context({ gameEvents: game([cast(800), ...unrelated, cast(700)]) })),
+    ).toEqual(baseline)
+  })
   it('adjusts only exact version ability, full target tag and mapped player/producer evidence', () => {
     const events = [
       event('PlayerSetup', 0, { m_playerId: 1, m_userId: 0 }),

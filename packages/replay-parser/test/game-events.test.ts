@@ -72,6 +72,21 @@ describe('bounded bit-packed game events', () => {
     )
   })
 
+  it('requires unknown candidates to consume trailing events within the same ceiling', () => {
+    const bytes = Uint8Array.from([...minimalCommand, ...loadingTail])
+    expect(parseReplayGameEvents(bytes, 1000000, { maxEvents: 2 })).toMatchObject({
+      processedEvents: 2,
+      skippedEvents: 1,
+      elapsedGameLoops: 16,
+    })
+    expect(() => parseReplayGameEvents(bytes, 1000000, { maxEvents: 1 })).toThrow(
+      'No candidate game protocol',
+    )
+    expect(() => parseReplayGameEvents(Uint8Array.from([...bytes, 0]), 1000000)).toThrow(
+      'No candidate game protocol',
+    )
+  })
+
   it('registers more than the original two official builds', () => {
     expect(SUPPORTED_REPLAY_GAME_BASE_BUILDS.length).toBeGreaterThan(2)
     for (const build of SUPPORTED_REPLAY_GAME_BASE_BUILDS) {

@@ -48,9 +48,13 @@ export function findReplayProtocolCandidates<T>(
   baseBuild: number,
   candidates: readonly ProtocolGroup<T>[],
 ): ProtocolGroup<T>[] {
-  const distance = (group: ProtocolGroup<T>) =>
-    Math.min(...group.builds.map((build) => Math.abs(build - baseBuild)))
-  return [...candidates]
-    .sort((a, b) => distance(a) - distance(b) || a.sourceBuild - b.sourceBuild)
+  return candidates
+    .map((group) => {
+      let distance = Infinity
+      for (const build of group.builds) distance = Math.min(distance, Math.abs(build - baseBuild))
+      return { group, distance }
+    })
+    .sort((a, b) => a.distance - b.distance || a.group.sourceBuild - b.group.sourceBuild)
     .slice(0, 3)
+    .map(({ group }) => group)
 }

@@ -17,6 +17,7 @@ vi.mock('../src/protocols/game-registry.js', async () => {
           events: {
             ...schema.events,
             27: [schema.events[27][0], 'NNet.Game.SDifferentCommandEvent'],
+            5: [schema.events[5][0], 'NNet.Game.SDifferentLoadingEvent'],
           },
         },
         fingerprint: 'b',
@@ -28,6 +29,12 @@ import { parseReplayGameEvents } from '../src/game-events.js'
 
 it('rejects multiple complete decoders that disagree rather than choosing the first', () => {
   expect(() => parseReplayGameEvents(Buffer.from('00200b0000000000000000', 'hex'), 99999)).toThrow(
+    'Ambiguous candidate game protocols',
+  )
+})
+
+it('rejects disagreeing skipped known events even when both returned timelines would be empty', () => {
+  expect(() => parseReplayGameEvents(Uint8Array.of(0x40, 0, 5), 99999)).toThrow(
     'Ambiguous candidate game protocols',
   )
 })

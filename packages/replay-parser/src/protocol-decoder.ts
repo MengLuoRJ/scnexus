@@ -12,18 +12,31 @@ export type ReplayProtocolValue =
   | ReplayProtocolValue[]
   | { [field: string]: ReplayProtocolValue }
 
+const utf8Decoder = new TextDecoder('utf-8', { fatal: true })
+const hexBytes = Array.from({ length: 256 }, (_, byte) => byte.toString(16).padStart(2, '0'))
+const expectedWireTypes = {
+  _int: 9,
+  _null: 255,
+  _fourcc: 7,
+  _bool: 6,
+  _blob: 2,
+  _bitarray: 1,
+  _optional: 4,
+  _array: 0,
+  _choice: 3,
+  _struct: 5,
+}
+
 export function replayBlob(bytes: Uint8Array): ReplayBlob {
   let text: string | null = null
   try {
-    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+    text = utf8Decoder.decode(bytes)
   } catch {
     // Binary cache handles are valid blobs, not malformed UTF-8 text.
   }
-  return {
-    kind: 'blob',
-    hex: Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(''),
-    text,
-  }
+  let hex = ''
+  for (const byte of bytes) hex += hexBytes[byte]!
+  return { kind: 'blob', hex, text }
 }
 
 function jsonInteger(value: bigint): number | string {
@@ -45,6 +58,19 @@ export class ReplayBitReader {
       this.position + width > this.data.length * 8
     )
       throw new Error('Truncated or invalid bit-packed replay data')
+    if (width <= 32) {
+      let result = 0
+      let remaining = width
+      while (remaining > 0) {
+        const shift = this.position % 8
+        const take = Math.min(8 - shift, remaining)
+        const chunk = (this.data[Math.floor(this.position / 8)]! >>> shift) & ((1 << take) - 1)
+        result = result * 2 ** take + chunk
+        this.position += take
+        remaining -= take
+      }
+      return BigInt(result)
+    }
     let result = 0n
     let remaining = width
     while (remaining > 0) {
@@ -94,18 +120,7 @@ export class ProtocolDecoder {
     const child = (id: number, value?: VersionedValue, key = 0) =>
       this.decode(id, value, depth + 1, wire?.children.get(key))
     if (wire) {
-      const expected = {
-        _int: 9,
-        _null: 255,
-        _fourcc: 7,
-        _bool: 6,
-        _blob: 2,
-        _bitarray: 1,
-        _optional: 4,
-        _array: 0,
-        _choice: 3,
-        _struct: 5,
-      }[type[0]]
+      const expected = expectedWireTypes[type[0]]
       if (wire.type !== expected) throw new Error(`Wrong wire type for ${type[0]}`)
     }
     const reader = this.reader

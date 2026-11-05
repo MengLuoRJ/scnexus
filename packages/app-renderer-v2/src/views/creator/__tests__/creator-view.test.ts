@@ -8,13 +8,20 @@ import zh from '../../../locales/zh'
 const mocks = vi.hoisted(() => ({
   mine: vi.fn<() => Promise<unknown>>(),
   create: vi.fn<(auth: unknown, input: unknown) => Promise<unknown>>(),
+  update: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   select: vi.fn<() => Promise<unknown>>(),
   quota: vi.fn<() => Promise<unknown>>(),
   version: vi.fn<() => Promise<unknown>>(),
   upload: vi.fn<() => Promise<unknown>>(),
   toast: vi.fn<(value: unknown) => void>(),
 }))
-const gate = reactive({ active: true, enabled: true, loadQuota: mocks.quota })
+const gate = reactive({
+  active: true,
+  enabled: true,
+  loadQuota: mocks.quota,
+  quota: { maxProjects: 9, maxPackageBytes: 0, maxStorageBytes: 0, usedStorageBytes: 5000000000 },
+  quotaError: null as unknown,
+})
 const auth = reactive({
   signedIn: true,
   snapshot: { epoch: 1, sessionId: 'session' },
@@ -29,10 +36,11 @@ vi.mock('../../../stores/workshop', () => ({
   useWorkshopStore: () => ({ tasks: [], connect: () => () => {}, accept: () => {} }),
   unwrapWorkshop: (value: { data: unknown }) => value.data,
 }))
-vi.mock('../../../apis/workshop', () => ({
+vi.mock('../../../apis/workshop', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../apis/workshop')>()),
   apiWorkshopMine: mocks.mine,
   apiWorkshopCreate: mocks.create,
-  apiWorkshopUpdate: async () => {},
+  apiWorkshopUpdate: mocks.update,
   apiWorkshopVersions: async () => [],
   apiWorkshopCreateVersion: mocks.version,
   apiWorkshopCancelCandidate: async () => {},
@@ -75,6 +83,7 @@ afterEach(() => {
   vi.resetAllMocks()
   gate.active = true
   gate.enabled = true
+  gate.quotaError = null
 })
 function render() {
   mocks.quota.mockResolvedValue({ userId: 'user', maxProjects: 9, maxPackageBytes: 700000000 })
@@ -278,4 +287,72 @@ test('package selection rejects an oversized archive using the current limit', a
     expect.objectContaining({ title: expect.stringContaining('700000000') }),
   )
   expect(wrapper.text()).not.toContain('从安装包填写资料')
+})
+
+test('external-only drafts save without selecting a package or creating a version even with zero byte quota', async () => {
+  mocks.mine.mockResolvedValue([])
+  mocks.create.mockResolvedValue({ scnid: 10, contentRevision: 1 })
+  const wrapper = render()
+  await flushPromises()
+  mocks.quota.mockResolvedValue({
+    userId: 'user',
+    maxProjects: 9,
+    maxPackageBytes: 0,
+    maxStorageBytes: 0,
+    usedStorageBytes: 0,
+  })
+  await click(wrapper, '创建作品')
+  await wrapper.findAll('input')[0]!.setValue('External project')
+  await click(wrapper, '添加下载外链')
+  await wrapper.findAll('input')[3]!.setValue('https://download.example.test/file.zip')
+  await wrapper.findAll('input')[4]!.setValue('Download instructions')
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.create).toHaveBeenCalledWith(
+    {},
+    expect.objectContaining({
+      downloadLinks: [
+        { url: 'https://download.example.test/file.zip', description: 'Download instructions' },
+      ],
+    }),
+  )
+  expect(mocks.select).not.toHaveBeenCalled()
+  expect(mocks.version).not.toHaveBeenCalled()
+  expect(mocks.upload).not.toHaveBeenCalled()
+  expect(wrapper.text()).toContain('5000000000 / 0')
+})
+test('editing links does not mutate the owner response and supports clearing all links', async () => {
+  const project = {
+    scnid: 10,
+    title: 'Project',
+    fileIds: [],
+    contentRevision: 1,
+    downloadLinks: [{ url: 'https://example.test', description: 'Original' }],
+  }
+  mocks.mine.mockResolvedValue([project])
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, 'Project')
+  await wrapper.findAll('input')[3]!.setValue('https://changed.example.test')
+  expect(project.downloadLinks[0]!.url).toBe('https://example.test')
+  await click(wrapper, '移除外链')
+  mocks.update.mockResolvedValue({ scnid: 10, contentRevision: 2 })
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.update).toHaveBeenCalledWith(
+    {},
+    10,
+    1,
+    expect.objectContaining({ downloadLinks: [] }),
+  )
+})
+test('quota read errors do not hide the external-link editor', async () => {
+  gate.quotaError = new Error('offline')
+  mocks.mine.mockResolvedValue([])
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  expect(wrapper.find('form').exists()).toBe(true)
+  await click(wrapper, '添加下载外链')
+  expect(wrapper.findAll('button').some((button) => button.text() === '移除外链')).toBe(true)
 })

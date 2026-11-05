@@ -25,6 +25,8 @@ export type CreatorQuota = {
   userId: string
   maxProjects: number
   maxPackageBytes: number
+  maxStorageBytes: number
+  usedStorageBytes: number
 }
 function quota(value: unknown): CreatorQuota {
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -33,8 +35,14 @@ function quota(value: unknown): CreatorQuota {
   if (
     typeof data.userId !== 'string' ||
     !data.userId ||
-    ![data.maxProjects, data.maxPackageBytes].every(
-      (limit) => Number.isInteger(limit) && Number(limit) >= 1 && Number(limit) <= 2147483647,
+    !Number.isInteger(data.maxProjects) ||
+    Number(data.maxProjects) < 1 ||
+    Number(data.maxProjects) > 2147483647 ||
+    !Number.isInteger(data.maxPackageBytes) ||
+    Number(data.maxPackageBytes) < 0 ||
+    Number(data.maxPackageBytes) > 2147483647 ||
+    ![data.maxStorageBytes, data.usedStorageBytes].every(
+      (bytes) => Number.isSafeInteger(bytes) && Number(bytes) >= 0,
     )
   )
     throw new Error('Invalid creator quota')
@@ -42,6 +50,8 @@ function quota(value: unknown): CreatorQuota {
     userId: data.userId,
     maxProjects: data.maxProjects as number,
     maxPackageBytes: data.maxPackageBytes as number,
+    maxStorageBytes: data.maxStorageBytes as number,
+    usedStorageBytes: data.usedStorageBytes as number,
   }
 }
 export const apiCreatorQuota = (auth: ApiAuth) => apiRequest('/workshop/creator/quota', quota, auth)

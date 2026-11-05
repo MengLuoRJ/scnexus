@@ -1,4 +1,5 @@
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+import type { ShellBridgeApi } from '@scnexus/app-shared/types/shell.type'
 import { ipcRequest, ipcSubscription, ipcSnapshot } from './ipc-common'
 
 type Channel =
@@ -11,9 +12,7 @@ type Channel =
   | 'app:get-paths'
   | 'dialog:show-open-dialog'
   | 'dialog:show-open-dialog-sync'
-  | 'shell:open-external-website'
-  | 'shell:open-path'
-  | 'shell:show-item-in-folder'
+  | keyof ShellBridgeApi
   | 'updater:status'
   | 'updater:check-for-updates'
   | 'updater:check-for-updates-and-notify'

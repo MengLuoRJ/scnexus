@@ -128,7 +128,7 @@ export function parseManifest(text: string): Record<string, unknown> {
 export async function precheckPackage(path: string, maxPackageBytes: number) {
   const info = await lstat(path)
   assert(
-    Number.isSafeInteger(maxPackageBytes) && maxPackageBytes >= 1 && maxPackageBytes <= 2147483647,
+    Number.isSafeInteger(maxPackageBytes) && maxPackageBytes >= 0 && maxPackageBytes <= 2147483647,
     'INVALID_CREATOR_QUOTA',
   )
   assert(info.isFile() && !info.isSymbolicLink() && info.size > 0)

@@ -14,7 +14,7 @@
   "workshop.createUpload": "创建版本并上传",
   "workshop.creator": "创作者中心",
   "workshop.creatorHint": "选择作品编辑，或创建新作品。",
-  "workshop.quota": "项目上限：{projects}；每版本包上限：{bytes} 字节（不是累计存储额度）。",
+  "workshop.quota": "项目上限：{projects}；单包上限：{bytes} 字节；总空间：{used} / {storage} 字节。0 表示无可用额度。",
   "workshop.quotaError": "无法读取个人配额，请刷新后重试。",
   "workshop.quotaConflict": "请求冲突，已重新读取配额。请检查最新额度或版本状态后手动重试，不会自动提交。",
   "workshop.projectQuotaReached": "已达到项目上限（{max}），无法创建新作品。",
@@ -85,5 +85,16 @@
   "workshop.uploadDone": "上传完成，请查看版本状态",
   "workshop.installedDependencies": "已安装依赖包",
   "workshop.dependencyRemoved": "依赖包已卸载",
-  "workshop.dependencyRemovalHint": "共享或已修改资源需要明确保留或删除，不会静默删除其他作品的文件。"
+  "workshop.dependencyRemovalHint": "共享或已修改资源需要明确保留或删除，不会静默删除其他作品的文件。",
+  "workshop.downloadLinks": "下载外链",
+  "workshop.downloadLinksHint": "最多 3 个 HTTPS 地址，可不上传安装包，保存后等待审核。说明请勿填写真实凭据。",
+  "workshop.downloadUrl": "下载地址",
+  "workshop.downloadDescription": "下载说明",
+  "workshop.addDownloadLink": "添加下载外链",
+  "workshop.removeDownloadLink": "移除外链",
+  "workshop.externalDownload": "前往外站下载",
+  "workshop.externalDownloadRisk": "即将访问第三方站点 {host}。外站内容可能变化，请自行判断是否可信。",
+  "workshop.externalDownloadHint": "外链文件未经平台完整性或安全检查，不支持平台续传和自动安装。下载后请手动选择本地文件安装。",
+  "workshop.cancel": "取消",
+  "workshop.openBrowser": "在浏览器中打开"
 }

@@ -18,8 +18,9 @@ import {
   type WorkshopDependencies,
   type WorkshopService,
 } from '../service'
-import { parseManifest, fingerprint, PART_SIZE } from '../precheck'
+import { parseManifest, fingerprint, precheckPackage, PART_SIZE } from '../precheck'
 import { getFileMd5, getFileMd5Wasm } from '../../../utils/file-md5'
+import { sevenZip } from '../../../utils/7zip-wrapper'
 import type { AuthSnapshot } from '@scnexus/app-shared/types/auth.type'
 
 const roots: string[] = []
@@ -56,6 +57,13 @@ const authorization = {
   sha256Source: 'AUTHOR_DECLARED',
   scanStatus: 'NOT_SCANNED',
   chunkSize: PART_SIZE,
+}
+const creatorQuota = {
+  userId: snapshot.userId,
+  maxProjects: 5,
+  maxPackageBytes: 2147483647,
+  maxStorageBytes: 0,
+  usedStorageBytes: 0,
 }
 const json = (body: unknown, status = 201) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -120,7 +128,7 @@ test('full-file fingerprinting does not enforce a creator upload ceiling', async
 
 test('selected packages use current creator size quota before archive parsing', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async () =>
-    json({ userId: snapshot.userId, maxProjects: 9, maxPackageBytes: 2 }),
+    json({ ...creatorQuota, maxProjects: 9, maxPackageBytes: 2 }),
   )
   const { deps, service, root } = await setup(fetch)
   const path = join(root, 'large.zip')
@@ -133,18 +141,195 @@ test('selected packages use current creator size quota before archive parsing', 
   )
 })
 
-test('quota read rejects stale account responses and invalid backend limits', async () => {
+test('quota read rejects stale account responses and zero package quota blocks packages', async () => {
   const fetch = vi.fn<typeof globalThis.fetch>(async () =>
-    json({ userId: 'other-user', maxProjects: 1, maxPackageBytes: 1000 }),
+    json({ ...creatorQuota, userId: 'other-user', maxProjects: 1, maxPackageBytes: 1000 }),
   )
   const { deps, service, root } = await setup(fetch)
   const path = join(root, 'package.zip')
   await writeFile(path, 'bytes')
   deps.selectFile = async () => path
   await expect(service.selectPackage()).rejects.toThrow('AUTH_SESSION_CHANGED')
-  fetch.mockResolvedValueOnce(json({ userId: snapshot.userId, maxProjects: 1, maxPackageBytes: 0 }))
+  fetch.mockResolvedValueOnce(json({ ...creatorQuota, maxProjects: 1, maxPackageBytes: 0 }))
+  await expect(service.selectPackage()).rejects.toThrow('PACKAGE_QUOTA_EXCEEDED')
+})
+
+test.each([
+  { maxProjects: 1, maxStorageBytes: 0, usedStorageBytes: 0 },
+  {
+    maxProjects: 2147483647,
+    maxStorageBytes: Number.MAX_SAFE_INTEGER,
+    usedStorageBytes: Number.MAX_SAFE_INTEGER,
+  },
+  { maxStorageBytes: 2147483648, usedStorageBytes: 2147483648 },
+  { maxStorageBytes: 0, usedStorageBytes: 100 },
+])('quota accepts contract boundaries and lowered storage limits: %j', async (limits) => {
+  const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+    json({ ...creatorQuota, ...limits, maxPackageBytes: 0 }),
+  )
+  const { deps, service, root } = await setup(fetch)
+  const path = join(root, 'package.zip')
+  await writeFile(path, bytes)
+  deps.selectFile = async () => path
+  await expect(service.selectPackage()).rejects.toThrow('PACKAGE_QUOTA_EXCEEDED')
+})
+
+test.each(
+  (['maxProjects', 'maxPackageBytes', 'maxStorageBytes', 'usedStorageBytes'] as const).flatMap(
+    (field) =>
+      [
+        undefined,
+        null,
+        '1',
+        -1,
+        0.5,
+        Number.MAX_SAFE_INTEGER + 1,
+        ...(['maxProjects', 'maxPackageBytes'].includes(field) ? [2147483648] : []),
+        ...(field === 'maxProjects' ? [0] : []),
+      ].map((value) => ({ field, value })),
+  ),
+)('quota rejects invalid or missing $field=$value', async ({ field, value }) => {
+  const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+    json({ ...creatorQuota, [field]: value }),
+  )
+  const { deps, service, root } = await setup(fetch)
+  const path = join(root, 'package.zip')
+  await writeFile(path, bytes)
+  deps.selectFile = async () => path
   await expect(service.selectPackage()).rejects.toThrow('INVALID_CREATOR_QUOTA')
 })
+
+test.each([
+  [0, 'PACKAGE_QUOTA_EXCEEDED'],
+  [bytes.length - 1, 'PACKAGE_QUOTA_EXCEEDED'],
+  [-1, 'INVALID_CREATOR_QUOTA'],
+  [0.5, 'INVALID_CREATOR_QUOTA'],
+  [2147483648, 'INVALID_CREATOR_QUOTA'],
+  [Number.NaN, 'INVALID_CREATOR_QUOTA'],
+  [Number.POSITIVE_INFINITY, 'INVALID_CREATOR_QUOTA'],
+] as const)('package precheck applies limit %s before archive parsing', async (limit, error) => {
+  const { root } = await setup(vi.fn<typeof globalThis.fetch>())
+  const path = join(root, 'package.zip')
+  await writeFile(path, bytes)
+  const list = vi.spyOn(sevenZip, 'list')
+  await expect(precheckPackage(path, limit)).rejects.toThrow(error)
+  expect(list).not.toHaveBeenCalled()
+})
+
+test.each([bytes.length, 2147483647])(
+  'package precheck accepts inclusive limit %s',
+  async (limit) => {
+    const { root } = await setup(vi.fn<typeof globalThis.fetch>())
+    const path = join(root, 'package.zip')
+    await writeFile(path, bytes)
+    const list = vi.spyOn(sevenZip, 'list').mockRejectedValue(new Error('ARCHIVE_PARSE_REACHED'))
+    await expect(precheckPackage(path, limit)).rejects.toThrow('ARCHIVE_PARSE_REACHED')
+    expect(list).toHaveBeenCalledWith(path)
+  },
+)
+
+test.each([
+  {
+    name: 'zero package allowance',
+    maxPackageBytes: 0,
+    maxStorageBytes: 100,
+    usedStorageBytes: 0,
+    serverStatus: 201,
+    error: 'PACKAGE_QUOTA_EXCEEDED',
+  },
+  {
+    name: 'package one byte over limit',
+    maxPackageBytes: bytes.length - 1,
+    maxStorageBytes: 100,
+    usedStorageBytes: 0,
+    serverStatus: 201,
+    error: 'PACKAGE_QUOTA_EXCEEDED',
+  },
+  {
+    name: 'replacement in full storage at exact package limit',
+    maxPackageBytes: bytes.length,
+    maxStorageBytes: 100,
+    usedStorageBytes: 100,
+    serverStatus: 201,
+    error: undefined,
+  },
+  {
+    name: 'replacement with insufficient remaining bytes',
+    maxPackageBytes: 2147483647,
+    maxStorageBytes: 100,
+    usedStorageBytes: 99,
+    serverStatus: 201,
+    error: undefined,
+  },
+  {
+    name: 'zero storage rejected by server',
+    maxPackageBytes: 2147483647,
+    maxStorageBytes: 0,
+    usedStorageBytes: 0,
+    serverStatus: 409,
+    error: 'CONTROL_HTTP_409',
+  },
+  {
+    name: 'lowered storage rejected by server',
+    maxPackageBytes: 2147483647,
+    maxStorageBytes: 99,
+    usedStorageBytes: 100,
+    serverStatus: 409,
+    error: 'CONTROL_HTTP_409',
+  },
+])(
+  'new uploads: $name',
+  async ({ maxPackageBytes, maxStorageBytes, usedStorageBytes, serverStatus, error }) => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async (url) => {
+      if (String(url).endsWith('/creator/quota'))
+        return json({ ...creatorQuota, maxPackageBytes, maxStorageBytes, usedStorageBytes })
+      if (String(url).endsWith('/uploads'))
+        return json({ sessionId: fileId, partSize: PART_SIZE, partCount: 1 }, serverStatus)
+      return json({ status: 'COMPLETED', fileId })
+    })
+    const { root, service, deps } = await setup(fetch)
+    await service.dispose()
+    const path = join(root, 'selected.zip')
+    await writeFile(path, bytes)
+    const taskId = randomUUID()
+    await writeFile(
+      join(root, 'tasks.json'),
+      JSON.stringify({
+        version: 1,
+        tasks: [
+          {
+            taskId,
+            kind: 'upload',
+            name: 'selected.zip',
+            status: 'paused',
+            transferred: 0,
+            ownerSession: sessionId,
+            epoch: 1,
+            path,
+            ...(await fingerprint(path)),
+            versionId,
+            idempotencyKey: randomUUID(),
+          },
+        ],
+      }),
+    )
+    const restarted = await createWorkshopService(deps)
+    services.push(restarted)
+    await restarted.resume(taskId)
+    await restarted.waitForIdle()
+    expect((await restarted.list())[0]).toMatchObject(
+      error ? { status: 'failed', error } : { status: 'completed', transferred: bytes.length },
+    )
+    const uploadCalls = fetch.mock.calls.filter(([url]) => String(url).endsWith('/uploads'))
+    expect(uploadCalls).toHaveLength(error === 'PACKAGE_QUOTA_EXCEEDED' ? 0 : 1)
+    expect(uploadCalls.map(([, init]) => JSON.parse(String(init?.body)).size)).toEqual(
+      error === 'PACKAGE_QUOTA_EXCEEDED' ? [] : [bytes.length],
+    )
+    expect(fetch.mock.calls.filter(([url]) => String(url).endsWith('/creator/quota'))).toHaveLength(
+      serverStatus === 409 ? 2 : 1,
+    )
+  },
+)
 
 test('fixed worker origins reject credentials, paths, HTTP and arbitrary URL sources', async () => {
   for (const origin of [

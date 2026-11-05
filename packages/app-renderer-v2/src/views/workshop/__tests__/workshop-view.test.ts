@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn<(value: unknown) => Promise<void>>(async () => {}),
   push: vi.fn<(value: unknown) => Promise<void>>(async () => {}),
   download: vi.fn<(source: unknown) => Promise<unknown>>(),
+  external: vi.fn<(url: string) => Promise<unknown>>(),
 }))
 const route = reactive({
   params: {} as { scnid?: string },
@@ -54,6 +55,10 @@ vi.mock('../../../apis/workshop', () => ({
   apiWorkshopDetail: mocks.detail,
 }))
 vi.mock('../../../ipcs/workshop', () => ({ ipcWorkshopDownload: mocks.download }))
+vi.mock('../../../ipcs/shell', () => ({
+  ipcShellOpenExternalWebsite: vi.fn<(url: string) => Promise<unknown>>(),
+  ipcShellOpenExternalDownload: mocks.external,
+}))
 vi.mock('../../../components/workshop/WorkshopRichText.vue', () => ({
   default: { template: '<div />' },
 }))
@@ -90,9 +95,9 @@ function render() {
       ],
       stubs: {
         Modal: defineComponent({
-          props: ['open'],
+          props: ['open', 'description'],
           template:
-            '<div v-if="open" data-confirm><slot name="body" /><slot name="footer" /></div>',
+            '<div v-if="open" data-confirm>{{ description }}<slot name="body" /><slot name="footer" /></div>',
         }),
         Button: button,
         Card: pass,
@@ -195,4 +200,57 @@ test('cancelling deep-link confirmation clears intent and never downloads', asyn
   await flushPromises()
   expect(mocks.download).not.toHaveBeenCalled()
   expect(mocks.replace).toHaveBeenCalledWith({ path: '/workshop/2', query: {} })
+})
+
+const downloadLinks = [
+  { url: 'https://download.example.test/file.zip', description: '<b>Manual download</b>' },
+]
+async function click(wrapper: ReturnType<typeof render>, label: string) {
+  await wrapper
+    .findAll('button')
+    .find((button) => button.text() === label)!
+    .trigger('click')
+  await flushPromises()
+}
+test('external-only works are visible anonymously and require confirmation before opening a browser', async () => {
+  route.params = { scnid: '2' }
+  mocks.detail.mockResolvedValue({ ...project, approvedVersionId: null, downloadLinks })
+  mocks.external.mockResolvedValue({ ok: true, data: null })
+  const wrapper = render()
+  await flushPromises()
+  expect(wrapper.text()).toContain('Public title')
+  expect(wrapper.text()).toContain('<b>Manual download</b>')
+  expect(wrapper.find('b').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain('登录后下载')
+  await click(wrapper, '前往外站下载')
+  expect(mocks.external).not.toHaveBeenCalled()
+  expect(wrapper.find('[data-confirm]').text()).toContain('download.example.test')
+  await click(wrapper, '取消')
+  expect(mocks.external).not.toHaveBeenCalled()
+  await click(wrapper, '前往外站下载')
+  await click(wrapper, '在浏览器中打开')
+  expect(mocks.external).toHaveBeenCalledExactlyOnceWith(downloadLinks[0]!.url)
+  expect(mocks.push).not.toHaveBeenCalled()
+  expect(mocks.download).not.toHaveBeenCalled()
+  expect(useWorkshopStore().wizardOpen).toBe(false)
+})
+test('platform packages and external downloads are displayed independently', async () => {
+  route.params = { scnid: '2' }
+  mocks.detail.mockResolvedValue({ ...project, downloadLinks })
+  const wrapper = render()
+  await flushPromises()
+  expect(wrapper.text()).toContain('登录后下载')
+  expect(wrapper.text()).toContain('前往外站下载')
+})
+test('external-only download deep links do not open platform download wizard or require login', async () => {
+  route.params = { scnid: '2' }
+  route.query = { download: 'true' }
+  route.path = '/workshop/2'
+  mocks.detail.mockResolvedValue({ ...project, approvedVersionId: null, downloadLinks })
+  render()
+  await flushPromises()
+  expect(useWorkshopStore().wizardOpen).toBe(false)
+  expect(mocks.replace).toHaveBeenCalledWith({ path: '/workshop/2', query: {} })
+  expect(mocks.download).not.toHaveBeenCalled()
+  expect(mocks.external).not.toHaveBeenCalled()
 })

@@ -14,7 +14,7 @@
   "workshop.createUpload": "Create version and upload",
   "workshop.creator": "Creator center",
   "workshop.creatorHint": "Select a project to edit or create one.",
-  "workshop.quota": "Project limit: {projects}; package limit per version: {bytes} bytes (not cumulative storage).",
+  "workshop.quota": "Project limit: {projects}; per-package limit: {bytes} bytes; storage: {used} / {storage} bytes. Zero means no available quota.",
   "workshop.quotaError": "Unable to read your quota. Refresh and try again.",
   "workshop.quotaConflict": "Request conflict. Quota has been refreshed. Check the latest limits or version status and retry manually; nothing is automatically submitted.",
   "workshop.projectQuotaReached": "The project limit ({max}) has been reached. You cannot create another project.",
@@ -85,5 +85,16 @@
   "workshop.uploadDone": "Upload complete. Check the version status.",
   "workshop.installedDependencies": "Installed dependency packages",
   "workshop.dependencyRemoved": "Dependency removed",
-  "workshop.dependencyRemovalHint": "Shared or modified resources need an explicit keep/delete decision. Other projects’ files are not silently deleted."
+  "workshop.dependencyRemovalHint": "Shared or modified resources need an explicit keep/delete decision. Other projects’ files are not silently deleted.",
+  "workshop.downloadLinks": "External downloads",
+  "workshop.downloadLinksHint": "Add up to 3 HTTPS links. No package upload is required; saved changes await review. Do not include real credentials in descriptions.",
+  "workshop.downloadUrl": "Download URL",
+  "workshop.downloadDescription": "Download instructions",
+  "workshop.addDownloadLink": "Add download link",
+  "workshop.removeDownloadLink": "Remove link",
+  "workshop.externalDownload": "Download from external site",
+  "workshop.externalDownloadRisk": "You are about to visit {host}, a third-party site. Its content may change; only proceed if you trust it.",
+  "workshop.externalDownloadHint": "External files have no platform integrity or security checks, resumable transfers, or automatic installation. After downloading, select the local file manually to install.",
+  "workshop.cancel": "Cancel",
+  "workshop.openBrowser": "Open in browser"
 }

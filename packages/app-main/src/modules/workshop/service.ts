@@ -292,10 +292,32 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
   }
   async function creatorQuota(task?: StoredTask, signal?: AbortSignal) {
     const before = workshopAllowed(task, signal)
-    const quota = await control<{userId: string; maxProjects: number; maxPackageBytes: number}>('/workshop/creator/quota', 'GET', undefined, task, signal)
+    const quota = await control<{
+      userId: string
+      maxProjects: number
+      maxPackageBytes: number
+      maxStorageBytes: number
+      usedStorageBytes: number
+    }>('/workshop/creator/quota', 'GET', undefined, task, signal)
     const after = workshopAllowed(task, signal)
-    assert(before.sessionId === after.sessionId && before.epoch === after.epoch && quota.userId === after.userId, 'AUTH_SESSION_CHANGED')
-    assert([quota.maxProjects, quota.maxPackageBytes].every((value) => Number.isInteger(value) && value >= 1 && value <= 2147483647), 'INVALID_CREATOR_QUOTA')
+    assert(
+      before.sessionId === after.sessionId &&
+        before.epoch === after.epoch &&
+        quota.userId === after.userId,
+      'AUTH_SESSION_CHANGED',
+    )
+    assert(
+      Number.isInteger(quota.maxProjects) &&
+        quota.maxProjects >= 1 &&
+        quota.maxProjects <= 2147483647 &&
+        Number.isInteger(quota.maxPackageBytes) &&
+        quota.maxPackageBytes >= 0 &&
+        quota.maxPackageBytes <= 2147483647 &&
+        [quota.maxStorageBytes, quota.usedStorageBytes].every(
+          (value) => Number.isSafeInteger(value) && value >= 0,
+        ),
+      'INVALID_CREATOR_QUOTA',
+    )
     return quota
   }
   function workerUrl(url: string, origin: string, route: string) {
@@ -628,6 +650,8 @@ export async function createWorkshopService(deps: WorkshopDependencies) {
       if (!task.uploadAttempted) {
         const quota = await creatorQuota(task, signal)
         assert(task.size <= quota.maxPackageBytes, 'PACKAGE_QUOTA_EXCEEDED')
+        // Total usage is sum(max(released, candidate or reservation)) per project.
+        // Without this project's occupancy, only the server can judge replacement uploads.
         task.uploadAttempted = true
         await save(task)
       }

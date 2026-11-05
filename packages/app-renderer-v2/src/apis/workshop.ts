@@ -10,6 +10,33 @@ export const socialKeys = [
   'qq_group',
 ] as const
 export const sponsorKeys = ['paypal', 'patreon', 'buymeacoffee', 'afdian'] as const
+export type DownloadLink = { url: string; description: string }
+export function isDownloadUrl(value: string): boolean {
+  // oxlint-disable-next-line no-control-regex -- Match the server's rejection of raw control characters.
+  if (!value || value.length > 2048 || /[\s\u0000-\u001f\u007f-\u009f\\]/u.test(value)) return false
+  try {
+    const url = new URL(value)
+    return (
+      /^https:\/\/[^/?#@]+(?:[/?#]|$)/i.test(value) &&
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password
+    )
+  } catch {
+    return false
+  }
+}
+export function parseDownloadLinks(value: unknown): DownloadLink[] {
+  if (!Array.isArray(value) || value.length > 3) throw new Error('downloadLinks')
+  return value.map((item) => {
+    const link = record(item)
+    if (Object.keys(link).some((key) => !['url', 'description'].includes(key)))
+      throw new Error('downloadLinks')
+    const url = text(link.url)
+    if (!isDownloadUrl(url)) throw new Error('downloadLinks')
+    return { url, description: text(link.description, 500) }
+  })
+}
 export type ProjectInput = {
   title: string
   description: string
@@ -18,6 +45,7 @@ export type ProjectInput = {
   sponsor: Record<string, string>
   detail: WorkshopDocument
   fileIds: string[]
+  downloadLinks: DownloadLink[]
 }
 export type WorkshopProject = ProjectInput & {
   scnid: number
@@ -84,6 +112,7 @@ export function parseProject(value: unknown): WorkshopProject {
     sponsor: links(p.sponsor, sponsorKeys),
     detail: validateDocument(p.detail),
     fileIds: fileIds.map(uuid),
+    downloadLinks: parseDownloadLinks(p.downloadLinks === undefined ? [] : p.downloadLinks),
   }
 }
 export function parseOwner(value: unknown): OwnerProject {

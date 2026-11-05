@@ -37,6 +37,7 @@ const project = {
   sponsor: {},
   detail: emptyDocument(),
   fileIds: [],
+  downloadLinks: [],
 }
 beforeEach(() => vi.resetAllMocks())
 test('public browsing uses scnid, pagination and search without access headers', async () => {
@@ -61,6 +62,7 @@ test('draft edits send only canonical input and optimistic content revision', as
     sponsor: {},
     detail: emptyDocument(),
     fileIds: [],
+    downloadLinks: [],
   }
   mocks.request.mockResolvedValue({ data: { scnid: 1, contentRevision: 2 } })
   await apiWorkshopCreate(auth, input)
@@ -114,8 +116,14 @@ test.each([404, 409, 403, 429, 503])('preserves workflow errors for status %s', 
   await expect(apiWorkshopDetail(1)).rejects.toMatchObject({ kind })
 })
 
-test('reads authenticated per-version creator quota without treating it as storage', async () => {
-  const quota = { userId: id, maxProjects: 12, maxPackageBytes: 900000000 }
+test('reads independent package and total storage limits including usage above the lowered limit', async () => {
+  const quota = {
+    userId: id,
+    maxProjects: 12,
+    maxPackageBytes: 0,
+    maxStorageBytes: 0,
+    usedStorageBytes: 5000000000,
+  }
   mocks.request.mockResolvedValueOnce({ data: quota })
   expect(await apiCreatorQuota(auth)).toEqual(quota)
   expect(mocks.request).toHaveBeenLastCalledWith(
@@ -128,7 +136,82 @@ test('reads authenticated per-version creator quota without treating it as stora
 })
 test.each([0, -1, 1.5, '5', null, 2147483648])('rejects invalid quota limit %s', async (limit) => {
   mocks.request.mockResolvedValue({
-    data: { userId: id, maxProjects: limit, maxPackageBytes: 300000000 },
+    data: {
+      userId: id,
+      maxProjects: limit,
+      maxPackageBytes: 300000000,
+      maxStorageBytes: 5000000000,
+      usedStorageBytes: 0,
+    },
   })
   await expect(apiCreatorQuota(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
+})
+
+test.each(['maxPackageBytes', 'maxStorageBytes', 'usedStorageBytes'])(
+  'validates the numeric boundaries of %s',
+  async (field) => {
+    for (const invalid of [-1, 0.1, '0', null, undefined, Number.MAX_SAFE_INTEGER + 1]) {
+      mocks.request.mockResolvedValueOnce({
+        data: {
+          userId: id,
+          maxProjects: 5,
+          maxPackageBytes: 0,
+          maxStorageBytes: Number.MAX_SAFE_INTEGER,
+          usedStorageBytes: 5000000000,
+          [field]: invalid,
+        },
+      })
+      await expect(apiCreatorQuota(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
+    }
+  },
+)
+test('allows total storage above Int32 and rejects packages above Int32', async () => {
+  const quota = {
+    userId: id,
+    maxProjects: 5,
+    maxPackageBytes: 2147483647,
+    maxStorageBytes: Number.MAX_SAFE_INTEGER,
+    usedStorageBytes: 5000000000,
+  }
+  mocks.request.mockResolvedValueOnce({ data: quota })
+  expect(await apiCreatorQuota(auth)).toEqual(quota)
+  mocks.request.mockResolvedValueOnce({ data: { ...quota, maxPackageBytes: 2147483648 } })
+  await expect(apiCreatorQuota(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
+})
+test('supports published external-only projects and sends draft links with revision', async () => {
+  const downloadLinks = [
+    { url: 'https://download.example.test/file.zip', description: '<b>Plain text</b>' },
+  ]
+  mocks.request.mockResolvedValueOnce({
+    data: { ...project, approvedVersionId: null, downloadLinks },
+  })
+  expect(await apiWorkshopDetail(1)).toEqual({ ...project, approvedVersionId: null, downloadLinks })
+  mocks.request.mockResolvedValue({ data: { scnid: 1, contentRevision: 2 } })
+  const { scnid: _id, slug: _slug, approvedVersionId: _version, ...input } = project
+  await apiWorkshopCreate(auth, { ...input, downloadLinks })
+  expect(mocks.request).toHaveBeenLastCalledWith(
+    expect.objectContaining({ data: { ...input, downloadLinks } }),
+  )
+  await apiWorkshopUpdate(auth, 1, 1, { ...input, downloadLinks: [] })
+  expect(mocks.request).toHaveBeenLastCalledWith(
+    expect.objectContaining({ data: { ...input, downloadLinks: [], expectedRevision: 1 } }),
+  )
+})
+test.each([
+  null,
+  [{ url: 'http://example.test', description: '' }],
+  [{ url: 'https://user:password@example.test', description: '' }],
+  [{ url: 'https://example.test/has space', description: '' }],
+  [{ url: 'https:example.test', description: '' }],
+  [{ url: 'https:///example.test', description: '' }],
+  [{ url: 'https://@example.test', description: '' }],
+  [{ url: 'https://example.test/a\\b', description: '' }],
+  [{ url: 'https://example.test/a\u0000b', description: '' }],
+  [{ url: 'https://example.test', description: 'a'.repeat(501) }],
+  [{ url: 'https://example.test' }],
+  [{ url: 'https://example.test', description: '', token: 'unexpected' }],
+  Array.from({ length: 4 }, () => ({ url: 'https://example.test', description: '' })),
+])('rejects malformed public download links %#', async (downloadLinks) => {
+  mocks.request.mockResolvedValueOnce({ data: { ...project, downloadLinks } })
+  await expect(apiWorkshopDetail(1)).rejects.toMatchObject({ kind: 'invalidResponse' })
 })

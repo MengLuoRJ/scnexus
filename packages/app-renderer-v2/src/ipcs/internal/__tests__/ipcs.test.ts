@@ -15,6 +15,7 @@ import {
   ipcGameSettingInitialize,
   ipcSettingUpdateKey,
   ipcShellOpenExternalWebsite,
+  ipcShellOpenExternalDownload,
   ipcUpdaterOnError,
 } from '../../index'
 
@@ -76,6 +77,32 @@ test('forwards current typed and bridge APIs without changing parameters', async
   expect(updateKey).toHaveBeenCalledWith('logLevel', 'debug')
   await ipcShellOpenExternalWebsite('https://example.test')
   expect(shell).toHaveBeenCalledWith('https://example.test')
+})
+test('download uses its dedicated bridge and preserves structured errors', async () => {
+  const url = 'https://example.test/file.zip?token=abc'
+  const success = { ok: true as const, data: undefined }
+  const download = vi.fn<(url: string) => Promise<IpcResult<void>>>().mockResolvedValue(success)
+  const website = vi.fn<(url: string) => Promise<IpcResult<void>>>()
+  vi.stubGlobal('window', {
+    'shell:open-external-download': download,
+    'shell:open-external-website': website,
+  })
+  expect(await ipcShellOpenExternalDownload(url)).toEqual(success)
+  expect(download).toHaveBeenCalledExactlyOnceWith(url)
+  expect(website).not.toHaveBeenCalled()
+  const error = toErrorDto(new AppError(ERRORS.IPC_INVALID_ARGUMENT))
+  download.mockResolvedValueOnce({ ok: false, error })
+  expect(await ipcShellOpenExternalDownload(url)).toEqual({ ok: false, error })
+  download.mockResolvedValueOnce({ ok: true } as never)
+  expect(await ipcShellOpenExternalDownload(url)).toMatchObject({
+    ok: false,
+    error: { code: 'R001' },
+  })
+  vi.stubGlobal('window', {})
+  expect(await ipcShellOpenExternalDownload(url)).toMatchObject({
+    ok: false,
+    error: { code: 'P001' },
+  })
 })
 test('subscriptions auto-dispose in scope and allow idempotent manual disposal', () => {
   const dispose = vi.fn<() => void>()

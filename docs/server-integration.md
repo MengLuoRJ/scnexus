@@ -6,7 +6,26 @@
 
 2026-10-21 用户确认首期：安全基础、邮箱密码登录、MFA 登录、注册邀请策略、邮箱注册、忘记密码、启动恢复、用户/权限自查、退出。首期不含手机号/微信界面、MFA 配置管理、设备管理、签到、突变、通知、在线统计及管理后台；后续交付范围见各实施记录。现有本地游戏与内容功能不以登录或联网为前置条件。
 
-### 2026-11-01：下载与上传配额分离
+### 2026-11-04：总空间配额与外链作品
+
+- 只读核对后端 `docs/workshop-creators.md`、`docs/workshop-api.md` 和 `docs/client/workshop-electron.md`。本节更新下方 11 月 1 日的两字段配额合同：GET `/workshop/creator/quota` 返回 `{ userId, maxProjects, maxPackageBytes, maxStorageBytes, usedStorageBytes }`。项目上限为 `1..2147483647`，单包上限为 `0..2147483647`，总空间及已用空间为非负安全整数，支持超过 Int32；字节额度 0 不表示无限。允许已用空间高于下调后的上限。
+- 创作者中心分别显示单包上限、总空间和已用空间。选包及新建上传前继续读取最新额度，main 独立校验响应与单包限制。总占用按每项目 `max(正式包, 候选包或活跃上传预留)` 求和；客户端没有足够的项目占用信息，不用简单的“剩余空间”误拦截替换上传，总空间准入由服务端原子裁决。已有上传恢复、幂等重试及完成不重新套用下调额度；409 刷新并要求手动重试。
+- 作者创建/PATCH 的 `downloadLinks` 最多 3 项，每项 `{ url, description }`。仅完整无凭据 HTTPS，URL 最多 2048 字符且无空白、控制字符或反斜杠，说明最多 500 字符、以纯文本展示。编辑独立复制草稿外链，提交完整数组，`[]` 明确清空；保留 `expectedRevision` 与冲突处理。仅填写外链即可保存待审作品，无需选择包、创建版本或上传文件；项目数和创作者资格仍受服务端限制。保存不等于发布，首次外链发布及后续变更均需管理员内容审核，客户端不增加自审或管理员入口。
+- 公开列表/详情使用公开接口的已审核外链；合法的 `approvedVersionId:null` 作品仍展示。平台包与外链可并存，平台下载登录与传输流程不变；仅外链作品不显示平台下载按钮，`download=true` 不进入平台下载向导或要求登录。
+- 外链先提示目标站点、第三方内容风险及手动安装说明，确认后调用独立 `shell:open-external-download` IPC。main 复用 sender 校验并再次校验无凭据 HTTPS 后交给系统浏览器；不改变已有网站链接的 HTTP(S) 行为。不传 API 认证信息，不创建平台传输任务，不承诺外部文件摘要、扫描、续传或自动安装。取消不打开浏览器，下载后沿用手动选择本地包的安装流程。
+- 保持简体、繁体和英文文案同步。后端及历史 OpenAPI 快照未修改；不将模拟测试等同于真实后端、对象存储或 Electron 系统浏览器验收。
+
+验证记录：
+
+- `pnpm run typecheck`：通过。
+- `pnpm run test:main src\modules\workshop src\modules\shell\__test__\shell-ipc.test.ts src\utils\__test__\ipc-util.test.ts`：5 文件、157 项通过。
+- `pnpm --filter @scnexus/app-main exec vitest run --root ..\app-preload src\__test__\shell-ipc.test.ts`：1 文件、3 项通过，复用工作区已有 Vitest，不安装依赖。
+- `pnpm run test:renderer src\apis\__tests__\workshop.test.ts src\views\creator\__tests__\creator-view.test.ts src\views\workshop\__tests__\workshop-view.test.ts src\stores\__tests__\creator.test.ts src\ipcs\internal\__tests__\ipcs.test.ts`：5 文件、82 项通过。
+- `pnpm run test:renderer src\locales\__tests__\locales.test.ts`：7 项通过，三语言键一致。
+- `pnpm run lint`：被仓库既有测试规则错误阻断；本次新增代码的 lint 错误已修复，保留上传测试中既有的 conditional-expect。变更源码 ESLint 通过。`pnpm run format:check`：全仓既有格式问题未通过，未批量修改无关文件。
+- 浏览器模拟接口、1000×700：确认零字节额度仍能保存仅外链作品、HTTP 地址有表单错误、公开外链作品可匿名查看，确认弹窗明确显示目标站点和风险。内容区及长链接无横向溢出，下载确认弹窗 512×382。未执行真实后端写入、文件上传或系统浏览器调用。
+
+### 2026-11-01：下载与上传配额分离（历史合同，配额字段以上述 11 月 4 日更新为准）
 
 - 只读依据后端 `docs/client/workshop-electron.md` 与 `docs/workshop-creators.md` 的「创作者独立配额」合同。GET `/workshop/creator/quota` 返回 `{ userId, maxProjects, maxPackageBytes }`，两项限额均为 `1..2147483647` 整数。`maxPackageBytes` 是单版本包限制，不是累计存储或剩余字节；项目可用名额由当前项目列表与动态上限计算，最终由服务端决定。
 - GitHub 归档下载不执行上传包预检、不设上传大小上限。保留受控来源、commit 锁定、预览 manifest 读取、响应长度一致性及 SHA-256 完整性检查；归档格式和安装资源校验留在安装分析阶段。

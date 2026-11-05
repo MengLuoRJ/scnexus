@@ -9,7 +9,7 @@ import { useCreatorStore } from '../../stores/creator'
 import { useAuthStore } from '../../stores/auth'
 import { useContentCenterStore } from '../../stores/content-center'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
-import { ipcShellOpenExternalWebsite } from '../../ipcs/shell'
+import { ipcShellOpenExternalWebsite, ipcShellOpenExternalDownload } from '../../ipcs/shell'
 import WorkshopRichText from '../../components/workshop/WorkshopRichText.vue'
 defineOptions({ name: 'WorkshopView' })
 const route = useRoute()
@@ -30,6 +30,10 @@ const detail = shallowRef<WorkshopProject | null>(null)
 const loading = shallowRef(false)
 const error = shallowRef<unknown>(null)
 const downloading = shallowRef(false)
+const externalDownload = shallowRef<string | null>(null)
+const externalHost = computed(() =>
+  externalDownload.value ? new URL(externalDownload.value).host : '',
+)
 const id = computed(() => (route.params.scnid ? Number(route.params.scnid) : null))
 let intentGeneration = 0
 watch(
@@ -42,6 +46,14 @@ watch(
       if (current !== intentGeneration) return
       if (!center.enabled) {
         toast.add({ color: 'warning', title: t('workshop.disabled') })
+        return
+      }
+      const project = await apiWorkshopDetail(id.value!)
+      if (current !== intentGeneration) return
+      if (!project.approvedVersionId) {
+        const query = { ...route.query }
+        delete query.download
+        await router.replace({ path: route.path, query })
         return
       }
       await auth.initialize()
@@ -69,6 +81,7 @@ async function load() {
   loading.value = true
   error.value = null
   detail.value = null
+  externalDownload.value = null
   if (!center.enabled) {
     loading.value = false
     items.value = []
@@ -94,12 +107,22 @@ function search() {
   else void load()
 }
 async function download() {
-  if (!detail.value || !center.enabled) return
+  if (!detail.value?.approvedVersionId || !center.enabled) return
   if (!auth.signedIn) {
     await router.push({ path: '/account', query: { redirect: `${route.path}?download=true` } })
     return
   }
   transfers.openDownload(detail.value.scnid)
+}
+async function confirmExternalDownload() {
+  const url = externalDownload.value
+  externalDownload.value = null
+  if (!url || !center.enabled) return
+  try {
+    unwrapWorkshop(await ipcShellOpenExternalDownload(url))
+  } catch {
+    toast.add({ color: 'error', title: t('workshop.linkError') })
+  }
 }
 async function openLink(url: string) {
   try {
@@ -148,6 +171,7 @@ async function openLink(url: string) {
             <p class="mt-2 whitespace-pre-wrap break-words text-sm">{{ detail.description }}</p>
           </div>
           <UButton
+            v-if="detail.approvedVersionId"
             class="shrink-0"
             :loading="downloading"
             :disabled="!detail.approvedVersionId"
@@ -155,7 +179,25 @@ async function openLink(url: string) {
             {{ t(auth.signedIn ? 'workshop.download' : 'workshop.loginDownload') }}
           </UButton>
         </div>
-        <UAlert :title="t('workshop.downloadSafety')" color="neutral" />
+        <div v-if="detail.downloadLinks?.length" class="space-y-2">
+          <h3 class="font-medium">{{ t('workshop.downloadLinks') }}</h3>
+          <div
+            v-for="link in detail.downloadLinks"
+            :key="link.url"
+            class="space-y-1 border border-default rounded p-3">
+            <p class="text-sm break-all">{{ link.url }}</p>
+            <p v-if="link.description" class="text-sm whitespace-pre-wrap break-words">
+              {{ link.description }}
+            </p>
+            <UButton size="sm" variant="outline" @click="externalDownload = link.url">
+              {{ t('workshop.externalDownload') }}
+            </UButton>
+          </div>
+        </div>
+        <UAlert
+          v-if="detail.approvedVersionId"
+          :title="t('workshop.downloadSafety')"
+          color="neutral" />
         <WorkshopRichText :document="detail.detail" :project-scnid="detail.scnid" />
         <div v-if="detail.website" class="text-sm break-all">
           <span>{{ t('workshop.website') }}:</span>
@@ -198,5 +240,25 @@ async function openLink(url: string) {
         </nav>
       </template>
     </template>
+    <UModal
+      :open="!!externalDownload"
+      :title="t('workshop.externalDownload')"
+      :description="t('workshop.externalDownloadRisk', { host: externalHost })"
+      @update:open="
+        (value: boolean) => {
+          if (!value) externalDownload = null
+        }
+      ">
+      <template #body>
+        <p class="text-sm break-all">{{ externalDownload }}</p>
+        <p class="mt-2 text-sm text-muted">{{ t('workshop.externalDownloadHint') }}</p>
+      </template>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="externalDownload = null">
+          {{ t('workshop.cancel') }}
+        </UButton>
+        <UButton @click="confirmExternalDownload">{{ t('workshop.openBrowser') }}</UButton>
+      </template>
+    </UModal>
   </section>
 </template>

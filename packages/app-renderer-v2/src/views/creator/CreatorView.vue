@@ -14,6 +14,8 @@ import {
   socialKeys,
   sponsorKeys,
   isStrictSemver,
+  isDownloadUrl,
+  type DownloadLink,
   type OwnerProject,
   type WorkshopVersion,
 } from '../../apis/workshop'
@@ -63,6 +65,7 @@ const state = reactive({
   title: '',
   description: '',
   website: '',
+  downloadLinks: [] as DownloadLink[],
   social: {} as Record<string, string>,
   sponsor: {} as Record<string, string>,
 })
@@ -75,6 +78,14 @@ const schema = z.object({
     .refine((value) => value.trim().length > 0),
   description: z.string().max(1000),
   website: z.string().max(2048),
+  downloadLinks: z
+    .array(
+      z.object({
+        url: z.string().refine(isDownloadUrl, { error: () => t('workshop.linkError') }),
+        description: z.string().max(500),
+      }),
+    )
+    .max(3),
   social: z.record(z.string(), z.string().max(2048)),
   sponsor: z.record(z.string(), z.string().max(2048)),
 })
@@ -162,6 +173,7 @@ async function edit(project: OwnerProject | null) {
     title: project?.title ?? '',
     description: project?.description ?? '',
     website: project?.website ?? '',
+    downloadLinks: (project?.downloadLinks ?? []).map((link) => ({ ...link })),
     social: { ...project?.social },
     sponsor: { ...project?.sponsor },
   })
@@ -413,6 +425,8 @@ async function cancelCandidate() {
           t('workshop.quota', {
             projects: creator.quota.maxProjects,
             bytes: creator.quota.maxPackageBytes,
+            storage: creator.quota.maxStorageBytes,
+            used: creator.quota.usedStorageBytes,
           })
         }}
       </p>
@@ -423,7 +437,7 @@ async function cancelCandidate() {
           </UButton>
         </template>
       </UAlert>
-      <template v-else>
+      <div class="space-y-4">
         <UAlert
           v-if="conflict"
           :title="t('workshop.conflict')"
@@ -460,6 +474,46 @@ async function cancelCandidate() {
           <UFormField name="description" :label="t('workshop.description')">
             <UTextarea v-model="state.description" class="w-full" :rows="2" :maxlength="1000" />
           </UFormField>
+          <div class="space-y-2">
+            <p class="text-sm font-medium">{{ t('workshop.downloadLinks') }}</p>
+            <p class="text-xs text-muted">{{ t('workshop.downloadLinksHint') }}</p>
+            <div
+              v-for="(link, index) in state.downloadLinks"
+              :key="index"
+              class="space-y-2 border border-default rounded p-2">
+              <UFormField
+                :name="`downloadLinks.${index}.url`"
+                :label="t('workshop.downloadUrl')"
+                required>
+                <UInput v-model="link.url" class="w-full" :maxlength="2048" :disabled="saving" />
+              </UFormField>
+              <UFormField
+                :name="`downloadLinks.${index}.description`"
+                :label="t('workshop.downloadDescription')">
+                <UTextarea
+                  v-model="link.description"
+                  class="w-full"
+                  :rows="2"
+                  :maxlength="500"
+                  :disabled="saving" />
+              </UFormField>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="outline"
+                :disabled="saving"
+                @click="state.downloadLinks.splice(index, 1)">
+                {{ t('workshop.removeDownloadLink') }}
+              </UButton>
+            </div>
+            <UButton
+              size="sm"
+              variant="outline"
+              :disabled="saving || state.downloadLinks.length >= 3"
+              @click="state.downloadLinks.push({ url: '', description: '' })">
+              {{ t('workshop.addDownloadLink') }}
+            </UButton>
+          </div>
           <details class="text-sm">
             <summary class="cursor-pointer">{{ t('workshop.socialSponsor') }}</summary>
             <div class="grid grid-cols-2 gap-2 mt-2">
@@ -561,7 +615,7 @@ async function cancelCandidate() {
             </UButton>
           </template>
         </UCard>
-      </template>
+      </div>
     </template>
     <UModal
       :open="!!cancelId"

@@ -1,0 +1,23 @@
+{
+  "inbox.title": "Inbox",
+  "inbox.unreadCount": "{count} unread",
+  "inbox.refresh": "Refresh",
+  "inbox.readAll": "Read all",
+  "inbox.all": "All",
+  "inbox.unread": "Unread",
+  "inbox.read": "Read",
+  "inbox.realtimeUnavailable": "Live updates are unavailable. Please refresh manually.",
+  "inbox.loadFailed": "Could not refresh messages. Previous content is still shown.",
+  "inbox.loading": "Loading messages",
+  "inbox.empty": "No messages",
+  "inbox.pages": "Message pages",
+  "inbox.previous": "Previous",
+  "inbox.next": "Next",
+  "inbox.close": "Close",
+  "inbox.markRead": "Mark as read",
+  "inbox.marked": "Marked as read",
+  "inbox.openLink": "View details",
+  "inbox.externalTitle": "Open external website",
+  "inbox.externalHint": "This website will open in your browser. Confirm to continue.",
+  "inbox.continue": "Continue"
+}

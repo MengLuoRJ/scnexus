@@ -8,6 +8,7 @@ import { useContentCenterStore } from '../../stores/content-center'
 import { ipcAppGetDeviceName } from '../../ipcs/app'
 import CreatorStatus from './CreatorStatus.vue'
 import TwoFactorSettings from './TwoFactorSettings.vue'
+import InboxPanel from './InboxPanel.vue'
 import logo from '../../assets/logo.png'
 import { apiRegistrationPolicy, accountErrorKey } from '../../apis'
 import { usePersonalCenter } from './usePersonalCenter'
@@ -512,6 +513,7 @@ async function logout() {
         </div>
       </UCard>
     </div>
+    <InboxPanel />
     <UModal v-model:open="showingUserId" :title="t('account.userId')">
       <template #body>
         <p class="break-all font-mono text-sm font-medium">

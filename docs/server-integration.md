@@ -330,6 +330,18 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 
 验证：`pnpm --filter @scnexus/app-main test src\modules\analytics\__test__ src\modules\__test__\analytics-lifecycle.test.ts src\modules\auth\__test__`：9 文件、133 项通过；`pnpm run typecheck:main` 通过。测试覆盖先 leave 后撤销、leave 失败仍撤销、1 秒超时与取消、禁用/离线跳过、固定路由与敏感错误清理，以及 1024/1025 字符边界。未向真实服务写统计，未宣称真实退出在线快照已验收。
 
+## 个人中心站内消息（2026-11-06）
+
+对照后端 `docs/inbox.md`，在已登录个人中心资料区下方增加站内消息，未增加发信、删除、归档或管理发布功能。
+
+- HTTP 封装 `/inbox`、`/inbox/unread-count`、`/inbox/:id/read`、`/inbox/read-all`，沿用 Access Bearer 与现有认证恢复；标读只发送 `{}`，使用通知 UUID 而非 businessId。不把未读数或消息持久化到本地。
+- 支持全部/未读/已读分页、未读数、阅读弹窗、明确点击标读和全部已读；标读成功后重新读取列表与未读数，不从 changed 值推算未读。空的后续页回第一页。失败保留最近成功数据并显示错误，首次未读数未知不伪装为 0；账号/会话变化、关闭官方服务或离开页面清理私有状态及在途结果。
+- 正文使用无 HTML/MDC/自动链接插件的 Markdown 解析，并通过标签白名单及 Vue VNode 安全输出；丢弃所有节点属性、图片，不生成正文链接或加载外部资源。标题按文本输出。安全内链仅接受本客户端已知路径；不支持的站内路径不提供跳转。HTTPS 活动链接独立按钮及确认框打开，复用 main 的 HTTP(S)/无凭据校验；后端活动 origin 白名单仍为服务端发布约束，不在客户端放宽。
+- 实时提示仅在个人中心消息组件存活且登录/官方服务开启时连接固定 `/ws/notifications`。Token 仅放首帧 auth，不放 URL/Cookie；ready 立即 HTTP 重同步，changed 通过有界 eventId 去重和防抖重取，不按事件创建消息。认证更新重连，1008 经现有 HTTP 认证恢复路径最多恢复一次，其他断线采用带抖动退避；不可用时内联提示并保留 HTTP 刷新入口。卸载/身份切换关闭连接及计时器。
+- 文案以简洁用户表达提供 zh、zh-Hant、en 三套资源。
+
+验证：`pnpm --filter @scnexus/app-renderer-v2 test:unit --run src\apis\__tests__\inbox.test.ts src\composables\__tests__\useInboxRealtime.test.ts src\views\account\__tests__\inbox.test.ts src\views\account\__tests__\account-view.test.ts`：4 文件、106 项通过。`pnpm run typecheck:renderer`、变更代码文件 oxlint/ESLint、变更文件格式检查通过。模拟浏览器 1000×700 检查消息列表、实时降级提示与 Markdown 弹窗；列表消息宽 767px，无横向溢出，弹窗约 638×255px。页面在集成浏览器未显示时原生可见性点击等待超时，辅助 DOM 点击仅用于渲染核查，不宣称真实鼠标/键盘全流程已验收。测试仅使用合成数据，不向真实服务写已读状态或发布通知，未进行真实 Electron/WebSocket/后端全链路联调。
+
 ## AI 使用声明界面接入（2026-11-06）
 
 - 工坊列表/详情与作者草稿解析保留 `aiAssistedDevelopment`、`aiGeneratedArt`、`aiGeneratedVoice` 的 `true`、`false`、`null`；旧响应省略字段兼容为未声明，不强转字符串或数字。公开详情始终展示三项，来源为已审核项目修订。

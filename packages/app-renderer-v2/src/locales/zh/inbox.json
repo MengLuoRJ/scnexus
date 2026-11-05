@@ -1,0 +1,23 @@
+{
+  "inbox.title": "站内消息",
+  "inbox.unreadCount": "{count} 条未读",
+  "inbox.refresh": "刷新",
+  "inbox.readAll": "全部已读",
+  "inbox.all": "全部",
+  "inbox.unread": "未读",
+  "inbox.read": "已读",
+  "inbox.realtimeUnavailable": "实时更新暂不可用，请手动刷新。",
+  "inbox.loadFailed": "消息刷新失败，已保留上次内容。",
+  "inbox.loading": "正在加载消息",
+  "inbox.empty": "暂无消息",
+  "inbox.pages": "消息分页",
+  "inbox.previous": "上一页",
+  "inbox.next": "下一页",
+  "inbox.close": "关闭",
+  "inbox.markRead": "标为已读",
+  "inbox.marked": "已标为已读",
+  "inbox.openLink": "查看详情",
+  "inbox.externalTitle": "打开外部网站",
+  "inbox.externalHint": "即将在浏览器打开以下网站，请确认后继续。",
+  "inbox.continue": "继续"
+}

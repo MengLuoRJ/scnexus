@@ -11,9 +11,10 @@ import { AccountError } from '../../../apis/internal/client'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {} }),
-  useRouter: () => ({ replace: async () => { } }),
+  useRouter: () => ({ replace: async () => {} }),
 }))
 vi.mock('../CreatorStatus.vue', () => ({ default: { template: '<div />' } }))
+vi.mock('../InboxPanel.vue', () => ({ default: { template: '<div data-inbox />' } }))
 const mocks = vi.hoisted(() => ({
   toast: vi.fn<(value: unknown) => void>(),
   deviceName: vi.fn<() => Promise<{ ok: true; data: string }>>(),
@@ -380,6 +381,7 @@ test('signed-in dashboard shows real account data instead of login forms or cred
   const wrapper = await render()
   expect(wrapper.find('form').exists()).toBe(false)
   expect(wrapper.get('section').attributes('aria-label')).toBe('account.dashboard')
+  expect(wrapper.find('[data-inbox]').exists()).toBe(true)
   expect(wrapper.get('section > .grid').classes()).toContain('grid-cols-2')
   expect(wrapper.text()).toContain('Nexus_123')
   expect(wrapper.text()).not.toContain('user-id')
@@ -400,6 +402,7 @@ test('signed-in dashboard shows real account data instead of login forms or cred
   store.snapshot = { ...store.snapshot, status: 'signed-out', accessToken: null }
   await nextTick()
   expect(wrapper.find('form').exists()).toBe(true)
+  expect(wrapper.find('[data-inbox]').exists()).toBe(false)
   expect(wrapper.text()).not.toContain('user-id')
 })
 test('viewing user id only shows it in a modal after click', async () => {

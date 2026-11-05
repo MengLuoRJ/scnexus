@@ -38,6 +38,10 @@ const project = {
   detail: emptyDocument(),
   fileIds: [],
   downloadLinks: [],
+  tags: [],
+  version: null,
+  localization: [],
+  changelog: emptyDocument(),
   aiAssistedDevelopment: null,
   aiGeneratedArt: null,
   aiGeneratedVoice: null,
@@ -79,6 +83,43 @@ test('project AI disclosures retain true, false and null and reject coercion', a
   } = project
   mocks.request.mockResolvedValueOnce({ data: legacy })
   expect(await apiWorkshopDetail(1)).toEqual(project)
+})
+test('project display metadata parses separately from release patch', async () => {
+  const changelog = {
+    type: 'doc' as const,
+    content: [{ type: 'paragraph', content: [{ type: 'text', text: 'public notes' }] }],
+  }
+  const metadata = {
+    tags: ['tag', 'tag'],
+    version: '1.2.3+build.1',
+    localization: [{ locale: 'xx', version: 'free text' }],
+    changelog,
+  }
+  mocks.request.mockResolvedValueOnce({ data: { ...project, ...metadata } })
+  expect(await apiWorkshopDetail(1)).toMatchObject(metadata)
+  const patch = { type: 'doc' as const, content: [{ type: 'horizontalRule' }] }
+  mocks.request.mockResolvedValueOnce({
+    data: {
+      id,
+      projectScnid: 1,
+      version: '1.2.3',
+      status: 'DRAFT',
+      revision: 0,
+      manifest: { version: '1.2.3' },
+      patch,
+      scanStatus: 'NOT_SCANNED',
+    },
+  })
+  expect((await apiWorkshopCreateVersion(auth, 1, { version: '1.2.3' }, patch)).patch).toEqual(
+    patch,
+  )
+  expect(mocks.request).toHaveBeenLastCalledWith(
+    expect.objectContaining({ data: { manifest: { version: '1.2.3' }, patch } }),
+  )
+  mocks.request.mockResolvedValueOnce({ data: { ...project, version: 'v1.2.3' } })
+  await expect(apiWorkshopDetail(1)).rejects.toMatchObject({ kind: 'invalidResponse' })
+  mocks.request.mockResolvedValueOnce({ data: { ...project, changelog: patch } })
+  await expect(apiWorkshopDetail(1)).rejects.toMatchObject({ kind: 'invalidResponse' })
 })
 test('draft edits send only canonical input and optimistic content revision', async () => {
   const input = {

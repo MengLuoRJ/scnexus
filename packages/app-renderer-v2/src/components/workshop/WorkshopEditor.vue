@@ -2,11 +2,17 @@
 import { computed, shallowRef } from 'vue'
 import { Node } from '@tiptap/core'
 import { useI18n } from 'vue-i18n'
+import { validateDisplayChangelog } from './display-metadata'
 import { editorDocument, type WorkshopDocument, type RichNode } from './document'
 defineOptions({ name: 'WorkshopEditor' })
 const props = withDefaults(
-  defineProps<{ modelValue: WorkshopDocument; disabled?: boolean; fileIds?: string[] }>(),
-  { disabled: false, fileIds: () => [] },
+  defineProps<{
+    modelValue: WorkshopDocument
+    disabled?: boolean
+    fileIds?: string[]
+    basic?: boolean
+  }>(),
+  { disabled: false, fileIds: () => [], basic: false },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: WorkshopDocument] }>()
 const { t } = useI18n()
@@ -29,7 +35,8 @@ const model = computed({
   get: () => props.modelValue,
   set: (value: RichNode) => {
     try {
-      emit('update:modelValue', editorDocument(value))
+      const document = editorDocument(value)
+      emit('update:modelValue', props.basic ? validateDisplayChangelog(document) : document)
       invalid.value = false
     } catch {
       invalid.value = true
@@ -60,12 +67,16 @@ const toolbar = [
       :editable="!props.disabled"
       :image="false"
       :mention="false"
-      :extensions="[image]"
-      :starter-kit="{ link: { openOnClick: false }, codeBlock: { enableTabIndentation: false } }"
+      :extensions="props.basic ? [] : [image]"
+      :starter-kit="{
+        link: props.basic ? false : { openOnClick: false },
+        horizontalRule: props.basic ? false : {},
+        codeBlock: { enableTabIndentation: false },
+      }"
       :ui="{ base: 'min-h-28 max-h-64 overflow-y-auto p-3 text-sm' }">
       <UEditorToolbar :editor="editor" :items="toolbar" class="border-b border-default" />
       <div
-        v-if="props.fileIds.length && !props.disabled"
+        v-if="!props.basic && props.fileIds.length && !props.disabled"
         class="flex gap-2 p-2 border-b border-default">
         <USelect
           v-model="selectedFile"

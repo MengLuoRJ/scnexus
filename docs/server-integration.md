@@ -330,6 +330,25 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 
 验证：`pnpm --filter @scnexus/app-main test src\modules\analytics\__test__ src\modules\__test__\analytics-lifecycle.test.ts src\modules\auth\__test__`：9 文件、133 项通过；`pnpm run typecheck:main` 通过。测试覆盖先 leave 后撤销、leave 失败仍撤销、1 秒超时与取消、禁用/离线跳过、固定路由与敏感错误清理，以及 1024/1025 字符边界。未向真实服务写统计，未宣称真实退出在线快照已验收。
 
+## 工坊展示元数据与版本说明（2026-11-06）
+
+对照后端提交 `a2f6ef2` 与 `docs/workshop-api.md`、`docs/client/workshop-electron.md` 接入：
+
+- 项目资料新增 `tags`、可空展示 `version`、标准结构 `localization` 和公开 `changelog`。作者可不选包独立填写，标签与语言资料可清空，展示版本留空提交 null；展示版本严格 SemVer，本地化条目 version 仍为普通字符串。标签不自动去重、不引入固定语言枚举，组合 JSON UTF-8 上限 131072 字节。
+- 公开详情仅显示已审核项目字段，不从候选包拼接。展示日志使用基础 Tiptap，禁止图片、链接、表格、水平线和扩展属性；详情及版本说明保留原富文本规则。
+- 发行版本创建及响应由 `changelog` 切换为 `patch`，不与项目公开日志混用。客户端不增加 `package.json.patch`，也不把项目展示版本用于安装或改写冻结 Manifest。
+- 从包填写资料先展示当前值和包内值，可逐项勾选确认，取消不改草稿；缺失或转换失败的字段保留现有值并提示手填。切换项目/账号清理导入确认，导入不会自动保存或发布。
+- main 复用受控归档读取根清单的 changelog 文件引用，限制读取大小、包内边界和链接成员；Markdown 转为基础日志，链接/图片只保留可见文本，HTML/无法安全转换内容提示手填，不读取外部 URL。结果仅随本次选择包返回，不提供任意本地文件读取 IPC。
+- renderer 直接声明 `@scnexus/standard` workspace 依赖以复用 `PackageLocalization` 类型，三语文案同步。
+
+验证记录：
+
+- `pnpm --filter @scnexus/app-renderer-v2 test:unit --run src\apis\__tests__\workshop.test.ts src\views\creator\__tests__\creator-view.test.ts src\views\workshop\__tests__ src\components\workshop\__tests__`：9 文件、106 项通过，覆盖标签/本地化字节边界、展示日志精简格式、patch 命名、取消/逐项导入与原有工坊操作。
+- `pnpm --filter @scnexus/app-main test src\modules\workshop\__test__`：4 文件、145 项通过，含受控日志读取与转换边界。
+- `pnpm run typecheck:renderer`、`pnpm run typecheck:main`、`pnpm run typecheck:shared`：通过；变更代码 oxlint/ESLint 和变更文件格式检查通过，三语 workshop 键一致。
+
+模拟浏览器按 1000×700 验证公开详情展示标签、SemVer、多语言自由版本及更新日志，内容宽 769px、无横向溢出；创作者导入差异与编辑通过组件测试，未完成真实 Electron/服务端发布联调。未修改后端、运行数据库迁移或向真实项目写入。临时预览及合成路由在检查后清理。
+
 ## 个人中心站内消息（2026-11-06）
 
 对照后端 `docs/inbox.md`，在已登录个人中心资料区下方增加站内消息，未增加发信、删除、归档或管理发布功能。
@@ -345,7 +364,7 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 ## AI 使用声明界面接入（2026-11-06）
 
 - 工坊列表/详情与作者草稿解析保留 `aiAssistedDevelopment`、`aiGeneratedArt`、`aiGeneratedVoice` 的 `true`、`false`、`null`；旧响应省略字段兼容为未声明，不强转字符串或数字。公开详情始终展示三项，来源为已审核项目修订。
-- 创作者表单提供“使用 / 未使用 / 未声明”选择，创建/编辑显式保存布尔值或 null；null 清除项目声明。切换项目重置表单；项目声明与版本 Manifest 独立，选择/上传包不会自动覆盖，仅用户明确点击“从安装包填写资料”时复制，缺省字段转为 null。候选包及版本资料另展示各自 Manifest 声明，提醒作者项目资料须保存并审核后公开。
+- 创作者表单提供“使用 / 未使用 / 未声明”选择，创建/编辑显式保存布尔值或 null；null 清除项目声明。切换项目重置表单；项目声明与版本 Manifest 独立，选择/上传包不会自动覆盖，仅用户明确点击“从安装包填写资料”并确认差异时复制，缺省字段保留现有声明。候选包及版本资料另展示各自 Manifest 声明，提醒作者项目资料须保存并审核后公开。
 - 已安装战役主面板与通用作品详情（战役/自制/依赖）展示实际安装清单的三项声明；字段缺省显示未声明，不补为 false。shared DTO 原本复用 standard Package，安装、package.json/install-manifest.json、electron-store 重启及扫描读取均保留，无需另建持久化字段或迁移。
 - 三语资源同步，展示统一提示作者自报信息不代表平台检测或认证。1000×700 桌面基准下三项保持同一行。
 

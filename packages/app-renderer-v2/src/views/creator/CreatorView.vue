@@ -35,6 +35,11 @@ import {
   validateDocument,
   type WorkshopDocument,
 } from '../../components/workshop/document'
+import {
+  parseDisplayMetadata,
+  validateDisplayChangelog,
+  type PackageLocalization,
+} from '../../components/workshop/display-metadata'
 import { aiUsageFields } from '../../utils/ai-usage'
 import AiUsageDetails from '../../components/content/AiUsageDetails.vue'
 import WorkshopEditor from '../../components/workshop/WorkshopEditor.vue'
@@ -60,14 +65,21 @@ const saving = shallowRef(false)
 const error = shallowRef<unknown>(null)
 const conflict = shallowRef(false)
 const selection = shallowRef<WorkshopPackageSelection | null>(null)
-const changelog = shallowRef<WorkshopDocument>(emptyDocument())
+const patch = shallowRef<WorkshopDocument>(emptyDocument())
 const detail = shallowRef<WorkshopDocument>(emptyDocument())
+const displayChangelog = shallowRef<WorkshopDocument>(emptyDocument())
+const importPreview = shallowRef<Record<string, unknown> | null>(null)
+const importFields = shallowRef<string[]>([])
+const importWarning = shallowRef(false)
 const fileIds = shallowRef<string[]>([])
 const imageTasks = new Set<string>()
 const state = reactive({
   title: '',
   description: '',
   website: '',
+  version: '',
+  tags: [] as string[],
+  localization: [] as PackageLocalization[],
   aiAssistedDevelopment: null as boolean | null,
   aiGeneratedArt: null as boolean | null,
   aiGeneratedVoice: null as boolean | null,
@@ -89,6 +101,20 @@ const schema = z.object({
     .refine((value) => value.trim().length > 0),
   description: z.string().max(1000),
   website: z.string().max(2048),
+  version: z.string().refine((value) => value === '' || isStrictSemver(value), {
+    error: () => t('workshop.invalidDisplayVersion'),
+  }),
+  tags: z.array(z.string()),
+  localization: z.array(
+    z.object({
+      locale: z.string(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      author: z.string().optional(),
+      version: z.string().optional(),
+      translators: z.array(z.string()).optional(),
+    }),
+  ),
   aiAssistedDevelopment: z.boolean().nullable(),
   aiGeneratedArt: z.boolean().nullable(),
   aiGeneratedVoice: z.boolean().nullable(),
@@ -124,6 +150,8 @@ async function load() {
   versions.value = []
   selected.value = null
   editing.value = false
+  importPreview.value = null
+  importFields.value = []
   error.value = null
   if (!allowed.value) return
   loading.value = true
@@ -181,12 +209,21 @@ async function edit(project: OwnerProject | null) {
   selected.value = project
   conflict.value = false
   selection.value = null
-  changelog.value = emptyDocument()
+  patch.value = emptyDocument()
+  importPreview.value = null
+  importFields.value = []
+  displayChangelog.value = project?.changelog ?? emptyDocument()
   versions.value = []
   Object.assign(state, {
     title: project?.title ?? '',
     description: project?.description ?? '',
     website: project?.website ?? '',
+    version: project?.version ?? '',
+    tags: [...(project?.tags ?? [])],
+    localization: (project?.localization ?? []).map((item) => ({
+      ...item,
+      ...(item.translators ? { translators: [...item.translators] } : {}),
+    })),
     aiAssistedDevelopment: project?.aiAssistedDevelopment ?? null,
     aiGeneratedArt: project?.aiGeneratedArt ?? null,
     aiGeneratedVoice: project?.aiGeneratedVoice ?? null,
@@ -245,6 +282,9 @@ async function save() {
     }
     const input = {
       ...schema.parse(state),
+      ...parseDisplayMetadata(state.tags, state.localization),
+      version: state.version === '' ? null : state.version,
+      changelog: validateDisplayChangelog(displayChangelog.value),
       detail: validateDocument(detail.value),
       fileIds: [...new Set([...fileIds.value, ...documentFileIds(detail.value)])],
     }
@@ -296,23 +336,113 @@ async function choosePackage() {
 }
 function prefill() {
   const manifest = selection.value?.manifest
-  if (!manifest) return
+  if (!manifest || saving.value || conflict.value) return
+  const candidate: Record<string, unknown> = {}
+  importWarning.value = selection.value?.displayChangelogWarning === true
   for (const field of aiUsageFields)
-    state[field] = typeof manifest[field] === 'boolean' ? manifest[field] : null
-  if (typeof manifest.name === 'string') state.title = manifest.name
+    if (typeof manifest[field] === 'boolean') candidate[field] = manifest[field]
+  if (typeof manifest.name === 'string') candidate.title = manifest.name
   for (const key of ['description', 'website'] as const)
-    if (typeof manifest[key] === 'string') state[key] = manifest[key]
+    if (typeof manifest[key] === 'string') candidate[key] = manifest[key]
   for (const key of ['social', 'sponsor'] as const) {
     const object = manifest[key]
     if (object && typeof object === 'object' && !Array.isArray(object))
-      state[key] = Object.fromEntries(
+      candidate[key] = Object.fromEntries(
         Object.entries(object).filter(
           ([k, v]) =>
             (key === 'social' ? [...socialKeys] : [...sponsorKeys]).includes(k as never) &&
             typeof v === 'string',
         ),
-      ) as Record<string, string>
+      )
   }
+  if (isStrictSemver(manifest.version)) candidate.version = manifest.version
+  else if (manifest.version !== undefined) importWarning.value = true
+  try {
+    const metadata = parseDisplayMetadata(manifest.tags ?? [], manifest.localization ?? [])
+    if (manifest.tags !== undefined) candidate.tags = metadata.tags
+    if (manifest.localization !== undefined) candidate.localization = metadata.localization
+  } catch {
+    importWarning.value = true
+  }
+  if (selection.value?.displayChangelog) {
+    try {
+      candidate.changelog = validateDisplayChangelog(selection.value.displayChangelog)
+    } catch {
+      importWarning.value = true
+    }
+  }
+  importPreview.value = JSON.parse(JSON.stringify(candidate)) as Record<string, unknown>
+  importFields.value = Object.keys(candidate).filter(
+    (key) => JSON.stringify(candidate[key]) !== JSON.stringify(currentImportValue(key)),
+  )
+}
+function currentImportValue(key: string): unknown {
+  return key === 'changelog' ? displayChangelog.value : state[key as keyof typeof state]
+}
+function importLabel(key: string): string {
+  const labels: Record<string, string> = {
+    title: 'workshop.projectTitle',
+    description: 'workshop.description',
+    website: 'workshop.website',
+    version: 'workshop.displayVersion',
+    tags: 'workshop.tags',
+    localization: 'workshop.localization',
+    changelog: 'workshop.changelog',
+    social: 'workshop.socialSponsor',
+    sponsor: 'workshop.socialSponsor',
+  }
+  return t(labels[key] ?? `contentMedia.ai.${key}`)
+}
+function importText(key: string, value: unknown): string {
+  if (value === undefined || value === null || value === '') return '—'
+  if (aiUsageFields.includes(key as (typeof aiUsageFields)[number]))
+    return t(
+      value === true
+        ? 'contentMedia.ai.used'
+        : value === false
+          ? 'contentMedia.ai.unused'
+          : 'contentMedia.ai.undeclared',
+    )
+  if (key === 'changelog') {
+    const text = (node: { text?: string; content?: unknown[] }): string =>
+      node.text ?? (node.content ?? []).map((child) => text(child as typeof node)).join('\n')
+    return text(value as Parameters<typeof text>[0]) || '—'
+  }
+  if (key === 'localization')
+    return (
+      (value as PackageLocalization[])
+        .map((item) =>
+          [
+            item.locale,
+            ...(['name', 'description', 'author', 'version'] as const)
+              .filter((field) => item[field] !== undefined)
+              .map((field) => `${t(`workshop.locale.${field}`)}: ${item[field]}`),
+            ...(item.translators
+              ? [`${t('workshop.locale.translators')}: ${item.translators.join(', ')}`]
+              : []),
+          ].join('\n'),
+        )
+        .join('\n\n') || '—'
+    )
+  if (Array.isArray(value)) return value.join(', ') || '—'
+  if (typeof value === 'object')
+    return (
+      Object.entries(value)
+        .map(([name, content]) => `${name}: ${content}`)
+        .join('\n') || '—'
+    )
+  return String(value)
+}
+function applyPrefill() {
+  if (!importPreview.value || saving.value || conflict.value || !allowed.value) return
+  const values = Object.fromEntries(
+    importFields.value.map((key) => [key, importPreview.value![key]]),
+  )
+  if (values.changelog) displayChangelog.value = validateDisplayChangelog(values.changelog)
+  delete values.changelog
+  Object.assign(state, values)
+  importPreview.value = null
+  importFields.value = []
   toast.add({ color: 'info', title: t('workshop.prefilled') })
 }
 async function image() {
@@ -355,7 +485,7 @@ async function upload() {
       })
       return
     }
-    const log = validateDocument(changelog.value)
+    const log = validateDocument(patch.value)
     if (documentFileIds(log).some((id) => !selected.value!.fileIds.includes(id))) {
       toast.add({ color: 'warning', title: t('workshop.saveImagesFirst') })
       return
@@ -493,6 +623,79 @@ async function cancelCandidate() {
           <UFormField name="description" :label="t('workshop.description')">
             <UTextarea v-model="state.description" class="w-full" :rows="2" :maxlength="1000" />
           </UFormField>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormField
+              name="version"
+              :label="t('workshop.displayVersion')"
+              :description="t('workshop.displayVersionHint')">
+              <UInput
+                v-model="state.version"
+                class="w-full"
+                placeholder="1.0.0"
+                :disabled="saving || conflict" />
+            </UFormField>
+            <UFormField name="tags" :label="t('workshop.tags')">
+              <UInputTags v-model="state.tags" class="w-full" :disabled="saving || conflict" />
+            </UFormField>
+          </div>
+          <fieldset class="space-y-2">
+            <legend class="text-sm font-medium">{{ t('workshop.localization') }}</legend>
+            <p class="text-xs text-muted">{{ t('workshop.localizationHint') }}</p>
+            <div
+              v-for="(item, index) in state.localization"
+              :key="index"
+              class="space-y-2 border border-default rounded p-3">
+              <div class="grid grid-cols-2 gap-2">
+                <UFormField
+                  :name="`localization.${index}.locale`"
+                  :label="t('workshop.locale.locale')"
+                  required>
+                  <UInput v-model="item.locale" class="w-full" :disabled="saving || conflict" />
+                </UFormField>
+                <UFormField
+                  v-for="field in ['name', 'author', 'version'] as const"
+                  :key="field"
+                  :name="`localization.${index}.${field}`"
+                  :label="t(`workshop.locale.${field}`)">
+                  <UInput v-model="item[field]" class="w-full" :disabled="saving || conflict" />
+                </UFormField>
+              </div>
+              <UFormField :label="t('workshop.locale.description')">
+                <UTextarea
+                  v-model="item.description"
+                  class="w-full"
+                  :rows="2"
+                  :disabled="saving || conflict" />
+              </UFormField>
+              <UFormField :label="t('workshop.locale.translators')">
+                <UInputTags
+                  :model-value="item.translators ?? []"
+                  class="w-full"
+                  :disabled="saving || conflict"
+                  @update:model-value="item.translators = $event" />
+              </UFormField>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="outline"
+                :disabled="saving || conflict"
+                @click="state.localization.splice(index, 1)">
+                {{ t('workshop.removeLocalization') }}
+              </UButton>
+            </div>
+            <UButton
+              size="sm"
+              variant="outline"
+              :disabled="saving || conflict"
+              @click="state.localization.push({ locale: '' })">
+              {{ t('workshop.addLocalization') }}
+            </UButton>
+          </fieldset>
+          <div class="space-y-2">
+            <h3 class="text-sm font-medium">{{ t('workshop.changelog') }}</h3>
+            <p class="text-xs text-muted">{{ t('workshop.displayChangelogHint') }}</p>
+            <WorkshopEditor v-model="displayChangelog" basic :disabled="saving || conflict" />
+          </div>
           <fieldset class="space-y-2">
             <legend class="text-sm font-medium">{{ t('contentMedia.ai.title') }}</legend>
             <p class="text-xs text-muted">{{ t('contentMedia.ai.editHint') }}</p>
@@ -624,7 +827,7 @@ async function cancelCandidate() {
               </UButton>
             </div>
             <AiUsageDetails :value="version.manifest" />
-            <WorkshopRichText :document="version.changelog" />
+            <WorkshopRichText :document="version.patch" />
           </div>
           <UAlert
             v-if="selected.candidateVersionId"
@@ -653,8 +856,8 @@ async function cancelCandidate() {
                 JSON.stringify(selection.manifest, null, 2)
               }}</pre>
             </details>
-            <p class="text-sm">{{ t('workshop.changelog') }}</p>
-            <WorkshopEditor v-model="changelog" :file-ids="selected.fileIds" :disabled="saving" />
+            <p class="text-sm">{{ t('workshop.patch') }}</p>
+            <WorkshopEditor v-model="patch" :file-ids="selected.fileIds" :disabled="saving" />
             <UButton
               :loading="saving"
               :disabled="!packageValid || conflict || !!selected.candidateVersionId"
@@ -665,6 +868,61 @@ async function cancelCandidate() {
         </UCard>
       </div>
     </template>
+    <UModal
+      :open="!!importPreview"
+      :title="t('workshop.importTitle')"
+      :description="t('workshop.importHint')"
+      :ui="{ content: 'sm:max-w-3xl', body: 'max-h-[55vh] overflow-y-auto' }"
+      @update:open="
+        (value: boolean) => {
+          if (!value) importPreview = null
+        }
+      ">
+      <template #body>
+        <UAlert
+          v-if="importWarning"
+          :title="t('workshop.importWarning')"
+          color="warning"
+          class="mb-3" />
+        <div
+          v-for="(value, key) in importPreview"
+          :key="key"
+          class="border-b border-default py-3 space-y-2">
+          <UCheckbox
+            :model-value="importFields.includes(String(key))"
+            :label="importLabel(String(key))"
+            @update:model-value="
+              (checked: boolean | 'indeterminate') => {
+                importFields = checked
+                  ? [...new Set([...importFields, String(key)])]
+                  : importFields.filter((field) => field !== String(key))
+              }
+            " />
+          <div class="grid grid-cols-2 gap-3 text-xs min-w-0">
+            <div class="min-w-0">
+              <p class="text-muted">{{ t('workshop.importCurrent') }}</p>
+              <pre class="whitespace-pre-wrap break-all max-h-28 overflow-auto">{{
+                importText(String(key), currentImportValue(String(key)))
+              }}</pre>
+            </div>
+            <div class="min-w-0">
+              <p class="text-muted">{{ t('workshop.importPackage') }}</p>
+              <pre class="whitespace-pre-wrap break-all max-h-28 overflow-auto">{{
+                importText(String(key), value)
+              }}</pre>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <UButton color="neutral" variant="outline" @click="importPreview = null">
+          {{ t('workshop.cancel') }}
+        </UButton>
+        <UButton :disabled="!importFields.length || saving || conflict" @click="applyPrefill">
+          {{ t('workshop.applyImport') }}
+        </UButton>
+      </template>
+    </UModal>
     <UModal
       :open="!!cancelId"
       :title="t('workshop.cancelCandidate')"

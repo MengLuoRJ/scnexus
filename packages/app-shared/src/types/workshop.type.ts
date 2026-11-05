@@ -30,6 +30,23 @@ export interface WorkshopTask {
   completedAt?: string
   bytesPerSecond?: number
 }
+export interface WorkshopDisplayChangelogNode {
+  type:
+    | 'doc'
+    | 'paragraph'
+    | 'blockquote'
+    | 'bulletList'
+    | 'orderedList'
+    | 'listItem'
+    | 'heading'
+    | 'codeBlock'
+    | 'text'
+    | 'hardBreak'
+  content?: WorkshopDisplayChangelogNode[]
+  text?: string
+  attrs?: { level: number } | { start: number }
+  marks?: { type: 'bold' | 'italic' | 'strike' | 'code' | 'underline' }[]
+}
 export interface WorkshopPackageSelection {
   selectionId: string
   name: string
@@ -37,6 +54,8 @@ export interface WorkshopPackageSelection {
   sha256: string
   partMd5: string[]
   manifest: Record<string, unknown>
+  displayChangelog?: { type: 'doc'; content: WorkshopDisplayChangelogNode[] }
+  displayChangelogWarning?: boolean
 }
 export interface WorkshopUploadInput {
   selectionId: string

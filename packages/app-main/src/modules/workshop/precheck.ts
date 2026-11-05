@@ -7,6 +7,7 @@ import { lstat, open } from 'node:fs/promises'
 import { isPackage } from '@scnexus/standard/package'
 import { sevenZip } from '../../utils/7zip-wrapper'
 import { openSource } from '../content-package/source'
+import { readDisplayChangelog } from './display-changelog'
 
 const validateSchema = new Ajv({ strict: true }).compile(schema)
 export const PART_SIZE = 16 * 1024 * 1024
@@ -125,7 +126,11 @@ export function parseManifest(text: string): Record<string, unknown> {
   )
   return manifest
 }
-export async function precheckPackage(path: string, maxPackageBytes: number) {
+export async function precheckPackage(
+  path: string,
+  maxPackageBytes: number,
+  importDisplay = false,
+) {
   const info = await lstat(path)
   assert(
     Number.isSafeInteger(maxPackageBytes) && maxPackageBytes >= 0 && maxPackageBytes <= 2147483647,
@@ -190,7 +195,10 @@ export async function precheckPackage(path: string, maxPackageBytes: number) {
       )
     }
   }
-  return { manifest, ...(await fingerprint(path)) }
+  const display = importDisplay ? await readDisplayChangelog(source, manifest) : {}
+  const checked = await fingerprint(path)
+  if (importDisplay) assert(checked.sha256 === source.archiveHash, 'LOCAL_FILE_CHANGED')
+  return { manifest, ...display, ...checked }
 }
 export async function inspectImage(path: string) {
   const stat = await lstat(path)

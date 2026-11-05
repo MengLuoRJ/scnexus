@@ -82,7 +82,10 @@ const form = defineComponent({
   emits: ['submit'],
   template: '<form @submit.prevent="$emit(\'submit\')"><slot /></form>',
 })
-const pass = defineComponent({ template: '<div><slot /><slot name="actions" /></div>' })
+const pass = defineComponent({
+  props: ['title'],
+  template: '<div>{{ title }}<slot /><slot name="actions" /></div>',
+})
 const wrappers: { unmount(): void }[] = []
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
@@ -113,7 +116,17 @@ function render() {
         Card: pass,
         Alert: pass,
         Progress: true,
-        Modal: true,
+        Modal: defineComponent({
+          props: ['open'],
+          template: '<div v-if="open"><slot name="body" /><slot name="footer" /></div>',
+        }),
+        InputTags: true,
+        Checkbox: defineComponent({
+          props: ['modelValue', 'label'],
+          emits: ['update:modelValue'],
+          template:
+            '<label><input type="checkbox" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />{{ label }}</label>',
+        }),
       },
     },
   })
@@ -136,6 +149,14 @@ test('manifest name prefills project title only after explicit action and creati
         website: 'https://example.com',
         aiAssistedDevelopment: true,
         aiGeneratedArt: false,
+        tags: ['story', 'story'],
+        localization: [{ locale: 'xx', version: 'translation version' }],
+      },
+      displayChangelog: {
+        type: 'doc',
+        content: [
+          { type: 'paragraph', content: [{ type: 'text', text: 'Imported public notes' }] },
+        ],
       },
     },
   })
@@ -160,6 +181,8 @@ test('manifest name prefills project title only after explicit action and creati
     .findAll('button')
     .find((button) => button.text() === '从安装包填写资料')!
     .trigger('click')
+  expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('')
+  await click(wrapper, '应用所选资料')
   expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('Manifest title')
   await wrapper.find('form').trigger('submit')
   await flushPromises()
@@ -171,6 +194,15 @@ test('manifest name prefills project title only after explicit action and creati
       aiAssistedDevelopment: true,
       aiGeneratedArt: false,
       aiGeneratedVoice: null,
+      tags: ['story', 'story'],
+      version: '1.2.3',
+      localization: [{ locale: 'xx', version: 'translation version' }],
+      changelog: {
+        type: 'doc',
+        content: [
+          { type: 'paragraph', content: [{ type: 'text', text: 'Imported public notes' }] },
+        ],
+      },
     }),
   )
   expect(mocks.create.mock.calls[0]![1]).not.toHaveProperty('scnid')
@@ -244,6 +276,66 @@ test('AI project declarations load, clear explicitly and reset when switching pr
     'undeclared',
     'undeclared',
   ])
+})
+test('cancelled or partial import preserves manual project metadata and release patch', async () => {
+  mocks.mine.mockResolvedValue([])
+  mocks.create.mockResolvedValue({ scnid: 10, contentRevision: 1 })
+  mocks.select.mockResolvedValue({
+    data: {
+      selectionId: 'selection',
+      size: 1,
+      manifest: { name: 'Package title', version: '2.0.0', tags: ['new'] },
+      displayChangelogWarning: true,
+    },
+  })
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  await wrapper.findAll('input')[0]!.setValue('Manual title')
+  await click(wrapper, '选择并验证压缩包')
+  await click(wrapper, '从安装包填写资料')
+  expect(wrapper.text()).toContain('部分资料无法导入')
+  await click(wrapper, '取消')
+  expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('Manual title')
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.create).toHaveBeenCalledWith(
+    {},
+    expect.objectContaining({
+      title: 'Manual title',
+      version: null,
+      tags: [],
+      localization: [],
+      changelog: { type: 'doc', content: [] },
+    }),
+  )
+  expect(mocks.version).not.toHaveBeenCalled()
+})
+test('import allows keeping a manual title while applying only selected package fields', async () => {
+  mocks.mine.mockResolvedValue([])
+  mocks.create.mockResolvedValue({ scnid: 10, contentRevision: 1 })
+  mocks.select.mockResolvedValue({
+    data: {
+      selectionId: 'selection',
+      size: 1,
+      manifest: { name: 'Package title', version: '2.0.0', tags: ['imported'] },
+    },
+  })
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, '创建作品')
+  await wrapper.findAll('input')[0]!.setValue('Manual title')
+  await click(wrapper, '选择并验证压缩包')
+  await click(wrapper, '从安装包填写资料')
+  const titleChoice = wrapper.findAll('label').find((label) => label.text() === '作品名称')!
+  await titleChoice.find('input').setValue(false)
+  await click(wrapper, '应用所选资料')
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.create).toHaveBeenCalledWith(
+    {},
+    expect.objectContaining({ title: 'Manual title', version: '2.0.0', tags: ['imported'] }),
+  )
 })
 test('checks fresh project quota before create and permits more than five projects', async () => {
   mocks.mine.mockResolvedValue(
@@ -387,8 +479,8 @@ test('external-only drafts save without selecting a package or creating a versio
   await click(wrapper, '创建作品')
   await wrapper.findAll('input')[0]!.setValue('External project')
   await click(wrapper, '添加下载外链')
-  await wrapper.findAll('input')[3]!.setValue('https://download.example.test/file.zip')
-  await wrapper.findAll('input')[4]!.setValue('Download instructions')
+  await wrapper.findAll('input')[4]!.setValue('https://download.example.test/file.zip')
+  await wrapper.findAll('input')[5]!.setValue('Download instructions')
   await wrapper.find('form').trigger('submit')
   await flushPromises()
   expect(mocks.create).toHaveBeenCalledWith(

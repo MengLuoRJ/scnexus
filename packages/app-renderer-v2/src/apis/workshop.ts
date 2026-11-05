@@ -1,6 +1,15 @@
 import { parse } from 'semver'
 import { apiRequest, AccountError, type ApiAuth } from './internal/client'
-import { validateDocument, type WorkshopDocument } from '../components/workshop/document'
+import {
+  validateDisplayChangelog,
+  parseDisplayMetadata,
+  type PackageLocalization,
+} from '../components/workshop/display-metadata'
+import {
+  emptyDocument,
+  validateDocument,
+  type WorkshopDocument,
+} from '../components/workshop/document'
 export const socialKeys = [
   'twitter',
   'discord',
@@ -46,6 +55,10 @@ export type ProjectInput = {
   detail: WorkshopDocument
   fileIds: string[]
   downloadLinks: DownloadLink[]
+  tags?: string[]
+  version?: string | null
+  localization?: PackageLocalization[]
+  changelog?: WorkshopDocument
   aiAssistedDevelopment?: boolean | null
   aiGeneratedArt?: boolean | null
   aiGeneratedVoice?: boolean | null
@@ -67,7 +80,7 @@ export type WorkshopVersion = {
   status: string
   revision: number
   manifest: Record<string, unknown>
-  changelog: WorkshopDocument
+  patch: WorkshopDocument
   scanStatus: string
 }
 export function record(value: unknown): Record<string, unknown> {
@@ -109,7 +122,15 @@ export function parseProject(value: unknown): WorkshopProject {
   const p = record(value)
   const fileIds = p.fileIds === undefined ? [] : p.fileIds
   if (!Array.isArray(fileIds) || fileIds.length > 50) throw new Error('response')
+  if (p.version !== undefined && p.version !== null && !isStrictSemver(p.version))
+    throw new Error('version')
   return {
+    ...parseDisplayMetadata(
+      p.tags === undefined ? [] : p.tags,
+      p.localization === undefined ? [] : p.localization,
+    ),
+    version: p.version === undefined ? null : (p.version as string | null),
+    changelog: validateDisplayChangelog(p.changelog === undefined ? emptyDocument() : p.changelog),
     scnid: scnid(p.scnid),
     slug: p.slug === null ? null : text(p.slug, 80),
     approvedVersionId: nullableId(p.approvedVersionId),
@@ -148,7 +169,7 @@ export function parseVersion(value: unknown): WorkshopVersion {
     status: text(p.status, 40),
     revision: revision(p.revision),
     manifest: record(p.manifest),
-    changelog: validateDocument(p.changelog),
+    patch: validateDocument(p.patch),
     scanStatus: text(p.scanStatus, 40),
   }
 }
@@ -207,12 +228,12 @@ export function apiWorkshopCreateVersion(
   auth: ApiAuth,
   id: number,
   manifest: Record<string, unknown>,
-  changelog: WorkshopDocument,
+  patch: WorkshopDocument,
 ) {
   if (!isStrictSemver(manifest.version)) throw new AccountError('badRequest')
   return apiRequest(`/workshop/projects/${scnid(id)}/versions`, parseVersion, auth, 'POST', {
     manifest,
-    changelog,
+    patch,
   })
 }
 export const apiWorkshopCancelCandidate = (auth: ApiAuth, id: string) =>

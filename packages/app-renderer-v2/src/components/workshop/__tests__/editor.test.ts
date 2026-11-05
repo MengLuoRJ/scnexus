@@ -5,41 +5,54 @@ import type { Plugin } from 'vue'
 import ui from '@nuxt/ui/vue-plugin'
 import WorkshopEditor from '../WorkshopEditor.vue'
 import zh from '../../../locales/zh'
-test('Nuxt UI editor mounts with restricted JSON extensions and emits canonical content', async () => {
-  vi.stubGlobal(
-    'ResizeObserver',
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  )
-  const wrapper = mount(WorkshopEditor, {
-    props: {
-      modelValue: {
-        type: 'doc',
-        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Draft text' }] }],
+test.each([false, true])(
+  'Nuxt UI editor mounts with restricted JSON extensions (basic=%s)',
+  async (basic) => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
       },
-    },
-    global: {
-      plugins: [
-        ui,
-        createI18n({
-          legacy: false,
-          locale: 'zh',
-          flatJson: true,
-          messages: { zh },
-        }) as unknown as Plugin,
-      ],
-    },
-  })
-  try {
-    await flushPromises()
-    expect(wrapper.text()).toContain('Draft text')
-    expect(wrapper.find('[contenteditable="true"]').exists()).toBe(true)
-    expect(wrapper.text()).not.toContain('富文本内容不符合')
-  } finally {
-    wrapper.unmount()
-    vi.unstubAllGlobals()
-  }
-})
+    )
+    const wrapper = mount(WorkshopEditor, {
+      props: {
+        basic,
+        modelValue: {
+          type: 'doc',
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Draft text' }] }],
+        },
+      },
+      global: {
+        plugins: [
+          ui,
+          createI18n({
+            legacy: false,
+            locale: 'zh',
+            flatJson: true,
+            messages: { zh },
+          }) as unknown as Plugin,
+        ],
+      },
+    })
+    try {
+      await flushPromises()
+      expect(wrapper.text()).toContain('Draft text')
+      expect(wrapper.find('[contenteditable="true"]').exists()).toBe(true)
+      const editor = wrapper.findComponent({ name: 'Editor' }).vm as unknown as {
+        editor: { extensionManager: { extensions: { name: string }[] } }
+      }
+      expect(
+        editor.editor.extensionManager.extensions.some((extension) => extension.name === 'link'),
+      ).toBe(!basic)
+      expect(
+        editor.editor.extensionManager.extensions.some((extension) => extension.name === 'image'),
+      ).toBe(!basic)
+      expect(wrapper.text()).not.toContain('富文本内容不符合')
+    } finally {
+      wrapper.unmount()
+      vi.unstubAllGlobals()
+    }
+  },
+)

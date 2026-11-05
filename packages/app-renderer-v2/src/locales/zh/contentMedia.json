@@ -10,5 +10,14 @@
   "contentMedia.empty": "此内容包未附带文档。",
   "contentMedia.retry": "重试",
   "contentMedia.imageError": "部分包内图片已丢失或格式不受支持。",
-  "contentMedia.localOnly": "仅支持此内容包内的文档和图片，外部链接已禁用。"
+  "contentMedia.localOnly": "仅支持此内容包内的文档和图片，外部链接已禁用。",
+  "contentMedia.ai.title": "AI 使用声明",
+  "contentMedia.ai.aiAssistedDevelopment": "AI 协助开发",
+  "contentMedia.ai.aiGeneratedArt": "AI 美术素材",
+  "contentMedia.ai.aiGeneratedVoice": "AI 语音配音",
+  "contentMedia.ai.used": "使用",
+  "contentMedia.ai.unused": "未使用",
+  "contentMedia.ai.undeclared": "未声明",
+  "contentMedia.ai.disclaimer": "由作者声明，不代表平台检测或认证。",
+  "contentMedia.ai.editHint": "项目声明需保存并审核后公开，与安装包声明独立。选择“未声明”可清除声明；仅点击“从安装包填写资料”时复制包内声明。"
 }

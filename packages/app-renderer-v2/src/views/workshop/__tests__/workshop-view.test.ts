@@ -144,10 +144,16 @@ test('favorites tab uses the private list instead of public project browsing', a
 })
 test('project detail includes the community section', async () => {
   route.params = { scnid: '2' }
-  mocks.detail.mockResolvedValue(project)
+  mocks.detail.mockResolvedValue({
+    ...project,
+    aiAssistedDevelopment: true,
+    aiGeneratedArt: false,
+    aiGeneratedVoice: null,
+  })
   const wrapper = render()
   await flushPromises()
   expect(wrapper.find('[data-community]').exists()).toBe(true)
+  expect(wrapper.findAll('dd').map((d) => d.text())).toEqual(['使用', '未使用', '未声明'])
 })
 test('anonymous download navigates to login with a safe return path without starting bytes', async () => {
   route.params = { scnid: '2' }

@@ -9,6 +9,7 @@ import type { ContentRecord } from '@scnexus/app-shared/types/content.type'
 import { formatFileSize } from '../../views/campaign/formatFileSize'
 import FileTree from '../../views/campaign/components/FileTree.vue'
 import PackageDocuments from './PackageDocuments.vue'
+import AiUsageDetails from './AiUsageDetails.vue'
 defineOptions({ name: 'ContentRecordDetails' })
 const props = defineProps<{ record: ContentRecord }>()
 const { t } = useI18n()
@@ -112,6 +113,7 @@ function navigate(path: string, anchor = '') {
             {{ props.record.package.description || '—' }}
           </p>
         </div>
+        <AiUsageDetails :value="props.record.package" />
         <div>
           <p class="text-muted">{{ t('campaign.installDirectory') }}</p>
           <p class="break-all">{{ props.record.managementDirectory }}</p>

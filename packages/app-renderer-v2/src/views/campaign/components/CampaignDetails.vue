@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import RecordDetails from '../../../components/content/RecordDetails.vue'
+import AiUsageDetails from '../../../components/content/AiUsageDetails.vue'
 import { useI18n } from 'vue-i18n'
 import { countRecognizedFiles } from '@scnexus/app-shared/utils/content-files'
 import { formatFileSize } from '../formatFileSize'
@@ -106,6 +107,7 @@ const image = { WOL: wolThumbnail, HOTS: hotsThumbnail, LOTV: lotvThumbnail, NCO
           {{ props.current?.package.description || t('campaign.overviewHint') }}
         </p>
         <template v-if="props.current">
+          <AiUsageDetails :value="props.current.package" />
           <UButton
             icon="i-tabler-info-circle"
             color="neutral"

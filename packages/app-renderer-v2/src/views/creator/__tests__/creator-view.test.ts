@@ -72,6 +72,12 @@ const input = defineComponent({
   template:
     '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
 })
+const select = defineComponent({
+  props: ['modelValue', 'items', 'disabled'],
+  emits: ['update:modelValue'],
+  template:
+    '<select :value="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in items" :key="item.value" :value="item.value">{{ item.label }}</option></select>',
+})
 const form = defineComponent({
   emits: ['submit'],
   template: '<form @submit.prevent="$emit(\'submit\')"><slot /></form>',
@@ -101,6 +107,7 @@ function render() {
         Button: button,
         Input: input,
         Textarea: input,
+        Select: select,
         Form: form,
         FormField: pass,
         Card: pass,
@@ -127,6 +134,8 @@ test('manifest name prefills project title only after explicit action and creati
         author: 'Author',
         type: 'customize',
         website: 'https://example.com',
+        aiAssistedDevelopment: true,
+        aiGeneratedArt: false,
       },
     },
   })
@@ -142,6 +151,11 @@ test('manifest name prefills project title only after explicit action and creati
     .trigger('click')
   await flushPromises()
   expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('')
+  expect(wrapper.findAll('select').map((s) => (s.element as HTMLSelectElement).value)).toEqual([
+    'undeclared',
+    'undeclared',
+    'undeclared',
+  ])
   await wrapper
     .findAll('button')
     .find((button) => button.text() === '从安装包填写资料')!
@@ -151,7 +165,13 @@ test('manifest name prefills project title only after explicit action and creati
   await flushPromises()
   expect(mocks.create).toHaveBeenCalledWith(
     {},
-    expect.objectContaining({ title: 'Manifest title', description: 'Manifest description' }),
+    expect.objectContaining({
+      title: 'Manifest title',
+      description: 'Manifest description',
+      aiAssistedDevelopment: true,
+      aiGeneratedArt: false,
+      aiGeneratedVoice: null,
+    }),
   )
   expect(mocks.create.mock.calls[0]![1]).not.toHaveProperty('scnid')
 })
@@ -169,6 +189,62 @@ async function click(wrapper: ReturnType<typeof render>, label: string) {
     .trigger('click')
   await flushPromises()
 }
+test('AI project declarations load, clear explicitly and reset when switching projects', async () => {
+  const project = {
+    scnid: 3,
+    title: 'AI project',
+    description: '',
+    website: '',
+    social: {},
+    sponsor: {},
+    fileIds: [],
+    downloadLinks: [],
+    detail: { type: 'doc', content: [] },
+    contentRevision: 7,
+    aiAssistedDevelopment: true,
+    aiGeneratedArt: false,
+    aiGeneratedVoice: null,
+  }
+  mocks.mine.mockResolvedValue([
+    project,
+    {
+      ...project,
+      scnid: 4,
+      title: 'Other project',
+      aiAssistedDevelopment: null,
+      aiGeneratedArt: null,
+    },
+  ])
+  mocks.update.mockResolvedValue({ scnid: 3, contentRevision: 8 })
+  const wrapper = render()
+  await flushPromises()
+  await click(wrapper, 'AI project')
+  expect(wrapper.findAll('select').map((s) => (s.element as HTMLSelectElement).value)).toEqual([
+    'used',
+    'unused',
+    'undeclared',
+  ])
+  await wrapper.findAll('select')[0]!.setValue('undeclared')
+  await wrapper.findAll('select')[2]!.setValue('used')
+  await wrapper.find('form').trigger('submit')
+  await flushPromises()
+  expect(mocks.update).toHaveBeenCalledWith(
+    {},
+    3,
+    7,
+    expect.objectContaining({
+      aiAssistedDevelopment: null,
+      aiGeneratedArt: false,
+      aiGeneratedVoice: true,
+    }),
+  )
+  await click(wrapper, 'Other project')
+  expect(wrapper.findAll('select').map((s) => (s.element as HTMLSelectElement).value)).toEqual([
+    'undeclared',
+    'undeclared',
+    'undeclared',
+  ])
+})
 test('checks fresh project quota before create and permits more than five projects', async () => {
   mocks.mine.mockResolvedValue(
     Array.from({ length: 6 }, (_, i) => ({ scnid: i + 1, title: 'Project' })),
@@ -268,7 +344,12 @@ test('new upload supports raised quota and refreshes a 409 without creating anot
   expect(mocks.version).toHaveBeenCalledTimes(1)
   expect(mocks.upload).not.toHaveBeenCalled()
   expect(mocks.quota).toHaveBeenCalledTimes(4)
-  mocks.version.mockResolvedValueOnce({ id: 'version', version: '1.0.0', status: 'DRAFT' })
+  mocks.version.mockResolvedValueOnce({
+    id: 'version',
+    version: '1.0.0',
+    status: 'DRAFT',
+    manifest: { version: '1.0.0' },
+  })
   mocks.upload.mockResolvedValueOnce({ data: { taskId: 'task', status: 'running' } })
   await click(wrapper, '创建版本并上传')
   expect(mocks.version).toHaveBeenCalledTimes(2)
@@ -286,7 +367,9 @@ test('package selection rejects an oversized archive using the current limit', a
   expect(mocks.toast).toHaveBeenCalledWith(
     expect.objectContaining({ title: expect.stringContaining('700000000') }),
   )
-  expect(wrapper.text()).not.toContain('从安装包填写资料')
+  expect(wrapper.findAll('button').some((button) => button.text() === '从安装包填写资料')).toBe(
+    false,
+  )
 })
 
 test('external-only drafts save without selecting a package or creating a version even with zero byte quota', async () => {

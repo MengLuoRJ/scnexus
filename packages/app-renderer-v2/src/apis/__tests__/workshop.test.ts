@@ -38,6 +38,9 @@ const project = {
   detail: emptyDocument(),
   fileIds: [],
   downloadLinks: [],
+  aiAssistedDevelopment: null,
+  aiGeneratedArt: null,
+  aiGeneratedVoice: null,
 }
 beforeEach(() => vi.resetAllMocks())
 test('public browsing uses scnid, pagination and search without access headers', async () => {
@@ -53,6 +56,30 @@ test('public browsing uses scnid, pagination and search without access headers',
   mocks.request.mockResolvedValueOnce({ data: project })
   expect(await apiWorkshopDetail(1)).toEqual(project)
 })
+test('project AI disclosures retain true, false and null and reject coercion', async () => {
+  const input = {
+    ...project,
+    aiAssistedDevelopment: true,
+    aiGeneratedArt: false,
+    aiGeneratedVoice: null,
+  }
+  mocks.request.mockResolvedValueOnce({ data: input })
+  expect(await apiWorkshopDetail(1)).toEqual(input)
+  for (const field of ['aiAssistedDevelopment', 'aiGeneratedArt', 'aiGeneratedVoice']) {
+    for (const value of ['false', 0, [], {}]) {
+      mocks.request.mockResolvedValueOnce({ data: { ...project, [field]: value } })
+      await expect(apiWorkshopDetail(1)).rejects.toMatchObject({ kind: 'invalidResponse' })
+    }
+  }
+  const {
+    aiAssistedDevelopment: _development,
+    aiGeneratedArt: _art,
+    aiGeneratedVoice: _voice,
+    ...legacy
+  } = project
+  mocks.request.mockResolvedValueOnce({ data: legacy })
+  expect(await apiWorkshopDetail(1)).toEqual(project)
+})
 test('draft edits send only canonical input and optimistic content revision', async () => {
   const input = {
     title: 'Draft',
@@ -63,6 +90,9 @@ test('draft edits send only canonical input and optimistic content revision', as
     detail: emptyDocument(),
     fileIds: [],
     downloadLinks: [],
+    aiAssistedDevelopment: true,
+    aiGeneratedArt: false,
+    aiGeneratedVoice: null,
   }
   mocks.request.mockResolvedValue({ data: { scnid: 1, contentRevision: 2 } })
   await apiWorkshopCreate(auth, input)

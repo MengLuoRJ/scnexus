@@ -10,5 +10,14 @@
   "contentMedia.empty": "此內容包未附帶文檔。",
   "contentMedia.retry": "重試",
   "contentMedia.imageError": "部分包內圖片已丟失或格式不受支持。",
-  "contentMedia.localOnly": "僅支持此內容包內的文檔和圖片，外部鏈接已禁用。"
+  "contentMedia.localOnly": "僅支持此內容包內的文檔和圖片，外部鏈接已禁用。",
+  "contentMedia.ai.title": "AI 使用聲明",
+  "contentMedia.ai.aiAssistedDevelopment": "AI 協助開發",
+  "contentMedia.ai.aiGeneratedArt": "AI 美術素材",
+  "contentMedia.ai.aiGeneratedVoice": "AI 語音配音",
+  "contentMedia.ai.used": "使用",
+  "contentMedia.ai.unused": "未使用",
+  "contentMedia.ai.undeclared": "未聲明",
+  "contentMedia.ai.disclaimer": "由作者聲明，不代表平台檢測或認證。",
+  "contentMedia.ai.editHint": "項目聲明需保存並審核後公開，與安裝包聲明獨立。選擇「未聲明」可清除聲明；僅點擊「從安裝包填寫資料」時複製包內聲明。"
 }

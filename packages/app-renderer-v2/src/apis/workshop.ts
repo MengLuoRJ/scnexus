@@ -46,6 +46,9 @@ export type ProjectInput = {
   detail: WorkshopDocument
   fileIds: string[]
   downloadLinks: DownloadLink[]
+  aiAssistedDevelopment?: boolean | null
+  aiGeneratedArt?: boolean | null
+  aiGeneratedVoice?: boolean | null
 }
 export type WorkshopProject = ProjectInput & {
   scnid: number
@@ -97,6 +100,11 @@ function links(value: unknown, keys: readonly string[]) {
   if (Object.keys(result).some((k) => !keys.includes(k))) throw new Error('response')
   return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, text(v)]))
 }
+function aiDeclaration(value: unknown): boolean | null {
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'boolean') throw new Error('response')
+  return value
+}
 export function parseProject(value: unknown): WorkshopProject {
   const p = record(value)
   const fileIds = p.fileIds === undefined ? [] : p.fileIds
@@ -105,6 +113,9 @@ export function parseProject(value: unknown): WorkshopProject {
     scnid: scnid(p.scnid),
     slug: p.slug === null ? null : text(p.slug, 80),
     approvedVersionId: nullableId(p.approvedVersionId),
+    aiAssistedDevelopment: aiDeclaration(p.aiAssistedDevelopment),
+    aiGeneratedArt: aiDeclaration(p.aiGeneratedArt),
+    aiGeneratedVoice: aiDeclaration(p.aiGeneratedVoice),
     title: text(p.title, 120),
     description: text(p.description, 1000),
     website: text(p.website),

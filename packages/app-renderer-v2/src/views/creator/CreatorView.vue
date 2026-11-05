@@ -35,6 +35,8 @@ import {
   validateDocument,
   type WorkshopDocument,
 } from '../../components/workshop/document'
+import { aiUsageFields } from '../../utils/ai-usage'
+import AiUsageDetails from '../../components/content/AiUsageDetails.vue'
 import WorkshopEditor from '../../components/workshop/WorkshopEditor.vue'
 import WorkshopRichText from '../../components/workshop/WorkshopRichText.vue'
 import WorkshopReviewModeration from '../../components/workshop/WorkshopReviewModeration.vue'
@@ -66,11 +68,19 @@ const state = reactive({
   title: '',
   description: '',
   website: '',
+  aiAssistedDevelopment: null as boolean | null,
+  aiGeneratedArt: null as boolean | null,
+  aiGeneratedVoice: null as boolean | null,
   downloadLinks: [] as DownloadLink[],
   social: {} as Record<string, string>,
   sponsor: {} as Record<string, string>,
 })
 const allowed = computed(() => center.enabled && auth.signedIn && creator.active)
+const aiOptions = computed(() => [
+  { label: t('contentMedia.ai.undeclared'), value: 'undeclared' },
+  { label: t('contentMedia.ai.used'), value: 'used' },
+  { label: t('contentMedia.ai.unused'), value: 'unused' },
+])
 const schema = z.object({
   title: z
     .string()
@@ -79,6 +89,9 @@ const schema = z.object({
     .refine((value) => value.trim().length > 0),
   description: z.string().max(1000),
   website: z.string().max(2048),
+  aiAssistedDevelopment: z.boolean().nullable(),
+  aiGeneratedArt: z.boolean().nullable(),
+  aiGeneratedVoice: z.boolean().nullable(),
   downloadLinks: z
     .array(
       z.object({
@@ -174,6 +187,9 @@ async function edit(project: OwnerProject | null) {
     title: project?.title ?? '',
     description: project?.description ?? '',
     website: project?.website ?? '',
+    aiAssistedDevelopment: project?.aiAssistedDevelopment ?? null,
+    aiGeneratedArt: project?.aiGeneratedArt ?? null,
+    aiGeneratedVoice: project?.aiGeneratedVoice ?? null,
     downloadLinks: (project?.downloadLinks ?? []).map((link) => ({ ...link })),
     social: { ...project?.social },
     sponsor: { ...project?.sponsor },
@@ -281,6 +297,8 @@ async function choosePackage() {
 function prefill() {
   const manifest = selection.value?.manifest
   if (!manifest) return
+  for (const field of aiUsageFields)
+    state[field] = typeof manifest[field] === 'boolean' ? manifest[field] : null
   if (typeof manifest.name === 'string') state.title = manifest.name
   for (const key of ['description', 'website'] as const)
     if (typeof manifest[key] === 'string') state[key] = manifest[key]
@@ -475,6 +493,32 @@ async function cancelCandidate() {
           <UFormField name="description" :label="t('workshop.description')">
             <UTextarea v-model="state.description" class="w-full" :rows="2" :maxlength="1000" />
           </UFormField>
+          <fieldset class="space-y-2">
+            <legend class="text-sm font-medium">{{ t('contentMedia.ai.title') }}</legend>
+            <p class="text-xs text-muted">{{ t('contentMedia.ai.editHint') }}</p>
+            <div class="grid grid-cols-3 gap-3">
+              <UFormField
+                v-for="field in aiUsageFields"
+                :key="field"
+                :name="field"
+                :label="t(`contentMedia.ai.${field}`)">
+                <USelect
+                  :model-value="
+                    state[field] === true
+                      ? 'used'
+                      : state[field] === false
+                        ? 'unused'
+                        : 'undeclared'
+                  "
+                  :items="aiOptions"
+                  :disabled="saving || conflict"
+                  class="w-full"
+                  @update:model-value="
+                    state[field] = $event === 'used' ? true : $event === 'unused' ? false : null
+                  " />
+              </UFormField>
+            </div>
+          </fieldset>
           <div class="space-y-2">
             <p class="text-sm font-medium">{{ t('workshop.downloadLinks') }}</p>
             <p class="text-xs text-muted">{{ t('workshop.downloadLinksHint') }}</p>
@@ -579,6 +623,7 @@ async function cancelCandidate() {
                 {{ t('workshop.cancelCandidate') }}
               </UButton>
             </div>
+            <AiUsageDetails :value="version.manifest" />
             <WorkshopRichText :document="version.changelog" />
           </div>
           <UAlert
@@ -600,6 +645,7 @@ async function cancelCandidate() {
               {{ selection.name }} · {{ selection.size }} bytes · {{ selection.manifest.version }}
             </p>
             <UAlert v-if="!packageValid" :title="t('workshop.invalidVersion')" color="error" />
+            <AiUsageDetails :value="selection.manifest" />
             <p class="text-xs text-muted break-all">SHA-256 {{ selection.sha256 }}</p>
             <details>
               <summary class="text-sm cursor-pointer">{{ t('workshop.manifest') }}</summary>

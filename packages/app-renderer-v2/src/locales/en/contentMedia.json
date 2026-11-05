@@ -10,5 +10,14 @@
   "contentMedia.empty": "This package has no bundled documents.",
   "contentMedia.retry": "Retry",
   "contentMedia.imageError": "Some package images are missing or unsupported.",
-  "contentMedia.localOnly": "Only documents and images inside this package are available. External links are disabled."
+  "contentMedia.localOnly": "Only documents and images inside this package are available. External links are disabled.",
+  "contentMedia.ai.title": "AI usage disclosure",
+  "contentMedia.ai.aiAssistedDevelopment": "AI-assisted development",
+  "contentMedia.ai.aiGeneratedArt": "AI-generated / assisted art",
+  "contentMedia.ai.aiGeneratedVoice": "AI-generated / assisted voice",
+  "contentMedia.ai.used": "Used",
+  "contentMedia.ai.unused": "Not used",
+  "contentMedia.ai.undeclared": "Not declared",
+  "contentMedia.ai.disclaimer": "Declared by the author, not detected or certified by the platform.",
+  "contentMedia.ai.editHint": "Project disclosures are published after saving and approval, independently of package disclosures. Choose Not declared to clear a value. Package values are copied only when you explicitly choose Fill from package."
 }

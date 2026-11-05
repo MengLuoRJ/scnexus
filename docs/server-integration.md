@@ -330,6 +330,22 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 
 验证：`pnpm --filter @scnexus/app-main test src\modules\analytics\__test__ src\modules\__test__\analytics-lifecycle.test.ts src\modules\auth\__test__`：9 文件、133 项通过；`pnpm run typecheck:main` 通过。测试覆盖先 leave 后撤销、leave 失败仍撤销、1 秒超时与取消、禁用/离线跳过、固定路由与敏感错误清理，以及 1024/1025 字符边界。未向真实服务写统计，未宣称真实退出在线快照已验收。
 
+## AI 使用声明界面接入（2026-11-06）
+
+- 工坊列表/详情与作者草稿解析保留 `aiAssistedDevelopment`、`aiGeneratedArt`、`aiGeneratedVoice` 的 `true`、`false`、`null`；旧响应省略字段兼容为未声明，不强转字符串或数字。公开详情始终展示三项，来源为已审核项目修订。
+- 创作者表单提供“使用 / 未使用 / 未声明”选择，创建/编辑显式保存布尔值或 null；null 清除项目声明。切换项目重置表单；项目声明与版本 Manifest 独立，选择/上传包不会自动覆盖，仅用户明确点击“从安装包填写资料”时复制，缺省字段转为 null。候选包及版本资料另展示各自 Manifest 声明，提醒作者项目资料须保存并审核后公开。
+- 已安装战役主面板与通用作品详情（战役/自制/依赖）展示实际安装清单的三项声明；字段缺省显示未声明，不补为 false。shared DTO 原本复用 standard Package，安装、package.json/install-manifest.json、electron-store 重启及扫描读取均保留，无需另建持久化字段或迁移。
+- 三语资源同步，展示统一提示作者自报信息不代表平台检测或认证。1000×700 桌面基准下三项保持同一行。
+
+验证记录：
+
+- `pnpm --filter @scnexus/app-renderer-v2 test:unit --run src\apis\__tests__\workshop.test.ts src\views\creator\__tests__\creator-view.test.ts src\views\workshop\__tests__\workshop-view.test.ts src\components\content\__tests__\ai-usage.test.ts src\__tests__\installed-ai-usage.test.ts`：5 文件、72 项通过。
+- `pnpm --filter @scnexus/app-main test src\modules\content-package\__test__\ai-usage.test.ts`：12 项通过，覆盖三类型 × 四组声明的安装、持久化重启与扫描。
+- `pnpm run typecheck:renderer`、`pnpm run typecheck:main`、`pnpm run typecheck:shared`：通过；全部变更代码文件 oxlint、ESLint、格式检查通过。
+- 三语 contentMedia 模块键一致；浏览器模拟接口检查公开详情 1000×700 三态展示，声明区域宽 784px，无横向溢出。创作者编辑与安装详情使用组件测试，未完成其完整浏览器视觉验收，不代表真实 Electron/服务端发布联调。
+
+本轮使用合成数据与隔离安装目录测试，不向真实工坊写入或发布，不修改实际游戏目录；临时预览服务及浏览器模拟路由已清理。
+
 ## 社区评价与收藏（2026-11-05）
 
 本轮按后端 `docs/workshop-community.md` 接入，不使用旧 OpenAPI 快照推断新增字段，也不修改后端、数据库或权限配置。

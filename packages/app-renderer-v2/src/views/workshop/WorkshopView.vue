@@ -11,6 +11,7 @@ import { useContentCenterStore } from '../../stores/content-center'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
 import { ipcShellOpenExternalWebsite, ipcShellOpenExternalDownload } from '../../ipcs/shell'
 import WorkshopRichText from '../../components/workshop/WorkshopRichText.vue'
+import AiUsageDetails from '../../components/content/AiUsageDetails.vue'
 import WorkshopCommunity from '../../components/workshop/WorkshopCommunity.vue'
 import WorkshopFavorites from '../../components/workshop/WorkshopFavorites.vue'
 defineOptions({ name: 'WorkshopView' })
@@ -208,6 +209,7 @@ async function openLink(url: string) {
           v-if="detail.approvedVersionId"
           :title="t('workshop.downloadSafety')"
           color="neutral" />
+        <AiUsageDetails :value="detail" />
         <WorkshopRichText :document="detail.detail" :project-scnid="detail.scnid" />
         <WorkshopCommunity :scnid="detail.scnid" />
         <div v-if="detail.website" class="text-sm break-all">

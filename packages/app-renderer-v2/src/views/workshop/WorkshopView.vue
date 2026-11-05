@@ -11,6 +11,8 @@ import { useContentCenterStore } from '../../stores/content-center'
 import { useWorkshopStore, unwrapWorkshop } from '../../stores/workshop'
 import { ipcShellOpenExternalWebsite, ipcShellOpenExternalDownload } from '../../ipcs/shell'
 import WorkshopRichText from '../../components/workshop/WorkshopRichText.vue'
+import WorkshopCommunity from '../../components/workshop/WorkshopCommunity.vue'
+import WorkshopFavorites from '../../components/workshop/WorkshopFavorites.vue'
 defineOptions({ name: 'WorkshopView' })
 const route = useRoute()
 const router = useRouter()
@@ -35,6 +37,7 @@ const externalHost = computed(() =>
   externalDownload.value ? new URL(externalDownload.value).host : '',
 )
 const id = computed(() => (route.params.scnid ? Number(route.params.scnid) : null))
+const favorites = computed(() => id.value === null && route.query.tab === 'favorites')
 let intentGeneration = 0
 watch(
   () => [route.query.download, route.params.scnid],
@@ -82,7 +85,7 @@ async function load() {
   error.value = null
   detail.value = null
   externalDownload.value = null
-  if (!center.enabled) {
+  if (!center.enabled || favorites.value) {
     loading.value = false
     items.value = []
     return
@@ -101,7 +104,7 @@ async function load() {
     if (current === generation) loading.value = false
   }
 }
-watch([id, page, () => center.enabled], load, { immediate: true })
+watch([id, page, favorites, () => center.enabled], load, { immediate: true })
 function search() {
   if (page.value !== 1) page.value = 1
   else void load()
@@ -137,6 +140,12 @@ async function openLink(url: string) {
     <header class="flex items-center justify-between gap-3">
       <h1 class="text-xl font-semibold">{{ t('workshop.title') }}</h1>
       <div class="flex gap-2">
+        <UButton
+          :to="favorites ? '/workshop' : '/workshop?tab=favorites'"
+          variant="outline"
+          color="neutral">
+          {{ t(favorites ? 'workshop.back' : 'workshop.community.favorites') }}
+        </UButton>
         <UButton to="/downloads" variant="outline" color="neutral">
           {{ t('workshop.downloads') }}
         </UButton>
@@ -146,6 +155,7 @@ async function openLink(url: string) {
       </div>
     </header>
     <UAlert v-if="!center.enabled" :title="t('workshop.disabled')" color="warning" />
+    <WorkshopFavorites v-else-if="favorites" />
     <template v-else>
       <form v-if="id === null" class="flex gap-2" @submit.prevent="search">
         <UInput
@@ -199,6 +209,7 @@ async function openLink(url: string) {
           :title="t('workshop.downloadSafety')"
           color="neutral" />
         <WorkshopRichText :document="detail.detail" :project-scnid="detail.scnid" />
+        <WorkshopCommunity :scnid="detail.scnid" />
         <div v-if="detail.website" class="text-sm break-all">
           <span>{{ t('workshop.website') }}:</span>
           <UButton variant="link" @click="openLink(detail.website)">{{ detail.website }}</UButton>

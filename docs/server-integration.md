@@ -247,7 +247,7 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 
 ## 2026-10-27 Workshop 客户端重建
 
-以最新 `workshop-api.md`、`client/workshop-electron.md`、`workshop-creators.md`、`files.md` 和 `workshop-worker.md` 为准。未修改后端，未增加管理员工作台；未实现后端尚不存在的点赞/收藏/评论接口。
+以最新 `workshop-api.md`、`client/workshop-electron.md`、`workshop-creators.md`、`files.md` 和 `workshop-worker.md` 为准。未修改后端，未增加管理员工作台。社区评价与收藏已按 2026-11-05 `workshop-community.md` 接入，见“社区评价与收藏”一节；点赞、回复、投币与举报不在本轮合同范围。
 
 ### 浏览、设置与资格
 
@@ -318,6 +318,26 @@ renderer-v2 新增“每周突变”导航入口，使用现有固定地址 Axio
 进行中任务先暂停或取消再删除。删除前由主进程检查缓存文件：存在时允许“仅删除记录”或“删除记录和文件”，不存在时仅删除记录。仅删记录不删游戏已安装内容；删除缓存也不等于卸载。文件删除失败保留记录，不将权限/占用错误当作文件不存在；所有文件操作仅面向应用管理的下载缓存。
 
 本轮整合验证：`pnpm run typecheck`、`pnpm run lint` 通过；`pnpm run test:main` 566 项、`pnpm run test:preload` 18 项、`pnpm run test:renderer` 最终 416 项通过（字段本地化收尾后复验）；三个运行包的 `build:main` / `build:preload` / `build:renderer` 与 `test:build` 通过。浏览器以合成 IPC 和任务数据在 1000×700 下检查 GitHub 信息预览、进行中/历史切换、时间和速度、运行中删除禁用，以及缓存存在/缺失两类删除对话框，无横向溢出；这些浏览器检查不等于真实工坊网络或账号切换验收。未修改游戏文件，未执行真实工坊下载或系统协议唤起。
+
+## 社区评价与收藏（2026-11-05）
+
+本轮按后端 `docs/workshop-community.md` 接入，不使用旧 OpenAPI 快照推断新增字段，也不修改后端、数据库或权限配置。
+
+- 作品详情新增匿名可读的全时推荐摘要、收藏总数和分页公开文字评价；分档使用服务端 `recommendation`，不从显示百分比反推。评价原始文字使用 Vue 纯文本插值，不渲染 HTML、不自动生成链接或加载图片。
+- 活动登录用户可提交或全量编辑本人推荐及可选文字（最多 1000 字），无需创作者资格。每次编辑使用最新 `expectedRevision`；409 后重新读取本人记录并显示最新内容，保留草稿，要求再次明确提交，不自动重放。作者自评等资格由服务端验证。
+- 本人收藏通过 GET/PUT/DELETE 读取和幂等变更；工坊顶部“我的收藏”进入 `#/workshop?tab=favorites`，分页浏览本人当前公开作品并可取消收藏。不展示他人的收藏身份。
+- 创作者中心编辑已有作品时增加评价展示管理，按评价 revision 展示或隐藏文字。空文字不能展示，ADMIN 来源决定不可覆盖；不提供作者删除评价、修改推荐或管理员工作台。隐藏文字不影响推荐统计。
+- 项目、账号和会话切换清空私有状态并忽略过期响应；写请求失败不自动重试。简体中文、繁体中文和英文键同步维护。
+- 审查后修正公开评价分页：初始加载、翻页与写入后刷新统一使用独立请求序号，旧响应及旧错误不覆盖最新列表或结束新请求的加载状态；摘要也按请求序号防止乱序覆盖。公开文字总数减少导致当前页越界时重新读取有效末页，读取失败保留原列表及返回入口，当前页大于 1 时保留分页导航。新增回归覆盖总数降为 20/0、刷新与翻页乱序、旧请求失败及页码校正读取失败后的恢复。
+
+验证记录：
+
+- `pnpm --filter @scnexus/app-renderer-v2 test:unit --run src\apis\__tests__\workshop.test.ts src\apis\__tests__\workshop-community.test.ts src\apis\__tests__\workshop-community-summary.test.ts src\components\workshop\__tests__\review-moderation.test.ts src\views\workshop\__tests__ src\views\creator\__tests__\creator-view.test.ts`：7 文件、120 项通过（含审查后新增的 5 项分页与竞态回归）。
+- `pnpm run typecheck:renderer`：通过。
+- 对本轮所有变更的 TypeScript/Vue 文件执行 `pnpm exec oxlint -c .oxlintrc.json <变更文件>` 与 `pnpm exec eslint <变更文件>`：通过。
+- `pnpm --filter @scnexus/app-renderer-v2 lint`：被原有账号测试缺少 mock 类型参数阻塞；本轮新增测试的同类问题已修正，未修改无关账号测试。
+- `pnpm run format:check`：仓库原有 33 个文件存在格式问题，未改动无关文件；对本轮全部 15 个变更文件执行 `pnpm exec oxfmt --check --disable-nested-config <变更文件>`：通过。三语工坊资源键集合一致（各 154 键）。
+- 浏览器共享页面 CDP 连接连续超时，未完成 1000×700 可视验收或真实 Electron/服务端写入联调；未将模拟测试视为真实服务验收。
 
 ## 语言资源与下载位置（2026-10-29）
 

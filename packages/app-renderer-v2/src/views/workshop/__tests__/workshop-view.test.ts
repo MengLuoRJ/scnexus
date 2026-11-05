@@ -62,6 +62,12 @@ vi.mock('../../../ipcs/shell', () => ({
 vi.mock('../../../components/workshop/WorkshopRichText.vue', () => ({
   default: { template: '<div />' },
 }))
+vi.mock('../../../components/workshop/WorkshopCommunity.vue', () => ({
+  default: { template: '<div data-community />' },
+}))
+vi.mock('../../../components/workshop/WorkshopFavorites.vue', () => ({
+  default: { template: '<div data-favorites />' },
+}))
 vi.mock('@nuxt/ui/composables/useToast', () => ({ useToast: () => ({ add: () => {} }) }))
 const button = defineComponent({
   props: ['disabled', 'to'],
@@ -127,6 +133,21 @@ test('anonymous users can browse projects but never get a creator entry', async 
   expect(wrapper.text()).toContain('Public title')
   expect(wrapper.text()).not.toContain('创作者中心')
   expect(mocks.list).toHaveBeenCalledOnce()
+})
+test('favorites tab uses the private list instead of public project browsing', async () => {
+  route.query = { tab: 'favorites' }
+  const wrapper = render()
+  await flushPromises()
+  expect(wrapper.find('[data-favorites]').exists()).toBe(true)
+  expect(mocks.list).not.toHaveBeenCalled()
+  expect(mocks.detail).not.toHaveBeenCalled()
+})
+test('project detail includes the community section', async () => {
+  route.params = { scnid: '2' }
+  mocks.detail.mockResolvedValue(project)
+  const wrapper = render()
+  await flushPromises()
+  expect(wrapper.find('[data-community]').exists()).toBe(true)
 })
 test('anonymous download navigates to login with a safe return path without starting bytes', async () => {
   route.params = { scnid: '2' }

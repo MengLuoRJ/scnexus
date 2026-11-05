@@ -37,6 +37,7 @@ import {
 } from '../../components/workshop/document'
 import WorkshopEditor from '../../components/workshop/WorkshopEditor.vue'
 import WorkshopRichText from '../../components/workshop/WorkshopRichText.vue'
+import WorkshopReviewModeration from '../../components/workshop/WorkshopReviewModeration.vue'
 defineOptions({ name: 'CreatorView' })
 const { t } = useI18n()
 const toast = useToast()
@@ -554,6 +555,7 @@ async function cancelCandidate() {
             {{ t('workshop.saveDraft') }}
           </UButton>
         </UForm>
+        <WorkshopReviewModeration v-if="selected" :scnid="selected.scnid" />
         <UCard v-if="selected" :ui="{ body: 'space-y-3 p-3' }">
           <h2 class="font-semibold">{{ t('workshop.versions') }}</h2>
           <p class="text-sm text-muted">{{ t('workshop.versionHint') }}</p>

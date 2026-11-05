@@ -6,6 +6,7 @@ export type AnalyticsOperation =
   | 'register-authenticated'
   | 'heartbeat-anonymous'
   | 'heartbeat-authenticated'
+  | 'leave'
 export class AnalyticsRequestError extends Error {
   constructor(
     public readonly kind: 'network' | 'http' | 'aborted',
@@ -29,6 +30,7 @@ const routes: Record<AnalyticsOperation, string> = {
   'register-authenticated': '/analytics/visitors/authenticated',
   'heartbeat-anonymous': '/analytics/presence/anonymous/heartbeat',
   'heartbeat-authenticated': '/analytics/presence/authenticated/heartbeat',
+  leave: '/analytics/presence/leave',
 }
 
 export function createAnalyticsTransport(): AnalyticsTransport {

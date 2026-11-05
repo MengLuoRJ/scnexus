@@ -17,7 +17,7 @@ export function isVisitorCredential(value: unknown): value is VisitorCredential 
   return (
     typeof data.visitorToken === 'string' &&
     data.visitorToken.length > 0 &&
-    data.visitorToken.length <= 8192 &&
+    data.visitorToken.length <= 1024 &&
     typeof data.expiresAt === 'string' &&
     Number.isFinite(Date.parse(data.expiresAt))
   )

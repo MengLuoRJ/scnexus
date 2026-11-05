@@ -40,6 +40,7 @@ const analytics = vi.hoisted(() => ({
   start: vi.fn<(snapshot: unknown) => void>(),
   login: vi.fn<(snapshot: unknown) => void>(),
   logout: vi.fn<() => void>(),
+  leave: vi.fn<(snapshot: unknown) => Promise<void>>(async () => {}),
   dispose: vi.fn<() => void>(),
 }))
 vi.mock('../../analytics-lifecycle', () => ({
@@ -47,6 +48,7 @@ vi.mock('../../analytics-lifecycle', () => ({
   startAnalytics: analytics.start,
   analyticsLogin: analytics.login,
   analyticsLogout: analytics.logout,
+  analyticsLeave: analytics.leave,
   disposeAnalytics: analytics.dispose,
 }))
 import { disposeAuth, initAuthModule } from '../index'
@@ -140,8 +142,21 @@ it('triggers statistics only after successful login and completed logout, not sn
   await handler('auth:getSnapshot')()
   await handler('auth:refresh')()
   expect(analytics.login).toHaveBeenCalledOnce()
+  analytics.leave.mockImplementationOnce(async (snapshot) => {
+    expect(snapshot).toMatchObject({ status: 'signed-in', accessToken: pair.accessToken })
+    expect(await handler('auth:getSnapshot')()).toMatchObject({ status: 'signed-out' })
+    expect(mocks.request.mock.calls.some(([operation]) => operation === 'logout')).toBe(false)
+    throw new Error('optional statistics unavailable')
+  })
   mocks.request.mockResolvedValueOnce({ success: true })
-  await handler('auth:logout')()
+  await expect(handler('auth:logout')()).resolves.toEqual({ remoteRevoked: true })
+  expect(analytics.leave).toHaveBeenCalledOnce()
+  expect(mocks.request).toHaveBeenLastCalledWith(
+    'logout',
+    {},
+    expect.any(AbortSignal),
+    pair.accessToken,
+  )
   expect(analytics.logout).toHaveBeenCalledOnce()
   expect(analytics.start).toHaveBeenCalledOnce()
 })

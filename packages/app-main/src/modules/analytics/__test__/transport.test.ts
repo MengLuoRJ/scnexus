@@ -52,11 +52,26 @@ it('uses only fixed Node HTTP with bounded requests, no cookies, redirects or pr
     { signal, timeout: 5000, headers: { Cookie: undefined, Authorization: 'Bearer access' } },
   )
 })
+it('sends authenticated leave to the fixed native endpoint without cookies', async () => {
+  post.mockResolvedValue({ data: { accepted: true } })
+  const signal = new AbortController().signal
+  await createAnalyticsTransport().request('leave', { visitorToken: 'visitor' }, signal, 'access')
+  expect(post).toHaveBeenCalledWith(
+    '/analytics/presence/leave',
+    { visitorToken: 'visitor' },
+    {
+      signal,
+      timeout: 5000,
+      headers: { Cookie: undefined, Authorization: 'Bearer access' },
+    },
+  )
+})
 it.each([
   'register-anonymous',
   'register-authenticated',
   'heartbeat-anonymous',
   'heartbeat-authenticated',
+  'leave',
 ] as const)('silently sanitizes %s errors and never retries', async (operation) => {
   post.mockRejectedValue({
     config: { headers: { Authorization: 'secret' } },

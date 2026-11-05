@@ -237,6 +237,82 @@ test('disabling while registration is in flight prevents storage and follow-up h
   expect(f.request).toHaveBeenCalledOnce()
   f.service.dispose()
 })
+test('leave uses the captured authenticated session once without registration or retries', async () => {
+  vi.useFakeTimers()
+  const f = setup()
+  await f.service.startup(signedIn)
+  await f.service.authenticationChanged({ status: 'signed-out' } as AuthSnapshot)
+  await f.service.leave(signedIn)
+  expect(f.request.mock.calls[2]).toEqual([
+    'leave',
+    { visitorToken: credential.visitorToken },
+    expect.any(AbortSignal),
+    'access',
+  ])
+  await vi.advanceTimersByTimeAsync(90000)
+  expect(f.request).toHaveBeenCalledTimes(3)
+  await f.service.logout()
+  expect(f.request.mock.calls[3]![0]).toBe('register-anonymous')
+  expect(f.clear).not.toHaveBeenCalled()
+  f.service.dispose()
+})
+test('hung leave is aborted within one second and rejection never blocks logout', async () => {
+  vi.useFakeTimers()
+  const f = setup()
+  await f.service.startup(signedIn)
+  f.request.mockImplementationOnce(() => new Promise(() => {}))
+  const leave = f.service.leave(signedIn)
+  await vi.advanceTimersByTimeAsync(1000)
+  await expect(leave).resolves.toBeUndefined()
+  expect((f.request.mock.calls[2]![2] as AbortSignal).aborted).toBe(true)
+  await f.service.logout()
+  expect(f.request.mock.calls[3]![0]).toBe('register-anonymous')
+  f.service.dispose()
+})
+test.each([401, 403, 429, 503])(
+  'leave failure %i never discards credentials or retries',
+  async (status) => {
+    vi.useFakeTimers()
+    const f = setup()
+    await f.service.startup(signedIn)
+    f.request.mockRejectedValueOnce(new AnalyticsRequestError('http', status))
+    await expect(f.service.leave(signedIn)).resolves.toBeUndefined()
+    await vi.advanceTimersByTimeAsync(90000)
+    expect(f.request).toHaveBeenCalledTimes(3)
+    expect(f.clear).not.toHaveBeenCalled()
+    f.service.dispose()
+  },
+)
+test('disabling cancels a pending leave without waiting for its timeout', async () => {
+  vi.useFakeTimers()
+  const f = setup()
+  await f.service.startup(signedIn)
+  f.request.mockImplementationOnce(() => new Promise(() => {}))
+  const leave = f.service.leave(signedIn)
+  await f.service.setEnabled(false)
+  await expect(leave).resolves.toBeUndefined()
+  expect((f.request.mock.calls[2]![2] as AbortSignal).aborted).toBe(true)
+  expect(vi.getTimerCount()).toBe(0)
+  f.service.dispose()
+})
+test('disabled and offline analytics skip leave', async () => {
+  const f = setup()
+  await f.service.startup(signedIn)
+  await f.service.setOnline(false)
+  await f.service.leave(signedIn)
+  await f.service.setEnabled(false)
+  await f.service.leave(signedIn)
+  expect(f.request).toHaveBeenCalledTimes(2)
+  f.service.dispose()
+})
+test('overlong registration credentials are not persisted or sent to heartbeat', async () => {
+  const f = setup()
+  f.request.mockResolvedValueOnce({ ...registration, visitorToken: 'x'.repeat(1025) })
+  await f.service.startup(null)
+  expect(f.save).not.toHaveBeenCalled()
+  expect(f.request).toHaveBeenCalledOnce()
+  f.service.dispose()
+})
 test('malformed heartbeat pauses the cycle instead of reporting online success', async () => {
   vi.useFakeTimers()
   const f = setup()

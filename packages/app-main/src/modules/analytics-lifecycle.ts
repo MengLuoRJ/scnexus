@@ -62,6 +62,9 @@ export function analyticsLogin(snapshot: AuthSnapshot): void {
   if (settingRepository.getSnapshot().officialServicesEnabled === false) void service?.logout()
   else void service?.login(snapshot)
 }
+export async function analyticsLeave(snapshot: AuthSnapshot): Promise<void> {
+  await service?.leave(snapshot)
+}
 export function analyticsLogout(): void {
   void service?.logout()
 }

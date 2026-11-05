@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   startup: vi.fn<() => Promise<void>>(async () => {}),
   login: vi.fn<() => Promise<void>>(async () => {}),
   logout: vi.fn<() => Promise<void>>(async () => {}),
+  leave: vi.fn<(snapshot: unknown) => Promise<void>>(async () => {}),
   dispose: vi.fn<() => void>(),
 }))
 vi.mock('../../utils/application-data', () => ({
@@ -37,6 +38,7 @@ import {
   analyticsLogin,
   analyticsAuthenticationChanged,
   analyticsLogout,
+  analyticsLeave,
   disposeAnalytics,
   setAnalyticsEnabled,
 } from '../analytics-lifecycle'
@@ -62,6 +64,14 @@ test('lifecycle wrapper starts once and never waits for optional statistics', ()
   expect(mocks.logout).toHaveBeenCalledOnce()
 })
 
+test('leave forwards the captured snapshot only when the statistics service exists', async () => {
+  const snapshot = { status: 'signed-in' } as AuthSnapshot
+  await analyticsLeave(snapshot)
+  expect(mocks.leave).not.toHaveBeenCalled()
+  startAnalytics(snapshot)
+  await analyticsLeave(snapshot)
+  expect(mocks.leave).toHaveBeenCalledWith(snapshot)
+})
 test('official services disabled retains anonymous analytics under its independent consent', () => {
   mocks.officialServicesEnabled = false
   const signedIn = { status: 'signed-in' } as AuthSnapshot

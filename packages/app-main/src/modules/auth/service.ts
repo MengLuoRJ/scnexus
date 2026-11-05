@@ -19,6 +19,7 @@ export interface AuthDependencies {
   storage: AuthStorage
   transport: AuthTransport
   changed(snapshot: AuthSnapshot): void
+  beforeLogout?(snapshot: AuthSnapshot): Promise<void>
   now?: () => number
   getClientId?: () => string
 }
@@ -364,10 +365,18 @@ export function createAuthService(deps: AuthDependencies) {
     refresh,
     async logout(): Promise<{ remoteRevoked: boolean }> {
       active()
-      const token = snapshot.accessToken
+      const previous = { ...snapshot }
+      const token = previous.accessToken
       loggingOut = true
       try {
         invalidate()
+        if (token) {
+          try {
+            await deps.beforeLogout?.(previous)
+          } catch {
+            /* Optional presence reporting must not interrupt logout. */
+          }
+        }
         return { remoteRevoked: token ? await revoke(token) : false }
       } finally {
         loggingOut = false

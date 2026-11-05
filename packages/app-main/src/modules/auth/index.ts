@@ -14,6 +14,7 @@ import {
   startAnalytics,
   analyticsLogin,
   analyticsLogout,
+  analyticsLeave,
   disposeAnalytics,
 } from '../analytics-lifecycle'
 
@@ -40,6 +41,7 @@ export function initAuthModule(): void {
     storage: createAuthStorage(join(getApplicationDataDirectory(), 'auth'), safeStorage),
     transport: createAuthTransport(),
     getClientId: () => settingRepository.getSnapshot().clientId,
+    beforeLogout: analyticsLeave,
     changed(snapshot) {
       const identity = `${snapshot.epoch}:${snapshot.sessionId ?? ''}`
       if (identity !== workshopIdentity) {

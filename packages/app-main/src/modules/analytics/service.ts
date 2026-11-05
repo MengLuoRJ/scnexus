@@ -240,6 +240,45 @@ export function createAnalyticsService(deps: AnalyticsDependencies) {
       registered = false
       return queue
     },
+    async leave(auth: AuthSnapshot): Promise<void> {
+      cancel()
+      if (
+        !started ||
+        disposed ||
+        !enabled ||
+        !online ||
+        paused === 'network' ||
+        !credential ||
+        !isVisitorCredential(credential) ||
+        Date.parse(credential.expiresAt) <= Date.now() ||
+        !auth.accessToken ||
+        !['signed-in', 'refreshing'].includes(auth.status)
+      )
+        return
+      const abort = new AbortController()
+      controller = abort
+      let timeout: ReturnType<typeof setTimeout> | undefined
+      const aborted = new Promise<void>((resolve) => {
+        abort.signal.addEventListener('abort', () => resolve(), { once: true })
+        timeout = setTimeout(() => abort.abort(), 1000)
+      })
+      try {
+        await Promise.race([
+          deps.transport.request(
+            'leave',
+            { visitorToken: credential.visitorToken },
+            abort.signal,
+            auth.accessToken,
+          ),
+          aborted,
+        ])
+      } catch {
+        // Optional presence reporting must never prevent session revocation.
+      } finally {
+        clearTimeout(timeout)
+        if (controller === abort) controller = undefined
+      }
+    },
     logout() {
       if (disposed) return queue
       return authEvent(null, true)

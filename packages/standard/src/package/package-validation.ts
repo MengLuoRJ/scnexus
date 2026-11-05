@@ -17,6 +17,9 @@ export function isPackage(value: unknown): value is Package {
       'tags',
       'version',
       'author',
+      'aiAssistedDevelopment',
+      'aiGeneratedArt',
+      'aiGeneratedVoice',
       'type',
       'mods',
       'website',
@@ -31,6 +34,8 @@ export function isPackage(value: unknown): value is Package {
   }
   if (!['name', 'description', 'version', 'author'].every((key) => text(value[key]))) return false
   if (!(value.name as string).trim()) return false
+  for (const field of ['aiAssistedDevelopment', 'aiGeneratedArt', 'aiGeneratedVoice'])
+    if (value[field] !== undefined && typeof value[field] !== 'boolean') return false
   if (
     value.type === 'campaign' &&
     !['WOL', 'HOTS', 'LOTV', 'NCO'].includes(value.campaign as string)

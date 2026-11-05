@@ -20,6 +20,36 @@ beforeAll(() => {
   validate = new Ajv({ strict: true }).compile(schema)
 })
 
+test('optional AI declarations accept only booleans across all package types', () => {
+  const fields = ['aiAssistedDevelopment', 'aiGeneratedArt', 'aiGeneratedVoice']
+  for (const type of ['campaign', 'customize', 'dependency']) {
+    const base = {
+      type,
+      name: 'Example',
+      description: '',
+      version: '1.0.0',
+      author: 'Author',
+      ...(type === 'campaign' ? { campaign: 'WOL' } : {}),
+    }
+    const guard = api[`isPackage${type[0].toUpperCase()}${type.slice(1)}`]
+    function check(input, expected) {
+      assert.equal(validate(input), expected, JSON.stringify(input))
+      assert.equal(isPackage(input), expected, JSON.stringify(input))
+      assert.equal(guard(input), expected, JSON.stringify(input))
+    }
+    check(base, true)
+    check(
+      { ...base, aiAssistedDevelopment: true, aiGeneratedArt: false, aiGeneratedVoice: true },
+      true,
+    )
+    for (const field of fields) {
+      for (const value of [undefined, true, false]) check({ ...base, [field]: value }, true)
+      for (const value of [null, 0, 1, '', 'true', 'false', [], {}])
+        check({ ...base, [field]: value }, false)
+    }
+  }
+})
+
 test('correct launcher and official bank fields are validated', () => {
   const manifest = {
     type: 'customize',

@@ -64,7 +64,8 @@ package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata �
 
 `PackageDependency` 只包含 `scnid?`、`name`、`description`、`tags?`、`version`、
 `author`、`type: 'dependency'`、`mods?`、`website?`、`social?`、`sponsor?`、`$schema?`、
-`readme?`、`changelog?`、`docs?`、`assets?`。沿用基础字段和 mods 的可选性，不强制 scnid
+`readme?`、`changelog?`、`docs?`、`assets?`、`aiAssistedDevelopment?`、`aiGeneratedArt?`、
+`aiGeneratedVoice?`。沿用基础字段和 mods 的可选性，不强制 scnid
 或非空 mods。`isPackage` 拒绝 dependency 中任何其他顶层字段，包括 manager/maps。
 该类型仅面向 SCNexus 管理，不声明 manager；当前客户端支持依赖包独立安装与卸载，
 但不按作品的 dependencies 声明自动解析、下载或安装依赖，也不按 CCM 处理。
@@ -74,6 +75,20 @@ package 子路径的 ESM 导入、CommonJS `require` 被拒绝以及 metadata �
 `PackageBank`、`PackageDependencyReference`。Map/Mod 为结构别名，扩展名和路径前缀
 由运行时校验区分。`PackageDependencyReference` 是 dependencies 数组的引用项，
 不是 dependency 包本体。启动器字段统一使用 `launcher`，官方存档模式使用 `official`。
+
+## AI 使用声明
+
+三种包类型均支持以下顶层可选布尔字段：
+
+| 字段                    | 含义                              |
+| ----------------------- | --------------------------------- |
+| `aiAssistedDevelopment` | 是否使用 AI 协助开发              |
+| `aiGeneratedArt`        | 是否使用 AI 生成/辅助制作美术素材 |
+| `aiGeneratedVoice`      | 是否使用 AI 生成/辅助制作语音配音 |
+
+字段可独立声明：`true` 表示使用，`false` 表示未使用；省略表示未声明，不默认等同于 `false`。
+仅接受布尔值，不接受 `null`、数字或字符串。这些是作者自报信息，不代表平台认证，
+不改变安装、资源解析或依赖处理行为；现有未包含这些字段的作品包仍可通过校验。
 
 ## 图片与文档声明
 

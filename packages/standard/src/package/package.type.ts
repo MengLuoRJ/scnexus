@@ -85,6 +85,12 @@ export type PackageBase = {
   tags?: string[]
   version: string
   author: string
+  /** 是否使用 AI 协助开发 */
+  aiAssistedDevelopment?: boolean
+  /** 是否使用 AI 生成/辅助制作美术素材 */
+  aiGeneratedArt?: boolean
+  /** 是否使用 AI 生成/辅助制作语音配音 */
+  aiGeneratedVoice?: boolean
   website?: string
   /** Archive-root-relative documentation path; resolved by the client, not validation. */
   readme?: string

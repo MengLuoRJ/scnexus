@@ -1,6 +1,6 @@
 {
   "name": "@scnexus/standard",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "SCNexus package standard: types, JSON Schema, validators and parsers.",
   "keywords": [
     "package-format",

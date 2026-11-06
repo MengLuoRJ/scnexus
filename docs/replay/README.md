@@ -27,6 +27,7 @@
 
 - [replay-architecture.md](./replay-architecture.md) — 架构与能力拆分
 - [replay-parser-package.md](./replay-parser-package.md) — `@scnexus/replay-parser` 包设计
+- [SC2 创作者预览工具与录像观战设计](../sc2-visualization-design.md) — 独立模型／地图预览器、parser 精确状态、无头文字观战、2D／3D 场景与素材包（规划，未实现）
 - [training-start-research.md](./training-start-research.md) — 实际训练开始时间的源码证据、限定还原方案与实验矩阵
 - [replay-database.md](./replay-database.md) — 本地 SQLite 数据结构与 replay 持久化设计
 

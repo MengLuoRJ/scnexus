@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createReplayObserver, sampleReplaySpatialTimeline } from '../src/index.js'
+import {
+  createReplayObserver,
+  filterReplayObserverUnits,
+  queryReplayObserverEvents,
+  sampleReplaySpatialTimeline,
+} from '../src/index.js'
 import type { ReplayObserverState, ReplayObserverTimeline } from '../src/index.js'
 
 function fixture(): ReplayObserverTimeline {
@@ -108,6 +113,123 @@ describe('spatial sampling', () => {
       10,
     )
     expect(units[0]).toMatchObject({ position: null, unitType: 'Drone' })
+  })
+})
+
+describe('headless querying', () => {
+  it('filters temporal ownership, type, and alive state without future knowledge', () => {
+    const observer = createReplayObserver(fixture())
+    expect(filterReplayObserverUnits(observer.seek(9).units, {})).toEqual([])
+    expect(filterReplayObserverUnits(observer.seek(29).units, { playerId: 2 })).toEqual([])
+    expect(filterReplayObserverUnits(observer.seek(30).units, { playerId: 2 })).toHaveLength(1)
+    expect(filterReplayObserverUnits(observer.seek(39).units, { search: 'LAIR' })).toEqual([])
+    const units = observer.seek(40).units
+    expect(
+      filterReplayObserverUnits(units, { playerId: 2, search: ' laIR ', alive: 'alive' }),
+    ).toEqual(units)
+    expect(filterReplayObserverUnits(units, { search: '1:0' })).toEqual(units)
+    expect(filterReplayObserverUnits(units, { alive: 'dead' })).toEqual([])
+    expect(filterReplayObserverUnits(observer.seek(60).units, { alive: 'dead' })).toHaveLength(1)
+    expect(filterReplayObserverUnits(observer.seek(59).units, { alive: 'all' })).toHaveLength(1)
+  })
+
+  it('distinguishes neutral, unknown and omitted player filters and searches tags case-insensitively', () => {
+    const initial = sampleReplaySpatialTimeline(fixture(), 10)[0]!
+    const units = Object.freeze([
+      Object.freeze({ ...initial, unitTag: 'Neutral:TAG', controlPlayerId: 0 }),
+      Object.freeze({ ...initial, unitTag: 'Unknown', unitType: null, controlPlayerId: null }),
+      initial,
+    ])
+    expect(filterReplayObserverUnits(units, {})).toEqual(units)
+    expect(filterReplayObserverUnits(units, { playerId: 0 })).toEqual([units[0]])
+    expect(filterReplayObserverUnits(units, { playerId: null })).toEqual([units[1]])
+    expect(filterReplayObserverUnits(units, { search: 'neutral:tag' })).toEqual([units[0]])
+    expect(filterReplayObserverUnits(units, { search: 'missing' })).toEqual([])
+    expect(units).toHaveLength(3)
+  })
+
+  it('derives cumulative transitions and death without position noise or mutation', () => {
+    const timeline = fixture()
+    const before = JSON.stringify(timeline)
+    expect(queryReplayObserverEvents(timeline)).toEqual([
+      { unitTag: '1:0', gameLoop: 10, kind: 'init' },
+      { unitTag: '1:0', gameLoop: 20, kind: 'done' },
+      { unitTag: '1:0', gameLoop: 30, kind: 'owner' },
+      { unitTag: '1:0', gameLoop: 40, kind: 'type' },
+      { unitTag: '1:0', gameLoop: 60, kind: 'died' },
+    ])
+    expect(queryReplayObserverEvents(timeline, 'missing')).toEqual([])
+    expect(JSON.stringify(timeline)).toBe(before)
+  })
+
+  it('uses explicit parser kinds, keeps same-loop order and records death only once', () => {
+    const unit = fixture().units[0]!
+    const initial = unit.observations[0]!
+    const timeline: ReplayObserverTimeline = {
+      durationGameLoops: 100,
+      units: [
+        {
+          ...unit,
+          observations: [
+            { ...initial, kind: 'born' },
+            { ...initial, gameLoop: 20, kind: 'init' },
+            { ...initial, gameLoop: 20, kind: 'done' },
+            { ...initial, gameLoop: 20, kind: 'type-change' },
+            { ...initial, gameLoop: 20, kind: 'owner-change' },
+            { ...initial, gameLoop: 50, kind: 'position', completed: true },
+            { ...initial, gameLoop: 60, kind: 'died' },
+          ],
+        },
+        {
+          ...unit,
+          unitTag: 'second',
+          diedGameLoop: null,
+          observations: [{ ...initial, kind: 'born' }],
+        },
+      ],
+    }
+    const events = queryReplayObserverEvents(timeline)
+    expect(events.map(({ kind }) => kind)).toEqual([
+      'born',
+      'born',
+      'init',
+      'done',
+      'type',
+      'owner',
+      'died',
+    ])
+    expect(queryReplayObserverEvents(timeline, '1:0')).toEqual(
+      events.filter((event) => event.unitTag === '1:0'),
+    )
+    expect(Object.isFrozen(events)).toBe(true)
+    expect(Object.isFrozen(events[0])).toBe(true)
+  })
+
+  it('does not invent unseen starts or completion and handles equal-loop cumulative changes', () => {
+    const unit = fixture().units[0]!
+    const initial = { ...unit.observations[0]!, completed: true }
+    const events = queryReplayObserverEvents({
+      durationGameLoops: 100,
+      units: [
+        { ...unit, diedGameLoop: null, observations: [initial] },
+        {
+          ...unit,
+          unitTag: 'partial',
+          diedGameLoop: null,
+          observations: [
+            { ...initial, gameLoop: 20 },
+            { ...initial, gameLoop: 20, unitType: 'Lair', upkeepPlayerId: 0 },
+          ],
+        },
+        { ...unit, unitTag: 'death-only', observations: [] },
+      ],
+    })
+    expect(events).toEqual([
+      { unitTag: '1:0', gameLoop: 10, kind: 'born' },
+      { unitTag: 'partial', gameLoop: 20, kind: 'type' },
+      { unitTag: 'partial', gameLoop: 20, kind: 'owner' },
+      { unitTag: 'death-only', gameLoop: 60, kind: 'died' },
+    ])
   })
 })
 

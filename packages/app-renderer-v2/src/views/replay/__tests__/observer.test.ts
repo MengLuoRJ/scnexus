@@ -77,3 +77,52 @@ test('queries the real headless manager when seeking, selecting, and replacing a
   expect(wrapper.text()).toContain(en['replay.observer.missing'])
   wrapper.unmount()
 })
+
+test.each(['en', 'zh', 'zh-Hant'])(
+  'filters units and navigates lifecycle events (%s)',
+  async (locale) => {
+    const messages = { en, zh, 'zh-Hant': zhHant }
+    const labels = messages[locale as keyof typeof messages]
+    const wrapper = mount(ReplayObserver, {
+      props: { timeline },
+      global: {
+        plugins: [createI18n({ legacy: false, locale, messages })],
+        stubs: {
+          UButton: { template: '<button><slot /></button>' },
+          UInput: {
+            props: ['modelValue'],
+            emits: ['update:modelValue'],
+            template:
+              '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+          },
+        },
+      },
+    })
+    const search = wrapper.get(`input[aria-label="${labels['replay.observer.search']}"]`)
+    await search.setValue('probe')
+    expect(wrapper.findAll('td button')).toHaveLength(0)
+    await search.setValue('MARINE')
+    expect(wrapper.findAll('td button')).toHaveLength(1)
+    const life = wrapper.get(`select[aria-label="${labels['replay.observer.life']}"]`)
+    await life.setValue('dead')
+    expect(wrapper.findAll('td button')).toHaveLength(0)
+    await wrapper.get('input[type="range"]').setValue('100')
+    expect(wrapper.findAll('td button')).toHaveLength(1)
+    await wrapper.get('td button').trigger('click')
+    const details = wrapper.get(`section[aria-label="${labels['replay.observer.details']}"]`)
+    expect(details.text()).toContain(labels['replay.observer.dead'])
+    const start = details
+      .findAll('button')
+      .find((button) => button.text() === labels['replay.observer.jumpStart'])!
+    await start.trigger('click')
+    expect(wrapper.text()).toContain('0 / 160')
+    const events = wrapper.get(`section[aria-label="${labels['replay.observer.events']}"]`)
+    expect(events.findAll('li')).toHaveLength(2)
+    await events.findAll('li button')[1]!.trigger('click')
+    expect(wrapper.text()).toContain('100 / 160')
+    expect(wrapper.text()).not.toContain('replay.observer.')
+    await wrapper.setProps({ timeline: undefined })
+    expect(wrapper.find('section').exists()).toBe(false)
+    wrapper.unmount()
+  },
+)

@@ -62,6 +62,44 @@ as valid parser timelines; the manager performs validation once at construction.
 `sampleReplaySpatialTimeline(timeline, gameLoop)` exposes the same pure sampling
 without playback or selection. It clamps loops and returns immutable unit states.
 
+## Headless queries
+
+```ts
+import { filterReplayObserverUnits, queryReplayObserverEvents } from '@scnexus/sc2-observer'
+
+const units = filterReplayObserverUnits(observer.getState().units, {
+  playerId: 1,
+  search: 'marine',
+  alive: 'alive',
+})
+const events = queryReplayObserverEvents(timeline, observer.getState().selectedUnitTag ?? undefined)
+```
+
+`filterReplayObserverUnits(units, filter)` returns a new immutable array in input
+order without modifying units. Optional filters combine: `playerId` matches
+`controlPlayerId` exactly (`0` neutral, `null` unknown, omitted all); `search` is
+trimmed, case-insensitive substring matching on unit type or tag; `alive` is
+`'all' | 'alive' | 'dead'` (omitted means all). Filter sampled units after seeking
+to query historical ownership, type and life status without leaking future state.
+
+`queryReplayObserverEvents(timeline, unitTag?)` returns immutable
+`{ unitTag, gameLoop, kind }` records for all units or one exact tag. Stable event
+kinds are `'born' | 'init' | 'done' | 'died' | 'type' | 'owner'`. Results sort by
+loop; ties retain timeline unit order, then observation order. Position updates
+are not events. This queries the supplied timeline, not the current playback loop;
+callers can restrict results to the current loop when presenting historical text.
+
+Observation `kind` is optional for compatibility with existing structural inputs.
+When present, parser kinds are authoritative: `type-change` maps to `type`,
+`owner-change` to `owner`, lifecycle kinds retain their names, and `position` is
+ignored. Without kind, successive cumulative states reveal completion, type and
+control/upkeep ownership changes (same-loop fallback order: done, type, owner).
+A first observation at `startedGameLoop` supplies `born` if completed, otherwise
+`init`; a later first observation does not invent an unseen start or completion.
+`diedGameLoop` supplies death even without a death observation, with no duplicate
+when explicit death was recorded. No intervening events or movement are inferred.
+Standalone queries, like sampling, expect valid chronological parser timelines.
+
 ## Development
 
 From the workspace root:

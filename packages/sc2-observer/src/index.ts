@@ -7,6 +7,14 @@ export interface ReplayObserverTimeline {
     readonly diedGameLoop: number | null
     readonly observations: readonly {
       readonly gameLoop: number
+      readonly kind?:
+        | 'born'
+        | 'init'
+        | 'done'
+        | 'died'
+        | 'owner-change'
+        | 'type-change'
+        | 'position'
       readonly unitType: string | null
       readonly controlPlayerId: number | null
       readonly upkeepPlayerId: number | null
@@ -31,6 +39,82 @@ export interface ReplayObserverUnit {
     observedGameLoop: number
     ageGameLoops: number
   }> | null
+}
+
+export interface ReplayObserverUnitFilter {
+  readonly playerId?: number | null
+  readonly search?: string
+  readonly alive?: 'all' | 'alive' | 'dead'
+}
+
+export interface ReplayObserverEvent {
+  readonly unitTag: string
+  readonly gameLoop: number
+  readonly kind: 'born' | 'init' | 'done' | 'died' | 'type' | 'owner'
+}
+
+/** Filters sampled units, retaining their input order and historical state. */
+export function filterReplayObserverUnits(
+  units: readonly ReplayObserverUnit[],
+  filter: ReplayObserverUnitFilter,
+): readonly ReplayObserverUnit[] {
+  const search = filter.search?.trim().toLowerCase() ?? ''
+  return Object.freeze(
+    units.filter(
+      (unit) =>
+        (filter.playerId === undefined || unit.controlPlayerId === filter.playerId) &&
+        (!filter.alive || filter.alive === 'all' || unit.alive === (filter.alive === 'alive')) &&
+        (!search ||
+          unit.unitTag.toLowerCase().includes(search) ||
+          (unit.unitType?.toLowerCase().includes(search) ?? false)),
+    ),
+  )
+}
+
+/** Queries observed lifecycle transitions, excluding sparse position updates. */
+export function queryReplayObserverEvents(
+  timeline: ReplayObserverTimeline,
+  unitTag?: string,
+): readonly ReplayObserverEvent[] {
+  const events: ReplayObserverEvent[] = []
+  for (const unit of timeline.units) {
+    if (unitTag !== undefined && unit.unitTag !== unitTag) continue
+    let previous: (typeof unit.observations)[number] | undefined
+    let deathRecorded = false
+    const append = (gameLoop: number, kind: ReplayObserverEvent['kind']) => {
+      if (kind === 'died') {
+        if (deathRecorded) return
+        deathRecorded = true
+      }
+      events.push(Object.freeze({ unitTag: unit.unitTag, gameLoop, kind }))
+    }
+    for (const observation of unit.observations) {
+      if (observation.kind !== undefined) {
+        if (observation.kind !== 'position') {
+          const kind =
+            observation.kind === 'type-change'
+              ? 'type'
+              : observation.kind === 'owner-change'
+                ? 'owner'
+                : observation.kind
+          append(observation.gameLoop, kind)
+        }
+      } else if (previous) {
+        if (!previous.completed && observation.completed) append(observation.gameLoop, 'done')
+        if (previous.unitType !== observation.unitType) append(observation.gameLoop, 'type')
+        if (
+          previous.controlPlayerId !== observation.controlPlayerId ||
+          previous.upkeepPlayerId !== observation.upkeepPlayerId
+        )
+          append(observation.gameLoop, 'owner')
+      } else if (observation.gameLoop === unit.startedGameLoop) {
+        append(observation.gameLoop, observation.completed ? 'born' : 'init')
+      }
+      previous = observation
+    }
+    if (unit.diedGameLoop !== null) append(unit.diedGameLoop, 'died')
+  }
+  return Object.freeze(events.sort((a, b) => a.gameLoop - b.gameLoop))
 }
 
 export interface ReplayObserverState {

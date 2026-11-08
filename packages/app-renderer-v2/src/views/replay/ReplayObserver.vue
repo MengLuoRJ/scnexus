@@ -7,9 +7,14 @@ import {
   queryReplayObserverEvents,
 } from '@scnexus/sc2-observer'
 import type { ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
+import ReplayObserverAnalysis from './ReplayObserverAnalysis.vue'
 
 defineOptions({ name: 'ReplayObserver' })
-const props = defineProps<{ timeline: ReplayAnalysis['spatial'] }>()
+const props = defineProps<{
+  timeline: ReplayAnalysis['spatial']
+  insights?: ReplayAnalysis['insights']
+  trackerPartial?: boolean
+}>()
 const { t } = useI18n()
 type Observer = ReturnType<typeof createReplayObserver>
 const state = shallowRef<ReturnType<Observer['getState']> | null>(null)
@@ -63,10 +68,13 @@ watch(
     eventPage.value = 0
   },
 )
-function jumpToEvent(unitTag: string, gameLoop: number) {
+function jumpToAnalysis(gameLoop: number) {
   observer?.pause()
   stopFrame()
   observer?.seek(gameLoop)
+}
+function jumpToEvent(unitTag: string, gameLoop: number) {
+  jumpToAnalysis(gameLoop)
   observer?.selectUnit(unitTag)
 }
 const units = computed(
@@ -181,6 +189,14 @@ onBeforeUnmount(dispose)
             class="mt-2 block w-full accent-current"
             @input="seek" />
         </label>
+        <ReplayObserverAnalysis
+          :insights="props.insights"
+          :units="state.units"
+          :game-loop="Math.floor(state.currentGameLoop)"
+          :partial="props.trackerPartial || props.timeline?.partial"
+          :timeline="props.timeline"
+          @seek="jumpToAnalysis"
+          @select-event="jumpToEvent" />
         <div class="grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
           <label class="min-w-0 text-xs">
             {{ t('replay.observer.search') }}

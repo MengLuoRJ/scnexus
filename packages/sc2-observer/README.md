@@ -100,6 +100,58 @@ A first observation at `startedGameLoop` supplies `born` if completed, otherwise
 when explicit death was recorded. No intervening events or movement are inferred.
 Standalone queries, like sampling, expect valid chronological parser timelines.
 
+## Analysis at the playback loop
+
+```ts
+import { sampleReplayObserverAnalysis, summarizeReplayObserverUnits } from '@scnexus/sc2-observer'
+
+const players = sampleReplayObserverAnalysis(insights, observer.getState().currentGameLoop)
+const counts = summarizeReplayObserverUnits(observer.getState().units)
+```
+
+`sampleReplayObserverAnalysis(input, gameLoop)` accepts a structural subset of
+`ReplayInsights`: `players` with `playerId`, optional `slot` and `name`, `economy`
+samples and `production` events. No dependency on app-shared is required. It returns
+an immutable array in input player order, including players without observations:
+
+- `playerId`, `slot`, `name`: player identity; missing slot/name become null.
+- `economy`: the latest sample at or before the query loop, or null before the
+  first sample. Contains `gameLoop` and supported numeric fields supplied by that
+  sample, including minerals, vespene, incomes, workers, supplyUsed, supplyCap,
+  current/in-progress resource stocks and recorded lost/killed/friendly-fire
+  resource counters. Missing optional fields stay absent; zero and null retain
+  their meanings. Unknown fields are omitted.
+- `economyAgeGameLoops`: query loop minus sample loop, or null without a sample.
+- `production`: at most the latest **10** observed records, ordered by loop, each
+  containing only `{ observationGameLoop, kind, name, count }`. `kind` retains
+  the input production kind. A record appears only when its `gameLoop` is at or
+  before the query loop. Inferred start/end loops, timing metadata and future
+  completion records are never exposed as current production or completion.
+- `observedProductionEventCount`: total records observed through the query loop,
+  including records outside the recent ten. Label this **observed production
+  events**, not trained units; records may describe starts, completions or morphs,
+  and `count` may be null.
+
+Economy values are last sampled, without interpolation. Loss values such as
+`lostArmyMinerals` and `lostArmyVespene` come only from that economy sample; no
+whole-game metrics, future totals, costs or inferred kills enter the snapshot.
+Queries are independent, so seeking backward removes future information.
+Query and input observation loops must be finite and nonnegative; invalid loops
+throw `RangeError`. Fractional loops are accepted, with no duration clamping.
+Unsorted inputs are supported without mutation: equal-loop economy samples use
+last input order, and production ties preserve input order (the recent ten retain
+the last ten tied records). Each query scans observations but retains only ten
+production references before creating immutable normalized records; it does not
+copy or sort the complete production history. Results are detached from input
+objects; inputs remain mutable and callers must not mutate them during a query.
+
+`summarizeReplayObserverUnits(units)` groups sampled units by `controlPlayerId`
+(including neutral `0` and unknown `null`), retaining first-seen player order.
+Each immutable `{ playerId, alive, dead, underConstruction }` summary counts raw
+recorded entities. `underConstruction` counts living entities with
+`completed: false` and is a subset of `alive`. These are not army counts, trained
+unit counts, combat losses or inferred kills; absent players have no summary.
+
 ## Development
 
 From the workspace root:

@@ -205,7 +205,11 @@ watch([selectedId, () => props.analysis], () => {
           :summary="props.record.coop"
           :analysis="props.analysis?.coop"
           :hide-units="!!props.analysis?.metrics" />
-        <ReplayObserver v-if="props.analysis" :timeline="props.analysis.spatial" />
+        <ReplayObserver
+          v-if="props.analysis"
+          :timeline="props.analysis.spatial"
+          :insights="props.analysis.insights"
+          :tracker-partial="props.analysis.capabilities?.tracker?.state !== 'available'" />
         <ReplayMetrics :metrics="props.analysis?.metrics" :record="props.record" />
         <ReplayChat
           v-if="props.loaded"

@@ -1,3 +1,11 @@
+export { sampleReplayObserverAnalysis } from './analysis.js'
+export type {
+  ReplayObserverAnalysisInput,
+  ReplayObserverEconomySample,
+  ReplayObserverPlayerAnalysis,
+  ReplayObserverProductionEvent,
+} from './analysis.js'
+
 /** Structural subset of replay-parser's cumulative spatial timeline. */
 export interface ReplayObserverTimeline {
   readonly durationGameLoops: number
@@ -39,6 +47,35 @@ export interface ReplayObserverUnit {
     observedGameLoop: number
     ageGameLoops: number
   }> | null
+}
+
+export interface ReplayObserverPlayerUnitSummary {
+  readonly playerId: number | null
+  readonly alive: number
+  readonly dead: number
+  readonly underConstruction: number
+}
+
+/** Counts recorded entities by their sampled controller, in first-seen player order. */
+export function summarizeReplayObserverUnits(
+  units: readonly ReplayObserverUnit[],
+): readonly ReplayObserverPlayerUnitSummary[] {
+  const players = new Map<
+    number | null,
+    { playerId: number | null; alive: number; dead: number; underConstruction: number }
+  >()
+  for (const unit of units) {
+    let player = players.get(unit.controlPlayerId)
+    if (!player) {
+      player = { playerId: unit.controlPlayerId, alive: 0, dead: 0, underConstruction: 0 }
+      players.set(unit.controlPlayerId, player)
+    }
+    if (unit.alive) {
+      player.alive++
+      if (!unit.completed) player.underConstruction++
+    } else player.dead++
+  }
+  return Object.freeze(Array.from(players.values(), (player) => Object.freeze(player)))
 }
 
 export interface ReplayObserverUnitFilter {

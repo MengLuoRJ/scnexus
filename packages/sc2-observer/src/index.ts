@@ -1,3 +1,5 @@
+import { createIndexedSpatialSampler, sampleObservedUnit } from './spatial-sampler.js'
+
 export { sampleReplayObserverAnalysis } from './analysis.js'
 export type {
   ReplayObserverAnalysisInput,
@@ -201,26 +203,7 @@ export function sampleReplaySpatialTimeline(
     }
     const latest = unit.observations[low - 1]
     if (!latest) continue
-    const position =
-      latest.x !== null && latest.y !== null && latest.positionGameLoop !== null
-        ? Object.freeze({
-            x: latest.x,
-            y: latest.y,
-            observedGameLoop: latest.positionGameLoop,
-            ageGameLoops: loop - latest.positionGameLoop,
-          })
-        : null
-    units.push(
-      Object.freeze({
-        unitTag: unit.unitTag,
-        alive: unit.diedGameLoop === null || unit.diedGameLoop > loop,
-        completed: latest.completed,
-        unitType: latest.unitType,
-        controlPlayerId: latest.controlPlayerId,
-        upkeepPlayerId: latest.upkeepPlayerId,
-        position,
-      }),
-    )
+    units.push(sampleObservedUnit(unit, latest, loop))
   }
   return Object.freeze(units)
 }
@@ -267,6 +250,7 @@ export function createReplayObserver(input: ReplayObserverTimeline): ReplayObser
       return { ...unit, observations }
     }),
   }
+  const sampler = createIndexedSpatialSampler(timeline)
   let disposed = false
   const listeners = new Set<(state: ReplayObserverState) => void>()
   let state: ReplayObserverState = Object.freeze({
@@ -276,7 +260,7 @@ export function createReplayObserver(input: ReplayObserverTimeline): ReplayObser
     speed: 1,
     selectedUnitTag: null,
     selectedUnit: null,
-    units: sampleReplaySpatialTimeline(timeline, 0),
+    units: sampler.sample(0),
   })
   function assertActive(): void {
     if (disposed) throw new Error('Replay observer is disposed')
@@ -286,8 +270,11 @@ export function createReplayObserver(input: ReplayObserverTimeline): ReplayObser
     const next = { ...state, ...patch }
     if (next.currentGameLoop >= next.duration) next.playing = false
     if (next.currentGameLoop !== state.currentGameLoop)
-      next.units = sampleReplaySpatialTimeline(timeline, next.currentGameLoop)
-    next.selectedUnit = next.units.find((unit) => unit.unitTag === next.selectedUnitTag) ?? null
+      next.units = sampler.sample(next.currentGameLoop)
+    next.selectedUnit =
+      next.selectedUnitTag === null
+        ? null
+        : (next.units.find((unit) => unit.unitTag === next.selectedUnitTag) ?? null)
     state = Object.freeze(next)
     const published = state
     const pendingListeners = [...listeners]
@@ -336,6 +323,8 @@ export function createReplayObserver(input: ReplayObserverTimeline): ReplayObser
     dispose() {
       disposed = true
       listeners.clear()
+      sampler.dispose()
+      tags.clear()
     },
   }
 }

@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "benchmark": "pnpm run build && node --expose-gc test/spatial-benchmark.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "test": "pnpm -w exec vitest run --root packages/sc2-observer",
     "lint": "pnpm -w exec oxlint -c .oxlintrc.json packages/sc2-observer && pnpm -w exec eslint packages/sc2-observer",

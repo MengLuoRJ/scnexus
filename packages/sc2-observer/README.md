@@ -62,6 +62,49 @@ as valid parser timelines; the manager performs validation once at construction.
 `sampleReplaySpatialTimeline(timeline, gameLoop)` exposes the same pure sampling
 without playback or selection. It clamps loops and returns immutable unit states.
 
+## Indexed sampling and performance
+
+Observer sessions keep an in-memory birth-time index and per-unit observation
+interval cursors. Sampling within a birth interval skips future units without
+scanning the full replay. Within an unchanged observation interval, the session
+reuses the observation lookup, while publishing new immutable unit states with
+updated position ages. Crossing intervals or seeking backward uses binary search;
+unit output remains in the original timeline order, including dead units.
+`dispose()` clears the index, cursors, tag lookup and subscriptions; the final
+published snapshot remains readable. This is not a streaming or keyframe cache.
+The standalone `sampleReplaySpatialTimeline` stays stateless as a reference.
+
+Run the reproducible CPU-only synthetic benchmark with Node 26:
+
+```sh
+pnpm --filter @scnexus/sc2-observer benchmark
+```
+
+The command builds the package and reports construction time, CPU/runtime,
+and sampling p50/p95. Both workloads contain 4,000 units with 32 observations
+each: staggered births every 32 loops, and all units present at loop zero.
+Sequential queries cover loops 0–511; deterministic random queries cover the
+whole workload duration. Each measurement warms up 128 queries, runs 512 queries,
+and reports the median of three rounds, alternating stateless/session order.
+GC runs after warmup and before each measured round; GC during measurement is
+included. Timing is informational, with no hardware-dependent pass threshold.
+
+Example on 2026-11-09, Windows x64, Intel Core Ultra 7 270K Plus,
+Node 26.13.0 (milliseconds per query):
+
+| Workload           | Stateless p50 | Session p50 | Stateless p95 | Session p95 |
+| ------------------ | ------------: | ----------: | ------------: | ----------: |
+| Staggered, opening |        0.0041 |      0.0007 |        0.0055 |      0.0017 |
+| Staggered, random  |        0.1463 |      0.1021 |        0.3191 |      0.2361 |
+| Dense, opening     |        0.2549 |      0.1310 |        0.3682 |      0.3070 |
+| Dense, random      |        0.2766 |      0.2758 |        0.4700 |      0.4789 |
+
+The reference is the stateless sampler, not a historical session benchmark.
+Dense random seeks show no meaningful improvement. These figures exclude
+parser/IPC cost, UI updates, rendering and peak memory; they do not establish
+browser frame rate, real-replay performance or an end-to-end 60 FPS guarantee.
+Full immutable snapshots still require work proportional to the sampled units.
+
 ## Headless queries
 
 ```ts

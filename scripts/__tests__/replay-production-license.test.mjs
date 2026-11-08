@@ -11,8 +11,7 @@ test('includes the third-party notices document in the desktop application', asy
   assert.ok(
     config.files.some(
       (entry) =>
-        entry.from === '../../THIRD-PARTY-NOTICES.md' &&
-        entry.to === 'THIRD-PARTY-NOTICES.md',
+        entry.from === '../../THIRD-PARTY-NOTICES.md' && entry.to === 'THIRD-PARTY-NOTICES.md',
     ),
   )
   const notices = await readFile(new URL('THIRD-PARTY-NOTICES.md', root), 'utf8')

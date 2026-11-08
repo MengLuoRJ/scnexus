@@ -7,17 +7,17 @@ import View from '../TwoFactorSettings.vue'
 import { AccountError } from '../../../apis/internal/client'
 
 const mocks = vi.hoisted(() => ({
-  enroll: vi.fn(),
-  confirm: vi.fn(),
-  toast: vi.fn(),
-  load: vi.fn(),
-  rotate: vi.fn(),
-  disable: vi.fn(),
-  logout: vi.fn(),
-  qr: vi.fn(),
-  status: vi.fn(),
-  regenerate: vi.fn(),
-  verify: vi.fn(),
+  enroll: vi.fn<typeof import('../../../apis').apiTwoFactorEnroll>(),
+  confirm: vi.fn<typeof import('../../../apis').apiTwoFactorConfirm>(),
+  toast: vi.fn<ReturnType<typeof import('@nuxt/ui/composables/useToast').useToast>['add']>(),
+  load: vi.fn<ReturnType<typeof import('../../../stores/auth').useAuthStore>['loadAccount']>(),
+  rotate: vi.fn<typeof import('../../../apis').apiTwoFactorRotate>(),
+  disable: vi.fn<typeof import('../../../apis').apiTwoFactorDisable>(),
+  logout: vi.fn<ReturnType<typeof import('../../../stores/auth').useAuthStore>['logout']>(),
+  qr: vi.fn<typeof import('uqr').renderSVG>(),
+  status: vi.fn<typeof import('../../../apis').apiTwoFactorStatus>(),
+  regenerate: vi.fn<typeof import('../../../apis').apiTwoFactorRegenerate>(),
+  verify: vi.fn<typeof import('../../../apis').apiTwoFactorVerify>(),
 }))
 const auth = reactive({
   signedIn: true,
@@ -359,12 +359,19 @@ test.each(['rotate', 'disable'] as const)(
   'discards late %s results after a session switch',
   async (operation) => {
     auth.user.twoFactorEnabled = true
-    let resolve!: (value: typeof enrollment | undefined) => void
-    mocks[operation].mockReturnValueOnce(
-      new Promise((done) => {
-        resolve = done
-      }),
-    )
+    let resolve!: () => void
+    if (operation === 'rotate')
+      mocks.rotate.mockReturnValueOnce(
+        new Promise((done) => {
+          resolve = () => done(enrollment)
+        }),
+      )
+    else
+      mocks.disable.mockReturnValueOnce(
+        new Promise((done) => {
+          resolve = () => done()
+        }),
+      )
     const wrapper = render()
     const key = operation === 'rotate' ? 'account.mfaRotate' : 'account.mfaDisable'
     await wrapper
@@ -374,7 +381,7 @@ test.each(['rotate', 'disable'] as const)(
     await wrapper.get('input').setValue('012345')
     await wrapper.get('form').trigger('submit')
     auth.snapshot.epoch++
-    resolve(operation === 'rotate' ? enrollment : undefined)
+    resolve()
     await flushPromises()
     expect(wrapper.find('img').exists()).toBe(false)
     expect(mocks.logout).not.toHaveBeenCalled()
@@ -416,7 +423,7 @@ test('status failure preserves account actions and can be refreshed', async () =
 })
 test('old status cannot overwrite recovery count after regeneration', async () => {
   auth.user.twoFactorEnabled = true
-  let resolve!: (value: unknown) => void
+  let resolve!: (value: Awaited<ReturnType<typeof mocks.status>>) => void
   mocks.status.mockReturnValueOnce(
     new Promise((done) => {
       resolve = done
@@ -430,7 +437,12 @@ test('old status cannot overwrite recovery count after regeneration', async () =
   await wrapper.get('input').setValue('012345')
   await wrapper.get('form').trigger('submit')
   await flushPromises()
-  resolve({ twoFactorEnabled: false, recoveryCodesRemaining: 0 })
+  resolve({
+    twoFactorEnabled: false,
+    twoFactorVerified: false,
+    twoFactorVerifiedAt: null,
+    recoveryCodesRemaining: 0,
+  })
   await flushPromises()
   expect(wrapper.text()).toContain('b'.repeat(32))
   expect(wrapper.text()).toContain('account.mfaEnabled')

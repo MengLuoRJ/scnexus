@@ -15,7 +15,7 @@ app.commandLine.appendSwitch('disable-component-update')
 app.commandLine.appendSwitch('disable-domain-reliability')
 app.commandLine.appendSwitch('no-proxy-server')
 app.commandLine.appendSwitch('disable-features', 'OptimizationHints,MediaRouter')
-app.on('window-all-closed', () => { })
+app.on('window-all-closed', () => {})
 
 async function run() {
   assert.match(process.versions.electron, /^45\./)

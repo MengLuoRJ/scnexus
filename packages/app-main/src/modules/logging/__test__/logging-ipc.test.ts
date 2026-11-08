@@ -8,16 +8,16 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('electron', () => ({
   ipcMain: {
-    removeAllListeners: () => { },
+    removeAllListeners: () => {},
     on: (_channel: string, listener: typeof mocks.listener) => {
       mocks.listener = listener
     },
   },
 }))
 vi.mock('../../../utils/ipc-source', () => ({ assertIpcSource: mocks.source }))
-vi.mock('../../../utils/ipc-util', () => ({ ipcHandle: () => { } }))
+vi.mock('../../../utils/ipc-util', () => ({ ipcHandle: () => {} }))
 vi.mock('../logging', () => ({ getLogConfig: () => ({ level: 'error' }), writeLog: mocks.write }))
-vi.mock('../../setting/setting', () => ({ updateSetting: () => { } }))
+vi.mock('../../setting/setting', () => ({ updateSetting: () => {} }))
 vi.mock('../../telemetry/telemetry', () => ({
   reportTelemetry: mocks.report,
   reportRendererError: mocks.report,

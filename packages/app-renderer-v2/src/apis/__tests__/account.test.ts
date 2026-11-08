@@ -29,6 +29,7 @@ import {
   apiTwoFactorDisable,
   apiTwoFactorRotate,
 } from '../account'
+import type { ApiAuth } from '../internal/client'
 import type { AuthSnapshot } from '@scnexus/app-shared/types/auth.type'
 const snapshot = (): AuthSnapshot => ({
   status: 'signed-in',
@@ -50,7 +51,11 @@ beforeEach(() => {
 })
 describe('account HTTP boundary', () => {
   it('verifies a session without replaying rejected factors and validates the lifetime', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+    const auth = {
+      getSnapshot: snapshot,
+      refresh: vi.fn<ApiAuth['refresh']>(),
+      invalidate: vi.fn<NonNullable<ApiAuth['invalidate']>>(),
+    }
     mocks.request.mockResolvedValueOnce({ data: { verified: true, expiresIn: 300 } })
     await expect(apiTwoFactorVerify(auth, { code: '012345' })).resolves.toBe(300)
     mocks.request.mockResolvedValueOnce({ data: { verified: true, expiresIn: 999999 } })
@@ -65,7 +70,7 @@ describe('account HTTP boundary', () => {
     expect(auth.refresh).not.toHaveBeenCalled()
   })
   it('reads authoritative MFA status and remaining recovery codes', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    const auth = { getSnapshot: snapshot, refresh: vi.fn<ApiAuth['refresh']>() }
     mocks.request.mockResolvedValueOnce({
       data: {
         twoFactorEnabled: true,
@@ -90,7 +95,11 @@ describe('account HTTP boundary', () => {
     await expect(apiTwoFactorStatus(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
   })
   it('regenerates recovery codes and rejects duplicate codes', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+    const auth = {
+      getSnapshot: snapshot,
+      refresh: vi.fn<ApiAuth['refresh']>(),
+      invalidate: vi.fn<NonNullable<ApiAuth['invalidate']>>(),
+    }
     mocks.request.mockResolvedValueOnce({
       data: { recoveryCodes: ['a'.repeat(32), 'b'.repeat(32)] },
     })
@@ -114,7 +123,7 @@ describe('account HTTP boundary', () => {
     expect(auth.refresh).not.toHaveBeenCalled()
   })
   it('rotates with a recovery code and validates the replacement enrollment', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    const auth = { getSnapshot: snapshot, refresh: vi.fn<ApiAuth['refresh']>() }
     mocks.request.mockResolvedValueOnce({
       data: {
         secret: 'ABCDEFG2',
@@ -132,7 +141,7 @@ describe('account HTTP boundary', () => {
     })
   })
   it('validates disable requires reauthentication', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    const auth = { getSnapshot: snapshot, refresh: vi.fn<ApiAuth['refresh']>() }
     mocks.request.mockResolvedValueOnce({
       data: { twoFactorEnabled: false, reauthenticationRequired: true },
     })
@@ -146,7 +155,11 @@ describe('account HTTP boundary', () => {
   it.each([apiTwoFactorRotate, apiTwoFactorDisable])(
     'rejects ambiguous factors and preserves sessions on rejected proofs',
     async (operation) => {
-      const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+      const auth = {
+        getSnapshot: snapshot,
+        refresh: vi.fn<ApiAuth['refresh']>(),
+        invalidate: vi.fn<NonNullable<ApiAuth['invalidate']>>(),
+      }
       await expect(
         operation(auth, { code: '012345', recoveryCode: 'a'.repeat(32) } as never),
       ).rejects.toMatchObject({ kind: 'badRequest' })
@@ -161,7 +174,7 @@ describe('account HTTP boundary', () => {
     },
   )
   it('validates enrollment and submits the exact six-digit code', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    const auth = { getSnapshot: snapshot, refresh: vi.fn<ApiAuth['refresh']>() }
     mocks.request.mockResolvedValueOnce({
       data: {
         secret: 'ABCDEFG2',
@@ -180,7 +193,11 @@ describe('account HTTP boundary', () => {
     })
   })
   it('does not sign out or replay when enrollment confirmation rejects a code', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn(), invalidate: vi.fn() }
+    const auth = {
+      getSnapshot: snapshot,
+      refresh: vi.fn<ApiAuth['refresh']>(),
+      invalidate: vi.fn<NonNullable<ApiAuth['invalidate']>>(),
+    }
     mocks.request.mockRejectedValueOnce(responseError(401))
     await expect(apiTwoFactorConfirm(auth, '012345')).rejects.toMatchObject({
       kind: 'unauthorized',
@@ -190,7 +207,7 @@ describe('account HTTP boundary', () => {
     expect(mocks.request).toHaveBeenCalledOnce()
   })
   it('rejects malformed enrollment and invalid input without sending a code', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    const auth = { getSnapshot: snapshot, refresh: vi.fn<ApiAuth['refresh']>() }
     await expect(apiTwoFactorConfirm(auth, '123')).rejects.toMatchObject({ kind: 'badRequest' })
     expect(mocks.request).not.toHaveBeenCalled()
     mocks.request.mockResolvedValueOnce({
@@ -199,7 +216,7 @@ describe('account HTTP boundary', () => {
     await expect(apiTwoFactorEnroll(auth)).rejects.toMatchObject({ kind: 'invalidResponse' })
   })
   it('rejects a successful confirmation without valid one-time recovery codes', async () => {
-    const auth = { getSnapshot: snapshot, refresh: vi.fn() }
+    const auth = { getSnapshot: snapshot, refresh: vi.fn<ApiAuth['refresh']>() }
     mocks.request.mockResolvedValueOnce({ data: { twoFactorEnabled: true, recoveryCodes: [] } })
     await expect(apiTwoFactorConfirm(auth, '012345')).rejects.toMatchObject({
       kind: 'invalidResponse',
@@ -229,8 +246,8 @@ describe('account HTTP boundary', () => {
     expect(mocks.request.mock.calls[0]?.[0].withCredentials).toBe(false)
   })
   it('invalidates a rejected session after one GET recovery without another replay', async () => {
-    const refresh = vi.fn<() => Promise<void>>(async () => { })
-    const invalidate = vi.fn<() => Promise<void>>(async () => { })
+    const refresh = vi.fn<() => Promise<void>>(async () => {})
+    const invalidate = vi.fn<() => Promise<void>>(async () => {})
     mocks.request.mockRejectedValue(responseError(401))
     await expect(
       apiRequest('/users/me', Boolean, { getSnapshot: snapshot, refresh, invalidate }),
@@ -260,7 +277,7 @@ describe('account HTTP boundary', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
   it('does not refresh twice on repeated 401', async () => {
-    const refresh = vi.fn<() => Promise<void>>(async () => { })
+    const refresh = vi.fn<() => Promise<void>>(async () => {})
     mocks.request.mockRejectedValue(responseError(401))
     await expect(
       apiRequest('/users/me', Boolean, { getSnapshot: snapshot, refresh }),

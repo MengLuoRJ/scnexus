@@ -5,17 +5,46 @@ const mocks = vi.hoisted(() => ({
   handlers: new Map<string, (...args: unknown[]) => unknown>(),
   saveDialog: vi.fn<(...args: unknown[]) => Promise<{ canceled: boolean; filePath?: string }>>(),
   service: {
-    listStoredReplays: vi.fn(),
+    listStoredReplays:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.listStoredReplays
+      >(),
     watchReplay: vi.fn<(...args: unknown[]) => Promise<void>>(),
-    analyzeReplay: vi.fn(),
-    getAnalysis: vi.fn(),
-    listDuplicates: vi.fn(),
-    exportReplayArchive: vi.fn(),
-    scan: vi.fn(),
-    profiles: vi.fn(),
-    importFile: vi.fn(),
-    importReplayArchive: vi.fn(),
-    deleteReplay: vi.fn(),
+    analyzeReplay:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.analyzeReplay
+      >(),
+    getAnalysis:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.getAnalysis
+      >(),
+    listDuplicates:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.listDuplicates
+      >(),
+    exportReplayArchive:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.exportReplayArchive
+      >(),
+    scan: vi.fn<
+      typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.scan
+    >(),
+    profiles:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.profiles
+      >(),
+    importFile:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.importFile
+      >(),
+    importReplayArchive:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.importReplayArchive
+      >(),
+    deleteReplay:
+      vi.fn<
+        typeof import('../../../app-main/src/modules/replay/replay').replayLibraryService.deleteReplay
+      >(),
   },
 }))
 vi.mock('electron', () => ({
@@ -85,7 +114,9 @@ test.each([
   for (const channel of [...mocks.handlers.keys()].filter(
     (key) => !['replay:profiles', 'replay:choose-export-path'].includes(key),
   ))
-    expect(() => mocks.handlers.get(channel)!(value)).toThrow()
+    expect(() => mocks.handlers.get(channel)!(value)).toThrow(
+      expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
+    )
 })
 test.each([undefined, null, 42, {}, '', ' ', 'relative.SC2Replay', 'D:\\bad\0.SC2Replay'])(
   'rejects malformed import paths: %j',
@@ -104,7 +135,9 @@ test('validates identifiers and export selections', () => {
       'replay:analyze',
       'replay:get-analysis',
     ])
-      expect(() => mocks.handlers.get(channel)!(scope, id)).toThrow()
+      expect(() => mocks.handlers.get(channel)!(scope, id)).toThrow(
+        expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
+      )
   for (const ids of [
     [],
     null,
@@ -112,8 +145,12 @@ test('validates identifiers and export selections', () => {
     [42],
     Array.from({ length: 2001 }, (_, i) => String(i)),
   ])
-    expect(() => mocks.handlers.get('replay:export-archive')!(scope, ids, 'D:\\out.zip')).toThrow()
-  expect(() => mocks.handlers.get('replay:export-archive')!(scope, ['id'], 'D:\\out.txt')).toThrow()
+    expect(() => mocks.handlers.get('replay:export-archive')!(scope, ids, 'D:\\out.zip')).toThrow(
+      expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
+    )
+  expect(() => mocks.handlers.get('replay:export-archive')!(scope, ['id'], 'D:\\out.txt')).toThrow(
+    expect.objectContaining({ code: ERRORS.IPC_INVALID_ARGUMENT.code }),
+  )
   mocks.handlers.get('replay:export-archive')!(scope, ['id'], 'D:\\out.zip')
   expect(mocks.service.exportReplayArchive).toHaveBeenCalledWith(scope, ['id'], 'D:\\out.zip')
 })

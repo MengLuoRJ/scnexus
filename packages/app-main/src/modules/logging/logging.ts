@@ -38,9 +38,9 @@ export function writeLog(input: LogInput, process: 'main' | 'preload' | 'rendere
   try {
     const error = input.error
       ? {
-        ...input.error,
-        ...(input.error.message ? { message: redact(input.error.message) } : {}),
-      }
+          ...input.error,
+          ...(input.error.message ? { message: redact(input.error.message) } : {}),
+        }
       : undefined
     log[input.level](
       `[${process}] [${redact(input.scope)}] ${redact(input.message)}`,

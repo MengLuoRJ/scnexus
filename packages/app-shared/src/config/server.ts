@@ -16,7 +16,7 @@ export function resolveServerApiBase(
       (url.protocol === 'https:' || (development && local && url.protocol === 'http:'))
     )
       return configured
-  } catch { }
+  } catch {}
   throw new Error(
     'Invalid VITE_SCNEXUS_API_ORIGIN: expected an HTTPS origin (local HTTP is allowed in development)',
   )

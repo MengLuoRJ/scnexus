@@ -26,7 +26,7 @@ function recoveryCodes(value: unknown): string[] {
       (item) => typeof item === 'string' && /^[a-fA-F0-9]{32}$/.test(item),
     ) ||
     new Set(data.recoveryCodes.map((item: string) => item.toLowerCase())).size !==
-    data.recoveryCodes.length
+      data.recoveryCodes.length
   )
     throw new Error('Invalid recovery codes')
   return [...data.recoveryCodes] as string[]

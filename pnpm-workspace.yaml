@@ -6,5 +6,5 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - vccs@1.1.0
 packages:
-  - "packages/*"
-  - "!**/test/**"
+  - 'packages/*'
+  - '!**/test/**'

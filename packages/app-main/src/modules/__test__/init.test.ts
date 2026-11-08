@@ -80,6 +80,16 @@ vi.mock('../dependency/dependency.ipc', () => ({ initDependencyIpc: () => {} }))
 vi.mock('../workshop', () => ({
   initWorkshopModule: vi.fn<typeof import('../workshop').initWorkshopModule>(),
 }))
+vi.mock('../replay', () => ({
+  initReplayModule: vi.fn<typeof import('../replay').initReplayModule>(),
+}))
+vi.mock('../replay/replay-db', () => ({
+  replayDatabase: { close: vi.fn<() => void>() },
+}))
+vi.mock('../replay/replay-analysis-runner', () => ({
+  disposeReplayAnalyses:
+    vi.fn<typeof import('../replay/replay-analysis-runner').disposeReplayAnalyses>(),
+}))
 vi.mock('../logging', () => ({ reportError: (error: unknown) => error }))
 import { initModules, disposeModules } from '../init'
 import { flushTelemetry, disableTelemetry } from '../telemetry'

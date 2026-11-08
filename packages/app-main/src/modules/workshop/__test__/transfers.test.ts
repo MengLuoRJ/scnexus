@@ -715,8 +715,10 @@ test.each([
     expect(JSON.parse(await readFile(join(f.root, 'tasks.json'), 'utf8')).tasks).toEqual([])
     await expect(fs.lstat(parent)).rejects.toMatchObject({ code: 'ENOENT' })
     await expect(fs.lstat(join(f.root, 'new-setting'))).rejects.toMatchObject({ code: 'ENOENT' })
-    if (operation === 'moved')
-      expect(await readFile(join(moved, 'downloads', task.taskId + '.package'))).toEqual(bytes)
+    const remaining = await readFile(join(moved, 'downloads', task.taskId + '.package')).catch(
+      (error: NodeJS.ErrnoException) => error.code,
+    )
+    expect(remaining).toEqual(operation === 'moved' ? bytes : 'ENOENT')
   },
 )
 test('missing download directories still reject symlink ancestors and permission errors', async () => {

@@ -12,7 +12,10 @@ const sevenZipRoot = dirname(dirname(require.resolve('7z-bin')))
 
 export default {
   ...config,
-  publish: desktopPublish(require('./package.json').version, process.env.SCNEXUS_LEGACY_BASELINE === '1'),
+  publish: desktopPublish(
+    require('./package.json').version,
+    process.env.SCNEXUS_LEGACY_BASELINE === '1',
+  ),
   generateUpdatesFilesForAllChannels: false,
   detectUpdateChannel: false,
   electronVersion: require('electron/package.json').version,

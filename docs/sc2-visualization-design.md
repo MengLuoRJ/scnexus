@@ -2,7 +2,7 @@
 
 ## 1. 状态与范围
 
-本文记录 2026-11-06 确认的产品边界和目标架构，**仅为设计，不代表包、接口、采集能力或素材已交付**。包名为实施候选，创建前核对工作区和发布名称；本轮不创建包、不安装依赖、不修改现有解析行为。
+本文记录 2026-11-06 确认的产品边界和目标架构，并于 2026-11-08 补充 StarMods／Modkit 公开源码的参考结论与自研约束。**仅为设计，不代表包、接口、采集能力或素材已交付**。包名为实施候选，创建前核对工作区和发布名称；本轮不创建包、不安装依赖、不修改现有解析行为。
 
 目标产出：
 
@@ -70,6 +70,13 @@ SC2 客户端 → main 采集适配 ├→ replay-parser → 无头观战器 →
 - 类型从所属包公开导出；不在应用共享类型中复制整套工具链契约，不跨包导入源码。
 - 公共资源读取接口以调用方注入的异步字节读取为边界；只有出现稳定的多个实际消费者后才讨论抽取共享包。
 
+### 3.3 自研与外部参考边界
+
+- StarMods 网站及其公开的 `hometlt/modkit-extensions-blizzard`（下称 Modkit Blizzard）仅作为功能、格式处理和架构研究资料，**不作为直接、间接、构建或运行依赖**。不引入其 `@modkit/*` 包、vendor tarball、宿主、CDN 脚本或远程服务，不以 vendoring、复制源码或改名发布替代依赖。
+- TS 数据契约、资源解析编排、地图解析、模型表现、无头观战及场景渲染由本项目自行实现，不要求兼容 Modkit SDK、UVM、UVW 或 transport 协议。继续允许按本文约束使用 WhiteoutLib 底层 WASM，不改变已确认的包边界。
+- 参考内容落为本项目的需求、格式假设和测试矩阵，再用独立样本与原版客户端验证；不逐行翻译或改写第三方实现，不直接复制其结构表、着色器、测试或夹具。公开源码不等于允许在本项目许可下复用；重写也不会自动消除衍生作品的许可义务。
+- Modkit Blizzard 根目录的 MIT 不覆盖所有组件：其 `models` 包声明 GPL-2.0-only，部分 Warcraft III 悬崖实现另含 AGPL 条款。它们不进入我们的 BSD 产物；其他参考项目仍逐项核对实际使用内容的来源和许可。
+
 ## 4. 模型预览器
 
 ### 4.1 WhiteoutLib 使用方式
@@ -95,6 +102,16 @@ Three.js + WebGL2 作为首轮渲染候选，不预设标准 PBR 材质足以还
 
 参考分工：WhiteoutLib 用于格式；mdx-m3-viewer 用于资源与实例组织、M3 表现研究；star-tools-three-m3-loader 用于 Three.js 模型／动画／附件点流程。引用或移植代码保留来源和许可，不假定参考项目已经覆盖全部 M3 特性。
 
+### 4.3 从 Modkit Blizzard 提炼的自研要求
+
+参考其模型与通用场景分离的思路，但不采用其 UVM schema 或 M3 实现：
+
+- 模型解码、规范化、动画求值、材质表现与实例管理分离；自有中间数据描述坐标／单位转换，不保留上游运行时对象。
+- 能力清单分别报告几何、蒙皮、序列、材质动画、M3A、附件、相机／灯光动画、billboard 和效果支持，避免“模型加载成功”掩盖局部缺失。
+- 动画验证覆盖 sequence 与 STC／STS／SD 的关联、插值、循环和多实例时间独立性；底层解码字段能读取不代表表现已实现。
+- 对不支持或近似表现输出结构化诊断：资源、特性、原因、影响与降级方式。需要近似材质时由调用方明确选择，不静默丢弃透明、法线、发光或动画语义。
+- 首版是只读预览，不因参考项目具备原生编码或残余数据往返能力而增加 M3／M3A 编辑、写回或跨格式转换。确需导出时另行设计损失与往返验证。
+
 ## 5. 地图预览器
 
 同一地图数据支持 2D 与 3D，复用资源依赖、坐标、选择和相机定位语义，不强制两种模式复用所有绘制代码。
@@ -106,6 +123,20 @@ Three.js + WebGL2 作为首轮渲染候选，不预设标准 PBR 材质足以还
 - 3D 显示地形与静态放置物，逐步提高材质、光照与模型还原；静态预览不运行完整脚本，不保证开局脚本生成物存在。
 - 固定地图原点、全图尺寸、可玩边界、Y 轴方向、世界与像素转换，提供坐标对照测试。
 - 单独预览地图时的原始放置单位，与观战中的动态单位分层；接入录像后不能把出生对象重复绘制两次。
+
+### 5.1 自研地图场景处理链
+
+Modkit Blizzard 的 TS 地形／悬崖模块作为主要研究对象之一，OpenRealm 用于独立交叉核对；两者都不替代原版画面对照。自有实现按以下处理链推进，不接入 Modkit 平台：
+
+1. 读取并校验 MapInfo、地形 XML、各二进制层，保留格式版本与来源诊断。
+2. 将高度、精细高度、悬崖层级、纹理蒙版和地图变换整理为自有数据，分别验证维度、偏移、缩放与原点。
+3. 按悬崖格、角点层级与坡道描述构造几何需求；在目录数据中解析 cliff set 对应模型、变体与旋转，不能仅凭命名猜资源。
+4. 解析 Objects 和 unit／actor／model 目录链，通过注入的资源读取接口补充模型与纹理，输出静态场景。
+5. 由本项目 2D／3D 控制器呈现；地图解码结果不得绑定 Three.js 对象、Modkit host 或特定文件系统。
+
+每一层独立报告已支持、缺失、损坏与暂不支持。悬崖模型找不到、层级超出支持、坡道越界、纹理层缺失均保留诊断与可用场景，不无声省略。地图作者配置的雾效／光照与观战中的玩家战争迷雾分开处理。
+
+测试先覆盖非零原点、不同缩放、悬崖角点及旋转、直／斜坡道、地表边界和依赖覆盖，再用天梯与合作代表地图核对。第三方合成测试和转换成功不作为本项目真实地图渲染的验收证据；不增加地图编辑或写回范围。
 
 ## 6. 在现有 parser 中完善精确状态
 
@@ -165,7 +196,19 @@ app-main 的受控采集任务
 
 不依赖真实墙钟定时器才能工作：时钟可注入，支持确定性步进测试。渲染器拿到只读的当前状态与增量，不另建独立播放时钟、统计或分析口径。
 
-### 7.2 客户端先以文字使用
+### 7.2 时间线与场景采样分离
+
+参考 Modkit Blizzard 的播放时间线与场景采样分工，自研两类输出：时间线提供参与者、指标和事件标记；场景查询提供指定 loop 的单位集合与可用状态。它们共用身份和时间基准，文字界面、2D 和 3D 不分别实现出生／死亡、归属和类型判断。
+
+- 帧数据使用紧凑 ID 与 TypedArray，允许缓冲复用，但明确有效期；调用方需要跨帧保存时显式复制。只读是使用契约，不代表底层缓冲不会在下一次采样被复用。
+- 缓冲复用与异步渲染／Worker 传输的所有权必须明确，不能一边转移 ArrayBuffer 一边继续写入，不能让上一帧查询结果被未完成的异步任务读取为下一帧。
+- 位置输出区分实际观测、显示插值与未知，保留相邻观测 loop、采样步长与缺口。插值不跨出生／死亡、传送等已知不连续边界；长缺口不外推为真实轨迹，具体插值阈值用目标数据验证。
+- 不沿用参考实现的固定 22.4 loops/s 或将所有 tag 存入 Float64Array 的做法；保留第 6 节的原始 loop、无损身份与视角约束。
+- 先建立确定性基准实现，再实测轨迹遍历与随机定位成本；出现瓶颈时使用时间索引、活跃集合与关键帧，不因使用 TypedArray 就假定已解决规模问题。
+
+参考仓库的 replay playback 明确标为 `sampled`，场景位置来自 tracker 插值，不构成其具备精确模拟或客户端采集的证据。我们的精确状态路径仍按第 6 节实现。
+
+### 7.3 客户端先以文字使用
 
 在录像分析界面增加文字观战入口，先验收：
 
@@ -242,13 +285,31 @@ P3 必须先于 P4／P5；P0 的状态采集验证不得拖到图形阶段。P1�
 
 ## 12. 调研依据与限制
 
-以下是 2026-11-06 调研入口，均是外部项目当时状态的参考，不表示已在本地构建或完整验证。实施时固定 commit、核对许可与兼容性，不仅依赖可变 README。
+以下为 2026-11-06 至 2026-11-08 的调研依据，均是外部项目当时状态的参考，不表示已在本地构建或完整验证。实施时固定 commit、核对许可与兼容性，不仅依赖可变 README。参考身份不等于依赖批准；Modkit Blizzard 的具体结论和来源见第 12.1 节。
 
 - [WhiteoutLib，sc2-arcade-watcher 分支](https://github.com/sc2-arcade-watcher/WhiteoutLib)：底层模型／纹理／存储及 WASM；[实际 WASM 绑定目录](https://github.com/sc2-arcade-watcher/WhiteoutLib/tree/libmodkit/bindings/wasm)。根 README 的 TS 路径与调研时目录不完全一致，必须以实际构建产物验证。
 - [mdx-m3-viewer](https://github.com/flowtsohg/mdx-m3-viewer)：MIT，M3 部分支持、声明不再积极维护；其魔兽地图支持不等于 SC2 地图支持。
 - [star-tools-three-m3-loader](https://github.com/sc2-arcade-watcher/star-tools-three-m3-loader)：MIT，Three.js M3 模型、动画、附件点与导出参考。
-- [StarMods 地图库](https://starmods.space/gallery/starcraft-2/map)：已观察到实际 SC2 地形预览；完整地图渲染器的公开源码和许可尚未确认，不直接复制网站脚本。
+- [StarMods 地图库](https://starmods.space/gallery/starcraft-2/map)：已观察到实际 SC2 地形预览；新增公开的 Modkit Blizzard 扩展工作区提供了更多格式与场景源码，但不等于网站完整查看器已成为独立组件。仅研究，不依赖其网站脚本、宿主或服务。
 - [OpenRealm SC2 状态](https://github.com/corepunch/open-realm/blob/main/docs/games/starcraft-2/readme.md)：MIT，地形／模型原型；不是完整 SC2 引擎或已完成录像重演器，Web 构建不能自动推导为 SC2 已支持。
 - [官方 SC2 API](https://github.com/Blizzard/s2client-proto/blob/master/s2clientprotocol/sc2api.proto)及 [raw 状态定义](https://github.com/Blizzard/s2client-proto/blob/master/s2clientprotocol/raw.proto)：启动录像、步进、观察与字段可见性约束。
 - [sc2reader tracker 实现](https://github.com/ggtracker/sc2reader/blob/upstream/sc2reader/events/tracker.py)：位置事件稀疏，不能视作全单位逐帧快照；目标 build 仍需实测。
 - [Vespene](https://vespene.gg)：产品体验参考，不作为已确认开源依赖；其部分实现描述来自 [sc2tools 的研究文档](https://github.com/ReSpOnSeSC2/sc2tools/blob/main/docs/replay-animation-research.md)，不应当作本项目已验证能力。
+
+### 12.1 Modkit Blizzard 公开源码参考结论（2026-11-08）
+
+调研固定在 [hometlt/modkit-extensions-blizzard，d4218ef890064108384e8b871081a02acaa86c87](https://github.com/hometlt/modkit-extensions-blizzard/tree/d4218ef890064108384e8b871081a02acaa86c87)。该项目是 Modkit MK3 扩展工作区，不是独立编辑器或游戏引擎。以下只提炼自研要求，不计划复用其包或源码：
+
+| 参考内容                                 | 本项目落实                                | 不采用的部分                                |
+| ---------------------------------------- | ----------------------------------------- | ------------------------------------------- |
+| 模型与公共场景分层、能力与转换损失报告   | 第 4.3 节的自有数据、逐特性验收、显式降级 | GPL 模型实现、结构表、UVM schema 和原生写回 |
+| TS 地形层、悬崖／坡道与目录模型解析      | 第 5.1 节的分层地图处理链和坐标／资源验证 | Modkit VFS／host／UVW 平台和地图编辑系统    |
+| 播放时间线与单位场景采样分离、复用帧缓冲 | 第 7.2 节的自研查询契约与性能测试         | 固定时间换算、将 tracker 插值称为精确重演   |
+| 有界损失与缺失诊断、公开快照验证范围说明 | 每项能力保留证据、真实样本及限制          | 用上游测试记录代替我们的构建与验收          |
+
+固定来源：
+
+- [模型职责与场景转换](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/models/README.md)、[模型包 GPL-2.0-only 声明](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/models/package.json)、[分组件许可](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/licenses/README.md)。根 MIT 不重授权 GPL 模型包或所列 AGPL 组件。
+- [悬崖与坡道场景组织](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/starcraft2/modules/map/shared/cliffs.ts)、[地图格式模块](https://github.com/hometlt/modkit-extensions-blizzard/tree/d4218ef890064108384e8b871081a02acaa86c87/starcraft2/modules/map/shared/format)。源码具有明确支持边界，不能推导为所有 SC2 地图均正确。
+- [sampled 播放时间线](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/starcraft2/modules/replay/services/timeline/playback.ts)、[tracker 场景采样](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/starcraft2/modules/replay/services/timeline/scene.js)。这不是原版引擎重演。
+- [公开快照限制](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/docs/PUBLICATION.md)、[验证记录](https://github.com/hometlt/modkit-extensions-blizzard/blob/d4218ef890064108384e8b871081a02acaa86c87/docs/VERIFICATION.md)。快照省略了部分 Galaxy API 输入与真实模型／录像夹具，完整构建和 corpus 测试存在前提；本项目不引入这些构建链，也不据此宣称已验证完整渲染。

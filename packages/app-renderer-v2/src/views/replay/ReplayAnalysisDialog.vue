@@ -8,6 +8,7 @@ import ReplayProductionTiming from './ReplayProductionTiming.vue'
 import ReplayMetrics from './ReplayMetrics.vue'
 import ReplayCoopDetails from './ReplayCoopDetails.vue'
 import ReplayChat from './ReplayChat.vue'
+import ReplayObserver from './ReplayObserver.vue'
 import { replayPlayerName, replayResultClass, replayProfilePlayer } from './display'
 
 defineOptions({ name: 'ReplayAnalysisDialog' })
@@ -204,6 +205,7 @@ watch([selectedId, () => props.analysis], () => {
           :summary="props.record.coop"
           :analysis="props.analysis?.coop"
           :hide-units="!!props.analysis?.metrics" />
+        <ReplayObserver v-if="props.analysis" :timeline="props.analysis.spatial" />
         <ReplayMetrics :metrics="props.analysis?.metrics" :record="props.record" />
         <ReplayChat
           v-if="props.loaded"

@@ -1,5 +1,6 @@
 import { openMpq, MpqCompressionError, MpqFormatError } from '../../utils/mpq'
 import {
+  buildReplaySpatialTimeline,
   parseReplayAttributes,
   parseReplayInitData,
   parseReplayTrackerEvents,
@@ -26,7 +27,7 @@ import { buildReplayCommands } from './replay-commands'
 import { buildReplayChat } from './replay-chat'
 import { buildReplayMetrics, REPLAY_METRICS_VERSION } from './replay-metrics'
 import { buildReplayCoop, REPLAY_COOP_ANALYSIS_VERSION } from './replay-coop'
-export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v1-chat-v1-${REPLAY_COOP_ANALYSIS_VERSION}-${REPLAY_METRICS_VERSION}`
+export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v1-chat-v1-spatial-v1-${REPLAY_COOP_ANALYSIS_VERSION}-${REPLAY_METRICS_VERSION}`
 
 export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAnalysis> {
   if (!record.contentHash) throw new Error('Reindex replay before analysis')
@@ -176,6 +177,22 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
         isStandardReplayMelee(coopInitData, attributes, record.players),
     })
   result.metrics = buildReplayMetrics(coopTracker, metricsGame, record.players)
+  if (coopTracker) {
+    try {
+      // Index metadata stores header loops / 16, not Faster-speed wall-clock seconds.
+      const durationGameLoops =
+        typeof record.durationSeconds === 'number' &&
+        Number.isSafeInteger(record.durationSeconds * 16) &&
+        record.durationSeconds >= 0
+          ? record.durationSeconds * 16
+          : undefined
+      result.spatial = buildReplaySpatialTimeline(coopTracker, durationGameLoops)
+    } catch (error) {
+      result.warnings.push(
+        `Spatial timeline unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
   const count = Object.values(result.components).filter((value) => value !== null).length
   result.status = corrupt
     ? 'corrupt'

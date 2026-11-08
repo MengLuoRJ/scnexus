@@ -36,6 +36,7 @@ export type ReplayRecord = {
   playedAt: string | null
   gameVersion: string | null
   baseBuild: number | null
+  /** Replay header game-loop time at 16 loops/s, not wall-clock duration. */
   durationSeconds: number | null
   players: ReplayPlayer[]
   coop?: import('./replay-coop.type.js').ReplayCoopSummary
@@ -99,6 +100,8 @@ export type ReplayAnalysis = {
     abilityIndex: number | null
     flags: number
   }[]
+  /** Bounded, sparse tracker observations; not exact game-client simulation or visibility. */
+  spatial?: import('@scnexus/replay-parser').ReplaySpatialTimeline
   insights?: import('./replay-insights.type.js').ReplayInsights
   metrics?: import('./replay-insights.type.js').ReplayMetrics
   coop?: import('./replay-coop.type.js').ReplayCoopAnalysis

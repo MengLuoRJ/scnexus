@@ -1,6 +1,13 @@
 import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS, type ReplayComponentName } from './registry.js'
 import { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export { decodeVersioned } from './versioned.js'
+export { buildReplaySpatialTimeline } from './spatial-timeline.js'
+export type {
+  ReplaySpatialTimeline,
+  ReplaySpatialUnit,
+  ReplaySpatialObservation,
+  ReplaySpatialDiagnostic,
+} from './spatial-timeline.js'
 export { identifyReplayCoop, parseReplayCoop, REPLAY_COOP_ANALYSIS_VERSION } from './coop.js'
 export type {
   ReplayCoopPlayer,

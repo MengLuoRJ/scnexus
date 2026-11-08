@@ -23,6 +23,7 @@
     "@iconify/vue": "^5.0.4",
     "@nuxt/ui": "^4.12.0",
     "@scnexus/app-shared": "workspace:*",
+    "@scnexus/sc2-observer": "workspace:*",
     "@scnexus/standard": "workspace:*",
     "@sentry/electron": "8.3.0",
     "@sentry/vue": "11.8.0",

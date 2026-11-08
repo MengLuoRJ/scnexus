@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest'
-import { replayPlayerName, replayResultClass, replayProfilePlayer } from '../display'
+import {
+  replayPlayerName,
+  replayResultClass,
+  replayProfilePlayer,
+  replayObserverPlayerName,
+} from '../display'
 import type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 
 test('matches profile handle exactly, never nickname, account ID or first participant', () => {
@@ -51,4 +56,22 @@ test('preserves missing and empty names and gives each player an independent sem
   expect(replayResultClass('loss')).toBe('text-error')
   expect(replayResultClass('draw')).toBe('text-muted')
   expect(replayResultClass(null)).toBe('text-muted')
+})
+
+test('observer names use unique tracker identity, decode as text and disambiguate shared names', () => {
+  const players = [
+    { playerId: 7, name: 'A &amp; B' },
+    { playerId: 2, name: 'A &amp; B' },
+  ]
+  expect(replayObserverPlayerName(players, 7, 'Player 7')).toBe('A & B (#7)')
+  expect(replayObserverPlayerName(players, 2, 'Player 2')).toBe('A & B (#2)')
+  expect(replayObserverPlayerName(players, 1, 'Player 1')).toBe('Player 1')
+  expect(
+    replayObserverPlayerName([...players, { playerId: 7, name: 'Conflict' }], 7, 'Player 7'),
+  ).toBe('Player 7')
+  expect(replayObserverPlayerName([{ playerId: 7, name: ' ' }], 7, 'Player 7')).toBe('Player 7')
+  expect(replayObserverPlayerName([{ playerId: 0, name: 'Unexpected' }], 0, 'Neutral')).toBe(
+    'Neutral',
+  )
+  expect(replayObserverPlayerName(players, null, 'Unknown')).toBe('Unknown')
 })

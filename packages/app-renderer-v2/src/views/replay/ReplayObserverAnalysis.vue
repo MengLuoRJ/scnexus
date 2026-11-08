@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { sampleReplayObserverAnalysis, summarizeReplayObserverUnits } from '@scnexus/sc2-observer'
 import type { ReplayObserverUnit } from '@scnexus/sc2-observer'
 import type { ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
-import { replayPlayerName } from './display'
+import { replayObserverPlayerName } from './display'
+import { replayGameTime } from './insights'
 
 defineOptions({ name: 'ReplayObserverAnalysis' })
 const props = defineProps<{
@@ -32,9 +33,9 @@ const playerIds = computed(() =>
   ].sort((a, b) => (a ?? -1) - (b ?? -1)),
 )
 function playerName(id: number | null) {
-  const name = props.insights?.players.find((player) => player.playerId === id)?.name
-  return replayPlayerName(
-    name ?? null,
+  return replayObserverPlayerName(
+    props.insights?.players ?? [],
+    id,
     id === null
       ? t('replay.unknown')
       : id === 0
@@ -155,7 +156,8 @@ const players = computed(() =>
             <button
               class="w-full break-words text-left hover:underline"
               @click="emit('seek', event.observationGameLoop)">
-              {{ event.observationGameLoop }} · {{ t(`replay.production.${event.kind}`) }} ·
+              {{ replayGameTime(event.observationGameLoop) }} ({{ event.observationGameLoop }}) ·
+              {{ t(`replay.production.${event.kind}`) }} ·
               {{ event.name }}
             </button>
           </li>
@@ -167,7 +169,9 @@ const players = computed(() =>
             <button
               class="w-full break-words text-left hover:underline"
               @click="emit('selectEvent', event.unitTag, event.gameLoop)">
-              {{ event.gameLoop }} · {{ event.name }} · #{{ event.unitTag }}
+              {{ replayGameTime(event.gameLoop) }} ({{ event.gameLoop }}) · {{ event.name }} · #{{
+                event.unitTag
+              }}
             </button>
           </li>
         </ul>

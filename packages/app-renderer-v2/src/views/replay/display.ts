@@ -34,6 +34,17 @@ export function replayPlayerName(name: string | null, unknown: string): string {
     .replace(/<sp\s*\/>/gi, ' ')
 }
 
+export function replayObserverPlayerName(
+  players: readonly { playerId: number; name: string | null }[],
+  playerId: number | null,
+  fallback: string,
+): string {
+  if (playerId === null || playerId === 0) return fallback
+  const matches = players.filter((player) => player.playerId === playerId)
+  const name = matches.length === 1 ? matches[0]!.name : null
+  return name?.trim() ? `${replayPlayerName(name, fallback)} (#${playerId})` : fallback
+}
+
 export function replayResultClass(result: ReplayPlayer['result']): string {
   return result === 'win' ? 'text-success' : result === 'loss' ? 'text-error' : 'text-muted'
 }

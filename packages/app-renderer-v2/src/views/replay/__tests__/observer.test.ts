@@ -126,3 +126,63 @@ test.each(['en', 'zh', 'zh-Hant'])(
     wrapper.unmount()
   },
 )
+
+test.each(['en', 'zh', 'zh-Hant'])(
+  'time entry, clamped steps and filtered event navigation (%s)',
+  async (locale) => {
+    const messages = { en, zh, 'zh-Hant': zhHant }
+    const labels = messages[locale as keyof typeof messages]
+    const wrapper = mount(ReplayObserver, {
+      props: {
+        timeline,
+        insights: {
+          version: 'test',
+          timeBasis: 'game-loops-16',
+          players: [{ playerId: 1, slot: 1, name: 'Pilot &amp; Co', economy: [], production: [] }],
+        },
+      },
+      global: {
+        plugins: [createI18n({ legacy: false, locale, messages })],
+        stubs: { UButton: { template: '<button><slot /></button>' }, UInput: true },
+      },
+    })
+    const button = (key: string) =>
+      wrapper.findAll('button').find((item) => item.text() === labels[key as keyof typeof labels])!
+    const playerSelect = wrapper.get(`select[aria-label="${labels['replay.observer.owner']}"]`)
+    expect(playerSelect.text()).toContain('Pilot & Co (#1)')
+    expect(wrapper.get('tbody').text()).toContain('Pilot & Co (#1)')
+    expect(button('replay.observer.backFive').attributes('disabled')).toBeDefined()
+    expect(button('replay.observer.previousEvent').attributes('disabled')).toBeDefined()
+    const time = wrapper.get(`input[aria-label="${labels['replay.observer.timeInput']}"]`)
+    await time.setValue('0:05')
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.get('input[type="range"]').element).toHaveProperty('value', '80')
+    expect(wrapper.text()).toContain('0:05 / 0:10')
+    await time.setValue('0:60')
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    expect(wrapper.get('input[type="range"]').element).toHaveProperty('value', '80')
+    await time.setValue('0:11')
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    await button('replay.observer.forwardFive').trigger('click')
+    expect(wrapper.get('input[type="range"]').element).toHaveProperty('value', '160')
+    expect(button('replay.observer.forwardFive').attributes('disabled')).toBeDefined()
+    await button('replay.observer.restart').trigger('click')
+    const kind = wrapper.get(`select[aria-label="${labels['replay.observer.eventType']}"]`)
+    await kind.setValue('died')
+    expect(wrapper.findAll('section li')).toHaveLength(1)
+    await button('replay.observer.nextEvent').trigger('click')
+    expect(wrapper.get('input[type="range"]').element).toHaveProperty('value', '100')
+    expect(button('replay.observer.previousEvent').attributes('disabled')).toBeDefined()
+    expect(button('replay.observer.nextEvent').attributes('disabled')).toBeDefined()
+    await kind.setValue('all')
+    await button('replay.observer.previousEvent').trigger('click')
+    expect(wrapper.get('input[type="range"]').element).toHaveProperty('value', '0')
+    await wrapper.setProps({ timeline: { ...timeline } })
+    expect(kind.element).toHaveProperty('value', 'all')
+    expect(time.element).toHaveProperty('value', '')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    wrapper.unmount()
+  },
+)

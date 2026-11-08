@@ -8,6 +8,8 @@ import {
 } from '@scnexus/sc2-observer'
 import type { ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
 import ReplayObserverAnalysis from './ReplayObserverAnalysis.vue'
+import { replayObserverPlayerName } from './display'
+import { replayGameTime } from './insights'
 
 defineOptions({ name: 'ReplayObserver' })
 const props = defineProps<{
@@ -27,6 +29,33 @@ const search = ref('')
 const player = ref('all')
 const life = ref<'alive' | 'dead' | 'all'>('alive')
 const eventPage = ref(0)
+const eventKind = ref('all')
+const timeInput = ref('')
+const timeInvalid = ref(false)
+const eventKinds = ['born', 'init', 'done', 'died', 'type', 'owner'] as const
+function playerName(id: number | null) {
+  const fallback =
+    id === null
+      ? t('replay.unknown')
+      : id === 0
+        ? t('replay.observer.neutral')
+        : t('replay.observer.player', { id })
+  return replayObserverPlayerName(props.insights?.players ?? [], id, fallback)
+}
+function jumpToTime() {
+  const match = /^(\d{1,6}):([0-5]\d)$/.exec(timeInput.value.trim())
+  const loop = match ? (Number(match[1]) * 60 + Number(match[2])) * 16 : NaN
+  timeInvalid.value = !Number.isSafeInteger(loop) || loop < 0 || loop > (state.value?.duration ?? 0)
+  if (!timeInvalid.value) jumpToAnalysis(loop)
+}
+function step(seconds: number) {
+  jumpToAnalysis(
+    Math.max(
+      0,
+      Math.min(state.value?.duration ?? 0, (state.value?.currentGameLoop ?? 0) + seconds * 16),
+    ),
+  )
+}
 const pageSize = 20
 const eventPageSize = 10
 const playerIds = computed(() =>
@@ -52,9 +81,25 @@ const selectedTag = computed(() => state.value?.selectedUnitTag ?? null)
 const selectedTrack = computed(() =>
   props.timeline?.units.find((unit) => unit.unitTag === selectedTag.value),
 )
-const events = computed(() =>
-  props.timeline ? queryReplayObserverEvents(props.timeline, selectedTag.value ?? undefined) : [],
+const events = computed(() => {
+  const all = props.timeline
+    ? queryReplayObserverEvents(props.timeline, selectedTag.value ?? undefined)
+    : []
+  return eventKind.value === 'all' ? all : all.filter((event) => event.kind === eventKind.value)
+})
+const previousEvent = computed(() => {
+  for (let index = events.value.length - 1; index >= 0; index--) {
+    const event = events.value[index]!
+    if (event.gameLoop < (state.value?.currentGameLoop ?? 0)) return event
+  }
+  return undefined
+})
+const nextEvent = computed(() =>
+  events.value.find((event) => event.gameLoop > (state.value?.currentGameLoop ?? 0)),
 )
+watch(eventKind, () => {
+  eventPage.value = 0
+})
 const eventPageCount = computed(() => Math.max(1, Math.ceil(events.value.length / eventPageSize)))
 const visibleEvents = computed(() =>
   events.value.slice(eventPage.value * eventPageSize, (eventPage.value + 1) * eventPageSize),
@@ -133,6 +178,9 @@ watch(
     dispose()
     page.value = 0
     eventPage.value = 0
+    eventKind.value = 'all'
+    timeInput.value = ''
+    timeInvalid.value = false
     search.value = ''
     player.value = 'all'
     life.value = 'alive'
@@ -177,6 +225,10 @@ onBeforeUnmount(dispose)
             {{ t('replay.observer.count', { count: activeUnits.length }) }}
           </span>
         </div>
+        <p class="text-xs tabular-nums">
+          {{ t('replay.observer.gameTime') }}: {{ replayGameTime(state.currentGameLoop) }} /
+          {{ replayGameTime(state.duration) }}
+        </p>
         <label class="block text-xs">
           {{ t('replay.observer.loop') }}: {{ Math.floor(state.currentGameLoop) }} /
           {{ state.duration }}
@@ -189,6 +241,53 @@ onBeforeUnmount(dispose)
             class="mt-2 block w-full accent-current"
             @input="seek" />
         </label>
+        <div class="flex flex-wrap items-end gap-2">
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="soft"
+            :disabled="state.currentGameLoop === 0"
+            @click="jumpToAnalysis(0)">
+            {{ t('replay.observer.restart') }}
+          </UButton>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="soft"
+            :disabled="state.currentGameLoop === 0"
+            @click="step(-5)">
+            {{ t('replay.observer.backFive') }}
+          </UButton>
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="soft"
+            :disabled="state.currentGameLoop >= state.duration"
+            @click="step(5)">
+            {{ t('replay.observer.forwardFive') }}
+          </UButton>
+          <form class="ml-auto flex items-end gap-2" @submit.prevent="jumpToTime">
+            <label class="text-xs">
+              {{ t('replay.observer.timeInput') }}
+              <input
+                v-model="timeInput"
+                type="text"
+                inputmode="text"
+                maxlength="9"
+                placeholder="m:ss"
+                :aria-label="t('replay.observer.timeInput')"
+                :aria-invalid="timeInvalid"
+                class="mt-1 block w-24 rounded border border-default bg-default px-2 py-1.5"
+                @input="timeInvalid = false" />
+            </label>
+            <UButton type="submit" size="xs" color="neutral" variant="soft">
+              {{ t('replay.observer.seekTime') }}
+            </UButton>
+          </form>
+        </div>
+        <p v-if="timeInvalid" role="alert" class="text-xs text-error">
+          {{ t('replay.observer.invalidTime', { end: replayGameTime(state.duration) }) }}
+        </p>
         <ReplayObserverAnalysis
           :insights="props.insights"
           :units="state.units"
@@ -216,13 +315,7 @@ onBeforeUnmount(dispose)
                 v-for="id in playerIds"
                 :key="id ?? 'unknown'"
                 :value="id === null ? 'unknown' : String(id)">
-                {{
-                  id === null
-                    ? t('replay.unknown')
-                    : id === 0
-                      ? t('replay.observer.neutral')
-                      : t('replay.observer.player', { id })
-                }}
+                {{ playerName(id) }}
               </option>
             </select>
           </label>
@@ -264,7 +357,7 @@ onBeforeUnmount(dispose)
             </div>
             <div>
               {{ t('replay.observer.owner') }}:
-              {{ state.selectedUnit.controlPlayerId ?? t('replay.unknown') }}
+              {{ playerName(state.selectedUnit.controlPlayerId) }}
             </div>
             <div>
               {{ t('replay.observer.completed') }}:
@@ -309,8 +402,8 @@ onBeforeUnmount(dispose)
           <table class="w-full table-fixed text-left text-xs">
             <thead class="sticky top-0 bg-default text-muted">
               <tr>
-                <th class="w-[40%] py-2">{{ t('replay.observer.unit') }}</th>
-                <th class="w-[12%]">{{ t('replay.observer.owner') }}</th>
+                <th class="w-[32%] py-2">{{ t('replay.observer.unit') }}</th>
+                <th class="w-[22%]">{{ t('replay.observer.owner') }}</th>
                 <th class="w-[25%]">{{ t('replay.observer.position') }}</th>
                 <th>{{ t('replay.observer.age') }}</th>
               </tr>
@@ -329,7 +422,7 @@ onBeforeUnmount(dispose)
                     </span>
                   </button>
                 </td>
-                <td>{{ unit.controlPlayerId ?? t('replay.unknown') }}</td>
+                <td class="break-words pr-2">{{ playerName(unit.controlPlayerId) }}</td>
                 <td>
                   {{
                     unit.position ? `${unit.position.x}, ${unit.position.y}` : t('replay.unknown')
@@ -366,7 +459,39 @@ onBeforeUnmount(dispose)
           </UButton>
         </div>
         <section class="border-t border-default pt-3" :aria-label="t('replay.observer.events')">
-          <h4 class="text-xs font-medium">{{ t('replay.observer.events') }}</h4>
+          <div class="flex flex-wrap items-center gap-2">
+            <h4 class="text-xs font-medium">{{ t('replay.observer.events') }}</h4>
+            <label class="ml-auto text-xs">
+              {{ t('replay.observer.eventType') }}
+              <select
+                v-model="eventKind"
+                :aria-label="t('replay.observer.eventType')"
+                class="ml-2 rounded border border-default bg-default p-1.5">
+                <option value="all">{{ t('replay.observer.allEventTypes') }}</option>
+                <option v-for="kind in eventKinds" :key="kind" :value="kind">
+                  {{ t(`replay.observer.event.${kind}`) }}
+                </option>
+              </select>
+            </label>
+          </div>
+          <div class="mt-2 flex gap-2">
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="soft"
+              :disabled="!previousEvent"
+              @click="previousEvent && jumpToAnalysis(previousEvent.gameLoop)">
+              {{ t('replay.observer.previousEvent') }}
+            </UButton>
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="soft"
+              :disabled="!nextEvent"
+              @click="nextEvent && jumpToAnalysis(nextEvent.gameLoop)">
+              {{ t('replay.observer.nextEvent') }}
+            </UButton>
+          </div>
           <p class="mt-1 text-xs text-muted">
             {{
               t(state.selectedUnitTag ? 'replay.observer.unitEvents' : 'replay.observer.allEvents')
@@ -379,9 +504,8 @@ onBeforeUnmount(dispose)
               <button
                 class="w-full break-words rounded px-2 py-1.5 text-left hover:bg-muted"
                 @click="jumpToEvent(event.unitTag, event.gameLoop)">
-                {{ event.gameLoop }} · {{ t(`replay.observer.event.${event.kind}`) }} · #{{
-                  event.unitTag
-                }}
+                {{ replayGameTime(event.gameLoop) }} ({{ event.gameLoop }}) ·
+                {{ t(`replay.observer.event.${event.kind}`) }} · #{{ event.unitTag }}
               </button>
             </li>
           </ul>

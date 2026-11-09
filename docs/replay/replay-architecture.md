@@ -121,7 +121,7 @@ app-main
 
 ### 桌面文字观战窗口
 
-分析持久化格式继续保存完整 `ReplayAnalysis.spatial`，缓存版本不因 IPC 投影改变。`replay:analyze` 与 `replay:get-analysis` 的返回投影省略完整 `spatial`，提供 `observer { replayId, contentHash, parserVersion, history }`：history 保留生命周期、类型、归属及单位身份，不包含位置事件，坐标与位置观测时间均为空。原始组件调试数据、insights 与 metrics 保持现有返回行为，不能将此投影称为整份分析的小型摘要。
+分析持久化格式继续保存完整 `ReplayAnalysis`，包括原始 `components` 与 `spatial`，缓存版本不因 IPC 投影改变。`replay:analyze` 与 `replay:get-analysis` 统一返回独立 `ReplayAnalysisView`，省略原始解码组件 `components` 和完整 `spatial`，保留 insights、metrics、能力状态、命令、聊天等派生数据，提供 `observer { replayId, contentHash, parserVersion, history }`：history 保留生命周期、类型、归属及单位身份，不包含位置事件，坐标与位置观测时间均为空。界面不读取原始组件；页面和命令时间线使用详情 DTO 类型，观战组件保留完整时间线的兼容输入。原始 tracker、game、message 等组件不会再随分析 IPC 返回，但派生事件与观战历史仍可能较大，此投影尚无整体响应字节预算，也不是固定大小的摘要。
 
 详情将当前 `ReplayScope` 与描述符交给 renderer `ipcs/replay` 数据源，通过 preload 明确暴露的 `observerWindow` 请求 `replay:observer-window`。请求只接受录像 ID、内容 hash、算法版本及目标 loop（允许非负有限小数）；不接受文件路径、任意 channel 或自定义窗口大小。每次读取重新验证资料／分类归属、实际文件 hash、当前算法版本及请求身份，范围固定为 1600 loops。复用无头包的累计窗口适配，不重写出生／死亡／位置规则；单次返回不超过 50000 条观测、8 MiB 序列化 UTF-8 JSON，超限返回错误且不裁剪结果。
 
@@ -129,7 +129,7 @@ app-main
 
 主进程与 shared 显式声明 `@scnexus/sc2-observer` 工作区依赖：主进程复用纯 TS 累计窗口生成，shared 仅引用公开窗口 DTO 类型。主进程只保留最近一份准备好的时间线源，不保留完整分析对象及原始调试组件；连续窗口复用该源，避免重复解析整块 JSON 和复制、校验完整时间线。每次仍检查资料／目录、文件 hash 和数据库分析记录标识；分析保存时生成新的记录 ID，同一录像、hash、算法版本再次保存也会失效。读取未命中时检查前后记录标识，拒绝缓存已被替换的分析。切换录像或分析记录后释放旧源，已进入投影的请求完成后再释放，避免并发淘汰中断读取。数据库按 `(replay_id, kind)` 索引读取记录标识，兼容旧记录 ID，无须新表或版本迁移。
 
-缓存命中不再读取分析 JSON；首次读取、切换录像及分析失效后仍从 SQLite 整块加载，并在主进程投影。缓存只按一份时间线限制常驻数量，尚无字节配额或闲置超时；完整分析落盘、首次读取峰值内存、文件哈希计算、原始调试组件传输、磁盘分块和 Worker 化仍待后续处理。
+缓存命中不再读取分析 JSON；首次读取、切换录像及分析失效后仍从 SQLite 整块加载，并在主进程投影。缓存只按一份时间线限制常驻数量，尚无字节配额或闲置超时；完整分析落盘、首次读取峰值内存、文件哈希计算、派生数据传输预算、磁盘分块和 Worker 化仍待后续处理。
 
 ## 5. 解析流程
 

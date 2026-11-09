@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type {
   ReplayAnalysis,
+  ReplayAnalysisView,
   ReplayObserverWindowData,
   ReplayObserverWindowRequest,
 } from '@scnexus/app-shared/types/replay.type'
@@ -11,8 +12,8 @@ export const REPLAY_OBSERVER_MAX_OBSERVATIONS = 50_000
 export const REPLAY_OBSERVER_MAX_BYTES = 8 * 1024 * 1024
 
 /** IPC view owns its coordinate-free history; the cached analysis remains complete. */
-export function replayAnalysisView(analysis: ReplayAnalysis): ReplayAnalysis {
-  const { spatial, observer: _observer, ...view } = analysis
+export function replayAnalysisView(analysis: ReplayAnalysis): ReplayAnalysisView {
+  const { spatial, components: _components, observer: _observer, ...view } = analysis
   if (!spatial) return view
   return {
     ...view,

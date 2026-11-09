@@ -1,7 +1,11 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import type { ReplayAnalysis, ReplayApi, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+import type {
+  ReplayAnalysisView,
+  ReplayApi,
+  ReplayRecord,
+} from '@scnexus/app-shared/types/replay.type'
 import ReplayAnalysisDialog from '../ReplayAnalysisDialog.vue'
 import en from '../../../locales/en'
 
@@ -62,13 +66,12 @@ const history = {
     },
   ],
 }
-const analysis: ReplayAnalysis = {
+const analysis: ReplayAnalysisView = {
   replayId: 'id',
   contentHash: record.contentHash!,
   parserVersion: 'test-v1',
   baseBuild: 98310,
   status: 'completed',
-  components: { initData: null, attributes: null, tracker: null },
   warnings: [],
   analyzedAt: '2026-11-09T00:00:00Z',
   observer: { replayId: 'id', contentHash: record.contentHash!, parserVersion: 'test-v1', history },

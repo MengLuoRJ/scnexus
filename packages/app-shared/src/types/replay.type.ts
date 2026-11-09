@@ -123,6 +123,9 @@ export type ReplayAnalysis = {
   analyzedAt: string
 }
 
+/** Desktop analysis details exclude raw decoded components and the full spatial timeline. */
+export type ReplayAnalysisView = Omit<ReplayAnalysis, 'components' | 'spatial'>
+
 export interface ReplayObserverDescriptor {
   replayId: string
   contentHash: string
@@ -145,8 +148,8 @@ export type ReplayObserverWindowData = import('@scnexus/sc2-observer').ReplayObs
 export interface ReplayApi {
   watch(scope: ReplayScope, replayId: string): Promise<IpcResult<void>>
   profiles(): Promise<IpcResult<StarCraftProfile[]>>
-  analyze(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis>>
-  getAnalysis(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis | null>>
+  analyze(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysisView>>
+  getAnalysis(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysisView | null>>
   observerWindow(
     scope: ReplayScope,
     replayId: string,

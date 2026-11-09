@@ -20,7 +20,7 @@ defineOptions({ name: 'ReplayAnalysisDialog' })
 const props = defineProps<{
   record: ReplayRecord
   scope?: ReplayScope | null
-  analysis: ReplayAnalysis | null
+  analysis: Omit<ReplayAnalysis, 'components'> | null
   loaded: boolean
   busy: boolean
   error: string

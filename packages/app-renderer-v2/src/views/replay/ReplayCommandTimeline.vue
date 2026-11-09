@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
+import type { ReplayAnalysisView } from '@scnexus/app-shared/types/replay.type'
 import { replayGameTime } from './insights'
 
 defineOptions({ name: 'ReplayCommandTimeline' })
-const props = defineProps<{ analysis: ReplayAnalysis | null; busy: boolean }>()
+const props = defineProps<{ analysis: ReplayAnalysisView | null; busy: boolean }>()
 const { t } = useI18n()
 const userId = ref<number>()
 const page = ref(0)

@@ -99,8 +99,36 @@ it('projects owned lifecycle history without positions or modifying cached analy
   const original = structuredClone(input)
   const view = replayAnalysisView(input)
   expect(view).not.toHaveProperty('spatial')
-  expect(view.components).toBe(input.components)
+  expect(view).not.toHaveProperty('components')
   expect(input).toEqual(original)
+})
+
+it('excludes every raw component while retaining derived analysis and leaving stored data intact', () => {
+  const input = analysis()
+  input.components = {
+    initData: { marker: 'raw-init' },
+    attributes: { marker: 'raw-attributes' },
+    tracker: Array.from({ length: 2048 }, () => 'raw-tracker'.repeat(100)),
+    game: { marker: 'raw-game' },
+    message: { marker: 'raw-message' },
+  }
+  input.commands = [{ gameLoop: 12, userId: 0, abilityLink: 1, abilityIndex: 2, flags: 0 }]
+  input.warnings = ['derived warning']
+  const before = JSON.stringify(input)
+  const view = replayAnalysisView(input)
+  const serialized = JSON.stringify(view)
+  expect(view.commands).toEqual(input.commands)
+  expect(view.warnings).toEqual(input.warnings)
+  expect(view.status).toBe(input.status)
+  for (const marker of ['raw-init', 'raw-attributes', 'raw-tracker', 'raw-game', 'raw-message'])
+    expect(serialized).not.toContain(marker)
+  expect(serialized.length).toBeLessThan(before.length / 100)
+  expect(JSON.stringify(input)).toBe(before)
+  const { spatial: _spatial, ...withoutSpatial } = input
+  const missing = replayAnalysisView(withoutSpatial)
+  expect(missing).not.toHaveProperty('components')
+  expect(missing).not.toHaveProperty('observer')
+  expect(missing.commands).toEqual(input.commands)
 })
 
 it('retains lifecycle metadata and owns every mutable history level', () => {

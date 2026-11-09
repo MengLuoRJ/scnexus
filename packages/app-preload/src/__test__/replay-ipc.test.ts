@@ -188,11 +188,12 @@ test('export picker uses fixed ZIP options and cancellation returns null', async
   expect(await mocks.handlers.get('replay:choose-export-path')!()).toBe('D:\\chosen.zip')
 })
 
-test('analysis IPC replies expose an observer descriptor without the full spatial timeline', async () => {
+test('analysis IPC replies omit raw components and expose windowed observer data', async () => {
   mocks.service.getAnalysis.mockResolvedValue(analysis)
   for (const channel of ['replay:analyze', 'replay:get-analysis']) {
     const result = await mocks.handlers.get(channel)!(scope, 'id')
     expect(result).not.toHaveProperty('spatial')
+    expect(result).not.toHaveProperty('components')
     expect(result).toMatchObject({
       observer: {
         replayId: 'id',
@@ -202,6 +203,7 @@ test('analysis IPC replies expose an observer descriptor without the full spatia
     })
   }
   expect(analysis).toHaveProperty('spatial')
+  expect(analysis).toHaveProperty('components')
 })
 
 test('observer window IPC validates identity arguments and forwards scoped fractional targets', async () => {

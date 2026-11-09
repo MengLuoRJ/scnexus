@@ -7,7 +7,7 @@ import type {
   StarCraftProfile,
   ReplayScope,
   ReplayCategory,
-  ReplayAnalysis,
+  ReplayAnalysisView,
 } from '@scnexus/app-shared/types/replay.type'
 import ReplayAnalysisDialog from './ReplayAnalysisDialog.vue'
 import ReplayStatistics from './ReplayStatistics.vue'
@@ -124,7 +124,7 @@ function selectVisible() {
   selected.value = [...new Set([...selected.value, ...filtered.value.map((record) => record.id)])]
 }
 const analysisTarget = shallowRef<ReplayRecord | null>(null)
-const analysis = shallowRef<ReplayAnalysis | null>(null)
+const analysis = shallowRef<ReplayAnalysisView | null>(null)
 const analysisLoaded = ref(false)
 const analysisError = ref('')
 const deleteTarget = shallowRef<ReplayRecord | null>(null)

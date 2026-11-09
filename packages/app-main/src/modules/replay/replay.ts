@@ -27,10 +27,8 @@ import type {
   ReplayRecord,
   ReplayScope,
 } from '@scnexus/app-shared/types/replay.type'
-import {
-  createReplayObserverWindowReader,
-  validateReplayObserverWindowRequest,
-} from './replay-observer'
+import { validateReplayObserverWindowRequest } from './replay-observer'
+import { createReplayObserverWorkerReader } from './replay-observer-runner'
 export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
 import { inspectLocalReplay, REPLAY_INSPECTION_VERSION } from './replay-inspection'
@@ -92,7 +90,7 @@ export class ReplayLibraryService {
         replayId: string
         token: string
         contentHash: string
-        reader: ReturnType<typeof createReplayObserverWindowReader>
+        reader: ReturnType<typeof createReplayObserverWorkerReader>
       }
     | undefined
 
@@ -119,7 +117,8 @@ export class ReplayLibraryService {
     if (
       cached?.replayId === replayId &&
       cached.token === token &&
-      cached.contentHash === contentHash
+      cached.contentHash === contentHash &&
+      !cached.reader.disposed
     )
       return cached.reader.loadWindow(request)
     this.clearObserverWindowCache()
@@ -131,7 +130,7 @@ export class ReplayLibraryService {
       (await replayDatabase.getAnalysisToken(replayId)) !== token
     )
       throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
-    const reader = createReplayObserverWindowReader(analysis)
+    const reader = createReplayObserverWorkerReader(analysis)
     this.clearObserverWindowCache()
     this.observerWindowCache = { replayId, token, contentHash, reader }
     return reader.loadWindow(request)

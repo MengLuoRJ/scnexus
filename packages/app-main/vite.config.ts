@@ -30,6 +30,7 @@ const config: UserConfig = {
       entry: {
         index: 'src/index.ts',
         'replay-analysis-worker': 'src/modules/replay/replay-analysis-worker.ts',
+        'replay-observer-worker': 'src/modules/replay/replay-observer-worker.ts',
       },
       formats: ['es'],
     },

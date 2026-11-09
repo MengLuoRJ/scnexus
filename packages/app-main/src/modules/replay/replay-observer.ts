@@ -55,7 +55,12 @@ export function validateReplayObserverWindowRequest(
     throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
 }
 
-export function createReplayObserverWindowReader(analysis: ReplayAnalysis) {
+export type ReplayObserverInput = Pick<
+  ReplayAnalysis,
+  'replayId' | 'contentHash' | 'parserVersion' | 'spatial'
+>
+
+export function createReplayObserverWindowReader(analysis: ReplayObserverInput) {
   if (!analysis.spatial) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
   const { replayId, contentHash, parserVersion } = analysis
   const source = createReplayObserverTimelineSource(analysis.spatial, 1600)

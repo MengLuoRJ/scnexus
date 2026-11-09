@@ -91,6 +91,11 @@ vi.mock('../replay/replay-analysis-runner', () => ({
     vi.fn<typeof import('../replay/replay-analysis-runner').disposeReplayAnalyses>(),
 }))
 vi.mock('../logging', () => ({ reportError: (error: unknown) => error }))
+vi.mock('../replay/replay-observer-runner', () => ({
+  disposeReplayObserverWorkers:
+    vi.fn<typeof import('../replay/replay-observer-runner').disposeReplayObserverWorkers>(),
+}))
+import { disposeReplayObserverWorkers } from '../replay/replay-observer-runner'
 import { initModules, disposeModules } from '../init'
 import { flushTelemetry, disableTelemetry } from '../telemetry'
 test('store failures defer content; later successful game initialization starts modules once', async () => {
@@ -120,6 +125,7 @@ test('a migration failure prevents business initialization instead of using empt
 test('normal disposal drains authorized telemetry before disabling the sending gate', async () => {
   vi.clearAllMocks()
   await disposeModules()
+  expect(disposeReplayObserverWorkers).toHaveBeenCalledOnce()
   expect(flushTelemetry).toHaveBeenCalledOnce()
   expect(disableTelemetry).toHaveBeenCalledOnce()
   expect(vi.mocked(flushTelemetry).mock.invocationCallOrder[0]).toBeLessThan(

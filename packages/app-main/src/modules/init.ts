@@ -28,6 +28,7 @@ import { initCustomizeModule } from './customize'
 import { initReplayModule } from './replay'
 import { replayDatabase } from './replay/replay-db'
 import { disposeReplayAnalyses } from './replay/replay-analysis-runner'
+import { disposeReplayObserverWorkers } from './replay/replay-observer-runner'
 import { startWorkshop, stopWorkshop } from './workshop-runtime'
 import { initDependencyIpc } from './dependency/dependency.ipc'
 import { getMainWindow } from './window'
@@ -92,6 +93,7 @@ export async function disposeModules() {
   await disposeAiAssistant()
   await stopWorkshop()
   disposeReplayAnalyses()
+  disposeReplayObserverWorkers()
   replayDatabase.close()
   disposeAuth()
   disposeSetting()

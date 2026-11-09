@@ -2,7 +2,9 @@
 
 MIT-licensed, pure TypeScript headless playback manager for the observed spatial
 history returned by `@scnexus/replay-parser`'s `buildReplaySpatialTimeline`.
-No filesystem, Electron, browser, Vue, timers, or runtime dependencies.
+No filesystem, Electron, UI framework, timers, or runtime dependencies.
+The async API uses standard `AbortController` / `AbortSignal`, available in
+browsers and the supported Node/Electron runtimes; it does not access the DOM.
 
 ```ts
 import { createReplayObserver } from '@scnexus/sc2-observer'
@@ -61,6 +63,97 @@ observations preserve parser order (last wins). Treat standalone sampler inputs
 as valid parser timelines; the manager performs validation once at construction.
 `sampleReplaySpatialTimeline(timeline, gameLoop)` exposes the same pure sampling
 without playback or selection. It clamps loops and returns immutable unit states.
+
+## Asynchronous window sources
+
+`createAsyncReplayObserver(source)` adds cancellation and buffering around the
+same validated spatial sampler. It is an optional, separate API; the current
+textual client still uses the synchronous in-memory session. No file, IPC,
+network or SC2 capture adapter is provided by this package.
+
+```ts
+import { createAsyncReplayObserver } from '@scnexus/sc2-observer'
+import type { ReplayObserverDataSource } from '@scnexus/sc2-observer'
+
+async function openObserver(source: ReplayObserverDataSource) {
+  const observer = createAsyncReplayObserver(source)
+  const initial = await observer.seek(0)
+  if (initial.status === 'ready') observer.play()
+  // Supply elapsed game loops from the host clock, and await each advancement.
+  await observer.advance(16)
+  // The caller owns subscriptions and eventually calls observer.dispose().
+  return observer
+}
+```
+
+The injected source has a fixed `durationGameLoops` and
+`loadWindow(gameLoop, signal): Promise<ReplayObserverWindow>`. Construction does
+not load data. Initialize with `seek()`, and create a new session for another
+replay. A window contains `{ fromGameLoop, toGameLoop, timeline }`:
+
+- Bounds are inclusive, finite, nonnegative, inside the replay duration and must
+  contain the requested loop. The timeline's duration is the **whole replay**
+  duration, rather than window length.
+- The source supplies cumulative state at the window start, followed by ordered
+  observations through its end. Already-started units require an observation at
+  or before the window start. A keyframe may use the window-start loop while
+  retaining an older `positionGameLoop`; this preserves last-observed age.
+  First observations of units born within the window may occur later.
+- Preserve original tags, birth/death loops and retained dead units when building
+  the cumulative frame. Do not convert window boundaries into birth events.
+  Window units cannot start after the window end, and observations beyond the
+  end are rejected. Normal sampler validation still applies.
+- This contract requires a source-generated cumulative frame, not raw deltas.
+  Sources own completeness and replay identity; the manager cannot discover
+  omitted units or turn missing data into exact game state.
+
+Async state includes the normal playback fields plus:
+
+| Field               | Meaning                                            |
+| ------------------- | -------------------------------------------------- |
+| `status`            | `idle`, `loading`, `ready`, `error`, or `disposed` |
+| `requestedGameLoop` | Target of the current load, otherwise null         |
+| `availableRange`    | The one committed window's bounds, otherwise null  |
+| `error`             | Immutable `{ code, message }`, otherwise null      |
+
+During loading, `currentGameLoop`, `units` and selection describe the **last
+committed frame**; only `requestedGameLoop` describes the requested future frame.
+`playing` is playback intent and may stay true while buffering. `advance()` is a
+no-op unless ready and playing: it does not accumulate time during loading.
+The host must stop/reset elapsed clock measurement across buffering to avoid
+catch-up jumps when it resumes. `pause()` and speed/selection changes made during
+loading remain effective when the window arrives. Reaching the endpoint stops
+playback. `play()` does not start I/O; initial/error states need an explicit seek.
+
+`seek()` clamps finite targets like the synchronous API. Every new seek cancels
+its predecessor with `AbortSignal`, even for the same target. In-window seeks use
+the committed sampler without another read and can cancel an outstanding load.
+A generation check ignores stale success and failure even if the source ignores
+abort. Cancelled/superseded seeks resolve with the current state; they cannot
+publish their obsolete frame. Cancellation of actual I/O is cooperative: sources
+must honor the signal to release their work.
+
+Load failures resolve with `status: 'error'`, pause playback and retain the last
+committed window. `error.code` is `load-failed` for source failures or
+`invalid-window` for invalid coverage/cumulative data. Seek again to retry, or
+seek inside the retained window to recover without another read. Invalid method
+arguments and calls after disposal reject/throw. Subscriber exceptions propagate
+after committing state, matching the synchronous API; listeners should not throw.
+
+Selection accepts a tag known in the current window or the already-selected tag.
+It survives seeks into earlier windows where that unit has not appeared
+(`selectedUnit: null`), without storing an unbounded history of all seen tags.
+`cancel()` aborts loading, pauses, clears errors and returns to ready with the old
+window or idle with no committed window. Subscriptions are synchronous,
+non-immediate and return idempotent unsubscribe functions.
+
+Only one committed sampler is retained; a successful replacement disposes it.
+`dispose()` aborts pending work, releases sampler/tag/subscription caches, is
+idempotent, and leaves the final frame readable with `status: 'disposed'`.
+The injected source remains caller-owned. This is an in-memory loading contract,
+not a persistent keyframe store, byte-budgeted cache, prefetcher, parser format or
+IPC transport. AbortSignal types use TypeScript's DOM library; runtime code also
+runs in Node without a document or window.
 
 ## Indexed sampling and performance
 

@@ -1,5 +1,12 @@
 import { createIndexedSpatialSampler, sampleObservedUnit } from './spatial-sampler.js'
 
+export { createAsyncReplayObserver } from './async-observer.js'
+export type {
+  AsyncReplayObserver,
+  AsyncReplayObserverState,
+  ReplayObserverDataSource,
+  ReplayObserverWindow,
+} from './async-observer.js'
 export { createReplayObserverEventIndex, queryReplayObserverEvents } from './events.js'
 export type {
   ReplayObserverEventFilter,

@@ -1,5 +1,6 @@
 import type { LocalReplayInspection } from './replay-inspection'
 import { mkdirSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { getApplicationDataDirectory } from '../../utils/application-data'
@@ -81,6 +82,9 @@ export class ReplayDatabase {
       );
     `)
       db.exec('CREATE INDEX IF NOT EXISTS replay_files_status_idx ON replay_files(status)')
+      db.exec(
+        'CREATE INDEX IF NOT EXISTS replay_runs_replay_kind_idx ON replay_runs(replay_id, kind)',
+      )
       const columns = db.prepare('PRAGMA table_info(replay_files)').all()
       if (!columns.some((column) => column.name === 'content_hash')) {
         db.exec('ALTER TABLE replay_files ADD COLUMN content_hash TEXT')
@@ -256,7 +260,7 @@ export class ReplayDatabase {
       db.prepare(
         'INSERT INTO replay_runs (id, replay_id, kind, status, details_json) VALUES (?, ?, ?, ?, ?)',
       ).run(
-        `${analysis.replayId}:components`,
+        randomUUID(),
         analysis.replayId,
         'components',
         analysis.status,
@@ -267,6 +271,13 @@ export class ReplayDatabase {
       db.exec('ROLLBACK')
       throw error
     }
+  }
+
+  async getAnalysisToken(replayId: string): Promise<string | null> {
+    const row = this.ensureReady()
+      .prepare("SELECT id FROM replay_runs WHERE replay_id = ? AND kind = 'components'")
+      .get(replayId)
+    return row ? (row.id as string) : null
   }
 
   async getAnalysis(replayId: string): Promise<ReplayAnalysis | null> {

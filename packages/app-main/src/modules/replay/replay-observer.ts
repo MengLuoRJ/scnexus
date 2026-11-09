@@ -54,38 +54,56 @@ export function validateReplayObserverWindowRequest(
     throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
 }
 
+export function createReplayObserverWindowReader(analysis: ReplayAnalysis) {
+  if (!analysis.spatial) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
+  const { replayId, contentHash, parserVersion } = analysis
+  const source = createReplayObserverTimelineSource(analysis.spatial, 1600)
+  let active = 0
+  let retired = false
+  return {
+    async loadWindow(request: ReplayObserverWindowRequest): Promise<ReplayObserverWindowData> {
+      validateReplayObserverWindowRequest(request)
+      if (retired) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
+      if (request.contentHash !== contentHash || request.parserVersion !== parserVersion)
+        throw new AppError(ERRORS.REPLAY_OBSERVER_STALE)
+      if (request.gameLoop > source.durationGameLoops)
+        throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
+      active++
+      try {
+        const window = await source.loadWindow(request.gameLoop, new AbortController().signal)
+        let observations = 0
+        for (const unit of window.timeline.units) {
+          observations += unit.observations.length
+          if (observations > REPLAY_OBSERVER_MAX_OBSERVATIONS)
+            throw new AppError(ERRORS.REPLAY_OBSERVER_LIMIT)
+        }
+        const result: ReplayObserverWindowData = { ...window, replayId, contentHash, parserVersion }
+        if (Buffer.byteLength(JSON.stringify(result), 'utf8') > REPLAY_OBSERVER_MAX_BYTES)
+          throw new AppError(ERRORS.REPLAY_OBSERVER_LIMIT)
+        return result
+      } finally {
+        active--
+        if (retired && active === 0) source.dispose()
+      }
+    },
+    dispose() {
+      if (retired) return
+      retired = true
+      // Eviction must not interrupt a window that is already being projected.
+      if (active === 0) source.dispose()
+    },
+  }
+}
+
 export async function replayObserverWindow(
   analysis: ReplayAnalysis,
   request: ReplayObserverWindowRequest,
 ): Promise<ReplayObserverWindowData> {
   validateReplayObserverWindowRequest(request)
-  if (!analysis.spatial) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
-  if (
-    request.contentHash !== analysis.contentHash ||
-    request.parserVersion !== analysis.parserVersion
-  )
-    throw new AppError(ERRORS.REPLAY_OBSERVER_STALE)
-  if (request.gameLoop > analysis.spatial.durationGameLoops)
-    throw new AppError(ERRORS.IPC_INVALID_ARGUMENT)
-  const source = createReplayObserverTimelineSource(analysis.spatial, 1600)
+  const reader = createReplayObserverWindowReader(analysis)
   try {
-    const window = await source.loadWindow(request.gameLoop, new AbortController().signal)
-    let observations = 0
-    for (const unit of window.timeline.units) {
-      observations += unit.observations.length
-      if (observations > REPLAY_OBSERVER_MAX_OBSERVATIONS)
-        throw new AppError(ERRORS.REPLAY_OBSERVER_LIMIT)
-    }
-    const result: ReplayObserverWindowData = {
-      ...window,
-      replayId: analysis.replayId,
-      contentHash: analysis.contentHash,
-      parserVersion: analysis.parserVersion,
-    }
-    if (Buffer.byteLength(JSON.stringify(result), 'utf8') > REPLAY_OBSERVER_MAX_BYTES)
-      throw new AppError(ERRORS.REPLAY_OBSERVER_LIMIT)
-    return result
+    return await reader.loadWindow(request)
   } finally {
-    source.dispose()
+    reader.dispose()
   }
 }

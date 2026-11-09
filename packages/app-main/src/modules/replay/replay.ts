@@ -27,7 +27,10 @@ import type {
   ReplayRecord,
   ReplayScope,
 } from '@scnexus/app-shared/types/replay.type'
-import { replayObserverWindow, validateReplayObserverWindowRequest } from './replay-observer'
+import {
+  createReplayObserverWindowReader,
+  validateReplayObserverWindowRequest,
+} from './replay-observer'
 export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
 import { inspectLocalReplay, REPLAY_INSPECTION_VERSION } from './replay-inspection'
@@ -84,15 +87,54 @@ export class ReplayLibraryService {
     return result
   }
 
+  private observerWindowCache:
+    | {
+        replayId: string
+        token: string
+        contentHash: string
+        reader: ReturnType<typeof createReplayObserverWindowReader>
+      }
+    | undefined
+
+  private clearObserverWindowCache() {
+    this.observerWindowCache?.reader.dispose()
+    this.observerWindowCache = undefined
+  }
+
   async getObserverWindow(
     scope: ReplayScope,
     replayId: string,
     request: ReplayObserverWindowRequest,
   ): Promise<ReplayObserverWindowData> {
     validateReplayObserverWindowRequest(request)
-    const analysis = await this.getAnalysis(scope, replayId)
-    if (!analysis) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
-    return replayObserverWindow(analysis, request)
+    await this.ensureReady()
+    const record = await this.requireRecord(scope, replayId)
+    const contentHash = await hashReplayFile(record.path)
+    const token = await replayDatabase.getAnalysisToken(replayId)
+    if (!token || contentHash !== record.contentHash) {
+      this.clearObserverWindowCache()
+      throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
+    }
+    const cached = this.observerWindowCache
+    if (
+      cached?.replayId === replayId &&
+      cached.token === token &&
+      cached.contentHash === contentHash
+    )
+      return cached.reader.loadWindow(request)
+    this.clearObserverWindowCache()
+    const analysis = await replayDatabase.getAnalysis(replayId)
+    if (
+      !analysis ||
+      analysis.parserVersion !== REPLAY_ANALYSIS_VERSION ||
+      analysis.contentHash !== contentHash ||
+      (await replayDatabase.getAnalysisToken(replayId)) !== token
+    )
+      throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
+    const reader = createReplayObserverWindowReader(analysis)
+    this.clearObserverWindowCache()
+    this.observerWindowCache = { replayId, token, contentHash, reader }
+    return reader.loadWindow(request)
   }
 
   async analyzeReplay(scope: ReplayScope, replayId: string) {

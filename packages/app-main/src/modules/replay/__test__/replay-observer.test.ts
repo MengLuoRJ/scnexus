@@ -5,8 +5,10 @@ import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type { ReplayAnalysis, ReplayScope } from '@scnexus/app-shared/types/replay.type'
 import type { ReplaySpatialObservation } from '@scnexus/replay-parser'
 import * as observer from '@scnexus/sc2-observer'
+import * as replayFiles from '../replay-files'
 import {
   replayAnalysisView,
+  createReplayObserverWindowReader,
   replayObserverWindow,
   validateReplayObserverWindowRequest,
   REPLAY_OBSERVER_MAX_BYTES,
@@ -235,7 +237,7 @@ it('counts UTF-8 response bytes and rejects oversized windows without truncating
   ).toHaveLength(1)
 })
 
-it('revalidates scope, path, content, parser version and replay identity on every service request', async () => {
+async function setupStoredAnalysis() {
   directory = await mkdtemp(join(process.cwd(), 'scnexus-observer-'))
   vi.mocked(getApplicationDataDirectory).mockReturnValue(directory)
   const scope: ReplayScope = { profileHandle: '1-S2-1-123', category: 'Multiplayer' }
@@ -248,6 +250,11 @@ it('revalidates scope, path, content, parser version and replay identity on ever
   const record = (await service.scan(scope))[0]!
   const input = { ...analysis(), replayId: record.id, contentHash: record.contentHash! }
   await replayDatabase.saveAnalysis(input)
+  return { scope, root, file, service, record, input }
+}
+
+it('revalidates scope, path, content, parser version and replay identity on every service request', async () => {
+  const { scope, root, file, service, record, input } = await setupStoredAnalysis()
   const first = await service.getObserverWindow(scope, record.id, request(input))
   expect(first.replayId).toBe(record.id)
   await writeFile(join(root, 'duplicate.SC2Replay'), 'candidate')
@@ -301,4 +308,99 @@ it('revalidates scope, path, content, parser version and replay identity on ever
     service.getObserverWindow(scope, record.id, request(input, NaN)),
   ).rejects.toMatchObject({ code: ERRORS.IPC_INVALID_ARGUMENT.code })
   expect(reads).not.toHaveBeenCalled()
+})
+
+it('reuses a single prepared timeline and reloads same-identity analysis after every save', async () => {
+  const { scope, service, record, input } = await setupStoredAnalysis()
+  const reads = vi.spyOn(replayDatabase, 'getAnalysis')
+  const sources = vi.spyOn(observer, 'createReplayObserverTimelineSource')
+  const token = await replayDatabase.getAnalysisToken(record.id)
+  await service.getObserverWindow(scope, record.id, request(input, 0))
+  await service.getObserverWindow(scope, record.id, request(input, 1700))
+  expect(reads).toHaveBeenCalledTimes(1)
+  expect(sources).toHaveBeenCalledTimes(1)
+  const updated = structuredClone(input)
+  updated.spatial!.units[0]!.observations[0]!.x = 999
+  await replayDatabase.saveAnalysis(updated)
+  expect(await replayDatabase.getAnalysisToken(record.id)).not.toBe(token)
+  const window = await service.getObserverWindow(scope, record.id, request(input, 0))
+  expect(window.timeline.units[0]!.observations[0]!.x).toBe(999)
+  expect(reads).toHaveBeenCalledTimes(2)
+  expect(sources).toHaveBeenCalledTimes(2)
+  await replayDatabase.deleteReplayByPath(record.path)
+  expect(await replayDatabase.getAnalysisToken(record.id)).toBeNull()
+  await expect(service.getObserverWindow(scope, record.id, request(input, 0))).rejects.toThrow(
+    'not indexed',
+  )
+})
+
+it('rechecks the analysis token after file hashing before reusing a cached source', async () => {
+  const { scope, service, record, input } = await setupStoredAnalysis()
+  await service.getObserverWindow(scope, record.id, request(input, 0))
+  const updated = structuredClone(input)
+  updated.spatial!.units[0]!.observations[0]!.x = 999
+  const hashFile = replayFiles.hashReplayFile
+  vi.spyOn(replayFiles, 'hashReplayFile').mockImplementationOnce(async (path) => {
+    await replayDatabase.saveAnalysis(updated)
+    return hashFile(path)
+  })
+  const window = await service.getObserverWindow(scope, record.id, request(input, 0))
+  expect(window.timeline.units[0]!.observations[0]!.x).toBe(999)
+})
+
+it('evicts the previous replay source and rebuilds it when revisited', async () => {
+  const { scope, root, service, record, input } = await setupStoredAnalysis()
+  await writeFile(join(root, 'duplicate.SC2Replay'), 'candidate')
+  const duplicate = (await service.scan(scope)).find((item) => item.id !== record.id)!
+  await replayDatabase.saveAnalysis({ ...input, replayId: duplicate.id })
+  const sources = vi.spyOn(observer, 'createReplayObserverTimelineSource')
+  await service.getObserverWindow(scope, record.id, request(input, 0))
+  await service.getObserverWindow(scope, duplicate.id, request(input, 0))
+  await service.getObserverWindow(scope, record.id, request(input, 0))
+  expect(sources).toHaveBeenCalledTimes(3)
+})
+
+it('does not cache analysis replaced while a cache miss is being loaded', async () => {
+  const { scope, service, record, input } = await setupStoredAnalysis()
+  const getAnalysis = replayDatabase.getAnalysis.bind(replayDatabase)
+  vi.spyOn(replayDatabase, 'getAnalysis').mockImplementationOnce(async (id) => {
+    const previous = await getAnalysis(id)
+    await replayDatabase.saveAnalysis(input)
+    return previous
+  })
+  const sources = vi.spyOn(observer, 'createReplayObserverTimelineSource')
+  await expect(
+    service.getObserverWindow(scope, record.id, request(input, 0)),
+  ).rejects.toMatchObject({ code: ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code })
+  expect(sources).not.toHaveBeenCalled()
+  await service.getObserverWindow(scope, record.id, request(input, 0))
+  expect(sources).toHaveBeenCalledOnce()
+})
+
+it('allows in-flight windows to finish during eviction and then releases the retired source', async () => {
+  const input = analysis()
+  const factory = observer.createReplayObserverTimelineSource
+  const dispose = vi.fn<() => void>()
+  vi.spyOn(observer, 'createReplayObserverTimelineSource').mockImplementation((...args) => {
+    const source = factory(...args)
+    return {
+      ...source,
+      dispose: () => {
+        source.dispose()
+        dispose()
+      },
+    }
+  })
+  const reader = createReplayObserverWindowReader(input)
+  const first = reader.loadWindow(request(input, 0))
+  const second = reader.loadWindow(request(input, 1700))
+  reader.dispose()
+  reader.dispose()
+  expect(dispose).not.toHaveBeenCalled()
+  const windows = await Promise.all([first, second])
+  expect(windows.map((window) => window.fromGameLoop)).toEqual([0, 1600])
+  expect(dispose).toHaveBeenCalledOnce()
+  await expect(reader.loadWindow(request(input, 0))).rejects.toMatchObject({
+    code: ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code,
+  })
 })

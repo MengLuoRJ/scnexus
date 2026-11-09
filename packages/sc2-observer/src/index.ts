@@ -1,4 +1,8 @@
 import { createIndexedSpatialSampler, sampleObservedUnit } from './spatial-sampler.js'
+import { snapshotReplayObserverTimeline } from './timeline.js'
+
+export { createReplayObserverTimelineSource } from './timeline-source.js'
+export type { ReplayObserverTimelineSource } from './timeline-source.js'
 
 export { createAsyncReplayObserver } from './async-observer.js'
 export type {
@@ -178,46 +182,8 @@ export function sampleReplaySpatialTimeline(
 
 /** Pure externally-clocked observer. Input is snapshotted; published states are immutable. */
 export function createReplayObserver(input: ReplayObserverTimeline): ReplayObserver {
-  nonnegative(input.durationGameLoops, 'durationGameLoops')
-  const tags = new Set<string>()
-  const timeline: ReplayObserverTimeline = {
-    durationGameLoops: input.durationGameLoops,
-    units: input.units.map((unit) => {
-      if (!unit.unitTag || tags.has(unit.unitTag))
-        throw new TypeError('Unit tags must be unique and nonempty')
-      tags.add(unit.unitTag)
-      nonnegative(unit.startedGameLoop, 'startedGameLoop')
-      if (unit.diedGameLoop !== null) {
-        nonnegative(unit.diedGameLoop, 'diedGameLoop')
-        if (unit.diedGameLoop < unit.startedGameLoop) throw new RangeError('Death precedes start')
-      }
-      let previous = unit.startedGameLoop
-      const observations = unit.observations.map((observation) => {
-        nonnegative(observation.gameLoop, 'observation.gameLoop')
-        if (observation.gameLoop < previous)
-          throw new RangeError('Observations must be chronological')
-        previous = observation.gameLoop
-        if (
-          (observation.x === null) !== (observation.y === null) ||
-          (observation.x === null) !== (observation.positionGameLoop === null)
-        ) {
-          throw new TypeError('Position coordinates and loop must be present together')
-        }
-        if (observation.positionGameLoop !== null) {
-          nonnegative(observation.positionGameLoop, 'positionGameLoop')
-          if (
-            observation.positionGameLoop > observation.gameLoop ||
-            !Number.isFinite(observation.x) ||
-            !Number.isFinite(observation.y)
-          ) {
-            throw new RangeError('Invalid observed position')
-          }
-        }
-        return { ...observation }
-      })
-      return { ...unit, observations }
-    }),
-  }
+  const timeline = snapshotReplayObserverTimeline(input)
+  const tags = new Set(timeline.units.map((unit) => unit.unitTag))
   const sampler = createIndexedSpatialSampler(timeline)
   let disposed = false
   const listeners = new Set<(state: ReplayObserverState) => void>()

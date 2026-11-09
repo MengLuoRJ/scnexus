@@ -2,11 +2,17 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  createReplayObserver,
+  createAsyncReplayObserver,
   createReplayObserverEventIndex,
+  createReplayObserverTimelineSource,
   filterReplayObserverUnits,
 } from '@scnexus/sc2-observer'
-import type { ReplayObserverEvent, ReplayObserverEventIndex } from '@scnexus/sc2-observer'
+import type {
+  ReplayObserverDataSource,
+  ReplayObserverEvent,
+  ReplayObserverEventIndex,
+  ReplayObserverTimelineSource,
+} from '@scnexus/sc2-observer'
 import type { ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
 import ReplayObserverAnalysis from './ReplayObserverAnalysis.vue'
 import { replayObserverPlayerName } from './display'
@@ -17,15 +23,21 @@ const props = defineProps<{
   timeline: ReplayAnalysis['spatial']
   insights?: ReplayAnalysis['insights']
   trackerPartial?: boolean
+  source?: ReplayObserverDataSource
 }>()
 const { t } = useI18n()
-type Observer = ReturnType<typeof createReplayObserver>
+type Observer = ReturnType<typeof createAsyncReplayObserver>
 const state = shallowRef<ReturnType<Observer['getState']> | null>(null)
 const eventIndex = shallowRef<ReplayObserverEventIndex | null>(null)
 let observer: Observer | null = null
+let ownedSource: ReplayObserverTimelineSource | null = null
 let unsubscribe: (() => void) | undefined
 let frame: number | undefined
+let activeTick: symbol | undefined
 let previousTime: number | undefined
+let seekGeneration = 0
+let requestedLoop = 0
+let requestedUnitTag: string | undefined
 const page = ref(0)
 const search = ref('')
 const player = ref('all')
@@ -54,7 +66,10 @@ function step(seconds: number) {
   jumpToAnalysis(
     Math.max(
       0,
-      Math.min(state.value?.duration ?? 0, (state.value?.currentGameLoop ?? 0) + seconds * 16),
+      Math.min(
+        state.value?.duration ?? 0,
+        (state.value?.requestedGameLoop ?? state.value?.currentGameLoop ?? 0) + seconds * 16,
+      ),
     ),
   )
 }
@@ -116,14 +131,37 @@ watch(
     eventPage.value = 0
   },
 )
-function jumpToAnalysis(gameLoop: number) {
-  observer?.pause()
+async function requestSeek(gameLoop: number, pause = false, unitTag?: string) {
+  const current = observer
+  if (!current) return
+  const request = ++seekGeneration
+  requestedLoop = gameLoop
+  requestedUnitTag = unitTag
+  if (pause) current.pause()
   stopFrame()
-  observer?.seek(gameLoop)
+  const result = await current.seek(gameLoop)
+  if (observer !== current || request !== seekGeneration) return
+  if (result.status === 'ready' && unitTag !== undefined) current.selectUnit(unitTag)
+}
+function jumpToAnalysis(gameLoop: number) {
+  return requestSeek(gameLoop, true)
 }
 function jumpToEvent(unitTag: string, gameLoop: number) {
-  jumpToAnalysis(gameLoop)
+  return requestSeek(gameLoop, true, unitTag)
+}
+function selectUnit(unitTag: string | null) {
+  seekGeneration++
+  requestedUnitTag = undefined
   observer?.selectUnit(unitTag)
+}
+function cancelLoad() {
+  seekGeneration++
+  observer?.cancel()
+  requestedLoop = state.value?.currentGameLoop ?? 0
+  requestedUnitTag = undefined
+}
+function retryLoad() {
+  return requestSeek(requestedLoop, true, requestedUnitTag)
 }
 const units = computed(
   () => activeUnits.value.slice(page.value * pageSize, (page.value + 1) * pageSize) ?? [],
@@ -134,15 +172,34 @@ watch(pageCount, (count) => {
 function stopFrame() {
   if (frame !== undefined) cancelAnimationFrame(frame)
   frame = undefined
+  activeTick = undefined
   previousTime = undefined
 }
-function tick(time: number) {
+function startFrame() {
+  if (
+    frame === undefined &&
+    activeTick === undefined &&
+    state.value?.playing &&
+    state.value.status === 'ready'
+  )
+    frame = requestAnimationFrame(tick)
+}
+async function tick(time: number) {
   frame = undefined
-  if (!observer || !state.value?.playing) return
-  if (previousTime !== undefined) observer.advance(((time - previousTime) * 16) / 1000)
+  const current = observer
+  if (!current || !state.value?.playing || state.value.status !== 'ready') return
+  const token = Symbol()
+  activeTick = token
+  const delta = previousTime === undefined ? 0 : ((time - previousTime) * 16) / 1000
   previousTime = time
-  if (state.value?.playing) frame = requestAnimationFrame(tick)
-  else previousTime = undefined
+  try {
+    await current.advance(delta)
+  } finally {
+    if (activeTick === token) {
+      activeTick = undefined
+      if (observer === current) startFrame()
+    }
+  }
 }
 function togglePlayback() {
   if (!observer) return
@@ -151,7 +208,7 @@ function togglePlayback() {
     stopFrame()
   } else {
     observer.play()
-    if (frame === undefined && state.value?.playing) frame = requestAnimationFrame(tick)
+    startFrame()
   }
 }
 function toggleSection(event: Event) {
@@ -161,26 +218,28 @@ function toggleSection(event: Event) {
   }
 }
 function seek(event: Event) {
-  observer?.seek(Number((event.target as HTMLInputElement).value))
-  previousTime = undefined
+  return requestSeek(Number((event.target as HTMLInputElement).value))
 }
 function speed(event: Event) {
   observer?.setSpeed(Number((event.target as HTMLSelectElement).value))
 }
 function dispose() {
+  seekGeneration++
   stopFrame()
   unsubscribe?.()
   unsubscribe = undefined
   observer?.dispose()
   observer = null
+  ownedSource?.dispose()
+  ownedSource = null
   const previousIndex = eventIndex.value
   eventIndex.value = null
   previousIndex?.dispose()
   state.value = null
 }
 watch(
-  () => props.timeline,
-  (timeline) => {
+  [() => props.timeline, () => props.source],
+  ([timeline, source]) => {
     dispose()
     page.value = 0
     eventPage.value = 0
@@ -191,12 +250,19 @@ watch(
     player.value = 'all'
     life.value = 'alive'
     if (!timeline) return
-    observer = createReplayObserver(timeline)
+    ownedSource = source ? null : createReplayObserverTimelineSource(timeline)
+    observer = createAsyncReplayObserver(source ?? ownedSource!)
     eventIndex.value = createReplayObserverEventIndex(timeline)
     state.value = observer.getState()
     unsubscribe = observer.subscribe((value) => {
       state.value = value
+      if (value.requestedGameLoop !== null) requestedLoop = value.requestedGameLoop
+      if (value.status !== 'ready' || !value.playing) stopFrame()
+      else startFrame()
     })
+    requestedLoop = 0
+    requestedUnitTag = undefined
+    void requestSeek(0)
   },
   { immediate: true },
 )
@@ -213,8 +279,47 @@ onBeforeUnmount(dispose)
         <p v-if="props.timeline?.partial" class="text-warning">
           {{ t('replay.observer.partial') }}
         </p>
+        <div
+          v-if="state.status === 'loading'"
+          role="status"
+          aria-live="polite"
+          class="flex flex-wrap items-center gap-2 rounded border border-default p-2 text-xs">
+          <span>
+            {{
+              t('replay.observer.loadingFrame', {
+                time: replayGameTime(state.requestedGameLoop ?? 0),
+              })
+            }}
+          </span>
+          <UButton size="xs" color="neutral" variant="soft" class="ml-auto" @click="cancelLoad">
+            {{ t('replay.observer.cancelLoad') }}
+          </UButton>
+        </div>
+        <div
+          v-else-if="state.status === 'error'"
+          role="alert"
+          class="flex flex-wrap items-center gap-2 rounded border border-warning p-2 text-xs">
+          <span>{{ t('replay.observer.loadFailed') }}</span>
+          <UButton size="xs" color="neutral" variant="soft" class="ml-auto" @click="retryLoad">
+            {{ t('replay.observer.retryLoad') }}
+          </UButton>
+        </div>
+        <div
+          v-else-if="state.status === 'idle'"
+          role="status"
+          class="flex flex-wrap items-center gap-2 text-xs">
+          <span>{{ t('replay.observer.notLoaded') }}</span>
+          <UButton size="xs" color="neutral" variant="soft" class="ml-auto" @click="retryLoad">
+            {{ t('replay.observer.loadFrame') }}
+          </UButton>
+        </div>
         <div class="flex items-center gap-3">
-          <UButton size="sm" color="neutral" variant="soft" @click="togglePlayback">
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="soft"
+            :disabled="state.status === 'idle' || state.status === 'error'"
+            @click="togglePlayback">
             {{ t(state.playing ? 'replay.observer.pause' : 'replay.observer.play') }}
           </UButton>
           <label class="flex items-center gap-2 text-xs">
@@ -228,7 +333,7 @@ onBeforeUnmount(dispose)
               </option>
             </select>
           </label>
-          <span class="ml-auto text-xs tabular-nums">
+          <span v-if="state.availableRange" class="ml-auto text-xs tabular-nums">
             {{ t('replay.observer.count', { count: activeUnits.length }) }}
           </span>
         </div>
@@ -244,7 +349,7 @@ onBeforeUnmount(dispose)
             min="0"
             :max="state.duration"
             step="1"
-            :value="state.currentGameLoop"
+            :value="state.requestedGameLoop ?? state.currentGameLoop"
             class="mt-2 block w-full accent-current"
             @input="seek" />
         </label>
@@ -296,6 +401,7 @@ onBeforeUnmount(dispose)
           {{ t('replay.observer.invalidTime', { end: replayGameTime(state.duration) }) }}
         </p>
         <ReplayObserverAnalysis
+          v-if="state.availableRange"
           :insights="props.insights"
           :units="state.units"
           :game-loop="Math.floor(state.currentGameLoop)"
@@ -346,7 +452,7 @@ onBeforeUnmount(dispose)
             <h4 class="break-all font-medium">
               {{ t('replay.observer.selected', { id: state.selectedUnitTag }) }}
             </h4>
-            <UButton size="xs" color="neutral" variant="ghost" @click="observer?.selectUnit(null)">
+            <UButton size="xs" color="neutral" variant="ghost" @click="selectUnit(null)">
               {{ t('replay.observer.clearSelection') }}
             </UButton>
           </div>
@@ -421,7 +527,7 @@ onBeforeUnmount(dispose)
                   <button
                     class="text-left hover:underline"
                     :aria-pressed="state.selectedUnitTag === unit.unitTag"
-                    @click="observer?.selectUnit(unit.unitTag)">
+                    @click="selectUnit(unit.unitTag)">
                     {{ unit.unitType ?? t('replay.unknown') }}
                     <span class="text-muted">#{{ unit.unitTag }}</span>
                     <span v-if="!unit.completed" class="block text-muted">
@@ -444,7 +550,11 @@ onBeforeUnmount(dispose)
                 </td>
               </tr>
               <tr v-if="!units.length">
-                <td colspan="4" class="py-3 text-muted">{{ t('replay.observer.empty') }}</td>
+                <td colspan="4" class="py-3 text-muted">
+                  {{
+                    t(state.availableRange ? 'replay.observer.empty' : 'replay.observer.notLoaded')
+                  }}
+                </td>
               </tr>
             </tbody>
           </table>

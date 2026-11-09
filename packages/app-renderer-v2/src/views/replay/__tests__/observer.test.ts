@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import ReplayObserver from '../ReplayObserver.vue'
 import en from '../../../locales/en'
@@ -64,6 +64,7 @@ test('queries the real headless manager when seeking, selecting, and replacing a
       stubs: { UButton: { template: '<button><slot /></button>' } },
     },
   })
+  await flushPromises()
   expect(wrapper.text()).toContain('Marine')
   expect(wrapper.text()).toContain('20, 30')
   expect(wrapper.text()).toContain(en['replay.observer.partial'])
@@ -98,6 +99,7 @@ test.each(['en', 'zh', 'zh-Hant'])(
         },
       },
     })
+    await flushPromises()
     const search = wrapper.get(`input[aria-label="${labels['replay.observer.search']}"]`)
     await search.setValue('probe')
     expect(wrapper.findAll('td button')).toHaveLength(0)
@@ -146,6 +148,7 @@ test.each(['en', 'zh', 'zh-Hant'])(
         stubs: { UButton: { template: '<button><slot /></button>' }, UInput: true },
       },
     })
+    await flushPromises()
     const button = (key: string) =>
       wrapper.findAll('button').find((item) => item.text() === labels[key as keyof typeof labels])!
     const playerSelect = wrapper.get(`select[aria-label="${labels['replay.observer.owner']}"]`)
@@ -205,6 +208,7 @@ test('indexed event pages reset after filtering, selection and timeline replacem
       stubs: { UButton: { template: '<button><slot /></button>' }, UInput: true },
     },
   })
+  await flushPromises()
   const events = wrapper.get(`section[aria-label="${en['replay.observer.events']}"]`)
   const nextPage = () =>
     events.findAll('button').find((item) => item.text() === en['replay.observer.next'])!

@@ -67,9 +67,9 @@ without playback or selection. It clamps loops and returns immutable unit states
 ## Asynchronous window sources
 
 `createAsyncReplayObserver(source)` adds cancellation and buffering around the
-same validated spatial sampler. It is an optional, separate API; the current
-textual client still uses the synchronous in-memory session. No file, IPC,
-network or SC2 capture adapter is provided by this package.
+same validated spatial sampler. The textual client now uses this API through an
+in-memory timeline source; the synchronous API remains available to other users.
+No file, IPC, network or SC2 capture adapter is provided by this package.
 
 ```ts
 import { createAsyncReplayObserver } from '@scnexus/sc2-observer'
@@ -154,6 +154,54 @@ The injected source remains caller-owned. This is an in-memory loading contract,
 not a persistent keyframe store, byte-budgeted cache, prefetcher, parser format or
 IPC transport. AbortSignal types use TypeScript's DOM library; runtime code also
 runs in Node without a document or window.
+
+## Existing timeline window adapter
+
+```ts
+import {
+  createAsyncReplayObserver,
+  createReplayObserverTimelineSource,
+} from '@scnexus/sc2-observer'
+
+const source = createReplayObserverTimelineSource(timeline, 1600)
+const observer = createAsyncReplayObserver(source)
+await observer.seek(0)
+// On teardown, dispose both: the source remains caller-owned.
+observer.dispose()
+source.dispose()
+```
+
+`createReplayObserverTimelineSource(timeline, windowGameLoops = 1600)` owns a
+validated copy of an existing parser timeline. Window length must be a positive
+safe integer. Loads yield once and honor abort before constructing an immutable
+window. Requested loops must be finite and inside the replay duration; the async
+manager performs its normal clamping before calling the source.
+
+The adapter uses aligned windows, binary-searches the last cumulative observation
+at/before each window start, and copies only subsequent observations through the
+window end. The initial frame keeps original type, ownership, completion,
+birth/death metadata and the actual position observation loop. Dead units remain
+queryable. Synthetic boundary frames have `kind: 'position'` and do not invent a
+new birth. Window frames serve spatial sampling; use the original timeline's
+event index for the complete lifecycle/event history. Like the async window
+contract, already-started tracks require a known cumulative frame at the boundary.
+
+`dispose()` releases the copied timeline and is idempotent. Returned windows stay
+valid; later loads reject. The whole original timeline is still resident until
+source disposal, and window construction runs on the calling thread. This is a
+compatibility adapter, not a Worker, disk chunk store, transport reduction or
+solution to peak memory usage.
+
+The textual `ReplayObserver` defaults to this adapter and accepts an optional
+caller-owned `source` for the same replay alongside its existing full `timeline`.
+The timeline still supplies event history, player filters and track details.
+The UI displays loading targets separately from committed time, allows cancelling
+and retrying, and keeps old units/analysis during buffering. Before the first
+commit it shows an unloaded frame, without reporting zero units as known data.
+Late event jumps cannot override a newer selection, and source/timeline replacement
+aborts the old session. Playback resets its elapsed timestamp across buffering;
+a completed old animation callback cannot restart a disposed or replaced clock.
+UI labels are localized, and source error messages are not rendered directly.
 
 ## Indexed sampling and performance
 

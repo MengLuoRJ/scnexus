@@ -32,6 +32,7 @@
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@scnexus/bzip2-wasm": "workspace:*",
     "@scnexus/replay-parser": "workspace:*",
+    "@scnexus/sc2-observer": "workspace:*",
     "@scnexus/standard": "workspace:*",
     "@sentry/electron": "^8.3.0",
     "ajv": "^8.20.0",

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ERRORS } from '@scnexus/app-shared/errors/app.error'
 import {
   createAsyncReplayObserver,
   createReplayObserverEventIndex,
@@ -20,7 +21,7 @@ import { replayGameTime } from './insights'
 
 defineOptions({ name: 'ReplayObserver' })
 const props = defineProps<{
-  timeline: ReplayAnalysis['spatial']
+  timeline?: ReplayAnalysis['spatial']
   insights?: ReplayAnalysis['insights']
   trackerPartial?: boolean
   source?: ReplayObserverDataSource
@@ -46,6 +47,16 @@ const eventPage = ref(0)
 const eventKind = ref<'all' | ReplayObserverEvent['kind']>('all')
 const timeInput = ref('')
 const timeInvalid = ref(false)
+const loadErrorKey = computed(() => {
+  const code = state.value?.error?.sourceCode
+  if (
+    code === ERRORS.REPLAY_OBSERVER_STALE.code ||
+    code === ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code
+  )
+    return 'replay.observer.refreshAnalysis'
+  if (code === ERRORS.REPLAY_OBSERVER_LIMIT.code) return 'replay.observer.windowLimit'
+  return 'replay.observer.loadFailed'
+})
 const eventKinds = ['born', 'init', 'done', 'died', 'type', 'owner'] as const
 function playerName(id: number | null) {
   const fallback =
@@ -299,8 +310,14 @@ onBeforeUnmount(dispose)
           v-else-if="state.status === 'error'"
           role="alert"
           class="flex flex-wrap items-center gap-2 rounded border border-warning p-2 text-xs">
-          <span>{{ t('replay.observer.loadFailed') }}</span>
-          <UButton size="xs" color="neutral" variant="soft" class="ml-auto" @click="retryLoad">
+          <span>{{ t(loadErrorKey) }}</span>
+          <UButton
+            v-if="loadErrorKey === 'replay.observer.loadFailed'"
+            size="xs"
+            color="neutral"
+            variant="soft"
+            class="ml-auto"
+            @click="retryLoad">
             {{ t('replay.observer.retryLoad') }}
           </UButton>
         </div>

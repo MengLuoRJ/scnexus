@@ -502,6 +502,7 @@ onUnmounted(() => {
     <ReplayAnalysisDialog
       v-if="analysisTarget"
       :record="analysisTarget"
+      :scope="scope"
       :analysis="analysis"
       :loaded="analysisLoaded"
       :error="analysisError"

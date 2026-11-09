@@ -20,7 +20,14 @@ import {
 } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { looksLikeReplay } from '@scnexus/replay-parser'
-import type { ReplayRecord, ReplayScope } from '@scnexus/app-shared/types/replay.type'
+import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
+import type {
+  ReplayObserverWindowData,
+  ReplayObserverWindowRequest,
+  ReplayRecord,
+  ReplayScope,
+} from '@scnexus/app-shared/types/replay.type'
+import { replayObserverWindow, validateReplayObserverWindowRequest } from './replay-observer'
 export type { ReplayRecord } from '@scnexus/app-shared/types/replay.type'
 import { replayDatabase } from './replay-db'
 import { inspectLocalReplay, REPLAY_INSPECTION_VERSION } from './replay-inspection'
@@ -75,6 +82,17 @@ export class ReplayLibraryService {
     if (!result || result.parserVersion !== REPLAY_ANALYSIS_VERSION) return null
     if (!record || (await hashReplayFile(record.path)) !== result.contentHash) return null
     return result
+  }
+
+  async getObserverWindow(
+    scope: ReplayScope,
+    replayId: string,
+    request: ReplayObserverWindowRequest,
+  ): Promise<ReplayObserverWindowData> {
+    validateReplayObserverWindowRequest(request)
+    const analysis = await this.getAnalysis(scope, replayId)
+    if (!analysis) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
+    return replayObserverWindow(analysis, request)
   }
 
   async analyzeReplay(scope: ReplayScope, replayId: string) {

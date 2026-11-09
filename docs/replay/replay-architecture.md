@@ -119,6 +119,16 @@ app-main
 
 录像是 SC2Switcher 的单个位置参数，不使用地图启动的 `-run`，也不使用 shell 或文件关联打开。命令行模式依据 [SC2Switcher 录像启动说明](https://gaming.stackexchange.com/a/86576)；该说明以游戏未运行为前提。启动成功只表示进程创建成功（macOS 为现有 LaunchServices 调用成功），不保证游戏已进入录像、版本资源可用或能接管已运行的游戏。解析器支持状态不限制观看。
 
+### 桌面文字观战窗口
+
+分析持久化格式继续保存完整 `ReplayAnalysis.spatial`，缓存版本不因 IPC 投影改变。`replay:analyze` 与 `replay:get-analysis` 的返回投影省略完整 `spatial`，提供 `observer { replayId, contentHash, parserVersion, history }`：history 保留生命周期、类型、归属及单位身份，不包含位置事件，坐标与位置观测时间均为空。原始组件调试数据、insights 与 metrics 保持现有返回行为，不能将此投影称为整份分析的小型摘要。
+
+详情将当前 `ReplayScope` 与描述符交给 renderer `ipcs/replay` 数据源，通过 preload 明确暴露的 `observerWindow` 请求 `replay:observer-window`。请求只接受录像 ID、内容 hash、算法版本及目标 loop（允许非负有限小数）；不接受文件路径、任意 channel 或自定义窗口大小。每次读取重新验证资料／分类归属、实际文件 hash、当前算法版本及请求身份，范围固定为 1600 loops。复用无头包的累计窗口适配，不重写出生／死亡／位置规则；单次返回不超过 50000 条观测、8 MiB 序列化 UTF-8 JSON，超限返回错误且不裁剪结果。
+
+同一客户端源串行发送窗口读取，已取消的排队请求不会发送；Electron invoke 已开始的主进程工作暂不能取消，源和会话会忽略其过期回复。回复携带相同录像／hash／版本身份并再次校验。`M065` 表示观战数据不可用，`M066` 表示分析身份过期，`M067` 表示响应超限；界面分别提示重新打开／分析或当前无法显示，普通读取失败仍可重试。
+
+主进程与 shared 显式声明 `@scnexus/sc2-observer` 工作区依赖：主进程复用纯 TS 累计窗口生成，shared 仅引用公开窗口 DTO 类型。此阶段不新增磁盘表／分块文件，也不缓存跨请求的完整轨迹；每次仍读取 SQLite 整块 JSON，并在主进程投影，相关 CPU、峰值内存、原始调试组件传输和 Worker 化仍待后续处理。
+
 ## 5. 解析流程
 
 ```text

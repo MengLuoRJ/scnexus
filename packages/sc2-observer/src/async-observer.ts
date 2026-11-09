@@ -16,7 +16,11 @@ export interface AsyncReplayObserverState extends ReplayObserverState {
   readonly status: 'idle' | 'loading' | 'ready' | 'error' | 'disposed'
   readonly requestedGameLoop: number | null
   readonly availableRange: Readonly<{ fromGameLoop: number; toGameLoop: number }> | null
-  readonly error: Readonly<{ code: 'load-failed' | 'invalid-window'; message: string }> | null
+  readonly error: Readonly<{
+    code: 'load-failed' | 'invalid-window'
+    message: string
+    sourceCode?: string
+  }> | null
 }
 
 export interface AsyncReplayObserver {
@@ -171,6 +175,12 @@ export function createAsyncReplayObserver(source: ReplayObserverDataSource): Asy
         error: Object.freeze({
           code: error instanceof InvalidWindow ? 'invalid-window' : 'load-failed',
           message: error instanceof Error ? error.message : String(error),
+          ...(error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          typeof error.code === 'string'
+            ? { sourceCode: error.code }
+            : {}),
         }),
       })
     }

@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createReplayObserverTimelineSource } from '@scnexus/sc2-observer'
+import { ERRORS } from '@scnexus/app-shared/errors/app.error'
 import type { ReplayObserverDataSource, ReplayObserverWindow } from '@scnexus/sc2-observer'
 import ReplayObserver from '../ReplayObserver.vue'
 import en from '../../../locales/en'
@@ -143,6 +144,21 @@ test('failed seeks retain the committed frame and retry the requested time', asy
   expect(wrapper.text()).toContain('1650 / 3200')
   expect(wrapper.get('tbody').text()).toContain('100, 2')
   expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+})
+
+test.each([
+  [ERRORS.REPLAY_OBSERVER_STALE.code, 'replay.observer.refreshAnalysis'],
+  [ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code, 'replay.observer.refreshAnalysis'],
+  [ERRORS.REPLAY_OBSERVER_LIMIT.code, 'replay.observer.windowLimit'],
+] as const)('permanent source failures explain the required action (%s)', async (code, key) => {
+  const data = source()
+  data.loadWindow.mockRejectedValue({ code })
+  const wrapper = render(data)
+  await flushPromises()
+  expect(wrapper.get('[role="alert"]').text()).toContain(en[key])
+  expect(
+    wrapper.findAll('button').some((item) => item.text() === en['replay.observer.retryLoad']),
+  ).toBe(false)
 })
 
 test('a pending event jump does not overwrite a newer unit selection', async () => {

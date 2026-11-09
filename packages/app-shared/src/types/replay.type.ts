@@ -102,6 +102,8 @@ export type ReplayAnalysis = {
   }[]
   /** Bounded, sparse tracker observations; not exact game-client simulation or visibility. */
   spatial?: import('@scnexus/replay-parser').ReplaySpatialTimeline
+  /** Desktop IPC projection: lifecycle history without coordinates; spatial windows are requested separately. */
+  observer?: ReplayObserverDescriptor
   insights?: import('./replay-insights.type.js').ReplayInsights
   metrics?: import('./replay-insights.type.js').ReplayMetrics
   coop?: import('./replay-coop.type.js').ReplayCoopAnalysis
@@ -121,11 +123,35 @@ export type ReplayAnalysis = {
   analyzedAt: string
 }
 
+export interface ReplayObserverDescriptor {
+  replayId: string
+  contentHash: string
+  parserVersion: string
+  history: import('@scnexus/replay-parser').ReplaySpatialTimeline
+}
+
+export interface ReplayObserverWindowRequest {
+  contentHash: string
+  parserVersion: string
+  gameLoop: number
+}
+
+export type ReplayObserverWindowData = import('@scnexus/sc2-observer').ReplayObserverWindow & {
+  replayId: string
+  contentHash: string
+  parserVersion: string
+}
+
 export interface ReplayApi {
   watch(scope: ReplayScope, replayId: string): Promise<IpcResult<void>>
   profiles(): Promise<IpcResult<StarCraftProfile[]>>
   analyze(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis>>
   getAnalysis(scope: ReplayScope, replayId: string): Promise<IpcResult<ReplayAnalysis | null>>
+  observerWindow(
+    scope: ReplayScope,
+    replayId: string,
+    request: ReplayObserverWindowRequest,
+  ): Promise<IpcResult<ReplayObserverWindowData>>
   listDuplicates(scope: ReplayScope): Promise<IpcResult<ReplayDuplicateGroup[]>>
   chooseExportPath(): Promise<IpcResult<string | null>>
   exportArchive(

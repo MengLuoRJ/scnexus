@@ -58,6 +58,8 @@
   "replay.observer.loadingFrame": "正在加载 {time} 的画面…",
   "replay.observer.cancelLoad": "取消加载",
   "replay.observer.loadFailed": "画面加载失败，请重试。",
+  "replay.observer.refreshAnalysis": "录像数据已更新或不可用，请重新打开分析或重新分析录像。",
+  "replay.observer.windowLimit": "该录像的观战数据量过大，暂时无法显示画面。",
   "replay.observer.retryLoad": "重试",
   "replay.observer.notLoaded": "画面尚未加载。",
   "replay.observer.loadFrame": "加载画面",

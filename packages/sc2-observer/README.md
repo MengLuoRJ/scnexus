@@ -67,8 +67,9 @@ without playback or selection. It clamps loops and returns immutable unit states
 ## Asynchronous window sources
 
 `createAsyncReplayObserver(source)` adds cancellation and buffering around the
-same validated spatial sampler. The textual client now uses this API through an
-in-memory timeline source; the synchronous API remains available to other users.
+same validated spatial sampler. The desktop textual client uses this API through
+its scoped IPC adapter; direct/full-timeline consumers can use the in-memory
+source. The synchronous API remains available to other users.
 No file, IPC, network or SC2 capture adapter is provided by this package.
 
 ```ts
@@ -109,12 +110,12 @@ replay. A window contains `{ fromGameLoop, toGameLoop, timeline }`:
 
 Async state includes the normal playback fields plus:
 
-| Field               | Meaning                                            |
-| ------------------- | -------------------------------------------------- |
-| `status`            | `idle`, `loading`, `ready`, `error`, or `disposed` |
-| `requestedGameLoop` | Target of the current load, otherwise null         |
-| `availableRange`    | The one committed window's bounds, otherwise null  |
-| `error`             | Immutable `{ code, message }`, otherwise null      |
+| Field               | Meaning                                                    |
+| ------------------- | ---------------------------------------------------------- |
+| `status`            | `idle`, `loading`, `ready`, `error`, or `disposed`         |
+| `requestedGameLoop` | Target of the current load, otherwise null                 |
+| `availableRange`    | The one committed window's bounds, otherwise null          |
+| `error`             | Immutable `{ code, message, sourceCode? }`, otherwise null |
 
 During loading, `currentGameLoop`, `units` and selection describe the **last
 committed frame**; only `requestedGameLoop` describes the requested future frame.
@@ -135,7 +136,10 @@ must honor the signal to release their work.
 
 Load failures resolve with `status: 'error'`, pause playback and retain the last
 committed window. `error.code` is `load-failed` for source failures or
-`invalid-window` for invalid coverage/cumulative data. Seek again to retry, or
+`invalid-window` for invalid coverage/cumulative data. A string `code` on the
+source failure is copied to optional `error.sourceCode`, allowing hosts to choose
+an appropriate localized recovery action without coupling this package to IPC
+error definitions. Seek again to retry, or
 seek inside the retained window to recover without another read. Invalid method
 arguments and calls after disposal reject/throw. Subscriber exceptions propagate
 after committing state, matching the synchronous API; listeners should not throw.
@@ -192,9 +196,11 @@ source disposal, and window construction runs on the calling thread. This is a
 compatibility adapter, not a Worker, disk chunk store, transport reduction or
 solution to peak memory usage.
 
-The textual `ReplayObserver` defaults to this adapter and accepts an optional
-caller-owned `source` for the same replay alongside its existing full `timeline`.
-The timeline still supplies event history, player filters and track details.
+The textual `ReplayObserver` uses this adapter when passed a legacy full timeline
+without an injected source. Desktop analysis replies instead provide a
+coordinate-free history plus a caller-owned scoped IPC source. The history still
+supplies lifecycle events, player filters and track details; only the loaded
+window supplies current positions. This package itself does not implement IPC.
 The UI displays loading targets separately from committed time, allows cancelling
 and retrying, and keeps old units/analysis during buffering. Before the first
 commit it shows an unloaded frame, without reporting zero units as known data.

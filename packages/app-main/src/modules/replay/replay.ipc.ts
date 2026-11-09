@@ -4,6 +4,7 @@ import { validateReplayScope } from './replay-scope'
 import { AppError, ERRORS } from '@scnexus/app-shared/errors/app.error'
 import { ipcHandle } from '../../utils/ipc-util'
 import { replayLibraryService } from './replay'
+import { replayAnalysisView, validateReplayObserverWindowRequest } from './replay-observer'
 
 function pathArgument(value: unknown, extensions?: string[]): string {
   if (
@@ -43,11 +44,21 @@ export function initReplayModule() {
     replayLibraryService.watchReplay(scopeArgument(scope), replayIdArgument(id)),
   )
   ipcHandle('replay:analyze', (scope: unknown, id: unknown) =>
-    replayLibraryService.analyzeReplay(scopeArgument(scope), replayIdArgument(id)),
+    replayLibraryService
+      .analyzeReplay(scopeArgument(scope), replayIdArgument(id))
+      .then(replayAnalysisView),
   )
   ipcHandle('replay:get-analysis', (scope: unknown, id: unknown) =>
-    replayLibraryService.getAnalysis(scopeArgument(scope), replayIdArgument(id)),
+    replayLibraryService
+      .getAnalysis(scopeArgument(scope), replayIdArgument(id))
+      .then((result) => (result ? replayAnalysisView(result) : null)),
   )
+  ipcHandle('replay:observer-window', (scope: unknown, id: unknown, request: unknown) => {
+    const currentScope = scopeArgument(scope)
+    const replayId = replayIdArgument(id)
+    validateReplayObserverWindowRequest(request)
+    return replayLibraryService.getObserverWindow(currentScope, replayId, request)
+  })
   ipcHandle('replay:duplicates', (scope: unknown) =>
     replayLibraryService.listDuplicates(scopeArgument(scope)),
   )

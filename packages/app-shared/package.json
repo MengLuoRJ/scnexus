@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@scnexus/replay-parser": "workspace:*",
+    "@scnexus/sc2-observer": "workspace:*",
     "@scnexus/standard": "workspace:*"
   }
 }

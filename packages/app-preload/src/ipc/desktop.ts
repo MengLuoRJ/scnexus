@@ -23,6 +23,8 @@ const api: DesktopApi = {
     profiles: () => invoke('replay:profiles'),
     analyze: (scope, replayId) => invoke('replay:analyze', scope, replayId),
     getAnalysis: (scope, replayId) => invoke('replay:get-analysis', scope, replayId),
+    observerWindow: (scope, replayId, request) =>
+      invoke('replay:observer-window', scope, replayId, request),
     listDuplicates: (scope) => invoke('replay:duplicates', scope),
     exportArchive: (scope, ids, destination) =>
       invoke('replay:export-archive', scope, ids, destination),

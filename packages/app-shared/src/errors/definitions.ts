@@ -335,6 +335,21 @@ export const ERRORS = {
     name: 'CONTENT-TYPE-CONFLICT',
     description: 'package.json 与 metadata.txt 的内容类型冲突，请选择描述文件后重新分析',
   },
+  REPLAY_OBSERVER_UNAVAILABLE: {
+    code: 'M065',
+    name: 'REPLAY-OBSERVER-UNAVAILABLE',
+    description: '录像观战数据不可用，请重新分析录像',
+  },
+  REPLAY_OBSERVER_STALE: {
+    code: 'M066',
+    name: 'REPLAY-OBSERVER-STALE',
+    description: '录像分析已更新，请重新打开分析',
+  },
+  REPLAY_OBSERVER_LIMIT: {
+    code: 'M067',
+    name: 'REPLAY-OBSERVER-LIMIT',
+    description: '录像观战窗口超过处理上限',
+  },
 } as const
 
 export type ErrorDefinition = (typeof ERRORS)[keyof typeof ERRORS]

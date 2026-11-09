@@ -311,6 +311,18 @@ test.each([
   observer.dispose()
 })
 
+test('source error codes are copied into the immutable failure state', async () => {
+  const data = source()
+  const failure = { code: 'SOURCE-STALE', message: 'outdated' }
+  data.loadWindow.mockRejectedValue(failure)
+  const observer = createAsyncReplayObserver(data)
+  const result = await observer.seek(0)
+  failure.code = 'changed'
+  expect(result.error).toMatchObject({ code: 'load-failed', sourceCode: 'SOURCE-STALE' })
+  expect(Object.isFrozen(result.error)).toBe(true)
+  observer.dispose()
+})
+
 test('windows require cumulative state for units already present at their start', async () => {
   const data = source()
   const full = window(0, 100)

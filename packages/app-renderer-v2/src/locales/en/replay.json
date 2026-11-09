@@ -58,6 +58,8 @@
   "replay.observer.loadingFrame": "Loading the frame at {time}…",
   "replay.observer.cancelLoad": "Cancel loading",
   "replay.observer.loadFailed": "The frame could not be loaded. Please retry.",
+  "replay.observer.refreshAnalysis": "Replay data has changed or is unavailable. Reopen the analysis or analyze the replay again.",
+  "replay.observer.windowLimit": "This replay contains too much observer data to display at present.",
   "replay.observer.retryLoad": "Retry",
   "replay.observer.notLoaded": "No frame is loaded yet.",
   "replay.observer.loadFrame": "Load frame",

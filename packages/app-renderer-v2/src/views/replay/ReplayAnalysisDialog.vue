@@ -1,7 +1,12 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ReplayAnalysis, ReplayRecord } from '@scnexus/app-shared/types/replay.type'
+import type {
+  ReplayAnalysis,
+  ReplayRecord,
+  ReplayScope,
+} from '@scnexus/app-shared/types/replay.type'
+import { ipcReplayObserverSource } from '../../ipcs'
 import ReplayScoreCharts from './ReplayScoreCharts.vue'
 import ReplayBattleSummary from './ReplayBattleSummary.vue'
 import ReplayProductionTiming from './ReplayProductionTiming.vue'
@@ -14,6 +19,7 @@ import { replayPlayerName, replayResultClass, replayProfilePlayer } from './disp
 defineOptions({ name: 'ReplayAnalysisDialog' })
 const props = defineProps<{
   record: ReplayRecord
+  scope?: ReplayScope | null
   analysis: ReplayAnalysis | null
   loaded: boolean
   busy: boolean
@@ -31,6 +37,19 @@ function raceLabel(race: string | null) {
     ? t(`replay.race.${normalized}`)
     : race
 }
+const observerSource = computed(() => {
+  const descriptor = props.analysis?.observer
+  return descriptor && descriptor.replayId === props.record.id && props.scope
+    ? ipcReplayObserverSource(props.scope, descriptor)
+    : undefined
+})
+const observerTimeline = computed(() =>
+  props.analysis?.observer
+    ? observerSource.value
+      ? props.analysis.observer.history
+      : undefined
+    : props.analysis?.spatial,
+)
 const players = computed(() => props.analysis?.insights?.players ?? [])
 const selectedId = ref<number>()
 const participant = computed(() =>
@@ -207,7 +226,8 @@ watch([selectedId, () => props.analysis], () => {
           :hide-units="!!props.analysis?.metrics" />
         <ReplayObserver
           v-if="props.analysis"
-          :timeline="props.analysis.spatial"
+          :timeline="observerTimeline"
+          :source="observerSource"
           :insights="props.analysis.insights"
           :tracker-partial="props.analysis.capabilities?.tracker?.state !== 'available'" />
         <ReplayMetrics :metrics="props.analysis?.metrics" :record="props.record" />

@@ -39,6 +39,8 @@ test('replay exposes only scoped business methods and preserves result envelopes
   await desktopApi.replay.exportArchive(scope, ['id'], 'D:\\out.zip')
   await desktopApi.replay.analyze(scope, 'id')
   await desktopApi.replay.getAnalysis(scope, 'id')
+  const request = { contentHash: 'a'.repeat(64), parserVersion: 'v1', gameLoop: 16.5 }
+  await desktopApi.replay.observerWindow(scope, 'id', request)
   expect(mocks.invoke.mock.calls).toEqual([
     ['replay:list', scope],
     ['replay:watch', scope, 'id'],
@@ -52,6 +54,7 @@ test('replay exposes only scoped business methods and preserves result envelopes
     ['replay:export-archive', scope, ['id'], 'D:\\out.zip'],
     ['replay:analyze', scope, 'id'],
     ['replay:get-analysis', scope, 'id'],
+    ['replay:observer-window', scope, 'id', request],
   ])
   expect(Object.keys(desktopApi.replay).sort()).toEqual([
     'analyze',
@@ -63,6 +66,7 @@ test('replay exposes only scoped business methods and preserves result envelopes
     'importFile',
     'list',
     'listDuplicates',
+    'observerWindow',
     'profiles',
     'scan',
     'watch',

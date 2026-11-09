@@ -74,6 +74,9 @@ importers:
       '@scnexus/replay-parser':
         specifier: workspace:*
         version: link:../replay-parser
+      '@scnexus/sc2-observer':
+        specifier: workspace:*
+        version: link:../sc2-observer
       '@scnexus/standard':
         specifier: workspace:*
         version: link:../standard
@@ -293,6 +296,9 @@ importers:
       '@scnexus/replay-parser':
         specifier: workspace:*
         version: link:../replay-parser
+      '@scnexus/sc2-observer':
+        specifier: workspace:*
+        version: link:../sc2-observer
       '@scnexus/standard':
         specifier: workspace:*
         version: link:../standard

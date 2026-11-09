@@ -9,12 +9,12 @@ import type {
   ReplayObserverWindowRequest,
 } from '@scnexus/app-shared/types/replay.type'
 import { validateReplayObserverWindowRequest } from './replay-observer'
-import type { ReplayObserverInput } from './replay-observer'
+import type { ReplayObserverDatabaseSource } from './replay-observer-storage'
 
 export type ReplayObserverWorkerRequest = { id: number; request: ReplayObserverWindowRequest }
 export type ReplayObserverWorkerReply =
   | { id: number; ok: true; data: ReplayObserverWindowData }
-  | { id: number; ok: false; error: AppErrorDto }
+  | { id: number; ok: false; error: AppErrorDto; fatal?: boolean }
 
 export const REPLAY_OBSERVER_WORKER_TIMEOUT_MS = 30_000
 export const REPLAY_OBSERVER_WORKER_MAX_PENDING = 8
@@ -24,16 +24,21 @@ export function disposeReplayObserverWorkers(): void {
   for (const cancel of active) cancel()
 }
 
-export function createReplayObserverWorkerReader(input: ReplayObserverInput) {
-  const { replayId, contentHash, parserVersion, spatial } = input
-  if (!spatial) throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
+export function createReplayObserverWorkerReader(input: ReplayObserverDatabaseSource) {
+  const { databasePath, analysisToken, replayId, contentHash, parserVersion } = input
   if (active.size >= 2) throw new Error('At most two replay observer workers can run concurrently')
-  const analysis: ReplayObserverInput = { replayId, contentHash, parserVersion, spatial }
+  const databaseSource: ReplayObserverDatabaseSource = {
+    databasePath,
+    analysisToken,
+    replayId,
+    contentHash,
+    parserVersion,
+  }
   const built = new URL('./replay-observer-worker.js', import.meta.url)
   let worker: Worker
   const options = { execArgv: [], resourceLimits: { maxOldGenerationSizeMb: 256 } }
   if (existsSync(built)) {
-    worker = new Worker(built, { ...options, workerData: { analysis } })
+    worker = new Worker(built, { ...options, workerData: { databaseSource } })
   } else {
     const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm/api')).href
     const source = new URL('./replay-observer-worker.ts', import.meta.url).href
@@ -43,7 +48,7 @@ import(workerData.loader).then(({ tsImport }) => tsImport(workerData.source, wor
       {
         ...options,
         eval: true,
-        workerData: { analysis, loader, source, parentURL: import.meta.url },
+        workerData: { databaseSource, loader, source, parentURL: import.meta.url },
       },
     )
   }
@@ -88,7 +93,12 @@ import(workerData.loader).then(({ tsImport }) => tsImport(workerData.source, wor
     } else if (reply.ok === false && isErrorDto(reply.error)) {
       pending.delete(reply.id)
       clearTimeout(job.timeout)
-      job.reject(new AppError(reply.error, { message: reply.error.message }))
+      const error = new AppError(reply.error, { message: reply.error.message })
+      job.reject(error)
+      if (reply.fatal) {
+        stop(error)
+        return
+      }
     } else {
       stop(new Error('Invalid replay observer worker response'))
       return

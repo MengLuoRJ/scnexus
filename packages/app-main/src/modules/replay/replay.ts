@@ -114,26 +114,30 @@ export class ReplayLibraryService {
       throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
     }
     const cached = this.observerWindowCache
-    if (
+    let reader =
       cached?.replayId === replayId &&
       cached.token === token &&
       cached.contentHash === contentHash &&
       !cached.reader.disposed
-    )
-      return cached.reader.loadWindow(request)
-    this.clearObserverWindowCache()
-    const analysis = await replayDatabase.getAnalysis(replayId)
-    if (
-      !analysis ||
-      analysis.parserVersion !== REPLAY_ANALYSIS_VERSION ||
-      analysis.contentHash !== contentHash ||
-      (await replayDatabase.getAnalysisToken(replayId)) !== token
-    )
+        ? cached.reader
+        : undefined
+    if (!reader) {
+      this.clearObserverWindowCache()
+      reader = createReplayObserverWorkerReader({
+        databasePath: replayDatabase.getDatabasePath(),
+        analysisToken: token,
+        replayId,
+        contentHash,
+        parserVersion: REPLAY_ANALYSIS_VERSION,
+      })
+      this.observerWindowCache = { replayId, token, contentHash, reader }
+    }
+    const window = await reader.loadWindow(request)
+    if ((await replayDatabase.getAnalysisToken(replayId)) !== token) {
+      if (this.observerWindowCache?.reader === reader) this.clearObserverWindowCache()
       throw new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)
-    const reader = createReplayObserverWorkerReader(analysis)
-    this.clearObserverWindowCache()
-    this.observerWindowCache = { replayId, token, contentHash, reader }
-    return reader.loadWindow(request)
+    }
+    return window
   }
 
   async analyzeReplay(scope: ReplayScope, replayId: string) {

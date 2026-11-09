@@ -10,22 +10,16 @@ import {
   REPLAY_OBSERVER_WORKER_TIMEOUT_MS,
 } from '../replay-observer-runner'
 import type { ReplayObserverWorkerRequest } from '../replay-observer-runner'
-import type { ReplayObserverInput } from '../replay-observer'
+import type { ReplayObserverDatabaseSource } from '../replay-observer-storage'
 
 vi.mock('node:fs', () => ({ existsSync: vi.fn<typeof existsSync>() }))
 vi.mock('node:worker_threads', () => ({ Worker: vi.fn<typeof Worker>() }))
-const input: ReplayObserverInput = {
+const input: ReplayObserverDatabaseSource = {
+  databasePath: 'D:\\replays\\replay.db',
+  analysisToken: 'run-id',
   replayId: 'replay',
   contentHash: 'a'.repeat(64),
   parserVersion: 'test',
-  spatial: {
-    version: 1,
-    baseBuild: 98310,
-    durationGameLoops: 4000,
-    partial: false,
-    diagnostics: [],
-    units: [],
-  },
 }
 const request = {
   contentHash: input.contentHash,
@@ -68,21 +62,23 @@ afterEach(() => {
 })
 
 test.each([true, false])(
-  'starts the built or source worker with spatial data only (built=%s)',
+  'starts the built or source worker with database identity only (built=%s)',
   async (built) => {
     vi.mocked(existsSync).mockReturnValue(built)
     const worker = fakeWorker()
     const reader = createReplayObserverWorkerReader({
       ...input,
       components: { tracker: 'not-sent' },
-    } as ReplayObserverInput)
+      spatial: { units: ['not-sent'] },
+    } as ReplayObserverDatabaseSource)
     const [entry, options] = vi.mocked(Worker).mock.calls[0]!
     expect(options).toMatchObject({
       execArgv: [],
       resourceLimits: { maxOldGenerationSizeMb: 256 },
-      workerData: { analysis: input },
+      workerData: { databaseSource: input },
     })
-    expect(options?.workerData.analysis).not.toHaveProperty('components')
+    expect(options?.workerData.databaseSource).not.toHaveProperty('components')
+    expect(options?.workerData.databaseSource).not.toHaveProperty('spatial')
     expect(options?.eval).toBe(built ? undefined : true)
     expect(String(entry)).toContain(built ? 'replay-observer-worker.js' : 'tsImport')
     expect(worker.unref).toHaveBeenCalledOnce()
@@ -149,6 +145,26 @@ test.each(['error', 'messageerror', 'exit', 'malformed', 'postMessage'])(
     expect(worker.terminate).toHaveBeenCalledOnce()
   },
 )
+
+test('propagates initialization errors to every job and retires the unusable worker', async () => {
+  const worker = fakeWorker()
+  const reader = createReplayObserverWorkerReader(input)
+  const jobs = [reader.loadWindow(request), reader.loadWindow(request)]
+  const results = Promise.allSettled(jobs)
+  worker.emit('message', {
+    id: 1,
+    ok: false,
+    fatal: true,
+    error: toErrorDto(new AppError(ERRORS.REPLAY_OBSERVER_UNAVAILABLE)),
+  })
+  expect(
+    (await results).map((result) =>
+      result.status === 'rejected' ? (result.reason as AppError).code : 'resolved',
+    ),
+  ).toEqual([ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code, ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code])
+  expect(reader.disposed).toBe(true)
+  expect(worker.terminate).toHaveBeenCalledOnce()
+})
 
 test('times out all requests, ignores late replies and frees the worker slot', async () => {
   vi.useFakeTimers()

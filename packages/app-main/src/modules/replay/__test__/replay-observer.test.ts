@@ -342,12 +342,14 @@ it('revalidates scope, path, content, parser version and replay identity on ever
 
 it('reuses a single prepared timeline and reloads same-identity analysis after every save', async () => {
   const { scope, service, record, input } = await setupStoredAnalysis()
-  const reads = vi.spyOn(replayDatabase, 'getAnalysis')
+  const reads = vi
+    .spyOn(replayDatabase, 'getAnalysis')
+    .mockRejectedValue(new Error('Main must not decode observer analysis'))
   const sources = vi.spyOn(observerRunner, 'createReplayObserverWorkerReader')
   const token = await replayDatabase.getAnalysisToken(record.id)
   await service.getObserverWindow(scope, record.id, request(input, 0))
   await service.getObserverWindow(scope, record.id, request(input, 1700))
-  expect(reads).toHaveBeenCalledTimes(1)
+  expect(reads).not.toHaveBeenCalled()
   expect(sources).toHaveBeenCalledTimes(1)
   const updated = structuredClone(input)
   updated.spatial!.units[0]!.observations[0]!.x = 999
@@ -355,7 +357,7 @@ it('reuses a single prepared timeline and reloads same-identity analysis after e
   expect(await replayDatabase.getAnalysisToken(record.id)).not.toBe(token)
   const window = await service.getObserverWindow(scope, record.id, request(input, 0))
   expect(window.timeline.units[0]!.observations[0]!.x).toBe(999)
-  expect(reads).toHaveBeenCalledTimes(2)
+  expect(reads).not.toHaveBeenCalled()
   expect(sources).toHaveBeenCalledTimes(2)
   await replayDatabase.deleteReplayByPath(record.path)
   expect(await replayDatabase.getAnalysisToken(record.id)).toBeNull()
@@ -400,21 +402,26 @@ it('evicts the previous replay source and rebuilds it when revisited', async () 
   expect(sources).toHaveBeenCalledTimes(3)
 })
 
-it('does not cache analysis replaced while a cache miss is being loaded', async () => {
+it('rejects a window if the analysis is replaced before its reply is committed', async () => {
   const { scope, service, record, input } = await setupStoredAnalysis()
-  const getAnalysis = replayDatabase.getAnalysis.bind(replayDatabase)
-  vi.spyOn(replayDatabase, 'getAnalysis').mockImplementationOnce(async (id) => {
-    const previous = await getAnalysis(id)
-    await replayDatabase.saveAnalysis(input)
-    return previous
-  })
+  const factory = observerRunner.createReplayObserverWorkerReader
   const sources = vi.spyOn(observerRunner, 'createReplayObserverWorkerReader')
+  sources.mockImplementationOnce((source) => {
+    const reader = factory(source)
+    const loadWindow = reader.loadWindow.bind(reader)
+    vi.spyOn(reader, 'loadWindow').mockImplementationOnce(async (request) => {
+      const window = await loadWindow(request)
+      await replayDatabase.saveAnalysis(input)
+      return window
+    })
+    return reader
+  })
   await expect(
     service.getObserverWindow(scope, record.id, request(input, 0)),
   ).rejects.toMatchObject({ code: ERRORS.REPLAY_OBSERVER_UNAVAILABLE.code })
-  expect(sources).not.toHaveBeenCalled()
-  await service.getObserverWindow(scope, record.id, request(input, 0))
   expect(sources).toHaveBeenCalledOnce()
+  await service.getObserverWindow(scope, record.id, request(input, 0))
+  expect(sources).toHaveBeenCalledTimes(2)
 })
 
 it('allows in-flight windows to finish during eviction and then releases the retired source', async () => {

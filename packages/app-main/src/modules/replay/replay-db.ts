@@ -273,6 +273,16 @@ export class ReplayDatabase {
     }
   }
 
+  getDatabasePath(): string {
+    const main = this.ensureReady()
+      .prepare('PRAGMA database_list')
+      .all()
+      .find((row) => row.name === 'main')
+    if (typeof main?.file !== 'string' || !main.file)
+      throw new Error('Replay observer requires a file-backed database')
+    return main.file
+  }
+
   async getAnalysisToken(replayId: string): Promise<string | null> {
     const row = this.ensureReady()
       .prepare("SELECT id FROM replay_runs WHERE replay_id = ? AND kind = 'components'")

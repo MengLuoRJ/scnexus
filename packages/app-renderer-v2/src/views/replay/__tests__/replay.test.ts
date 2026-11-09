@@ -639,7 +639,16 @@ test('keeps decoded commands out of the production timeline when tracker insight
       capabilities: {
         game: { state: 'available', decoder: 's2protocol-98310', sourceBuild: 98310 },
       },
-      commands: [{ gameLoop: 160, userId: 0, abilityLink: 321, abilityIndex: 1, flags: 256 }],
+      commands: [
+        {
+          gameLoop: 160,
+          userId: 0,
+          abilityLink: 321,
+          abilityIndex: 1,
+          flags: 256,
+          target: { kind: 'unknown' },
+        },
+      ],
     },
   })
   const wrapper = await render()
@@ -673,7 +682,16 @@ test('chat is displayed separately without restoring command timeline tabs', asy
         ],
         warnings: ['Unverified message protocol fallback'],
       },
-      commands: [{ gameLoop: 160, userId: 0, abilityLink: 321, abilityIndex: 1, flags: 256 }],
+      commands: [
+        {
+          gameLoop: 160,
+          userId: 0,
+          abilityLink: 321,
+          abilityIndex: 1,
+          flags: 256,
+          target: { kind: 'unknown' },
+        },
+      ],
     },
   })
   const wrapper = await render()

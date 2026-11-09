@@ -7,6 +7,22 @@ import { replayGameTime } from './insights'
 defineOptions({ name: 'ReplayCommandTimeline' })
 const props = defineProps<{ analysis: ReplayAnalysisView | null; busy: boolean }>()
 const { t } = useI18n()
+function targetLabel(command: NonNullable<ReplayAnalysisView['commands']>[number]) {
+  const target = command.target
+  if (target?.kind === 'unit') {
+    return target.unitTag && target.observedGameLoop !== null
+      ? t('replay.commands.targetUnitRecord', {
+          name: target.unitType ?? t('replay.unknown'),
+          tag: target.unitTag,
+          time: replayGameTime(target.observedGameLoop),
+        })
+      : t('replay.commands.targetUnitUnlinked', { tag: target.rawTag })
+  }
+  if (target?.kind === 'point') return t('replay.commands.targetPoint')
+  if (target?.kind === 'none') return t('replay.commands.targetNone')
+  if (target?.kind === 'data') return t('replay.commands.targetOther')
+  return t('replay.commands.targetUnknown')
+}
 const userId = ref<number>()
 const page = ref(0)
 const size = 20
@@ -90,6 +106,7 @@ const available = computed(() => {
                     })
               }}
             </p>
+            <p class="break-words text-xs text-muted">{{ targetLabel(event) }}</p>
             <p class="text-xs text-muted">
               {{ t('replay.commands.flags', { flags: event.flags }) }}
             </p>

@@ -19,7 +19,21 @@ test('projects raw commands without conflating game user IDs with tracker player
     },
   ]
   expect(buildReplayCommands({ events } as ReplayGameEvents)).toEqual([
-    { gameLoop: 160, userId: 0, abilityLink: 123, abilityIndex: 2, flags: 256 },
-    { gameLoop: 180, userId: 4, abilityLink: null, abilityIndex: null, flags: 0 },
+    {
+      gameLoop: 160,
+      userId: 0,
+      abilityLink: 123,
+      abilityIndex: 2,
+      flags: 256,
+      target: { kind: 'unknown' },
+    },
+    {
+      gameLoop: 180,
+      userId: 4,
+      abilityLink: null,
+      abilityIndex: null,
+      flags: 0,
+      target: { kind: 'unknown' },
+    },
   ])
 })

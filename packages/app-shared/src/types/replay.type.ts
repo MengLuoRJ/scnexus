@@ -93,13 +93,7 @@ export type ReplayAnalysis = {
     }[]
     warnings: string[]
   }
-  commands?: {
-    gameLoop: number
-    userId: number
-    abilityLink: number | null
-    abilityIndex: number | null
-    flags: number
-  }[]
+  commands?: import('@scnexus/replay-parser').ReplayCommandObservation[]
   /** Bounded, sparse tracker observations; not exact game-client simulation or visibility. */
   spatial?: import('@scnexus/replay-parser').ReplaySpatialTimeline
   /** Desktop IPC projection: lifecycle history without coordinates; spatial windows are requested separately. */

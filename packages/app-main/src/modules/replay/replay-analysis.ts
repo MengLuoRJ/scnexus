@@ -27,7 +27,7 @@ import { buildReplayCommands } from './replay-commands'
 import { buildReplayChat } from './replay-chat'
 import { buildReplayMetrics, REPLAY_METRICS_VERSION } from './replay-metrics'
 import { buildReplayCoop, REPLAY_COOP_ANALYSIS_VERSION } from './replay-coop'
-export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v1-chat-v1-spatial-v1-${REPLAY_COOP_ANALYSIS_VERSION}-${REPLAY_METRICS_VERSION}`
+export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v2-chat-v1-spatial-v1-${REPLAY_COOP_ANALYSIS_VERSION}-${REPLAY_METRICS_VERSION}`
 
 export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAnalysis> {
   if (!record.contentHash) throw new Error('Reindex replay before analysis')
@@ -122,7 +122,6 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
         if (key === 'game') {
           const game = data as ReplayGameEvents
           metricsGame = game
-          result.commands = buildReplayCommands(game)
         }
         if ('compatibility' in data && data.compatibility) {
           const compatibility = data.compatibility as NonNullable<
@@ -193,6 +192,7 @@ export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAn
       )
     }
   }
+  if (metricsGame) result.commands = buildReplayCommands(metricsGame, result.spatial)
   const count = Object.values(result.components).filter((value) => value !== null).length
   result.status = corrupt
     ? 'corrupt'

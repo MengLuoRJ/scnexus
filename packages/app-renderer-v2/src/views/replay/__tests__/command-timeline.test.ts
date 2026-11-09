@@ -29,6 +29,7 @@ const analysis: ReplayAnalysis = {
     abilityLink: index === 44 ? null : 123,
     abilityIndex: 2,
     flags: 0,
+    target: { kind: 'unknown' },
   })),
 }
 function render(value: ReplayAnalysis | null = analysis, locale = 'en') {
@@ -66,6 +67,53 @@ test('shows raw user zero, paginates, and resets on user change without guessing
   expect(wrapper.text()).toContain('1 / 1')
   wrapper.unmount()
 })
+test.each(['en', 'zh', 'zh-Hant'])(
+  'shows target evidence without interpreting point coordinates or inventing issuers in %s',
+  (locale) => {
+    const base = { ...analysis.commands![0]!, gameLoop: 64 }
+    const wrapper = render(
+      {
+        ...analysis,
+        commands: [
+          {
+            ...base,
+            target: {
+              kind: 'unit',
+              rawTag: 262146,
+              unitTag: '1:2',
+              unitType: '<Marine>',
+              observedGameLoop: 32,
+            },
+          },
+          {
+            ...base,
+            target: {
+              kind: 'unit',
+              rawTag: 4294967295,
+              unitTag: null,
+              unitType: null,
+              observedGameLoop: null,
+            },
+          },
+          { ...base, target: { kind: 'point', rawPoint: { x: 123456789, y: 8192, z: null } } },
+          { ...base, target: { kind: 'none' } },
+          { ...base, target: { kind: 'data', value: 1 } },
+          { ...base, target: { kind: 'unknown' } },
+        ],
+      },
+      locale,
+    )
+    expect(wrapper.findAll('li')).toHaveLength(6)
+    expect(wrapper.text()).toContain('<Marine> #1:2')
+    expect(wrapper.text()).toContain('0:02')
+    expect(wrapper.text()).toContain('4294967295')
+    expect(wrapper.text()).not.toContain('123456789')
+    expect(wrapper.text()).not.toContain('replay.commands.target')
+    expect(wrapper.find('marine').exists()).toBe(false)
+    wrapper.unmount()
+  },
+)
+
 test.each(['en', 'zh', 'zh-Hant'])('localizes unavailable commands in %s', (locale) => {
   const wrapper = render(null, locale)
   expect(wrapper.find('ol').exists()).toBe(false)

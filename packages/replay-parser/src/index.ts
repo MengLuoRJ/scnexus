@@ -2,6 +2,12 @@ import { REPLAY_COMPONENTS, REPLAY_FILE_EXTENSIONS, type ReplayComponentName } f
 import { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export { decodeVersioned } from './versioned.js'
 export { buildReplaySpatialTimeline } from './spatial-timeline.js'
+export { buildReplayCommandTimeline } from './command-timeline.js'
+export type {
+  ReplayCommandObservation,
+  ReplayCommandTarget,
+  ReplayCommandPoint,
+} from './command-timeline.js'
 export type {
   ReplaySpatialTimeline,
   ReplaySpatialUnit,

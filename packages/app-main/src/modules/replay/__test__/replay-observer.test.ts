@@ -114,7 +114,16 @@ it('excludes every raw component while retaining derived analysis and leaving st
     game: { marker: 'raw-game' },
     message: { marker: 'raw-message' },
   }
-  input.commands = [{ gameLoop: 12, userId: 0, abilityLink: 1, abilityIndex: 2, flags: 0 }]
+  input.commands = [
+    {
+      gameLoop: 12,
+      userId: 0,
+      abilityLink: 1,
+      abilityIndex: 2,
+      flags: 0,
+      target: { kind: 'unknown' },
+    },
+  ]
   input.warnings = ['derived warning']
   const before = JSON.stringify(input)
   const view = replayAnalysisView(input)

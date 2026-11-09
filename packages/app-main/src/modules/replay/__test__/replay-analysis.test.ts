@@ -189,7 +189,16 @@ it.each([
     )
     expect(analysis.commands).toEqual(
       state === 'available' || state === 'partial'
-        ? [{ gameLoop: 0, userId: 0, abilityLink: null, abilityIndex: null, flags: 0 }]
+        ? [
+            {
+              gameLoop: 0,
+              userId: 0,
+              abilityLink: null,
+              abilityIndex: null,
+              flags: 0,
+              target: { kind: 'none' },
+            },
+          ]
         : undefined,
     )
     expect(analysis.components.game !== null).toBe(state === 'available' || state === 'partial')

@@ -3,9 +3,10 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   createReplayObserver,
+  createReplayObserverEventIndex,
   filterReplayObserverUnits,
-  queryReplayObserverEvents,
 } from '@scnexus/sc2-observer'
+import type { ReplayObserverEvent, ReplayObserverEventIndex } from '@scnexus/sc2-observer'
 import type { ReplayAnalysis } from '@scnexus/app-shared/types/replay.type'
 import ReplayObserverAnalysis from './ReplayObserverAnalysis.vue'
 import { replayObserverPlayerName } from './display'
@@ -20,6 +21,7 @@ const props = defineProps<{
 const { t } = useI18n()
 type Observer = ReturnType<typeof createReplayObserver>
 const state = shallowRef<ReturnType<Observer['getState']> | null>(null)
+const eventIndex = shallowRef<ReplayObserverEventIndex | null>(null)
 let observer: Observer | null = null
 let unsubscribe: (() => void) | undefined
 let frame: number | undefined
@@ -29,7 +31,7 @@ const search = ref('')
 const player = ref('all')
 const life = ref<'alive' | 'dead' | 'all'>('alive')
 const eventPage = ref(0)
-const eventKind = ref('all')
+const eventKind = ref<'all' | ReplayObserverEvent['kind']>('all')
 const timeInput = ref('')
 const timeInvalid = ref(false)
 const eventKinds = ['born', 'init', 'done', 'died', 'type', 'owner'] as const
@@ -81,29 +83,30 @@ const selectedTag = computed(() => state.value?.selectedUnitTag ?? null)
 const selectedTrack = computed(() =>
   props.timeline?.units.find((unit) => unit.unitTag === selectedTag.value),
 )
-const events = computed(() => {
-  const all = props.timeline
-    ? queryReplayObserverEvents(props.timeline, selectedTag.value ?? undefined)
-    : []
-  return eventKind.value === 'all' ? all : all.filter((event) => event.kind === eventKind.value)
-})
-const previousEvent = computed(() => {
-  for (let index = events.value.length - 1; index >= 0; index--) {
-    const event = events.value[index]!
-    if (event.gameLoop < (state.value?.currentGameLoop ?? 0)) return event
-  }
-  return undefined
-})
+const eventFilter = computed(() => ({
+  ...(selectedTag.value === null ? {} : { unitTag: selectedTag.value }),
+  ...(eventKind.value === 'all' ? {} : { kind: eventKind.value }),
+}))
+const eventResult = computed(() =>
+  eventIndex.value?.query({
+    ...eventFilter.value,
+    offset: eventPage.value * eventPageSize,
+    limit: eventPageSize,
+  }),
+)
+const previousEvent = computed(() =>
+  eventIndex.value?.previous(state.value?.currentGameLoop ?? 0, eventFilter.value),
+)
 const nextEvent = computed(() =>
-  events.value.find((event) => event.gameLoop > (state.value?.currentGameLoop ?? 0)),
+  eventIndex.value?.next(state.value?.currentGameLoop ?? 0, eventFilter.value),
 )
 watch(eventKind, () => {
   eventPage.value = 0
 })
-const eventPageCount = computed(() => Math.max(1, Math.ceil(events.value.length / eventPageSize)))
-const visibleEvents = computed(() =>
-  events.value.slice(eventPage.value * eventPageSize, (eventPage.value + 1) * eventPageSize),
+const eventPageCount = computed(() =>
+  Math.max(1, Math.ceil((eventResult.value?.total ?? 0) / eventPageSize)),
 )
+const visibleEvents = computed(() => eventResult.value?.events ?? [])
 watch([search, player, life], () => {
   page.value = 0
 })
@@ -170,6 +173,9 @@ function dispose() {
   unsubscribe = undefined
   observer?.dispose()
   observer = null
+  const previousIndex = eventIndex.value
+  eventIndex.value = null
+  previousIndex?.dispose()
   state.value = null
 }
 watch(
@@ -186,6 +192,7 @@ watch(
     life.value = 'alive'
     if (!timeline) return
     observer = createReplayObserver(timeline)
+    eventIndex.value = createReplayObserverEventIndex(timeline)
     state.value = observer.getState()
     unsubscribe = observer.subscribe((value) => {
       state.value = value
@@ -509,7 +516,7 @@ onBeforeUnmount(dispose)
               </button>
             </li>
           </ul>
-          <p v-if="!events.length" class="mt-2 text-xs text-muted">
+          <p v-if="!eventResult?.total" class="mt-2 text-xs text-muted">
             {{ t('replay.observer.noEvents') }}
           </p>
           <div v-if="eventPageCount > 1" class="mt-2 flex items-center justify-between gap-2">

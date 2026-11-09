@@ -143,6 +143,53 @@ A first observation at `startedGameLoop` supplies `born` if completed, otherwise
 when explicit death was recorded. No intervening events or movement are inferred.
 Standalone queries, like sampling, expect valid chronological parser timelines.
 
+## Indexed event windows and navigation
+
+```ts
+import { createReplayObserverEventIndex } from '@scnexus/sc2-observer'
+
+const events = createReplayObserverEventIndex(timeline)
+const page = events.query({
+  kind: 'died',
+  fromGameLoop: 0,
+  toGameLoop: observer.getState().currentGameLoop,
+  offset: 0,
+  limit: 10,
+})
+const next = events.next(observer.getState().currentGameLoop, { unitTag: '10:2' })
+// The host owns seeking/pausing; querying never changes the observer.
+if (next) observer.seek(next.gameLoop)
+events.dispose()
+```
+
+Construction snapshots the same observed events as `queryReplayObserverEvents`,
+then indexes global, unit, kind and unit/kind scopes. It does not retain the input
+timeline. Queries combine exact `unitTag`, `kind`, and inclusive `fromGameLoop` /
+`toGameLoop` filters. Omitted time bounds cover the whole timeline; set
+`toGameLoop` to the current loop to exclude future events. Bounds accept finite
+nonnegative fractional loops; reversed ranges throw instead of clamping.
+
+`query()` returns immutable `{ total, events }`, where total is the matching
+count before pagination. `offset` defaults to 0 and must be a nonnegative safe
+integer. `limit` defaults to 100 and accepts integers from 0 to 1,000 (`0` queries
+only the total). `order` defaults to `'asc'`; `'desc'` reverses the complete stable
+order, including ties. Unknown units or absent kinds return empty pages. Time
+bounds use binary search and only the requested page is copied: query cost is
+O(log E + limit) for the selected scope, without filtering the whole collection.
+The index still stores the full observed event history in memory.
+
+`previous(loop, filter?)` and `next(loop, filter?)` return the last strictly earlier
+or first strictly later event, or null. All events at the current loop are skipped;
+time/unit/kind filters apply before navigation. Previous ties choose the last
+stable event and next ties the first. These methods use binary search and do not
+change selection, playback or pagination. The textual client uses this index for
+its existing event list and navigation, replacing page-local event scans.
+
+`dispose()` clears the index and is idempotent; subsequent queries/navigation
+throw. Already returned pages remain valid and immutable. Replacing the client
+analysis disposes its old index and resets event scope/page as before. This adds
+no derived combat events, continuous movement, streaming chunks or disk cache.
+
 ## Analysis at the playback loop
 
 ```ts

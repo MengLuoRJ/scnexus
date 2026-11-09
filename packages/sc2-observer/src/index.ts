@@ -1,5 +1,12 @@
 import { createIndexedSpatialSampler, sampleObservedUnit } from './spatial-sampler.js'
 
+export { createReplayObserverEventIndex, queryReplayObserverEvents } from './events.js'
+export type {
+  ReplayObserverEventFilter,
+  ReplayObserverEventQuery,
+  ReplayObserverEventPage,
+  ReplayObserverEventIndex,
+} from './events.js'
 export { sampleReplayObserverAnalysis } from './analysis.js'
 export type {
   ReplayObserverAnalysisInput,
@@ -108,52 +115,6 @@ export function filterReplayObserverUnits(
           (unit.unitType?.toLowerCase().includes(search) ?? false)),
     ),
   )
-}
-
-/** Queries observed lifecycle transitions, excluding sparse position updates. */
-export function queryReplayObserverEvents(
-  timeline: ReplayObserverTimeline,
-  unitTag?: string,
-): readonly ReplayObserverEvent[] {
-  const events: ReplayObserverEvent[] = []
-  for (const unit of timeline.units) {
-    if (unitTag !== undefined && unit.unitTag !== unitTag) continue
-    let previous: (typeof unit.observations)[number] | undefined
-    let deathRecorded = false
-    const append = (gameLoop: number, kind: ReplayObserverEvent['kind']) => {
-      if (kind === 'died') {
-        if (deathRecorded) return
-        deathRecorded = true
-      }
-      events.push(Object.freeze({ unitTag: unit.unitTag, gameLoop, kind }))
-    }
-    for (const observation of unit.observations) {
-      if (observation.kind !== undefined) {
-        if (observation.kind !== 'position') {
-          const kind =
-            observation.kind === 'type-change'
-              ? 'type'
-              : observation.kind === 'owner-change'
-                ? 'owner'
-                : observation.kind
-          append(observation.gameLoop, kind)
-        }
-      } else if (previous) {
-        if (!previous.completed && observation.completed) append(observation.gameLoop, 'done')
-        if (previous.unitType !== observation.unitType) append(observation.gameLoop, 'type')
-        if (
-          previous.controlPlayerId !== observation.controlPlayerId ||
-          previous.upkeepPlayerId !== observation.upkeepPlayerId
-        )
-          append(observation.gameLoop, 'owner')
-      } else if (observation.gameLoop === unit.startedGameLoop) {
-        append(observation.gameLoop, observation.completed ? 'born' : 'init')
-      }
-      previous = observation
-    }
-    if (unit.diedGameLoop !== null) append(unit.diedGameLoop, 'died')
-  }
-  return Object.freeze(events.sort((a, b) => a.gameLoop - b.gameLoop))
 }
 
 export interface ReplayObserverState {

@@ -186,3 +186,47 @@ test.each(['en', 'zh', 'zh-Hant'])(
     wrapper.unmount()
   },
 )
+
+test('indexed event pages reset after filtering, selection and timeline replacement', async () => {
+  const wrapper = mount(ReplayObserver, {
+    props: {
+      timeline: {
+        ...timeline,
+        units: Array.from({ length: 12 }, (_, index) => ({
+          ...timeline.units[0]!,
+          unitTag: `${index}:1`,
+          unitTagIndex: index,
+          diedGameLoop: 100 + index,
+        })),
+      },
+    },
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })],
+      stubs: { UButton: { template: '<button><slot /></button>' }, UInput: true },
+    },
+  })
+  const events = wrapper.get(`section[aria-label="${en['replay.observer.events']}"]`)
+  const nextPage = () =>
+    events.findAll('button').find((item) => item.text() === en['replay.observer.next'])!
+  expect(events.findAll('li')).toHaveLength(10)
+  await nextPage().trigger('click')
+  expect(events.findAll('li')[0]!.text()).toContain('#10:1')
+  await events.get('select').setValue('died')
+  expect(events.findAll('li')).toHaveLength(10)
+  expect(events.findAll('li')[0]!.text()).toContain('#0:1')
+  await events.get('li button').trigger('click')
+  expect(events.findAll('li')).toHaveLength(1)
+  expect(nextPage()).toBeUndefined()
+  await wrapper
+    .findAll('button')
+    .find((item) => item.text() === en['replay.observer.clearSelection'])!
+    .trigger('click')
+  await nextPage().trigger('click')
+  expect(events.findAll('li')).toHaveLength(2)
+  await wrapper.setProps({ timeline })
+  expect(events.findAll('li')).toHaveLength(2)
+  expect(events.text()).toContain('#10:2')
+  expect(events.get('select').element).toHaveProperty('value', 'all')
+  expect(nextPage()).toBeUndefined()
+  wrapper.unmount()
+})

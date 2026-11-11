@@ -27,7 +27,7 @@
     "@scnexus/standard": "workspace:*",
     "@sentry/electron": "8.3.0",
     "@sentry/vue": "11.8.0",
-    "@tiptap/core": "^3.31.4",
+    "@tiptap/core": "^3.33.0",
     "@vueuse/core": "^15.0.0",
     "axios": "^1.21.0",
     "comark": "^0.8.1",

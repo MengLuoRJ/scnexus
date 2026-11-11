@@ -1,5 +1,10 @@
 import type { ReplayGameEvents } from './game-events.js'
+import { buildReplaySelectionTimeline } from './selection-timeline.js'
+import type { ReplaySelectionObservation } from './selection-timeline.js'
+
 import type { ReplaySpatialTimeline, ReplaySpatialUnit } from './spatial-timeline.js'
+
+export type ReplayCommandSelection = Pick<ReplaySelectionObservation, 'unitTags' | 'reason'>
 
 /** Protocol integers; coordinate conversion is not inferred here. */
 export type ReplayCommandPoint = { x: number; y: number; z: number | null }
@@ -21,6 +26,8 @@ export type ReplayCommandObservation = {
   abilityIndex: number | null
   flags: number
   target: ReplayCommandTarget
+  /** Optional for previously persisted analysis; newly projected commands include selection evidence. */
+  selection?: ReplayCommandSelection
 }
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) && !('kind' in value)
@@ -112,9 +119,10 @@ export function buildReplayCommandTimeline(
     }
     return result
   }
+  const selections = buildReplaySelectionTimeline(game)
   return game.events
     .filter((event) => event.eventType === 'NNet.Game.SCmdEvent')
-    .map((event) => {
+    .map((event, index) => {
       const ability = Object.hasOwn(event.data, 'm_abil') ? record(event.data.m_abil) : event.data
       return {
         gameLoop: event.gameLoop,
@@ -123,6 +131,7 @@ export function buildReplayCommandTimeline(
         abilityIndex: unsigned(ability?.m_abilCmdIndex),
         flags: unsigned(event.data.m_cmdFlags) ?? 0,
         target: target(event.data, event.gameLoop),
+        selection: { unitTags: selections[index]!.unitTags, reason: selections[index]!.reason },
       }
     })
 }

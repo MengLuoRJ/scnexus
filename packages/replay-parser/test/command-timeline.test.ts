@@ -66,6 +66,7 @@ test('normalizes an actual decoded bit-packed command without introducing an exe
       abilityIndex: null,
       flags: 0,
       target: { kind: 'none' },
+      selection: { unitTags: [], reason: null },
     },
   ])
 })
@@ -81,6 +82,7 @@ test('associates the exact target identity with an earlier lifecycle record with
       abilityLink: null,
       abilityIndex: null,
       flags: 0,
+      selection: { unitTags: [], reason: null },
       target: {
         kind: 'unit',
         rawTag: 262146,

@@ -27,7 +27,7 @@ import { buildReplayCommands } from './replay-commands'
 import { buildReplayChat } from './replay-chat'
 import { buildReplayMetrics, REPLAY_METRICS_VERSION } from './replay-metrics'
 import { buildReplayCoop, REPLAY_COOP_ANALYSIS_VERSION } from './replay-coop'
-export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v2-chat-v1-spatial-v1-${REPLAY_COOP_ANALYSIS_VERSION}-${REPLAY_METRICS_VERSION}`
+export const REPLAY_ANALYSIS_VERSION = `components-${REPLAY_PROTOCOL_ALGORITHM_VERSION}-insights-${REPLAY_INSIGHTS_VERSION}-commands-v3-chat-v1-spatial-v1-${REPLAY_COOP_ANALYSIS_VERSION}-${REPLAY_METRICS_VERSION}`
 
 export async function analyzeLocalReplay(record: ReplayRecord): Promise<ReplayAnalysis> {
   if (!record.contentHash) throw new Error('Reindex replay before analysis')

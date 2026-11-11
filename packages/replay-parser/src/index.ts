@@ -3,8 +3,11 @@ import { parseReplayHeader, parseReplayDetails } from './metadata.js'
 export { decodeVersioned } from './versioned.js'
 export { buildReplaySpatialTimeline } from './spatial-timeline.js'
 export { buildReplayCommandTimeline } from './command-timeline.js'
+export { buildReplaySelectionTimeline } from './selection-timeline.js'
+export type { ReplaySelectionObservation, ReplaySelectionReason } from './selection-timeline.js'
 export type {
   ReplayCommandObservation,
+  ReplayCommandSelection,
   ReplayCommandTarget,
   ReplayCommandPoint,
 } from './command-timeline.js'

@@ -108,6 +108,15 @@ const available = computed(() => {
             </p>
             <p class="break-words text-xs text-muted">{{ targetLabel(event) }}</p>
             <p class="text-xs text-muted">
+              {{
+                event.selection?.unitTags
+                  ? t('replay.commands.previousSelection', {
+                      count: event.selection.unitTags.length,
+                    })
+                  : t('replay.commands.previousSelectionUnknown')
+              }}
+            </p>
+            <p class="text-xs text-muted">
               {{ t('replay.commands.flags', { flags: event.flags }) }}
             </p>
           </div>

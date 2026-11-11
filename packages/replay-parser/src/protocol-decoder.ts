@@ -165,6 +165,7 @@ export class ProtocolDecoder {
         if (!reader) return raw instanceof Uint8Array ? replayBlob(raw) : invalid()
         const length = Number(reader.integer(type[1][0]))
         if (length > 65_536) throw new Error('Replay bitarray limit exceeded')
+        const bitOffset = reader.position % 8
         let value = 0n
         let remaining = length
         while (remaining > 0) {
@@ -172,7 +173,7 @@ export class ProtocolDecoder {
           value = (value << BigInt(width)) | reader.bits(width)
           remaining -= width
         }
-        return { bitLength: length, value: value.toString() }
+        return { bitLength: length, bitOffset, value: value.toString() }
       }
       case '_optional':
         return (reader ? reader.bits(1) === 0n : raw === null) ? null : child(type[1][0], raw)

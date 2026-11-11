@@ -197,6 +197,10 @@ it.each([
               abilityIndex: null,
               flags: 0,
               target: { kind: 'none' },
+              selection:
+                state === 'available'
+                  ? { unitTags: [], reason: null }
+                  : { unitTags: null, reason: 'unverified-protocol' },
             },
           ]
         : undefined,

@@ -33,7 +33,7 @@ export const SUPPORTED_REPLAY_GAME_BASE_BUILDS = GAME_PROTOCOL_GROUPS.flatMap((g
 export const SUPPORTED_REPLAY_BASE_BUILDS = INIT_PROTOCOL_GROUPS.flatMap((group) => [
   ...group.builds,
 ]).sort((a, b) => a - b)
-export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '2.0.0'
+export const REPLAY_PROTOCOL_ALGORITHM_VERSION = '2.0.1'
 export function replayGameProtocol(baseBuild: number): GameProtocolSchema {
   const group = findReplayGameProtocol(baseBuild)
   if (!group) throw new UnsupportedReplayBuildError(baseBuild)

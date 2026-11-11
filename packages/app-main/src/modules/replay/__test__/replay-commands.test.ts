@@ -26,6 +26,7 @@ test('projects raw commands without conflating game user IDs with tracker player
       abilityIndex: 2,
       flags: 256,
       target: { kind: 'unknown' },
+      selection: { unitTags: null, reason: 'unverified-protocol' },
     },
     {
       gameLoop: 180,
@@ -34,6 +35,41 @@ test('projects raw commands without conflating game user IDs with tracker player
       abilityIndex: null,
       flags: 0,
       target: { kind: 'unknown' },
+      selection: { unitTags: null, reason: 'unverified-protocol' },
     },
   ])
+})
+
+test('includes same-stream prior selection evidence without treating the target as an issuer', () => {
+  const game: ReplayGameEvents = {
+    baseBuild: 98310,
+    protocolVersion: 's2protocol-98310',
+    algorithmVersion: 'test',
+    compatibility: { state: 'verified', protocolBuild: 98310, candidateBuilds: [98310] },
+    processedEvents: 2,
+    skippedEvents: 0,
+    events: [
+      {
+        eventId: 28,
+        eventType: 'NNet.Game.SSelectionDeltaEvent',
+        gameLoop: 16,
+        userId: 0,
+        data: {
+          m_controlGroupId: 10,
+          m_delta: { m_removeMask: { None: null }, m_addUnitTags: [262146] },
+        },
+      },
+      {
+        eventId: 27,
+        eventType: 'NNet.Game.SCmdEvent',
+        gameLoop: 16,
+        userId: 0,
+        data: { m_data: { TargetUnit: { m_tag: 524290 } } },
+      },
+    ],
+  }
+  expect(buildReplayCommands(game)[0]).toMatchObject({
+    selection: { unitTags: [262146], reason: null },
+    target: { kind: 'unit', rawTag: 524290, unitTag: null },
+  })
 })

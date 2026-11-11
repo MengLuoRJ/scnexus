@@ -123,7 +123,7 @@ describe('component protocol foundation', () => {
     expect(reader.bits(2)).toBe(3n)
     const decoder = new ProtocolDecoder(schema, reader)
     expect(decoder.decode(0)).toBe('18446744073709551615')
-    expect(decoder.decode(1)).toEqual({ bitLength: 9, value: '341' })
+    expect(decoder.decode(1)).toEqual({ bitLength: 9, bitOffset: 0, value: '341' })
   })
   it.each([70154, 98310])(
     'decodes tracker deltas, signed stats and optional values for %i',

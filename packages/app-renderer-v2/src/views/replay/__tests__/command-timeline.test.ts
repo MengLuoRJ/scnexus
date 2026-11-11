@@ -53,6 +53,41 @@ function render(value: ReplayAnalysis | null = analysis, locale = 'en') {
     },
   })
 }
+test.each([
+  [
+    'en',
+    'Previously selected: 2 units',
+    'Previously selected: 0 units',
+    'Previous selection unavailable',
+  ],
+  ['zh', '此前选中：2 个单位', '此前选中：0 个单位', '此前选择记录不可用'],
+  ['zh-Hant', '此前選中：2 個單位', '此前選中：0 個單位', '此前選擇記錄不可用'],
+])(
+  'distinguishes known, empty, unknown and legacy selections in %s',
+  (locale, known, empty, unknown) => {
+    const base = analysis.commands![0]!
+    const wrapper = render(
+      {
+        ...analysis,
+        commands: [
+          { ...base, selection: { unitTags: [262146, 4294967295], reason: null } },
+          { ...base, selection: { unitTags: [], reason: null } },
+          { ...base, selection: { unitTags: null, reason: 'unsupported-update' } },
+          base,
+        ],
+      },
+      locale,
+    )
+    const rows = wrapper.findAll('li')
+    expect(rows[0]!.text()).toContain(known)
+    expect(rows[1]!.text()).toContain(empty)
+    expect(rows[2]!.text()).toContain(unknown)
+    expect(rows[3]!.text()).toContain(unknown)
+    expect(wrapper.text()).not.toContain('replay.commands.')
+    wrapper.unmount()
+  },
+)
+
 test('shows raw user zero, paginates, and resets on user change without guessing training', async () => {
   const wrapper = render()
   expect(wrapper.get('select').text()).toContain('Command user #0')

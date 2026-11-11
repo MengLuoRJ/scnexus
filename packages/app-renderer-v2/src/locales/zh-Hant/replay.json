@@ -257,6 +257,7 @@
   "replay.coop.upgrades": "升級記錄",
   "replay.armyValue": "部隊價值（採樣）",
   "replay.metrics.title": "對局表現",
+  "replay.metrics.user": "用戶 #{id}",
   "replay.metrics.participant": "指標參與者",
   "replay.metrics.kills": "記錄擊殺數",
   "replay.metrics.killBreakdown": "敵方：{enemy} · 友方：{friendly} · 未知：{unknown}",

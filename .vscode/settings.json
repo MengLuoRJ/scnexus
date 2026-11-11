@@ -18,10 +18,9 @@
       "url": "https://json.schemastore.org/electron-builder"
     }
   ],
-  "i18n-ally.enabledFrameworks": ["vue"],
-  "i18n-ally.localesPaths": ["./packages/**/src/locales"],
-  "i18n-ally.keystyle": "nested",
+  "x18n.displayLocale": "zh",
   "[vue]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
-  }
+  },
+  "i18n-ally.disabled": true
 }

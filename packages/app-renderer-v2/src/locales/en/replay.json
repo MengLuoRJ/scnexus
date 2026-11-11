@@ -257,6 +257,7 @@
   "replay.coop.upgrades": "Upgrades",
   "replay.armyValue": "Army value (sampled)",
   "replay.metrics.title": "Match performance",
+  "replay.metrics.user": "User #{id}",
   "replay.metrics.participant": "Metrics participant",
   "replay.metrics.kills": "Recorded kills",
   "replay.metrics.killBreakdown": "Enemy: {enemy} · Friendly: {friendly} · Unknown: {unknown}",

@@ -15,6 +15,7 @@
   "ui.downloadDir": "下載目錄",
   "ui.choose": "選擇目錄",
   "ui.save": "儲存",
+  "ui.cancel": "取消",
   "ui.logging": "日誌與隱私",
   "ui.logLevel": "日誌輸出等級",
   "ui.telemetry": "錯誤遙測",

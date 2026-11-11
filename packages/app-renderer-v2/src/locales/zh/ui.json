@@ -15,6 +15,7 @@
   "ui.downloadDir": "下载目录",
   "ui.choose": "选择目录",
   "ui.save": "保存",
+  "ui.cancel": "取消",
   "ui.logging": "日志与隐私",
   "ui.logLevel": "日志输出等级",
   "ui.telemetry": "错误遥测",

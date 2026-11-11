@@ -1,0 +1,23 @@
+{
+  "$schema": "https://x18n.dev/schema/config.json",
+  "sourceLocale": "zh",
+  "locales": ["zh", "en", "zh-Hant"],
+  "presets": ["vue-i18n"],
+  "keyStyle": "flat",
+  "keySeparator": false,
+  "resources": [
+    {
+      "pattern": "packages/app-renderer-v2/src/locales/{locale}/*.json"
+    }
+  ],
+  "usage": {
+    "keysInUse": ["aiAssistant.tool.*"],
+    "include": ["packages/app-renderer-v2/src/**/*.vue", "packages/app-renderer-v2/src/**/*.ts"],
+    "exclude": ["**/__tests__/**", "**/*.test.ts", "packages/app-renderer-v2/src/locales/**"]
+  },
+  "checks": {
+    "missing-key": "error",
+    "placeholder-mismatch": "error",
+    "unused-key": "warning"
+  }
+}

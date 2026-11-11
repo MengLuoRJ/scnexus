@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "Vue.volar",
+    "antfu.x18n",
     "vitest.explorer",
     "dbaeumer.vscode-eslint",
     "EditorConfig.EditorConfig",

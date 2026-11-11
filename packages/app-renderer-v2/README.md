@@ -54,6 +54,16 @@ SCNexus 唯一桌面界面，后续页面与功能均在此包维护。旧 `app-
 
 `src/locales/index.ts` 导出运行时 `i18n` 与完整扁平资源 `messages`，默认语言和回退语言均为 `zh`。测试按需导入 `src/locales/zh` 等合并结果，不单独拼接工坊资源。`src/locales/__tests__/locales.test.ts` 检查模块归属、重复键、入口完整性、三语键集合、语言加载及回退。
 
+翻译管理使用 x18n，运行时继续使用 vue-i18n。仓库根目录的 [x18n.config.json](../../x18n.config.json) 是编辑器与 CLI 的共同配置，以 `zh` 为源语言，仅扫描本包的业务代码和三语 JSON；文件名不作为额外命名空间。键按完整字符串处理（`keySeparator: false`），保留扁平格式，允许 `replay.race` 与 `replay.race.terran` 同时存在。新增键仍须按首段写入对应模块，新模块须更新三语入口。
+
+VS Code 安装推荐扩展 `antfu.x18n`，工作区通过 `i18n-ally.disabled: true` 禁用原 i18n-ally，避免重复显示和自动写回旧配置。可使用翻译预览、定义跳转、查找引用、重命名及“x18n: Open UI”编辑面板；显示语言默认简体中文。新增、重命名操作后检查 Git 差异，确认三语键及模块位置一致。
+
+当前资源模式不根据键首段自动选择新键的目标文件：实测 `x18n set` 为全新键选择首个资源文件。因此全新键直接添加到对应业务模块的三语 JSON，再运行检查；CLI 或编辑面板用于修改已有键，重命名前可先执行 `pnpm exec x18n rename <旧键> <新键> --dry-run` 预览。跨模块重命名后仍须移动到正确模块。
+
+在仓库根目录运行 `pnpm exec x18n doctor` 查看资源和扫描范围，运行 `pnpm run i18n:check` 检查翻译。缺失键、占位符不一致等错误阻止检查通过；未使用键及翻译过期提示保留为警告，不自动删除或重译。`aiAssistant.tool.*` 经工具名动态查找，在 `usage.keysInUse` 中声明；新增动态键时先确认扫描是否识别，仅为无法识别的实际用法补充精确范围。测试文件不计入业务引用。
+
+现有语言资源测试继续验证模块归属、重复键、三语完整性及运行时回退，不能用静态扫描代替。x18n CLI 仅为根目录开发依赖，不随应用作为运行时组件分发。
+
 ## IPC 调用约定
 
 桌面 IPC 请求、单向发送与事件订阅统一放在 `src/ipcs/`，按业务模块封装并从 `index.ts` 导出。所有导出函数均以 `ipcXXX` 命名，例如 `ipcCustomizeList`、`ipcCampaignOnInstallProgress`，不使用 `apiXXX`。桥接访问、DTO 快照、结果校验与订阅清理放在 `src/ipcs/internal/`；页面、Store 和 composable 只调用封装，不直接调用 preload 桥接。环境可用性检查不属于 IPC 请求。HTTP 请求与此目录分开维护。

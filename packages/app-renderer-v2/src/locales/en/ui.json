@@ -15,6 +15,7 @@
   "ui.downloadDir": "Download directory",
   "ui.choose": "Browse",
   "ui.save": "Save",
+  "ui.cancel": "Cancel",
   "ui.logging": "Logging & privacy",
   "ui.logLevel": "Log level",
   "ui.telemetry": "Error telemetry",

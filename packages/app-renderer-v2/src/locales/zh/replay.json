@@ -257,6 +257,7 @@
   "replay.coop.upgrades": "升级记录",
   "replay.armyValue": "部队价值（采样）",
   "replay.metrics.title": "对局表现",
+  "replay.metrics.user": "用户 #{id}",
   "replay.metrics.participant": "指标参与者",
   "replay.metrics.kills": "记录击杀数",
   "replay.metrics.killBreakdown": "敌方：{enemy} · 友方：{friendly} · 未知：{unknown}",
